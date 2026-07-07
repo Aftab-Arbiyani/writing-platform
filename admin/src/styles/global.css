@@ -1,0 +1,41 @@
+/*
+ * Global stylesheet — Tailwind v4 layered setup WITHOUT preflight.
+ *
+ * Why no preflight: AntD 5 ships its own CSS reset via cssinjs, and the admin
+ * panel is AntD-heavy (tables, forms, pickers). Loading Tailwind's preflight on
+ * top causes specificity wars over button/heading/box-sizing resets, so we
+ * import only the theme and utilities layers and let AntD own the base reset
+ * (docs/00 §6 conflict rule). Tokens are defined once in @qalam/ui and feed
+ * both AntD's ConfigProvider theme and Tailwind's theme — no drift.
+ */
+@layer theme, base, antd, components, utilities;
+
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
+
+/* Design tokens (--q-* light/dark via [data-theme]) + Tailwind theme mapping. */
+@import '@qalam/ui/styles/tokens.css';
+@import '@qalam/ui/styles/tailwind.css';
+
+/* UI font — self-hosted, no CDN (privacy + perf). Admin is a workbench: Inter only. */
+@import '@fontsource-variable/inter';
+
+@layer base {
+  html {
+    color-scheme: light;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  :root[data-theme='dark'] {
+    color-scheme: dark;
+  }
+
+  body {
+    margin: 0;
+    min-block-size: 100dvh;
+    background-color: var(--q-bg-canvas);
+    color: var(--q-text-primary);
+    font-family: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+  }
+}

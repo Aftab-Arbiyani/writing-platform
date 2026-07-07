@@ -1,0 +1,48 @@
+/*
+ * Tailwind v4 theme bridge: maps the --q-* tokens into Tailwind utilities
+ * such as bg-canvas, text-ink, text-ink-secondary, border-line, font-serif.
+ *
+ * Values are declared with "theme inline" so utilities keep the var reference
+ * at use time and flip automatically with the data-theme dark attribute; no
+ * dark: prefixes are needed for token-driven colors.
+ *
+ * NOTE: keep this header plain ASCII prose. Tailwind 4.3's CSS parser chokes
+ * on decorated comment banners here; see ADR section 6 for the conflict rule.
+ * RTL is day one: logical utilities only, ms-/me- and ps-/pe-, never ml-/mr-.
+ */
+@import './tokens.css';
+
+@theme inline {
+  /* Backgrounds */
+  --color-canvas: var(--q-bg-canvas);
+  --color-surface: var(--q-bg-surface);
+  --color-raised: var(--q-bg-raised);
+
+  /* Text ("ink") */
+  --color-ink: var(--q-text-primary);
+  --color-ink-secondary: var(--q-text-secondary);
+  --color-ink-muted: var(--q-text-muted);
+
+  /* Borders */
+  --color-line: var(--q-border);
+
+  /* Accent */
+  --color-accent: var(--q-accent);
+  --color-accent-hover: var(--q-accent-hover);
+
+  /* Semantic */
+  --color-success: var(--q-success);
+  --color-warning: var(--q-warning);
+  --color-danger: var(--q-danger);
+  --color-info: var(--q-info);
+
+  /* Fonts → font-ui / font-serif / font-mono */
+  --font-ui: var(--q-font-ui);
+  --font-serif: var(--q-font-serif);
+  --font-mono: var(--q-font-mono);
+
+  /* Radii → rounded-sm / rounded-md / rounded-lg */
+  --radius-sm: var(--q-radius-sm);
+  --radius-md: var(--q-radius-md);
+  --radius-lg: var(--q-radius-lg);
+}

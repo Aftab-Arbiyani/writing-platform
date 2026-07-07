@@ -1,0 +1,17 @@
+# CODEOWNERS — automatic review assignment.
+#
+# Each line maps a path pattern to one or more owners (GitHub usernames or
+# teams). The LAST matching pattern wins. Owners listed here are automatically
+# requested for review on PRs touching those paths, and branch protection can
+# require their approval.
+#
+# Populate as the team forms. Examples:
+#
+# *                       @qalam/engineering
+# /backend/               @qalam/backend-team
+# /frontend/              @qalam/frontend-team
+# /admin/                 @qalam/frontend-team
+# /packages/ui/           @qalam/design-systems
+# /infrastructure/        @qalam/platform
+# /.github/               @qalam/platform
+# /docs/                  @qalam/leads

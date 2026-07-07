@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "./base.json",
+  // Vite/React apps: the bundler owns emit, tsc is typecheck-only.
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "noEmit": true,
+    // Safe with Vite (esbuild transpiles file-by-file); forces explicit
+    // `import type`, which keeps transforms correct under isolatedModules.
+    "verbatimModuleSyntax": true,
+    "useDefineForClassFields": true
+  }
+}

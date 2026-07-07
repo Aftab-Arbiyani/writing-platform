@@ -1,0 +1,114 @@
+/* ==========================================================================
+   Qalam design tokens — "warm paper and ink" (ADR §7, canonical values).
+   Single source of truth for BOTH Tailwind (styles/tailwind.css) and AntD
+   (src/theme/antd-theme.ts — hexes mirrored there; keep in sync until the
+   Phase 1.5 token build step generates all three from one definition).
+   Dark mode: class strategy — `data-theme="dark"` on <html> (ADR §6).
+   ========================================================================== */
+
+:root {
+  /* ── Color · light ("warm paper") — exact hexes from ADR §7 ───────────── */
+  --q-bg-canvas: #faf7f1; /* warm paper */
+  --q-bg-surface: #ffffff;
+  --q-bg-raised: #f3eee5;
+  --q-text-primary: #24211b; /* ink */
+  --q-text-secondary: #6b655a;
+  --q-text-muted: #8f887a;
+  --q-border: #e7e1d6;
+  --q-accent: #9e4b28; /* terracotta ink */
+  --q-accent-hover: #b45a32;
+  --q-success: #3e7c4f;
+  --q-warning: #a97a1f;
+  --q-danger: #b3382e;
+  --q-info: #3b6ea8;
+
+  /* ── Typography · families (self-hosted @fontsource, ADR §6) ──────────────
+     UI/serif stacks carry Devanagari (Hindi) + Naskh/Nastaliq (Urdu)
+     fallbacks — script coverage is a day-one requirement, not an add-on. */
+  --q-font-ui:
+    'Inter', 'Noto Sans Devanagari', 'Noto Naskh Arabic', -apple-system, BlinkMacSystemFont,
+    'Segoe UI', system-ui, sans-serif;
+  --q-font-serif: 'Lora', 'Noto Serif Devanagari', 'Noto Nastaliq Urdu', Georgia, serif;
+  --q-font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* ── Typography · scale (1.25 ratio — 12/14/16/20/25/31/39/49, ADR §7) ── */
+  --q-font-size-1: 12px;
+  --q-font-size-2: 14px;
+  --q-font-size-3: 16px;
+  --q-font-size-4: 20px;
+  --q-font-size-5: 25px;
+  --q-font-size-6: 31px;
+  --q-font-size-7: 39px;
+  --q-font-size-8: 49px;
+  --q-leading-latin: 1.7; /* reading column, Latin/Devanagari */
+  --q-leading-nastaliq: 2.1; /* Nastaliq is vertically demanding (ADR §6) */
+
+  /* ── Spacing · 4px base scale: --q-space-N = N × 4px ──────────────────── */
+  --q-space-1: 4px;
+  --q-space-2: 8px;
+  --q-space-3: 12px;
+  --q-space-4: 16px;
+  --q-space-5: 20px;
+  --q-space-6: 24px;
+  --q-space-7: 28px;
+  --q-space-8: 32px;
+  --q-space-9: 36px;
+  --q-space-10: 40px;
+  --q-space-11: 44px;
+  --q-space-12: 48px;
+  /* Extended steps completing the ADR §7 scale (…/64/96). */
+  --q-space-16: 64px;
+  --q-space-24: 96px;
+
+  /* ── Radii (ADR §7: 6 controls / 10 cards / 16 modals) ────────────────── */
+  --q-radius-sm: 6px;
+  --q-radius-md: 10px;
+  --q-radius-lg: 16px;
+
+  /* ── Elevation · 3 soft warm-tinted levels (tint = ink #24211B) ───────── */
+  --q-shadow-1: 0 1px 2px rgba(36, 33, 27, 0.06), 0 1px 3px rgba(36, 33, 27, 0.08);
+  --q-shadow-2: 0 2px 4px rgba(36, 33, 27, 0.06), 0 4px 10px rgba(36, 33, 27, 0.08);
+  --q-shadow-3: 0 4px 8px rgba(36, 33, 27, 0.08), 0 12px 28px rgba(36, 33, 27, 0.12);
+
+  /* ── Motion (150/250/400ms, respects prefers-reduced-motion, ADR §6) ──── */
+  --q-duration-fast: 150ms;
+  --q-duration-base: 250ms;
+  --q-duration-slow: 400ms;
+  --q-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --q-ease-decelerate: cubic-bezier(0, 0, 0.2, 1);
+  --q-ease-accelerate: cubic-bezier(0.4, 0, 1, 1);
+
+  /* ── Z-index ladder ───────────────────────────────────────────────────── */
+  --q-z-dropdown: 1000;
+  --q-z-sticky: 1020;
+  --q-z-overlay: 1030;
+  --q-z-modal: 1040;
+  --q-z-popover: 1050;
+  --q-z-toast: 1060;
+}
+
+/* ==========================================================================
+   Dark theme — "warm near-black". Exact hexes from ADR §7; semantic colors
+   are the ADR's "warm-shifted variants" (canonical here until the token
+   build step). Borders are preferred over shadows in dark mode (ADR §7),
+   so shadow tokens flatten toward plain darkening.
+   ========================================================================== */
+[data-theme='dark'] {
+  --q-bg-canvas: #131110; /* warm near-black */
+  --q-bg-surface: #1c1917;
+  --q-bg-raised: #26221e;
+  --q-text-primary: #ece6da;
+  --q-text-secondary: #a69f90;
+  --q-text-muted: #7a7367;
+  --q-border: #2e2a24;
+  --q-accent: #d07349;
+  --q-accent-hover: #dd8a63;
+  --q-success: #6baa7c;
+  --q-warning: #c99a4c;
+  --q-danger: #d06a5f;
+  --q-info: #7ca6d6;
+
+  --q-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --q-shadow-2: 0 2px 6px rgba(0, 0, 0, 0.4);
+  --q-shadow-3: 0 6px 16px rgba(0, 0, 0, 0.5);
+}

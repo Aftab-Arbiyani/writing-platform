@@ -1,0 +1,52 @@
+/*
+ * Qalam global stylesheet — Tailwind v4 CSS-first setup.
+ *
+ * Tailwind's preflight is deliberately NOT imported: AntD 5 ships its own reset
+ * (via cssinjs), and loading preflight on top causes base-element fights
+ * (buttons, headings, links) and specificity wars between the two systems.
+ * We import only the theme + utilities layers (docs/00 §6, "Conflict rule").
+ */
+@layer theme, base, components, utilities;
+
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
+
+/* Single token source: --q-* CSS variables + their @theme mapping so utilities
+ * like bg-canvas / text-primary / border-border resolve to the same values AntD
+ * receives through getAntdTheme(). */
+@import '@qalam/ui/styles/tokens.css';
+@import '@qalam/ui/styles/tailwind.css';
+
+/* Self-hosted fonts via @fontsource — no CDN (privacy + perf, docs/00 §6). */
+@import '@fontsource-variable/inter';
+@import '@fontsource/lora/400.css';
+@import '@fontsource/lora/400-italic.css';
+@import '@fontsource/lora/600.css';
+
+@layer base {
+  html {
+    background: var(--q-bg-canvas);
+    color: var(--q-text-primary);
+  }
+
+  body {
+    font-family:
+      'Inter Variable',
+      'Inter',
+      system-ui,
+      -apple-system,
+      'Segoe UI',
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--q-accent) 24%, transparent);
+  }
+
+  /* Visible focus ring per design system: 2px accent, offset 2px (docs/00 §7 A11y). */
+  :focus-visible {
+    outline: 2px solid var(--q-accent);
+    outline-offset: 2px;
+  }
+}

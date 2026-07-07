@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  // Local, plain tsconfig for editor support only — this package ships static
+  // preset files and has no build or typecheck step. It intentionally does NOT
+  // extend its own tsconfig/base.json to avoid self-referential resolution.
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "allowJs": true,
+    "checkJs": false,
+    "noEmit": true,
+    "skipLibCheck": true
+  },
+  "include": ["eslint/**/*.mjs", "prettier/**/*.mjs"]
+}

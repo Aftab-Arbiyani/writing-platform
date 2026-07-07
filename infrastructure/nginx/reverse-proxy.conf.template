@@ -1,0 +1,103 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Qalam — production edge reverse proxy TEMPLATE (nginx)
+#
+# This file is intentionally ALL COMMENTED OUT. It documents the intended
+# production topology; render a concrete config by replacing DOMAIN with the
+# real domain, uncommenting, and reviewing every value.
+#
+#   app.DOMAIN    → frontend static bundle
+#   admin.DOMAIN  → admin static bundle
+#   api.DOMAIN    → NestJS API (upstream :4000)
+#
+# TLS: use certbot (`certbot --nginx -d api.DOMAIN -d app.DOMAIN -d admin.DOMAIN`)
+# or provision certs out-of-band and point ssl_certificate/_key at them.
+# certbot rewrites the listen directives to 443 ssl and adds the cert paths.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Shared ───────────────────────────────────────────────────────────────────
+# gzip on;
+# gzip_vary on;
+# gzip_min_length 1024;
+# gzip_types text/plain text/css application/javascript application/json image/svg+xml;
+
+# ── API upstream ─────────────────────────────────────────────────────────────
+# upstream qalam_api {
+#     # docker network: service name; bare metal: 127.0.0.1
+#     server backend:4000;
+#     keepalive 32;
+# }
+
+# ── api.DOMAIN — NestJS API ─────────────────────────────────────────────────
+# server {
+#     listen 80;
+#     server_name api.DOMAIN;
+#
+#     # Media uploads go directly to S3 via pre-signed URLs; 10m covers any
+#     # JSON payload (TipTap documents included) with room to spare.
+#     client_max_body_size 10m;
+#
+#     location / {
+#         proxy_pass http://qalam_api;
+#         proxy_http_version 1.1;
+#         proxy_set_header Connection "";
+#
+#         # Correlation ID — generated at the edge if the client didn't send one;
+#         # propagated frontend → API → queue jobs (see ADR §9).
+#         proxy_set_header X-Request-Id $request_id;
+#
+#         # Standard forwarding headers so the API sees the real client.
+#         proxy_set_header Host              $host;
+#         proxy_set_header X-Real-IP         $remote_addr;
+#         proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+#         proxy_set_header X-Forwarded-Proto $scheme;
+#         proxy_set_header X-Forwarded-Host  $host;
+#     }
+#
+#     # Enable ONLY after confirming TLS works on every subdomain — HSTS is
+#     # effectively irreversible for its max-age.
+#     # add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+# }
+
+# ── app.DOMAIN — reader/writer frontend (static) ────────────────────────────
+# server {
+#     listen 80;
+#     server_name app.DOMAIN;
+#
+#     root /var/www/qalam/frontend;   # deployed frontend/dist
+#     index index.html;
+#
+#     add_header X-Content-Type-Options nosniff always;
+#     add_header X-Frame-Options DENY always;
+#     add_header Referrer-Policy strict-origin-when-cross-origin always;
+#
+#     location /assets/ {
+#         add_header Cache-Control "public, max-age=31536000, immutable" always;
+#         try_files $uri =404;
+#     }
+#
+#     location / {
+#         try_files $uri /index.html;
+#     }
+# }
+
+# ── admin.DOMAIN — admin panel (static) ─────────────────────────────────────
+# server {
+#     listen 80;
+#     server_name admin.DOMAIN;
+#
+#     root /var/www/qalam/admin;      # deployed admin/dist
+#     index index.html;
+#
+#     add_header X-Content-Type-Options nosniff always;
+#     add_header X-Frame-Options DENY always;
+#     add_header Referrer-Policy strict-origin-when-cross-origin always;
+#
+#     location /assets/ {
+#         add_header Cache-Control "public, max-age=31536000, immutable" always;
+#         try_files $uri =404;
+#     }
+#
+#     location / {
+#         try_files $uri /index.html;
+#     }
+# }

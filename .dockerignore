@@ -1,0 +1,13 @@
+# Keep Docker build contexts lean — everything here is either rebuilt inside
+# the image (node_modules, dist) or must never enter an image (.env, .git).
+node_modules
+**/node_modules
+**/dist
+.turbo
+**/.turbo
+.git
+docs
+coverage
+**/coverage
+.env
+.env.*
