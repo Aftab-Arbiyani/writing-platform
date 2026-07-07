@@ -6,16 +6,19 @@
  */
 import 'reflect-metadata';
 
-import { ValidationPipe, VersioningType } from '@nestjs/common';
+import { RequestMethod, ValidationPipe, VersioningType } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import compression from 'compression';
 import helmet from 'helmet';
 import { Logger } from 'nestjs-pino';
 
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
+import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
+import { validationExceptionFactory } from './common/pipes/validation-exception.factory';
 import { appConfig } from './config/app.config';
 
 async function bootstrap(): Promise<void> {
@@ -29,8 +32,19 @@ async function bootstrap(): Promise<void> {
   // Typed app config — env already validated by Zod at module init (env.schema.ts).
   const config = app.get<ConfigType<typeof appConfig>>(appConfig.KEY);
 
+  // Correlation id FIRST (ADR §9): honor a trusted proxy's X-Request-Id or mint
+  // a UUIDv7, echo it on the response, and expose it so nestjs-pino binds the
+  // same id to the request logger. Registered app-level so it runs ahead of the
+  // pino middleware and every other handler.
+  const requestId = new RequestIdMiddleware();
+  app.use(requestId.use.bind(requestId));
+
   // Security headers (CSP, HSTS, nosniff, …) — ADR §8 baseline.
   app.use(helmet());
+
+  // Response compression. nginx also compresses in prod (docs 15); enabling it
+  // here keeps dev + non-nginx deploys covered without harming the proxied path.
+  app.use(compression());
 
   // CORS: explicit origin allowlist (reader/writer app + admin). credentials
   // is true because web auth uses an httpOnly refresh cookie (ADR §3).
@@ -40,7 +54,14 @@ async function bootstrap(): Promise<void> {
   });
 
   // All routes live under /api; URI versioning yields /api/v1/... (ADR §5).
-  app.setGlobalPrefix('api');
+  // Health probes are excluded so orchestrators hit bare /health, /health/ready
+  // (version-neutral controller) without knowing the API version (docs 14).
+  app.setGlobalPrefix('api', {
+    exclude: [
+      { path: 'health', method: RequestMethod.GET },
+      { path: 'health/ready', method: RequestMethod.GET },
+    ],
+  });
   app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
 
   // DTO validation at the boundary: strip unknown fields, reject unexpected
@@ -52,6 +73,9 @@ async function bootstrap(): Promise<void> {
       forbidNonWhitelisted: true,
       transform: true,
       transformOptions: { enableImplicitConversion: false },
+      // Emit the ADR §5 `VALIDATION_FAILED` envelope with structured
+      // { field, rule, message } details (docs 05 §3.2).
+      exceptionFactory: validationExceptionFactory,
     }),
   );
 

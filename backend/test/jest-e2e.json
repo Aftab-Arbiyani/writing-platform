@@ -1,0 +1,16 @@
+{
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": "..",
+  "testEnvironment": "node",
+  "testRegex": "\\.e2e-spec\\.ts$",
+  "transform": {
+    "^.+\\.ts$": "ts-jest"
+  },
+  "moduleNameMapper": {
+    "^@/(.*)$": "<rootDir>/src/$1",
+    "^@qalam/shared$": "<rootDir>/../packages/shared/src/index.ts",
+    "^@qalam/utils$": "<rootDir>/../packages/utils/src/index.ts",
+    "^(\\.{1,2}/.*)\\.js$": "$1"
+  },
+  "clearMocks": true
+}

@@ -2,6 +2,7 @@ import { Catch, HttpException, HttpStatus } from '@nestjs/common';
 import type { ArgumentsHost, ExceptionFilter, LoggerService } from '@nestjs/common';
 import type { Request, Response } from 'express';
 
+import { REQUEST_ID_HEADER } from '../constants/http.constants';
 import { AppException } from '../exceptions/app.exception';
 
 /** Error envelope from ADR §5 — the only failure shape this API ever emits. */
@@ -40,7 +41,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<RequestWithId>();
 
-    const headerId = request.headers['x-request-id'];
+    const headerId = request.headers[REQUEST_ID_HEADER];
     const requestId = String(
       request.id ?? (Array.isArray(headerId) ? headerId[0] : headerId) ?? 'unknown',
     );

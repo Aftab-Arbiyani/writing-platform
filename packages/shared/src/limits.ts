@@ -11,6 +11,14 @@ export const MAX_CLAPS_PER_USER_PER_PIECE = 50;
 export const USERNAME_MIN = 3;
 export const USERNAME_MAX = 30;
 
+/** Pen name (single display name per user, ADR §4) length bounds. */
+export const PEN_NAME_MIN = 1;
+export const PEN_NAME_MAX = 50;
+
+/** Password length policy (hashed with Argon2id at rest, ADR §3). */
+export const PASSWORD_MIN = 8;
+export const PASSWORD_MAX = 128;
+
 export const TITLE_MAX = 200;
 export const SUBTITLE_MAX = 300;
 export const FEATURED_QUOTE_MAX = 280;

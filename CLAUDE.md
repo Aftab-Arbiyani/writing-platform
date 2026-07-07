@@ -7,10 +7,20 @@ wins: **`docs/00_ArchitectureDecisions.md`**.
 
 ## Current phase
 
-**Phase 0 — Foundation.** Only documentation and scaffold exist. There are **no features,
-no controllers/services, no entities, no screens** yet. Phase 1 epics (E1–E10) are defined
-in `docs/18_DevelopmentRoadmap.md`. Do not implement Phase 2 concerns (AI, payments, Apple
-login) anywhere.
+**Phase 1 — MVP (in progress).** Phase 0 (docs + scaffold) is complete. Phase 1 epics
+(E1–E10) are defined in `docs/18_DevelopmentRoadmap.md` and are being built in dependency
+order.
+
+- **E1 — Auth & Identity:** foundation laid — backend infra modules (config, logger,
+  database, redis, queue, health, common), the shared `common/` building blocks, and the
+  **auth skeleton** (module, controller/service stubs, JWT strategy, guards, decorators,
+  DTOs). Still pending in E1: `users`/`auth_identities` entities + migration, and the
+  register/login/refresh-rotation/Google/reset **logic** (the service methods currently
+  throw `NotImplementedException`), plus rate-limit enforcement (the guard is an inert
+  skeleton).
+- **E2–E10:** not started.
+
+Do not implement Phase 2 concerns (AI, payments, Apple login) anywhere.
 
 ## Monorepo map
 

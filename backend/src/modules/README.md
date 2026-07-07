@@ -1,7 +1,10 @@
 # Feature Modules (Phase 1)
 
-This directory is intentionally empty in the foundation. The Phase-1 module map
-(ADR §3) and each module's single-line responsibility:
+**Status:** `auth/` is scaffolded as a **skeleton** (Epic 1 · E1 foundation): module,
+controller/service stubs (handlers throw `NotImplementedException`), JWT strategy, guards,
+decorators, DTOs, and interfaces — no login/signup logic yet. Every other module below is
+still unbuilt. The Phase-1 module map (ADR §3) and each module's single-line
+responsibility:
 
 | Module          | Responsibility                                                                                                                           |
 | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
