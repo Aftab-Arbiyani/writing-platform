@@ -84,8 +84,19 @@ rows poison every query with extra predicates.
 
 ### 1.6 Migration policy
 
-- Generated with `typeorm migration:generate` against `backend/src/database/data-source.ts`,
-  never handwritten from scratch unless the change is data-only.
+- Scaffolded with the TypeORM CLI so the filename prefix is a real `Date.now()` — a
+  timestamp is **never hand-picked** (round/trailing-zero prefixes risk mis-ordering).
+  The `.claude/hooks/guard-rules.sh` PostToolUse hook **hard-blocks** invented-timestamp
+  migration files.
+- **`migration:generate` is not usable in this codebase** (verified E6): entities carry plain
+  FK columns with no relations (§16 §3.1), so generate reconciles by trying to **drop every
+  foreign key**, and it also rewrites index/unique constraints and chokes on the raw-SQL
+  generated `search_vector` columns (missing `typeorm_metadata`). Making it clean would mean
+  adding relations + index/unique decorators to every entity, which the module-isolation rule
+  forbids. So migrations here are **authored by hand on a CLI-stamped skeleton**:
+  `pnpm --filter backend migration:create src/database/migrations/<Name>`, then write the DDL.
+  (This is the "data-only / hand-authored exception" generalized to the whole schema for the
+  documented architectural reason above.)
 - Reviewed via `/migration-check` before merge; **immutable once merged** — fixes are new
   migrations (repo hook warns on edits to `src/migrations/*.ts`).
 - Run as an explicit **deploy step**, never at app boot.
@@ -95,7 +106,8 @@ rows poison every query with extra predicates.
 ### 1.7 Enum strategy
 
 - **Native PG enums** for closed, stable domains: `piece_status`, `visibility`,
-  `text_direction`, `repost_type`, `report_status`, `auth_provider`, `user_status`.
+  `text_direction`, `repost_type`, `report_status`, `auth_provider`, `user_status`,
+  `share_channel` (E7 — `internal | external | copy_link`).
   These change rarely; the DB-level guarantee is worth the `ALTER TYPE` on change.
 - **`varchar` + TypeScript catalogue in `@qalam/shared`** for open sets that grow with the
   product: `notifications.type`, `analytics_events.event_type`, `audit_logs.action`,
@@ -300,16 +312,17 @@ worker polls due rows (partial index below), flips `status → 'published'` and 
 
 Indexes:
 
-| Index                      | Definition                                                                                             | Serves                            |
-| -------------------------- | ------------------------------------------------------------------------------------------------------ | --------------------------------- |
-| `uq_pieces_slug`           | `UNIQUE (slug)`                                                                                        | `GET /pieces/:slug`               |
-| `idx_pieces_author_status` | `(author_id, status, created_at DESC)`                                                                 | `/me/drafts`, author profile      |
-| `idx_pieces_latest`        | `(published_at DESC, id DESC) WHERE status='published' AND visibility='public' AND deleted_at IS NULL` | Latest feed keyset pagination     |
-| `idx_pieces_language`      | `(language_id, published_at DESC)`                                                                     | per-language browse/search filter |
-| `idx_pieces_genre`         | `(genre_id, published_at DESC)`                                                                        | `/genre/:slug`                    |
-| `idx_pieces_due`           | `(scheduled_at) WHERE status='scheduled'`                                                              | publish worker poll               |
-| `idx_pieces_search`        | `GIN (search_vector)`                                                                                  | FTS (§6)                          |
-| `idx_pieces_title_trgm`    | `GIN (title gin_trgm_ops)`                                                                             | fuzzy title search (§6.4)         |
+| Index                         | Definition                                                                                             | Serves                            |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------ | --------------------------------- |
+| `uq_pieces_slug`              | `UNIQUE (slug)`                                                                                        | `GET /pieces/:slug`               |
+| `idx_pieces_author_status`    | `(author_id, status, created_at DESC)`                                                                 | `/me/drafts`, author profile      |
+| `idx_pieces_latest`           | `(published_at DESC, id DESC) WHERE status='published' AND visibility='public' AND deleted_at IS NULL` | Latest feed keyset pagination     |
+| `idx_pieces_language`         | `(language_id, published_at DESC)`                                                                     | per-language browse/search filter |
+| `idx_pieces_genre`            | `(genre_id, published_at DESC)`                                                                        | `/genre/:slug`                    |
+| `idx_pieces_due`              | `(scheduled_at) WHERE status='scheduled'`                                                              | publish worker poll               |
+| `idx_pieces_search`           | `GIN (search_vector)`                                                                                  | FTS (§6)                          |
+| `idx_pieces_title_trgm`       | `GIN (title gin_trgm_ops)`                                                                             | fuzzy title search (§6.4)         |
+| `idx_pieces_author_published` | `(author_id, published_at DESC) WHERE status='published' AND deleted_at IS NULL`                       | Following feed (E6)               |
 
 #### `piece_stats` (1:1 satellite — PK is `piece_id`)
 
@@ -327,6 +340,12 @@ Indexes:
 | `trending_score`                                                                       | `double precision` | no   | `0`     | recomputed by `trending-score` queue                                      |
 | Index: `idx_piece_stats_trending (trending_score DESC)` — backs the Trending feed tab. |
 | Row is created in the same transaction as the piece. Maintenance rules in §7.          |
+
+E6 additions: `idx_piece_stats_claps (claps_count DESC, piece_id DESC)` and
+`idx_piece_stats_comments (comments_count DESC, piece_id DESC)` back the **most-clapped** and
+**most-discussed** feed sorts (keyset: sort column + `piece_id` tiebreaker). `trending_score`
+stays unused in E6 — trending is computed live + Redis-cached (no BullMQ job yet, ADR §10 E6
+amendment).
 
 #### `responses` (piece → piece; a response **is** a piece)
 
@@ -440,6 +459,53 @@ actually applied (delta feeds `piece_stats.claps_count` in the same transaction)
 | `piece_id`                                                                                      | `uuid` | no   | —          | FK → `pieces` CASCADE |
 | `uq_bookmarks_user_piece (user_id, piece_id)` · `idx_bookmarks_user (user_id, created_at DESC)` |
 | (bookmarks are private; the per-user listing is the only hot read).                             |
+
+#### `comments` (soft delete ✓ — **net-new in E7**)
+
+Not in the brief's original locked social list (ADR §10; 18 §risk-6 flagged comments as
+scope creep) — added as a first-class Phase-1 engagement surface (recorded in ADR §10 E7
+amendment). A **reply is a comment with a non-null `parent_id`** (adjacency list); no
+separate reply table — that is the only model supporting arbitrary nesting to
+`MAX_COMMENT_DEPTH = 3` (`@qalam/shared`).
+
+| Column      | Type          | Null | Default    | Constraints / notes                                            |
+| ----------- | ------------- | ---- | ---------- | -------------------------------------------------------------- |
+| `id`        | `uuid`        | no   | app UUIDv7 | PK                                                             |
+| `piece_id`  | `uuid`        | no   | —          | FK → `pieces` **ON DELETE CASCADE**                            |
+| `author_id` | `uuid`        | no   | —          | FK → `users` **ON DELETE CASCADE**                             |
+| `parent_id` | `uuid`        | yes  | `NULL`     | FK → `comments` **ON DELETE CASCADE**; NULL = top-level        |
+| `depth`     | `smallint`    | no   | `1`        | 1 = top-level; reply = parent.depth + 1; capped at 3 (service) |
+| `body`      | `text`        | no   | —          | 1..2000 chars (`COMMENT_MAX_LENGTH`)                           |
+| `edited_at` | `timestamptz` | yes  | `NULL`     | last edit time (edit history); null until first edit           |
+
+Soft-deletable (docs §1.5 recoverability is not the driver here; instead a deleted comment
+keeps its node so the thread renders "This comment has been deleted." and its **replies
+stay visible**). Indexes: `idx_comments_piece (piece_id, created_at)` ·
+`idx_comments_parent (parent_id, created_at)` · `idx_comments_author (author_id)`.
+Only the owner may edit; the owner **or a moderator+** may delete (soft). The comment count
+lives on `piece_stats.comments_count` (added this epic) and is bumped transactionally on
+create; a soft-deleted comment is NOT decremented (its tombstone still displays).
+
+#### `shares` (append-only — **net-new table in E7**)
+
+The brief listed `share`; this is the physical model. Phase 1 stores the **count only**
+(`piece_stats.shares_count`) — no analytics dashboard. Each share appends a row and bumps
+the counter transactionally.
+
+| Column     | Type            | Null | Default    | Constraints / notes                                   |
+| ---------- | --------------- | ---- | ---------- | ----------------------------------------------------- |
+| `id`       | `uuid`          | no   | app UUIDv7 | PK                                                    |
+| `user_id`  | `uuid`          | yes  | `NULL`     | FK → `users` **ON DELETE SET NULL**; null = anonymous |
+| `piece_id` | `uuid`          | no   | —          | FK → `pieces` **ON DELETE CASCADE**                   |
+| `channel`  | `share_channel` | no   | —          | `internal \| external \| copy_link`                   |
+
+Index: `idx_shares_piece (piece_id, created_at DESC)`.
+
+**E7 additions to existing tables:** `piece_stats.comments_count integer` (for the new
+comments) and `collections.is_default boolean` (the auto-created "Favorites" collection —
+partial unique `uq_collections_default (owner_id) WHERE is_default AND deleted_at IS NULL`,
+mirroring `reading_lists.is_default`). `collections`'s owner-slug uniqueness is enforced
+active-only (`WHERE deleted_at IS NULL`) so a soft-deleted collection frees its slug.
 
 ### 3.5 Curation
 

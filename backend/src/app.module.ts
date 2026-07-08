@@ -27,6 +27,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { EngagementModule } from './modules/engagement/engagement.module';
 import { FeedModule } from './modules/feed/feed.module';
 import { PiecesModule } from './modules/pieces/pieces.module';
+import { SearchModule } from './modules/search/search.module';
 import { TaxonomyModule } from './modules/taxonomy/taxonomy.module';
 import { UsersModule } from './modules/users/users.module';
 import { QueueModule } from './queue/queue.module';
@@ -49,6 +50,7 @@ import { RedisModule } from './redis/redis.module';
     PiecesModule,
     EngagementModule,
     FeedModule,
+    SearchModule,
   ],
 })
 export class AppModule {}

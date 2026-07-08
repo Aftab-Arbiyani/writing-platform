@@ -2,12 +2,21 @@
 #
 # guard-rules.sh — advisory enforcement of the Qalam CLAUDE.md "Hard rules".
 #
-# Fired as a PostToolUse hook on Edit|Write. It NEVER blocks (always exits 0):
-# it prints '⚠️  [qalam-rules] …' lines that Claude sees in the transcript, so the
-# model self-corrects. Blocking heuristic regex checks would produce false
-# positives; the real gate is code review + `pnpm lint`/`typecheck` in CI.
+# Fired as a PostToolUse hook on Edit|Write. It is ADVISORY (exit 0) for every
+# rule — it prints '⚠️  [qalam-rules] …' lines Claude sees, so the model
+# self-corrects — with ONE exception: a migration file with an INVENTED
+# timestamp is a HARD BLOCK (exit 2). That signal is precise, not heuristic: a
+# real timestamp is Date.now() (13 digits); a round/trailing-zeros prefix means
+# someone typed it by hand, which risks mis-ordering migrations.
 #
 # Rule numbers below refer to the "Hard rules" list in CLAUDE.md.
+#
+# Migration workflow in THIS repo: `migration:generate` is UNUSABLE here — the
+# entities use plain FK columns with no relations (docs 16 §3.1), so generate
+# tries to drop every foreign key. Instead scaffold with the CLI
+# `pnpm --filter backend migration:create src/database/migrations/<Name>` (which
+# stamps a real Date.now() prefix) and author the DDL in the skeleton. The block
+# below targets INVENTED timestamps, not authored DDL on a CLI-stamped file.
 set -uo pipefail
 
 # Hook payload arrives either in $CLAUDE_TOOL_INPUT (the tool_input object) or on
@@ -28,18 +37,35 @@ case "$base" in
   *.spec.ts|*.spec.tsx|*.test.ts|*.test.tsx|*.e2e-spec.ts) is_test=true ;;
 esac
 
-# ── Rule 7: migrations are immutable once merged ────────────────────────────
+# ── Rule 7: migrations are CLI-GENERATED, never hand-authored (HARD BLOCK) ────
 case "$FILE" in
-  */backend/src/database/migrations/*)
-    warn "Migration files are immutable once merged (rule 7). Do NOT edit — create a NEW migration:"
-    printf '       pnpm --filter backend migration:generate src/database/migrations/<Name>\n'
+  */backend/src/database/migrations/*.ts)
+    ts=$(printf '%s' "$base" | grep -oE '^[0-9]+')
+    # A genuine `migration:generate` prefix is Date.now() (13 digits, not round).
+    # A trailing run of zeros (or a non-13-digit prefix) means the timestamp was
+    # invented — i.e. the migration was hand-authored instead of generated.
+    if printf '%s' "$ts" | grep -qE '0{5,}$' || [ "${#ts}" -ne 13 ]; then
+      {
+        printf '\xe2\x9b\x94  [qalam-rules] BLOCKED (rule 7 / docs 04 §1.6): migration "%s" has an invented timestamp.\n' "$base"
+        printf '   "%s" is hand-picked — a real prefix is Date.now() (13 digits, not round).\n' "$ts"
+        printf '   NEVER hand-pick a timestamp. Delete this file and scaffold via the CLI (real Date.now()):\n'
+        printf '     pnpm --filter backend migration:create src/database/migrations/<Name>\n'
+        printf '   then author the DDL in the skeleton. (migration:generate is unusable here — plain FK\n'
+        printf '   columns/no relations mean it would drop every foreign key, docs 16 §3.1.)\n'
+      } >&2
+      exit 2
+    fi
+    # Real (CLI-stamped) timestamp: authoring DDL in it is fine; just never EDIT a
+    # MERGED migration — scaffold a new one instead (advisory).
+    warn "Real timestamp OK. Never EDIT a merged migration — scaffold a NEW one via the CLI (real Date.now()):"
+    printf '       pnpm --filter backend migration:create src/database/migrations/<Name>\n'
     ;;
 esac
 
-# ── Rule 7: entity changed → generate a migration (synchronize:false forever) ─
+# ── Rule 7: entity changed → author a migration (synchronize:false forever) ───
 if printf '%s' "$FILE" | grep -qE 'backend/src/modules/.+/entities/.+\.entity\.ts$'; then
-  warn "Entity changed — generate a migration (never synchronize):"
-  printf '       pnpm --filter backend migration:generate src/database/migrations/<Name>\n'
+  warn "Entity changed — a migration is needed (never synchronize). Scaffold via the CLI, then author the DDL:"
+  printf '       pnpm --filter backend migration:create src/database/migrations/<Name>\n'
 fi
 
 # ── Rule 1: no `any` (use `unknown` + narrowing) ─────────────────────────────

@@ -69,9 +69,48 @@ export const ERROR_CODES = {
   PIECE_TAG_LIMIT_EXCEEDED: 'PIECE_TAG_LIMIT_EXCEEDED',
 
   // ── Engagement ──────────────────────────────────────────────────────────
-  /** Cap enforced by MAX_CLAPS_PER_USER_PER_PIECE in limits.ts. */
+  /** Cap enforced by MAX_CLAPS_PER_USER_PER_PIECE in limits.ts (E7). */
   CLAP_LIMIT_REACHED: 'CLAP_LIMIT_REACHED',
+  // Engagement on a draft/scheduled/archived piece reuses PIECE_NOT_PUBLISHED (409).
+
+  // Comments (E7)
+  COMMENT_NOT_FOUND: 'COMMENT_NOT_FOUND',
+  /** Editing/deleting a comment that isn't yours (delete also allows admins). */
+  COMMENT_FORBIDDEN: 'COMMENT_FORBIDDEN',
+  /** Reply nesting would exceed MAX_COMMENT_DEPTH. */
+  COMMENT_DEPTH_EXCEEDED: 'COMMENT_DEPTH_EXCEEDED',
+  /** Replying to a comment that is already soft-deleted. */
+  COMMENT_DELETED: 'COMMENT_DELETED',
+
+  // Collections (E7) — private/owner-only: a missing OR foreign collection is
+  // COLLECTION_NOT_FOUND (404), never revealing another user's collection exists.
   COLLECTION_NOT_FOUND: 'COLLECTION_NOT_FOUND',
+  /** Owner already has a collection with this title/slug. */
+  COLLECTION_NAME_TAKEN: 'COLLECTION_NAME_TAKEN',
+  /** The piece is already in the collection. */
+  COLLECTION_PIECE_EXISTS: 'COLLECTION_PIECE_EXISTS',
+  /** The piece is not in the collection (remove target missing). */
+  COLLECTION_PIECE_NOT_FOUND: 'COLLECTION_PIECE_NOT_FOUND',
+  /** The default "Favorites" collection cannot be renamed or deleted. */
+  COLLECTION_DEFAULT_IMMUTABLE: 'COLLECTION_DEFAULT_IMMUTABLE',
+
+  // Responses (E7) — a response is a new piece linked to a parent piece.
+  /** A piece cannot respond to itself. */
+  RESPONSE_TO_SELF: 'RESPONSE_TO_SELF',
+  /** This piece already responds to a parent (one parent per response). */
+  RESPONSE_ALREADY_EXISTS: 'RESPONSE_ALREADY_EXISTS',
+
+  // ── Feeds & Discovery (E6) ────────────────────────────────────────────────
+  /** A cursor was supplied but failed to decode/verify — client restarts from page 1. */
+  FEED_INVALID_CURSOR: 'FEED_INVALID_CURSOR',
+
+  // ── Search & Discovery (E8) ───────────────────────────────────────────────
+  /** `q` shorter than SEARCH_QUERY_MIN (2 chars) after normalization (docs 05 §3.2). */
+  SEARCH_QUERY_TOO_SHORT: 'SEARCH_QUERY_TOO_SHORT',
+  /** FTS backend degraded/unreachable — client retries with backoff (docs 05 §3.2, 503). */
+  SEARCH_UNAVAILABLE: 'SEARCH_UNAVAILABLE',
+  /** A recent-search row to delete does not exist (or is not the caller's). */
+  SEARCH_RECENT_NOT_FOUND: 'SEARCH_RECENT_NOT_FOUND',
 
   // ── Moderation ──────────────────────────────────────────────────────────
   REPORT_NOT_FOUND: 'REPORT_NOT_FOUND',

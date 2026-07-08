@@ -86,8 +86,12 @@ pnpm --filter backend migration:generate src/database/migrations/<Name>
 6. **Backend layering:** controller → service → repository. Validation lives in DTOs
    (class-validator). Only repositories touch query builders. **No cross-module repository
    imports** — modules talk via exported services/events.
-7. **Database:** migrations only (`synchronize: false` forever); never edit a merged
-   migration — create a new one. snake_case columns, UUIDv7 app-generated PKs, soft delete
+7. **Database:** migrations only (`synchronize: false` forever). **Always create migrations
+   with `pnpm --filter backend migration:generate src/database/migrations/<Name>` — never
+   hand-author a migration file or invent/hand-pick a timestamp.** A real `Date.now()` prefix
+   keeps run-order correct and the diff keeps entities and schema in lockstep; set up the
+   entities + a running DB first rather than falling back to hand-writing. Never edit a merged
+   migration — generate a new one. snake_case columns, UUIDv7 app-generated PKs, soft delete
    only where `docs/04` says so. No `COUNT(*)` on hot paths — use `piece_stats`.
 8. **Domain invariants:** username is permanent (never build an edit path); one pen name;
    one language per piece; claps cap at 50/user/piece; AI & payments are Phase 2 — nothing

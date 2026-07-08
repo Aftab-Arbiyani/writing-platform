@@ -286,6 +286,41 @@ analytics: views, reads, reading time, completion, shares, followers, traffic, c
 devices · admin: dashboard, users, pieces, reports, card templates, daily prompts,
 languages, featured writers, analytics, moderators, roles, audit logs.
 
+**E7 build amendment (Social & Curation).** The engagement epic added, beyond the
+brief's locked social list above:
+
+- **Comments + threaded replies** (max nesting depth 3). Not in the original locked list
+  (18 §risk-6 named comments as scope creep to resist); added as a first-class Phase-1
+  engagement surface at product request. New `comments` table (soft-deletable,
+  self-referential `parent_id` adjacency list); a deleted comment persists as a tombstone
+  so its replies stay visible. See `04_DatabaseDesign.md` §3.4.
+- A dedicated **`shares` table** (append-only, `share_channel` native enum) backing the
+  existing `piece_stats.shares_count`. Phase 1 stores the count only — no analytics
+  dashboard (that stays Phase 1.5+). The brief already listed `share`; this records the
+  physical model chosen.
+- `piece_stats.comments_count` (for the new comments) and `collections.is_default` (the
+  auto-created "Favorites" collection every user gets) — both recorded in `04` §3.4/§3.5.
+
+Reading lists, reposts, and quotes from the locked list remain **unbuilt** (deferred to a
+later E7 slice); this amendment does not remove them.
+
+**E6 build amendment (Feeds & Discovery).** Feeds reuse existing entities — **no new
+tables** (the brief's optional `FeedScore`/`TrendingCache` were judged unnecessary):
+
+- **Trending is computed on-the-fly and cached in Redis** (DB 0) as a top-N ranked
+  snapshot with a short TTL (the recompute cadence), then keyset-paginated in memory. This
+  deviates from `18` E6 task 4 / `04` §7 layer 3, which envisioned a BullMQ `trending-score`
+  job persisting `piece_stats.trending_score` — background workers are out of scope for this
+  epic, so the column stays unused for now and the job remains the future path (same score
+  formula, swap the compute trigger). The scoring weights are **env-configurable**
+  (`TRENDING_*`); the algorithm lives in `feed/scoring/trending-scoring.ts`.
+- **Featured writers** are derived heuristically (recent engagement) pending the
+  `featured_writers` table + editorial curation (E10) — the endpoint contract is stable.
+- Discovery caches (featured writers, trending tags, popular-writers first page) use the
+  same Redis DB 0 + TTL; explicit `FeedCacheService.invalidate*()` methods exist for a future
+  domain-event wiring. New supporting indexes (`04` §3.2/§3.14): `idx_pieces_author_published`,
+  `idx_piece_stats_claps`, `idx_piece_stats_comments`. Search is **not** part of this epic (E8).
+
 **Version pins (caret ranges):** NestJS ^11 · TypeORM ^0.3 · React ^19 · Vite ^7 ·
 AntD ^5 · Tailwind ^4 · TanStack Query ^5 · Zustand ^5 · RHF ^7 · Zod ^3.24 (v4 blocked
 by `@hookform/resolvers` peer range — migrate when supported) · TipTap ^3 · ESLint ^9 ·

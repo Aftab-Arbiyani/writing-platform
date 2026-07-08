@@ -120,3 +120,80 @@ export const ThemePreference = {
   System: 'system',
 } as const;
 export type ThemePreference = (typeof ThemePreference)[keyof typeof ThemePreference];
+
+/**
+ * Feed sort orders (E6 — Feeds & Discovery). The wire values a client sends as
+ * `?sort=`; each maps to a keyset column in the feed query:
+ * `latest` → published_at, `trending` → live trending score, `most_clapped` →
+ * claps_count, `most_discussed` → comments_count.
+ */
+export const FeedSort = {
+  Latest: 'latest',
+  Trending: 'trending',
+  MostClapped: 'most_clapped',
+  MostDiscussed: 'most_discussed',
+} as const;
+export type FeedSort = (typeof FeedSort)[keyof typeof FeedSort];
+
+/**
+ * Search scope (E8). `GET /search?type=` selects a single group (or `all` for the
+ * grouped global preview); autocomplete reuses the content subset. The `all`
+ * value is the default for the grouped endpoint.
+ */
+export const SearchType = {
+  All: 'all',
+  Pieces: 'pieces',
+  Writers: 'writers',
+  Tags: 'tags',
+  Genres: 'genres',
+  Languages: 'languages',
+} as const;
+export type SearchType = (typeof SearchType)[keyof typeof SearchType];
+
+/**
+ * Piece-search ordering (E8). Distinct from `FeedSort` because search adds
+ * `relevance` (the default — ts_rank over the FTS vector) which feeds have no
+ * notion of, and names the comment sort per the brief (`most_commented`):
+ * `latest` → published_at, `trending` → piece_stats.trending_score,
+ * `most_clapped` → claps_count, `most_commented` → comments_count.
+ */
+export const SearchSort = {
+  Relevance: 'relevance',
+  Latest: 'latest',
+  Trending: 'trending',
+  MostClapped: 'most_clapped',
+  MostCommented: 'most_commented',
+} as const;
+export type SearchSort = (typeof SearchSort)[keyof typeof SearchSort];
+
+/** `GET /discover/writers?kind=` — which slice of writers to surface (E6). */
+export const WriterKind = {
+  Featured: 'featured',
+  Popular: 'popular',
+  New: 'new',
+} as const;
+export type WriterKind = (typeof WriterKind)[keyof typeof WriterKind];
+
+/** `GET /discover/pieces?kind=` — which slice of pieces to surface (E6). */
+export const DiscoverPieceKind = {
+  Featured: 'featured',
+  Recent: 'recent',
+  MostClapped: 'most_clapped',
+  MostDiscussed: 'most_discussed',
+} as const;
+export type DiscoverPieceKind = (typeof DiscoverPieceKind)[keyof typeof DiscoverPieceKind];
+
+/**
+ * How a piece was shared — native PG enum `share_channel` (a closed, stable
+ * domain, docs 04 §1.7). Phase 1 tracks the share COUNT only; there is no
+ * analytics dashboard yet (E7 social scope, ADR §10):
+ * - `internal`  — reshared inside Qalam,
+ * - `external`  — sent to an external app/social network,
+ * - `copy_link` — the canonical URL was copied to the clipboard.
+ */
+export const ShareChannel = {
+  Internal: 'internal',
+  External: 'external',
+  CopyLink: 'copy_link',
+} as const;
+export type ShareChannel = (typeof ShareChannel)[keyof typeof ShareChannel];
