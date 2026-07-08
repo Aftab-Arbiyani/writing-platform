@@ -213,6 +213,8 @@ export class PiecesService {
       );
       await this.profiles.adjustPublishedCount(ownerId, -1);
     });
+    // E10: analytics tracks pieces archived per writer.
+    await this.events.emit(DomainEventType.PieceArchived, { pieceId: id, authorId: ownerId });
     return this.getOwn(id, ownerId);
   }
 

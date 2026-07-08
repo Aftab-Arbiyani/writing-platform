@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import type { ShareChannel } from '@qalam/shared';
 
 import { TransactionRunner } from '../../common/database/transaction-runner';
+import { DomainEventBus } from '../../common/events/domain-event-bus';
+import { DomainEventType } from '../../common/events/domain-events';
 import { PiecesService } from '../pieces/pieces.service';
 import type { ShareResponseDto } from './dto/share.dto';
 import { PieceStatsRepository } from './piece-stats.repository';
@@ -21,6 +23,7 @@ export class SharesService {
     private readonly pieceStats: PieceStatsRepository,
     private readonly pieces: PiecesService,
     private readonly transactions: TransactionRunner,
+    private readonly events: DomainEventBus,
   ) {}
 
   async share(
@@ -28,11 +31,18 @@ export class SharesService {
     userId: string | null,
     channel: ShareChannel,
   ): Promise<ShareResponseDto> {
-    await this.pieces.getEngageablePiece(pieceId, userId);
+    const piece = await this.pieces.getEngageablePiece(pieceId, userId);
     const counts = await this.transactions.run(async (manager) => {
       await this.shares.create({ userId, pieceId, channel }, manager);
       await this.pieceStats.increment(pieceId, { shares: 1 }, manager);
       return this.pieceStats.getCounts(pieceId, manager);
+    });
+    // E10: analytics tracks the per-channel share breakdown.
+    await this.events.emit(DomainEventType.ShareCreated, {
+      pieceId,
+      pieceAuthorId: piece.authorId,
+      actorId: userId,
+      channel,
     });
     return { totalShares: counts.shares };
   }

@@ -17,6 +17,7 @@
 import { Module } from '@nestjs/common';
 
 import { CommonModule } from './common/common.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { AppConfigModule } from './config/config.module';
 import { DatabaseModule } from './database/database.module';
 import { HealthModule } from './health/health.module';
@@ -55,6 +56,7 @@ import { RedisModule } from './redis/redis.module';
     FeedModule,
     SearchModule,
     NotificationsModule,
+    AnalyticsModule,
   ],
 })
 export class AppModule {}

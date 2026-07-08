@@ -118,13 +118,23 @@ export class ReactionsService {
   // ── bookmarks (private) ────────────────────────────────────────────────────
 
   async bookmark(pieceId: string, userId: string): Promise<BookmarkResponseDto> {
-    await this.pieces.getEngageablePiece(pieceId, userId);
-    await this.transactions.run(async (manager) => {
-      if (!(await this.reactions.hasBookmarked(userId, pieceId, manager))) {
-        await this.reactions.insertBookmark(userId, pieceId, manager);
-        await this.pieceStats.increment(pieceId, { bookmarks: 1 }, manager);
+    const piece = await this.pieces.getEngageablePiece(pieceId, userId);
+    const added = await this.transactions.run(async (manager) => {
+      if (await this.reactions.hasBookmarked(userId, pieceId, manager)) {
+        return false;
       }
+      await this.reactions.insertBookmark(userId, pieceId, manager);
+      await this.pieceStats.increment(pieceId, { bookmarks: 1 }, manager);
+      return true;
     });
+    // E10: feed analytics on a NEW bookmark (idempotent repeats are no-ops).
+    if (added) {
+      await this.events.emit(DomainEventType.BookmarkAdded, {
+        pieceId,
+        pieceAuthorId: piece.authorId,
+        actorId: userId,
+      });
+    }
     return { bookmarked: true };
   }
 

@@ -2,6 +2,7 @@ import { ShareChannel } from '@qalam/shared';
 import type { EntityManager } from 'typeorm';
 
 import type { TransactionRunner } from '../../common/database/transaction-runner';
+import type { DomainEventBus } from '../../common/events/domain-event-bus';
 import type { PiecesService } from '../pieces/pieces.service';
 import type { PieceStatsRepository } from './piece-stats.repository';
 import type { SharesRepository } from './shares.repository';
@@ -24,12 +25,13 @@ function build() {
       shares: 3,
     }),
   };
-  const pieces = { getEngageablePiece: jest.fn().mockResolvedValue({ id: 'p1' }) };
+  const pieces = { getEngageablePiece: jest.fn().mockResolvedValue({ id: 'p1', authorId: 'a1' }) };
   const service = new SharesService(
     shares as unknown as SharesRepository,
     pieceStats as unknown as PieceStatsRepository,
     pieces as unknown as PiecesService,
     tx,
+    { emit: jest.fn().mockResolvedValue(undefined) } as unknown as DomainEventBus,
   );
   return { service, shares, pieceStats };
 }

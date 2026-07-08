@@ -1,4 +1,4 @@
-import type { FollowStatus } from '@qalam/shared';
+import type { FollowStatus, ShareChannel } from '@qalam/shared';
 
 /**
  * Internal domain events (E9). A decoupling seam: feature modules EMIT these
@@ -21,6 +21,12 @@ export const DomainEventType = {
   ReactionCreated: 'reaction.created',
   PieceResponseCreated: 'piece.response.created',
   PiecePublished: 'piece.published',
+  // Analytics (E10) — additive; existing consumers ignore what they don't subscribe to.
+  PieceArchived: 'piece.archived',
+  PieceViewed: 'piece.viewed',
+  ReadCompleted: 'read.completed',
+  BookmarkAdded: 'bookmark.added',
+  ShareCreated: 'share.created',
 } as const;
 export type DomainEventType = (typeof DomainEventType)[keyof typeof DomainEventType];
 
@@ -72,6 +78,45 @@ export interface PiecePublishedEvent {
   authorId: string;
 }
 
+/** A published piece was archived (writer analytics). */
+export interface PieceArchivedEvent {
+  pieceId: string;
+  authorId: string;
+}
+
+/** A piece was viewed (analytics ingest). `viewerKey` de-dupes anon + auth viewers. */
+export interface PieceViewedEvent {
+  pieceId: string;
+  authorId: string;
+  viewerId: string | null;
+  viewerKey: string;
+  isAuthenticated: boolean;
+}
+
+/** A read session finished, with reported dwell + scroll completion (analytics). */
+export interface ReadCompletedEvent {
+  pieceId: string;
+  authorId: string;
+  readerId: string | null;
+  durationSeconds: number;
+  completionPct: number;
+}
+
+/** A piece was bookmarked (analytics; distinct from ReactionCreated like/clap). */
+export interface BookmarkAddedEvent {
+  pieceId: string;
+  pieceAuthorId: string;
+  actorId: string;
+}
+
+/** A piece was shared through a channel (analytics share breakdown). */
+export interface ShareCreatedEvent {
+  pieceId: string;
+  pieceAuthorId: string;
+  actorId: string | null;
+  channel: ShareChannel;
+}
+
 /** Maps each event name to its payload type (compile-time safety on emit/on). */
 export interface DomainEventMap {
   [DomainEventType.UserFollowed]: UserFollowedEvent;
@@ -80,4 +125,9 @@ export interface DomainEventMap {
   [DomainEventType.ReactionCreated]: ReactionCreatedEvent;
   [DomainEventType.PieceResponseCreated]: PieceResponseCreatedEvent;
   [DomainEventType.PiecePublished]: PiecePublishedEvent;
+  [DomainEventType.PieceArchived]: PieceArchivedEvent;
+  [DomainEventType.PieceViewed]: PieceViewedEvent;
+  [DomainEventType.ReadCompleted]: ReadCompletedEvent;
+  [DomainEventType.BookmarkAdded]: BookmarkAddedEvent;
+  [DomainEventType.ShareCreated]: ShareCreatedEvent;
 }
