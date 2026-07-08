@@ -39,6 +39,37 @@ export const Role = {
 } as const;
 export type Role = (typeof Role)[keyof typeof Role];
 
+/**
+ * Role hierarchy ranks (docs 04 §3.8): guards compare ranks, not names, so
+ * `admin` satisfies `@Roles(Moderator)`. Kept beside the enum as the single
+ * source for the seeded `roles.rank` column.
+ */
+export const ROLE_RANK: Record<Role, number> = {
+  user: 0,
+  moderator: 50,
+  admin: 80,
+  super_admin: 100,
+};
+
+/** Account lifecycle — native PG enum `user_status` (docs 04 §1.7, §3.1). */
+export const UserStatus = {
+  Active: 'active',
+  Suspended: 'suspended',
+  Deactivated: 'deactivated',
+} as const;
+export type UserStatus = (typeof UserStatus)[keyof typeof UserStatus];
+
+/**
+ * External identity providers — native PG enum `auth_provider` (docs 04 §3.1).
+ * Password sign-in is represented by `users.password_hash`, not an identity row.
+ * Apple is deferred (Phase 2) but the enum value is reserved (docs 13 §3.4).
+ */
+export const AuthProvider = {
+  Google: 'google',
+  Apple: 'apple',
+} as const;
+export type AuthProvider = (typeof AuthProvider)[keyof typeof AuthProvider];
+
 /** In-app notification kinds (in-app only in Phase 1, ADR §10). */
 export const NotificationType = {
   Follow: 'follow',
@@ -67,3 +98,25 @@ export const TextDirection = {
   Rtl: 'rtl',
 } as const;
 export type TextDirection = (typeof TextDirection)[keyof typeof TextDirection];
+
+/**
+ * Follow-edge state (native PG enum `follow_status`). A `pending` row is a follow
+ * request awaiting a private account's approval; `accepted` is an active follow
+ * (docs 04 §3.6 — the pending flag added when approved-follows ship, i.e. E2).
+ */
+export const FollowStatus = {
+  Pending: 'pending',
+  Accepted: 'accepted',
+} as const;
+export type FollowStatus = (typeof FollowStatus)[keyof typeof FollowStatus];
+
+/**
+ * Server-persisted theme preference (native PG enum `theme_preference`). The
+ * client still drives rendering (docs 12); this syncs the choice across devices.
+ */
+export const ThemePreference = {
+  Light: 'light',
+  Dark: 'dark',
+  System: 'system',
+} as const;
+export type ThemePreference = (typeof ThemePreference)[keyof typeof ThemePreference];

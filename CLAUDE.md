@@ -11,14 +11,25 @@ wins: **`docs/00_ArchitectureDecisions.md`**.
 (E1–E10) are defined in `docs/18_DevelopmentRoadmap.md` and are being built in dependency
 order.
 
-- **E1 — Auth & Identity:** foundation laid — backend infra modules (config, logger,
-  database, redis, queue, health, common), the shared `common/` building blocks, and the
-  **auth skeleton** (module, controller/service stubs, JWT strategy, guards, decorators,
-  DTOs). Still pending in E1: `users`/`auth_identities` entities + migration, and the
-  register/login/refresh-rotation/Google/reset **logic** (the service methods currently
-  throw `NotImplementedException`), plus rate-limit enforcement (the guard is an inert
-  skeleton).
-- **E2–E10:** not started.
+- **E1 — Auth & Identity: implemented.** Entities (`users`, `auth_identities`, `roles`,
+  `user_roles`, `verification_tokens`, `password_reset_tokens`) + migration + roles seed;
+  email register/login/logout(+all)/refresh with **rotating tokens + reuse detection**
+  (Redis DB 3), email verification + resend, forgot/reset password, change password,
+  **Google OAuth** (code+PKCE), Argon2id, RBAC (roles + rank guard), guards
+  (`JwtAuthGuard` global default-deny, `Roles`, `Optional`, `Verified`), decorators, and a
+  real Redis sliding-window rate limiter (DB 2). Auth events log via the Pino taxonomy.
+  Deferred within E1: the `audit_logs` **table** + super-admin bootstrap (both E10-adjacent).
+- **E2 — Profiles & Follow: implemented.** `profiles` (get-or-create, bio/links/genres/
+  language/privacy), `user_settings` (theme/default-visibility/notification prefs), `follows`
+  with a `status` state machine (public → accepted, private → pending request +
+  accept/reject/cancel), transactional follower/following counts, `taxonomy` module
+  (languages/genres reference + seed), `media` module (synchronous S3 + `sharp` avatar/cover
+  — no background job), profile search indexing (tsvector + trigram, no API), cursor-paginated
+  follower/following/request lists, and the private-account visibility teaser (docs 13 §4.2).
+  Note: `penName` still absent from auth registration — profiles own it (get-or-create).
+- **E3–E10:** not started (Editor, Publishing, Reading, Feeds, Social, Search,
+  Notifications, Admin). Engagement counts on the profile (reads/likes/claps/bookmarks/
+  responses) return 0 until those epics ship.
 
 Do not implement Phase 2 concerns (AI, payments, Apple login) anywhere.
 

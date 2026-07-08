@@ -5,18 +5,17 @@ import type { RateLimitTierName } from '@qalam/shared';
 import { RATE_LIMIT_KEY } from '../constants/metadata.constants';
 
 /**
- * Declares the rate-limit tier for a route (docs 05 §8). Tiers are defined in
- * `@qalam/shared` (`RATE_LIMIT_TIERS`); the `RateLimitGuard` reads this metadata
- * and enforces the sliding window.
+ * Declares one or more rate-limit tiers for a route (docs 05 §8, docs 13 §8).
+ * Tiers are defined in `@qalam/shared` (`RATE_LIMIT_TIERS`); `RateLimitGuard`
+ * enforces each with a Redis sliding window (DB 2). Multiple tiers model
+ * dual-window limits, e.g. login is 5/min **and** 20/hour:
  *
  * ```ts
- * @RateLimit('authLogin')
+ * @RateLimit('authLogin', 'authLoginHourly')
  * @Post('login')
  * login() { … }
  * ```
- *
- * Enforcement lands in Epic 1 task 8 — see `RateLimitGuard`.
  */
-export function RateLimit(tier: RateLimitTierName): CustomDecorator<string> {
-  return SetMetadata(RATE_LIMIT_KEY, tier);
+export function RateLimit(...tiers: RateLimitTierName[]): CustomDecorator<string> {
+  return SetMetadata(RATE_LIMIT_KEY, tiers);
 }

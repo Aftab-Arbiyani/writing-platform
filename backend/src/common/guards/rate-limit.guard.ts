@@ -1,44 +1,137 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import type { CanActivate, ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { RATE_LIMIT_TIERS } from '@qalam/shared';
-import type { RateLimitTierName } from '@qalam/shared';
+import type { RateLimitTier, RateLimitTierName } from '@qalam/shared';
+import type { Request, Response } from 'express';
+import type { Redis } from 'ioredis';
+import { randomUUID } from 'node:crypto';
 
+import { RATE_LIMIT_HEADERS } from '../constants/http.constants';
 import { RATE_LIMIT_KEY } from '../constants/metadata.constants';
+import { RateLimitedException } from '../exceptions/rate-limited.exception';
+import { RedisService } from '../../redis/redis.service';
+
+interface TierResult {
+  limit: number;
+  remaining: number;
+  resetSeconds: number;
+  retryAfter: number;
+  breached: boolean;
+}
 
 /**
- * SKELETON (Epic 1 task 8) — not yet enforcing, and deliberately NOT registered
- * as a global guard, so it can never create a false sense of security. It exists
- * so the `@RateLimit()` decorator, tier vocabulary (`@qalam/shared`), and Redis
- * DB 2 wiring (`RedisModule`) are all in place for the real implementation.
+ * Redis sliding-window rate limiting (docs 05 §8, docs 13 §8) on Redis DB 2.
+ * Exact sorted-set algorithm (no fixed-window boundary bursts). Applied per
+ * route via `@RateLimit(...)`; keyed per the tier's `keyBy` (user id when
+ * authenticated, else client IP, plus email for auth tiers).
  *
- * The real implementation (docs 05 §8) will:
- *   - resolve the key from the tier's `keyBy` (authenticated user id, else IP),
- *   - run a Redis sliding-window counter on DB 2 (`RedisService.getClient('rateLimit')`),
- *   - set `X-RateLimit-*` headers (`RATE_LIMIT_HEADERS`) on every counted request,
- *   - throw `RATE_LIMITED` (429 + `Retry-After`) on breach.
- *
- * Until then `canActivate` reads the declared tier (proving the wiring) and
- * allows the request unchanged.
+ * Runs before the ValidationPipe, so `request.body` is raw — fine for deriving a
+ * key (email is lowercased; missing = IP-only). Sets `X-RateLimit-*` on every
+ * counted request and `Retry-After` + 429 `RATE_LIMITED` on breach.
  */
 @Injectable()
 export class RateLimitGuard implements CanActivate {
-  private readonly logger = new Logger(RateLimitGuard.name);
+  private readonly redis: Redis;
 
-  constructor(private readonly reflector: Reflector) {}
+  constructor(
+    private readonly reflector: Reflector,
+    private readonly redisService: RedisService,
+  ) {
+    this.redis = this.redisService.getClient('rateLimit');
+  }
 
-  canActivate(context: ExecutionContext): boolean {
-    const tier = this.reflector.getAllAndOverride<RateLimitTierName | undefined>(RATE_LIMIT_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
-
-    if (tier !== undefined) {
-      // TODO(aftab): implement the Redis sliding window (docs 05 §8) — Epic 1 t8.
-      const { max, windowSeconds } = RATE_LIMIT_TIERS[tier];
-      this.logger.debug(`rate-limit tier "${tier}" (${max}/${windowSeconds}s) not yet enforced`);
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const tiers = this.reflector.getAllAndOverride<RateLimitTierName[] | undefined>(
+      RATE_LIMIT_KEY,
+      [context.getHandler(), context.getClass()],
+    );
+    if (tiers === undefined || tiers.length === 0) {
+      return true;
     }
 
+    const request = context.switchToHttp().getRequest<Request>();
+    const response = context.switchToHttp().getResponse<Response>();
+
+    let tightest: TierResult | null = null;
+    let breach: TierResult | null = null;
+
+    for (const name of tiers) {
+      const tier = RATE_LIMIT_TIERS[name];
+      const result = await this.consume(name, tier, request);
+      if (tightest === null || result.remaining < tightest.remaining) {
+        tightest = result;
+      }
+      if (result.breached) {
+        breach = result;
+      }
+    }
+
+    if (tightest !== null) {
+      response.setHeader(RATE_LIMIT_HEADERS.limit, tightest.limit);
+      response.setHeader(RATE_LIMIT_HEADERS.remaining, Math.max(0, tightest.remaining));
+      response.setHeader(RATE_LIMIT_HEADERS.reset, tightest.resetSeconds);
+    }
+    if (breach !== null) {
+      response.setHeader('Retry-After', breach.retryAfter);
+      throw new RateLimitedException();
+    }
     return true;
+  }
+
+  private async consume(
+    name: RateLimitTierName,
+    tier: RateLimitTier,
+    request: Request,
+  ): Promise<TierResult> {
+    const key = `ratelimit:${name}:${this.resolveScope(tier, request)}`;
+    const now = Date.now();
+    const windowMs = tier.windowSeconds * 1000;
+    const member = `${now}-${randomUUID()}`;
+
+    const results = await this.redis
+      .multi()
+      .zremrangebyscore(key, 0, now - windowMs)
+      .zadd(key, now, member)
+      .zcard(key)
+      .pexpire(key, windowMs)
+      .exec();
+
+    const count = Number(results?.[2]?.[1] ?? 0);
+    const breached = count > tier.max;
+
+    let retryAfter = tier.windowSeconds;
+    if (breached) {
+      const oldest = await this.redis.zrange(key, 0, 0, 'WITHSCORES');
+      const oldestScore = Number(oldest[1] ?? now);
+      retryAfter = Math.max(1, Math.ceil((oldestScore + windowMs - now) / 1000));
+    }
+
+    return {
+      limit: tier.max,
+      remaining: tier.max - count,
+      resetSeconds: Math.ceil((now + windowMs) / 1000),
+      retryAfter,
+      breached,
+    };
+  }
+
+  private resolveScope(tier: RateLimitTier, request: Request): string {
+    const ip = request.ip ?? request.socket.remoteAddress ?? 'unknown';
+    const userId = (request as Request & { user?: { id?: string } }).user?.id;
+
+    switch (tier.keyBy) {
+      case 'ip':
+        return `ip:${ip}`;
+      case 'user':
+        return userId !== undefined ? `user:${userId}` : `ip:${ip}`;
+      case 'user-or-ip':
+        return userId !== undefined ? `user:${userId}` : `ip:${ip}`;
+      case 'ip+email': {
+        const body = request.body as { email?: unknown };
+        const email = typeof body?.email === 'string' ? body.email.toLowerCase() : 'anon';
+        return `ip:${ip}:email:${email}`;
+      }
+    }
   }
 }

@@ -1,16 +1,30 @@
+import type { Role } from '@qalam/shared';
+
 /**
- * Claims carried by a Qalam JWT access token (ADR §3). Signed by the auth
- * module (Epic 1 t4) and verified by `JwtStrategy`. `sub` is the user id;
- * standard `iat`/`exp` are added by `@nestjs/jwt` at sign time.
- *
- * Kept minimal on purpose: authorization data (roles) is resolved server-side
- * from the RBAC tables (E10), not trusted from the token.
+ * Access-token claims (docs 13 §3.2) — `sub`, `role` (RBAC cache; DB is truth on
+ * admin routes), `sv` (session version, §3.6), `jti`, plus standard `iat`/`exp`.
+ * **Nothing else** — no email, username, or profile data ever goes in a JWT
+ * (§3.2, and Sentry/Pino scrubbing depends on it).
  */
-export interface JwtPayload {
-  /** Subject — the user's id. */
+export interface AccessTokenPayload {
   sub: string;
-  /** Issued-at (unix seconds), set by the signer. */
+  role: Role;
+  /** Session version — mismatch = revoked by "log out everywhere" (§3.6). */
+  sv: number;
+  jti: string;
   iat?: number;
-  /** Expiry (unix seconds), set by the signer. */
+  exp?: number;
+}
+
+/**
+ * Refresh-token claims (docs 13 §3.2). The token is a signed JWT; its liveness
+ * is tracked statefully in Redis DB 3 by `jti`/`familyId` (rotation + reuse
+ * detection). Signed with `JWT_REFRESH_SECRET` (separate from access).
+ */
+export interface RefreshTokenPayload {
+  sub: string;
+  jti: string;
+  familyId: string;
+  iat?: number;
   exp?: number;
 }

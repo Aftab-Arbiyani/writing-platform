@@ -23,13 +23,20 @@ if (!databaseUrl) {
   throw new Error('DATABASE_URL is not set — copy .env.example to .env first.');
 }
 
+// Select TS globs under ts-node (CLI) and compiled JS globs in a built image —
+// never both, or a compiled `dist/` would double-register every migration/entity
+// ("Duplicate migrations"). Keyed on how this data source itself was loaded.
+const isTsRuntime = __filename.endsWith('.ts');
+const entityGlob = isTsRuntime ? 'src/**/*.entity.ts' : 'dist/**/*.entity.js';
+const migrationGlob = isTsRuntime
+  ? 'src/database/migrations/*.ts'
+  : 'dist/database/migrations/*.js';
+
 export default new DataSource({
   type: 'postgres',
   url: databaseUrl,
-  // ts globs serve the CLI via ts-node; dist globs serve compiled contexts
-  // (e.g. running migrations from a built image during deploy).
-  entities: ['src/**/*.entity.ts', 'dist/**/*.entity.js'],
-  migrations: ['src/database/migrations/*.ts', 'dist/database/migrations/*.js'],
+  entities: [entityGlob],
+  migrations: [migrationGlob],
   namingStrategy: new SnakeNamingStrategy(),
   // Migrations only — never schema sync, in any environment (ADR §4).
   synchronize: false,

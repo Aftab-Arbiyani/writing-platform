@@ -1,9 +1,14 @@
+import type { Role } from '@qalam/shared';
+
 /**
- * The authenticated principal attached to `request.user` by `JwtStrategy`, read
- * via the `@CurrentUser()` decorator. Grows in Phase 1 (roles for RBAC, etc.);
- * kept to the id for the foundation since no user store exists yet.
+ * The principal `JwtStrategy` attaches to `request.user`, read via
+ * `@CurrentUser()`. Populated from the **access-token claims only** (stateless
+ * hot path, docs 13 §3.2) — no DB load per request. Data-aware checks
+ * (verification, suspension, ownership) that need the row live in guards/services
+ * that load the user explicitly (e.g. `VerifiedUserGuard`).
  */
 export interface AuthenticatedUser {
-  /** The user's id (from the access token's `sub` claim). */
   id: string;
+  role: Role;
+  sessionVersion: number;
 }

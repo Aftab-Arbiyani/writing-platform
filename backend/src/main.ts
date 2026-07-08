@@ -11,6 +11,7 @@ import type { ConfigType } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import compression from 'compression';
+import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { Logger } from 'nestjs-pino';
 
@@ -45,6 +46,9 @@ async function bootstrap(): Promise<void> {
   // Response compression. nginx also compresses in prod (docs 15); enabling it
   // here keeps dev + non-nginx deploys covered without harming the proxied path.
   app.use(compression());
+
+  // Parses the httpOnly refresh cookie for web clients (docs 13 §3.3).
+  app.use(cookieParser());
 
   // CORS: explicit origin allowlist (reader/writer app + admin). credentials
   // is true because web auth uses an httpOnly refresh cookie (ADR §3).

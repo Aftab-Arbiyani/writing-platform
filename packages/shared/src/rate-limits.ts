@@ -33,15 +33,21 @@ export interface RateLimitTier {
  * `authLoginHourly` tier applied alongside it when the guard lands (Epic 1 t8).
  */
 export const RATE_LIMIT_TIERS = {
+  // Auth-critical (docs 13 §8): login is dual-window (5/min AND 20/hour).
   authLogin: { windowSeconds: 60, max: 5, keyBy: 'ip+email' },
   authLoginHourly: { windowSeconds: 3600, max: 20, keyBy: 'ip+email' },
   authRegister: { windowSeconds: 3600, max: 3, keyBy: 'ip' },
-  authForgotPassword: { windowSeconds: 3600, max: 3, keyBy: 'ip+email' },
-  authRefresh: { windowSeconds: 3600, max: 60, keyBy: 'user' },
-  write: { windowSeconds: 60, max: 60, keyBy: 'user' },
-  engagement: { windowSeconds: 60, max: 120, keyBy: 'user' },
-  search: { windowSeconds: 60, max: 60, keyBy: 'user-or-ip' },
-  read: { windowSeconds: 60, max: 600, keyBy: 'user-or-ip' },
+  // Forgot + reset share one tier (docs 13 §8): 3/hour, keyed IP + account.
+  authPasswordReset: { windowSeconds: 3600, max: 3, keyBy: 'ip+email' },
+  // Verification email resend — email-sending, treated like password reset.
+  authResendVerification: { windowSeconds: 3600, max: 3, keyBy: 'ip+email' },
+  // Refresh (docs 13 §8): 30/hour; keyed per IP here (family id isn't known
+  // pre-handler; still bounds abuse — the family/jti check is the real control).
+  authRefresh: { windowSeconds: 3600, max: 30, keyBy: 'ip' },
+  write: { windowSeconds: 60, max: 30, keyBy: 'user' },
+  engagement: { windowSeconds: 60, max: 60, keyBy: 'user' },
+  search: { windowSeconds: 60, max: 30, keyBy: 'user-or-ip' },
+  read: { windowSeconds: 60, max: 300, keyBy: 'user-or-ip' },
 } as const satisfies Record<string, RateLimitTier>;
 
 /** Name of a defined rate-limit tier. */

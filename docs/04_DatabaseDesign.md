@@ -202,6 +202,23 @@ FKs: none (root aggregate).
 Constraints: `uq_auth_identities_provider_subject (provider, provider_user_id)`,
 `uq_auth_identities_user_provider (user_id, provider)` — one identity per provider per user.
 
+#### `verification_tokens` / `password_reset_tokens` (single-use, added in E1)
+
+Short-lived, single-use auth tokens. Only the **SHA-256 hash** of the token is stored —
+the raw token lives only in the emailed link (docs 13 §3, §13 redaction). Rotating
+refresh tokens are **not** here (they are stateful in Redis DB 3, docs 13 §3.2); these two
+are durable rows so a re-issue can invalidate prior tokens and issuance is auditable.
+
+| Column       | Type          | Null | Default    | Constraints / notes                                        |
+| ------------ | ------------- | ---- | ---------- | ---------------------------------------------------------- |
+| `id`         | `uuid`        | no   | app UUIDv7 | PK                                                         |
+| `user_id`    | `uuid`        | no   | —          | FK → `users` **ON DELETE CASCADE**                         |
+| `token_hash` | `text`        | no   | —          | `uq_*_tokens_hash` — SHA-256 of the raw token, never plain |
+| `expires_at` | `timestamptz` | no   | —          | 24 h (verification) / 60 min (reset)                       |
+| `used_at`    | `timestamptz` | yes  | `NULL`     | non-null = consumed (single-use)                           |
+
+Indexes: `idx_*_tokens_user (user_id)`. Both hard-delete (no recoverability need).
+
 #### `profiles`
 
 | Column                | Type           | Null | Default    | Constraints / notes                                                              |
@@ -222,6 +239,20 @@ Constraints: `uq_auth_identities_provider_subject (provider, provider_user_id)`,
 
 Why a separate table from `users`: credentials vs. presentation change at different rates,
 and the hot auth path (`users`) stays narrow.
+
+**E3 additions to `profiles`:** `social_links jsonb DEFAULT '{}'` (platform → url map) and a
+generated `search_vector tsvector` over `pen_name` (A) + `bio` (B) via `immutable_unaccent`
+
+- `simple` config (docs §6), with `idx_profiles_search` (GIN) and `idx_profiles_pen_name_trgm`
+  (trigram) — search prep only, no search API yet. `idx_users_username_trgm` is also added.
+
+**E3 new tables:**
+
+- **`user_settings`** (1:1 satellite, PK = `user_id` → users CASCADE): `theme
+theme_preference`, `default_piece_visibility visibility`, `notification_preferences jsonb`
+  (schema now; sending is E9). Account privacy + compose language stay on `profiles`.
+- **`profile_genres`** (pure join, PK `(profile_id, genre_id)`): a writer's selected genres.
+  FKs `profile_id` → profiles CASCADE, `genre_id` → genres RESTRICT (reference data).
 
 ### 3.2 Content
 
@@ -502,11 +533,18 @@ per language, and one global prompt per day.
 
 #### `follows`
 
-| Column                                                                                    | Type   | Null | Default    | Constraints / notes                |
-| ----------------------------------------------------------------------------------------- | ------ | ---- | ---------- | ---------------------------------- |
-| `id`                                                                                      | `uuid` | no   | app UUIDv7 | PK                                 |
-| `follower_id`                                                                             | `uuid` | no   | —          | FK → `users` **ON DELETE CASCADE** |
-| `followee_id`                                                                             | `uuid` | no   | —          | FK → `users` **ON DELETE CASCADE** |
+**E3 update:** the anticipated pending flag is now live — `status follow_status
+('pending' | 'accepted')` was added (default `accepted`); a `pending` row is a follow
+request awaiting a private account's approval. This makes `follows` mutable, so it also
+gains `updated_at`. Index `idx_follows_pending (followee_id, status)` serves the
+incoming-request queue.
+
+| Column                                                                                    | Type            | Null | Default      | Constraints / notes                    |
+| ----------------------------------------------------------------------------------------- | --------------- | ---- | ------------ | -------------------------------------- |
+| `id`                                                                                      | `uuid`          | no   | app UUIDv7   | PK                                     |
+| `follower_id`                                                                             | `uuid`          | no   | —            | FK → `users` **ON DELETE CASCADE**     |
+| `followee_id`                                                                             | `uuid`          | no   | —            | FK → `users` **ON DELETE CASCADE**     |
+| `status`                                                                                  | `follow_status` | no   | `'accepted'` | `pending` (request) \| `accepted` (E3) |
 | `uq_follows (follower_id, followee_id)` · `chk_follows_not_self                           |
 | CHECK (follower_id <> followee_id)`·`idx_follows_followee (followee_id, created_at DESC)` |
 | (followers list + Following-feed fan-in). Private-account follow _requests_ are a Phase 1 |

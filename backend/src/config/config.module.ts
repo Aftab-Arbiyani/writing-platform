@@ -2,9 +2,11 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 
 import { appConfig } from './app.config';
+import { authConfig } from './auth.config';
 import { databaseConfig } from './database.config';
 import { validateEnv } from './env.schema';
 import { jwtConfig } from './jwt.config';
+import { mailConfig } from './mail.config';
 import { redisConfig } from './redis.config';
 import { storageConfig } from './storage.config';
 
@@ -24,7 +26,15 @@ import { storageConfig } from './storage.config';
       isGlobal: true,
       cache: true,
       validate: validateEnv,
-      load: [appConfig, databaseConfig, redisConfig, jwtConfig, storageConfig],
+      load: [
+        appConfig,
+        authConfig,
+        databaseConfig,
+        redisConfig,
+        jwtConfig,
+        mailConfig,
+        storageConfig,
+      ],
     }),
   ],
 })

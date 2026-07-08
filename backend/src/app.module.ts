@@ -21,7 +21,11 @@ import { AppConfigModule } from './config/config.module';
 import { DatabaseModule } from './database/database.module';
 import { HealthModule } from './health/health.module';
 import { AppLoggerModule } from './logger/logger.module';
+import { MailModule } from './mail/mail.module';
+import { MediaModule } from './media/media.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { TaxonomyModule } from './modules/taxonomy/taxonomy.module';
+import { UsersModule } from './modules/users/users.module';
 import { QueueModule } from './queue/queue.module';
 import { RedisModule } from './redis/redis.module';
 
@@ -33,8 +37,12 @@ import { RedisModule } from './redis/redis.module';
     DatabaseModule,
     RedisModule,
     QueueModule,
+    MailModule,
+    MediaModule,
     HealthModule,
+    TaxonomyModule,
     AuthModule,
+    UsersModule,
   ],
 })
 export class AppModule {}

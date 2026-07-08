@@ -11,10 +11,26 @@ export const ERROR_CODES = {
   AUTH_INVALID_CREDENTIALS: 'AUTH_INVALID_CREDENTIALS',
   AUTH_TOKEN_EXPIRED: 'AUTH_TOKEN_EXPIRED',
   AUTH_TOKEN_INVALID: 'AUTH_TOKEN_INVALID',
-  /** Rotating-refresh reuse detected — the whole token family is revoked (ADR §3). */
+  /** Rotating-refresh reuse detected — the whole token family is revoked (docs 13 §3.2). */
   AUTH_REFRESH_REUSED: 'AUTH_REFRESH_REUSED',
+  /** Session invalidated by "log out everywhere" (session-version bump, docs 13 §3.6). */
+  AUTH_SESSION_REVOKED: 'AUTH_SESSION_REVOKED',
   AUTH_EMAIL_TAKEN: 'AUTH_EMAIL_TAKEN',
+  /** Action requires a verified email (VerifiedUserGuard, docs 05 §3). */
+  AUTH_EMAIL_UNVERIFIED: 'AUTH_EMAIL_UNVERIFIED',
+  /** Verification token missing / expired / already used. */
+  AUTH_VERIFICATION_INVALID: 'AUTH_VERIFICATION_INVALID',
+  /** Resend/verify attempted on an already-verified account. */
+  AUTH_EMAIL_ALREADY_VERIFIED: 'AUTH_EMAIL_ALREADY_VERIFIED',
+  /** Password-reset token missing / expired / already used. */
+  AUTH_RESET_INVALID: 'AUTH_RESET_INVALID',
+  /** Password fails policy (length or breached-list, docs 13 §3.1). */
+  AUTH_PASSWORD_WEAK: 'AUTH_PASSWORD_WEAK',
+  /** Change-password: supplied current password did not match. */
+  AUTH_CURRENT_PASSWORD_INVALID: 'AUTH_CURRENT_PASSWORD_INVALID',
   AUTH_OAUTH_FAILED: 'AUTH_OAUTH_FAILED',
+  /** OAuth `state` mismatch / expired (CSRF nonce, docs 13 §3.4). */
+  AUTH_OAUTH_STATE_INVALID: 'AUTH_OAUTH_STATE_INVALID',
   AUTH_ACCOUNT_SUSPENDED: 'AUTH_ACCOUNT_SUSPENDED',
 
   // ── Users / profiles ────────────────────────────────────────────────────
@@ -24,6 +40,18 @@ export const ERROR_CODES = {
   USER_USERNAME_IMMUTABLE: 'USER_USERNAME_IMMUTABLE',
   USER_PRIVATE_ACCOUNT: 'USER_PRIVATE_ACCOUNT',
   USER_CANNOT_FOLLOW_SELF: 'USER_CANNOT_FOLLOW_SELF',
+  /** Editing a profile that isn't yours. */
+  PROFILE_FORBIDDEN: 'PROFILE_FORBIDDEN',
+  /** Selected language is unknown or inactive (taxonomy). */
+  LANGUAGE_INVALID: 'LANGUAGE_INVALID',
+  /** One or more selected genres are unknown or inactive (taxonomy). */
+  GENRE_INVALID: 'GENRE_INVALID',
+
+  // ── Follow graph ──────────────────────────────────────────────────────────
+  FOLLOW_ALREADY_EXISTS: 'FOLLOW_ALREADY_EXISTS',
+  FOLLOW_REQUEST_PENDING: 'FOLLOW_REQUEST_PENDING',
+  FOLLOW_NOT_FOUND: 'FOLLOW_NOT_FOUND',
+  FOLLOW_REQUEST_NOT_FOUND: 'FOLLOW_REQUEST_NOT_FOUND',
 
   // ── Pieces (publishing) ─────────────────────────────────────────────────
   PIECE_NOT_FOUND: 'PIECE_NOT_FOUND',

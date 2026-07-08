@@ -3,6 +3,7 @@ import { ApiOkResponse, ApiServiceUnavailableResponse, ApiTags } from '@nestjs/s
 import { HealthCheck, HealthCheckService, TypeOrmHealthIndicator } from '@nestjs/terminus';
 import type { HealthCheckResult } from '@nestjs/terminus';
 
+import { Public } from '../modules/auth/decorators/public.decorator';
 import { RedisHealthIndicator } from './indicators/redis.health-indicator';
 
 /**
@@ -17,6 +18,7 @@ import { RedisHealthIndicator } from './indicators/redis.health-indicator';
  *   balancer stops routing to this instance.
  */
 @ApiTags('health')
+@Public()
 @Controller({ path: 'health', version: VERSION_NEUTRAL })
 export class HealthController {
   constructor(

@@ -3,9 +3,9 @@ import { ConfigType } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 
-import { jwtConfig } from '../../../config/jwt.config';
+import { authConfig } from '../../../config/auth.config';
 import type { AuthenticatedUser } from '../interfaces/authenticated-user.interface';
-import type { JwtPayload } from '../interfaces/jwt-payload.interface';
+import type { AccessTokenPayload } from '../interfaces/jwt-payload.interface';
 
 /**
  * Verifies the `Authorization: Bearer <jwt>` access token's signature and
@@ -18,16 +18,22 @@ import type { JwtPayload } from '../interfaces/jwt-payload.interface';
  */
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(@Inject(jwtConfig.KEY) config: ConfigType<typeof jwtConfig>) {
+  constructor(@Inject(authConfig.KEY) config: ConfigType<typeof authConfig>) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: config.accessSecret,
+      secretOrKey: config.jwt.accessSecret,
+      issuer: config.jwt.issuer,
     });
   }
 
-  validate(payload: JwtPayload): AuthenticatedUser {
-    // TODO(aftab): reject suspended/deleted users via UsersService (Epic 1).
-    return { id: payload.sub };
+  /**
+   * Runs after signature + expiry verification. Stateless (docs 13 §3.2): no DB
+   * hit on the hot path — the principal is built from claims. Status/verification
+   * are enforced where it matters (login/refresh issuance; `VerifiedUserGuard`),
+   * and suspension takes effect within one access-token TTL (docs 13 §3.6).
+   */
+  validate(payload: AccessTokenPayload): AuthenticatedUser {
+    return { id: payload.sub, role: payload.role, sessionVersion: payload.sv };
   }
 }

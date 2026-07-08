@@ -2,32 +2,24 @@ import { ApiProperty } from '@nestjs/swagger';
 import {
   PASSWORD_MAX,
   PASSWORD_MIN,
-  PEN_NAME_MAX,
-  PEN_NAME_MIN,
   USERNAME_MAX,
   USERNAME_MIN,
   USERNAME_REGEX,
 } from '@qalam/shared';
-import { IsEmail, IsString, Length, Matches, MaxLength, MinLength } from 'class-validator';
+import { IsEmail, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 
 /**
- * `POST /auth/register` body (docs 05 §11.1). Contract + validation only — the
- * registration flow (email verification, Argon2id, username claim) is Epic 1.
+ * `POST /auth/register` body. Contract + validation only.
  *
- * `username` is validated against the shared `USERNAME_REGEX` here; its
- * **permanence** is a persistence-layer invariant (no update path is ever
- * built — ADR §4), not a DTO concern.
+ * `penName` is intentionally absent in E1: it lives on `profiles.pen_name`
+ * (docs 04 §3.1), and profiles are E2 (out of scope). `username` is validated
+ * against the shared `USERNAME_REGEX`; its **permanence** is a persistence
+ * invariant (no update path is ever built — ADR §4), not a DTO concern.
  */
 export class RegisterDto {
   @ApiProperty({ example: 'meera@example.com', format: 'email' })
   @IsEmail()
   email!: string;
-
-  @ApiProperty({ minLength: PASSWORD_MIN, maxLength: PASSWORD_MAX, writeOnly: true })
-  @IsString()
-  @MinLength(PASSWORD_MIN)
-  @MaxLength(PASSWORD_MAX)
-  password!: string;
 
   @ApiProperty({
     example: 'meera_k',
@@ -39,8 +31,14 @@ export class RegisterDto {
   @Matches(USERNAME_REGEX, { message: 'username must match ^[a-z0-9_]{3,30}$' })
   username!: string;
 
-  @ApiProperty({ example: 'Meera', minLength: PEN_NAME_MIN, maxLength: PEN_NAME_MAX })
+  @ApiProperty({
+    minLength: PASSWORD_MIN,
+    maxLength: PASSWORD_MAX,
+    writeOnly: true,
+    description: `Length ${PASSWORD_MIN}–${PASSWORD_MAX}; common passwords are rejected.`,
+  })
   @IsString()
-  @Length(PEN_NAME_MIN, PEN_NAME_MAX)
-  penName!: string;
+  @MinLength(PASSWORD_MIN)
+  @MaxLength(PASSWORD_MAX)
+  password!: string;
 }
