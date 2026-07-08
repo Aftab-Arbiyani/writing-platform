@@ -21,12 +21,14 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
+import { PERMISSIONS } from '@qalam/shared';
 import type { Request } from 'express';
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Public } from '../auth/decorators/public.decorator';
 import { OptionalAuthGuard } from '../auth/guards/optional-auth.guard';
 import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
+import { Permissions } from '../permissions/permissions.decorator';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { MediaKeyResponseDto, ProfileResponseDto } from './dto/profile-response.dto';
 import { ProfileService } from './profile.service';
@@ -55,7 +57,11 @@ export class ProfilesController {
 
   @Patch('me')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Update the current user’s profile (bio, links, genres, privacy, …).' })
+  @Permissions(PERMISSIONS.ProfileUpdate)
+  @ApiOperation({
+    summary:
+      'Update the current user’s profile (bio, links, genres, privacy, …). Requires `profile.update`.',
+  })
   @ApiOkResponse({ type: ProfileResponseDto })
   updateMe(
     @CurrentUser() user: AuthenticatedUser,
@@ -67,6 +73,7 @@ export class ProfilesController {
   @Post('profile/avatar')
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
+  @Permissions(PERMISSIONS.ProfileUpdate)
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: { type: 'object', properties: { file: { type: 'string', format: 'binary' } } },
@@ -86,6 +93,7 @@ export class ProfilesController {
   @Post('profile/cover')
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
+  @Permissions(PERMISSIONS.ProfileUpdate)
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: { type: 'object', properties: { file: { type: 'string', format: 'binary' } } },

@@ -19,9 +19,12 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
+import { PERMISSIONS } from '@qalam/shared';
+
 import { CursorPaginationDto } from '../../common/dto/cursor-pagination.dto';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
+import { Permissions } from '../permissions/permissions.decorator';
 import { CollectionsService } from './collections.service';
 import { AddCollectionPieceDto } from './dto/add-collection-piece.dto';
 import { CollectionPieceItemDto, CollectionResponseDto } from './dto/collection-response.dto';
@@ -35,6 +38,7 @@ import { UpdateCollectionDto } from './dto/update-collection.dto';
 @ApiTags('collections')
 @ApiBearerAuth()
 @Controller('collections')
+@Permissions(PERMISSIONS.CollectionManage)
 export class CollectionsController {
   constructor(private readonly collections: CollectionsService) {}
 

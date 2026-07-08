@@ -176,7 +176,10 @@ describe('Search (e2e)', () => {
 
   describe('GET /search', () => {
     it('returns grouped results for a query', async () => {
-      const res = await api().get('/api/v1/search?q=barish').expect(200);
+      // limit=50 so both target pieces appear regardless of other pieces the
+      // shared test DB has accumulated (the default 5-per-group preview ranks by
+      // relevance, where a tag-only match can be crowded out by title matches).
+      const res = await api().get('/api/v1/search?q=barish&limit=50').expect(200);
       const groups = res.body.data;
       expect(groups).toHaveProperty('writers');
       expect(groups).toHaveProperty('pieces');

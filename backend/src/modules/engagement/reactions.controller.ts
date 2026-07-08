@@ -13,6 +13,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { PERMISSIONS } from '@qalam/shared';
 import type { Request } from 'express';
 
 import { CursorPaginationDto } from '../../common/dto/cursor-pagination.dto';
@@ -20,6 +21,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Public } from '../auth/decorators/public.decorator';
 import { OptionalAuthGuard } from '../auth/guards/optional-auth.guard';
 import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
+import { Permissions } from '../permissions/permissions.decorator';
 import {
   BookmarkItemDto,
   BookmarkResponseDto,
@@ -73,8 +75,11 @@ export class ReactionsController {
 
   @Post('pieces/:id/claps')
   @ApiBearerAuth()
+  @Permissions(PERMISSIONS.ClapCreate)
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Add claps (accumulates up to 50 per user per piece).' })
+  @ApiOperation({
+    summary: 'Add claps (accumulates up to 50 per user per piece). Requires `clap.create`.',
+  })
   @ApiOkResponse({ type: ClapResponseDto })
   clap(
     @CurrentUser() user: AuthenticatedUser,
@@ -99,8 +104,9 @@ export class ReactionsController {
 
   @Post('pieces/:id/bookmarks')
   @ApiBearerAuth()
+  @Permissions(PERMISSIONS.BookmarkManage)
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Bookmark a piece (private; idempotent).' })
+  @ApiOperation({ summary: 'Bookmark a piece (private; idempotent). Requires `bookmark.manage`.' })
   @ApiOkResponse({ type: BookmarkResponseDto })
   bookmark(
     @CurrentUser() user: AuthenticatedUser,
@@ -111,8 +117,9 @@ export class ReactionsController {
 
   @Delete('pieces/:id/bookmarks')
   @ApiBearerAuth()
+  @Permissions(PERMISSIONS.BookmarkManage)
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Remove a bookmark (idempotent).' })
+  @ApiOperation({ summary: 'Remove a bookmark (idempotent). Requires `bookmark.manage`.' })
   async removeBookmark(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id', ParseUUIDPipe) pieceId: string,

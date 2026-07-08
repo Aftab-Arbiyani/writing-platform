@@ -19,16 +19,15 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { Role } from '@qalam/shared';
+import { PERMISSIONS } from '@qalam/shared';
 import { Type } from 'class-transformer';
 import { IsInt, IsOptional, Max, Min } from 'class-validator';
 
 import { RateLimit } from '../../common/decorators/rate-limit.decorator';
 import { RateLimitGuard } from '../../common/guards/rate-limit.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { RolesGuard } from '../auth/guards/roles.guard';
 import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
+import { Permissions } from '../permissions/permissions.decorator';
 import { CreateSystemNotificationDto, SystemNotificationDto } from './dto/system-notification.dto';
 import { NotificationsService } from './notifications.service';
 
@@ -42,16 +41,16 @@ class ListSystemNotificationsDto {
 }
 
 /**
- * Admin-only management of system broadcasts (E9 authorization: "admins can
- * manage system notifications only"). Guarded by `RolesGuard` + `@Roles(Admin)`
- * on top of the global `JwtAuthGuard` (admin & super_admin pass; others 403).
- * Creating a broadcast fans it out to every eligible recipient.
+ * Admin management of system broadcasts. Authorized by PBAC:
+ * `@Permissions('notification.manage')` (held by admin + super_admin's `*`) on
+ * top of the global `JwtAuthGuard` — replacing the old `@Roles(Admin)`. Creating
+ * a broadcast fans it out to every eligible recipient.
  */
 @ApiTags('admin-notifications')
 @ApiBearerAuth()
 @Controller('admin/system-notifications')
-@UseGuards(RolesGuard, RateLimitGuard)
-@Roles(Role.Admin)
+@UseGuards(RateLimitGuard)
+@Permissions(PERMISSIONS.NotificationManage)
 export class SystemNotificationsController {
   constructor(private readonly notifications: NotificationsService) {}
 

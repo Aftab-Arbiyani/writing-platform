@@ -27,6 +27,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { EngagementModule } from './modules/engagement/engagement.module';
 import { FeedModule } from './modules/feed/feed.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { PermissionsModule } from './modules/permissions/permissions.module';
 import { PiecesModule } from './modules/pieces/pieces.module';
 import { SearchModule } from './modules/search/search.module';
 import { TaxonomyModule } from './modules/taxonomy/taxonomy.module';
@@ -47,6 +48,7 @@ import { RedisModule } from './redis/redis.module';
     HealthModule,
     TaxonomyModule,
     AuthModule,
+    PermissionsModule,
     UsersModule,
     PiecesModule,
     EngagementModule,

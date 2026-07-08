@@ -20,6 +20,7 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
+import { PERMISSIONS } from '@qalam/shared';
 import type { Request } from 'express';
 
 import { CursorPaginationDto } from '../../common/dto/cursor-pagination.dto';
@@ -27,6 +28,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Public } from '../auth/decorators/public.decorator';
 import { OptionalAuthGuard } from '../auth/guards/optional-auth.guard';
 import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
+import { Permissions } from '../permissions/permissions.decorator';
 import { CommentsService } from './comments.service';
 import { CommentResponseDto } from './dto/comment-response.dto';
 import { CreateCommentDto } from './dto/create-comment.dto';
@@ -44,7 +46,10 @@ export class CommentsController {
 
   @Post('pieces/:id/comments')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Comment on a piece (authenticated; piece must be published).' })
+  @Permissions(PERMISSIONS.CommentCreate)
+  @ApiOperation({
+    summary: 'Comment on a piece (piece must be published). Requires `comment.create`.',
+  })
   @ApiCreatedResponse({ type: CommentResponseDto })
   create(
     @CurrentUser() user: AuthenticatedUser,
@@ -76,7 +81,10 @@ export class CommentsController {
 
   @Post('comments/:id/replies')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Reply to a comment (nesting capped at MAX_COMMENT_DEPTH).' })
+  @Permissions(PERMISSIONS.CommentCreate)
+  @ApiOperation({
+    summary: 'Reply to a comment (nesting capped at MAX_COMMENT_DEPTH). Requires `comment.create`.',
+  })
   @ApiCreatedResponse({ type: CommentResponseDto })
   reply(
     @CurrentUser() user: AuthenticatedUser,

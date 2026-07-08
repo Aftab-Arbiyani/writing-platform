@@ -5,6 +5,7 @@ import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 
 import { AppModule } from '../../app.module';
+import { PermissionsService } from '../../modules/permissions/permissions.service';
 import { RolesService } from '../../modules/users/roles.service';
 import { TaxonomyRepository } from '../../modules/taxonomy/taxonomy.repository';
 import { seedTaxonomy } from './taxonomy.seed';
@@ -24,6 +25,8 @@ async function runSeeds(): Promise<void> {
   try {
     await app.get(RolesService).seedRoles();
     logger.log('Roles seeded (user, moderator, admin, super_admin).');
+    await app.get(PermissionsService).seed();
+    logger.log('Permissions + role mappings seeded (PBAC).');
     await seedTaxonomy(app.get(TaxonomyRepository));
     logger.log('Taxonomy seeded (languages hi/ur/en, 8 genres).');
   } finally {

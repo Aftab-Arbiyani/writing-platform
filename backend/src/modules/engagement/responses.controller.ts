@@ -16,6 +16,7 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
+import { PERMISSIONS } from '@qalam/shared';
 import type { Request } from 'express';
 
 import { CursorPaginationDto } from '../../common/dto/cursor-pagination.dto';
@@ -23,6 +24,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Public } from '../auth/decorators/public.decorator';
 import { OptionalAuthGuard } from '../auth/guards/optional-auth.guard';
 import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
+import { Permissions } from '../permissions/permissions.decorator';
 import { CreatePieceDto } from '../pieces/dto/create-piece.dto';
 import { PieceResponseDto } from '../pieces/dto/piece-response.dto';
 import { ResponseItemDto } from './dto/response-item.dto';
@@ -40,7 +42,10 @@ export class ResponsesController {
 
   @Post('pieces/:id/responses')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Write a response to a piece (creates a linked draft piece).' })
+  @Permissions(PERMISSIONS.PieceCreate)
+  @ApiOperation({
+    summary: 'Write a response to a piece (creates a linked draft piece). Requires `piece.create`.',
+  })
   @ApiCreatedResponse({ type: PieceResponseDto })
   respond(
     @CurrentUser() user: AuthenticatedUser,

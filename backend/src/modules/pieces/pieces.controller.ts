@@ -25,12 +25,14 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
+import { PERMISSIONS } from '@qalam/shared';
 import type { Request } from 'express';
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Public } from '../auth/decorators/public.decorator';
 import { OptionalAuthGuard } from '../auth/guards/optional-auth.guard';
 import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
+import { Permissions } from '../permissions/permissions.decorator';
 import { CreatePieceDto } from './dto/create-piece.dto';
 import { PieceListQueryDto } from './dto/piece-list-query.dto';
 import {
@@ -58,7 +60,8 @@ export class PiecesController {
 
   @Post('pieces')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Create a draft.' })
+  @Permissions(PERMISSIONS.PieceCreate)
+  @ApiOperation({ summary: 'Create a draft. Requires `piece.create`.' })
   @ApiCreatedResponse({ type: PieceResponseDto })
   create(
     @CurrentUser() user: AuthenticatedUser,
@@ -100,7 +103,10 @@ export class PiecesController {
 
   @Patch('pieces/:id')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Update a piece (owner only; slug never changes).' })
+  @Permissions(PERMISSIONS.PieceUpdate)
+  @ApiOperation({
+    summary: 'Update a piece (owner only; slug never changes). Requires `piece.update`.',
+  })
   @ApiOkResponse({ type: PieceResponseDto })
   update(
     @CurrentUser() user: AuthenticatedUser,
@@ -112,8 +118,9 @@ export class PiecesController {
 
   @Delete('pieces/:id')
   @ApiBearerAuth()
+  @Permissions(PERMISSIONS.PieceDelete)
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Soft-delete a piece (owner only).' })
+  @ApiOperation({ summary: 'Soft-delete a piece (owner only). Requires `piece.delete`.' })
   async remove(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -135,8 +142,12 @@ export class PiecesController {
 
   @Post('pieces/:id/publish')
   @ApiBearerAuth()
+  @Permissions(PERMISSIONS.PiecePublish)
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Publish a piece (generates slug, validates required fields).' })
+  @ApiOperation({
+    summary:
+      'Publish a piece (generates slug, validates required fields). Requires `piece.publish`.',
+  })
   @ApiOkResponse({ type: PieceResponseDto })
   publish(
     @CurrentUser() user: AuthenticatedUser,
@@ -147,8 +158,12 @@ export class PiecesController {
 
   @Post('pieces/:id/schedule')
   @ApiBearerAuth()
+  @Permissions(PERMISSIONS.PiecePublish)
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Schedule a future publish (stored only; worker is a later epic).' })
+  @ApiOperation({
+    summary:
+      'Schedule a future publish (stored only; worker is a later epic). Requires `piece.publish`.',
+  })
   @ApiOkResponse({ type: PieceResponseDto })
   schedule(
     @CurrentUser() user: AuthenticatedUser,
@@ -160,8 +175,9 @@ export class PiecesController {
 
   @Post('pieces/:id/archive')
   @ApiBearerAuth()
+  @Permissions(PERMISSIONS.PieceArchive)
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Archive a published piece.' })
+  @ApiOperation({ summary: 'Archive a published piece. Requires `piece.archive`.' })
   @ApiOkResponse({ type: PieceResponseDto })
   archive(
     @CurrentUser() user: AuthenticatedUser,
@@ -172,8 +188,9 @@ export class PiecesController {
 
   @Post('pieces/:id/unarchive')
   @ApiBearerAuth()
+  @Permissions(PERMISSIONS.PieceArchive)
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Restore an archived piece to published.' })
+  @ApiOperation({ summary: 'Restore an archived piece to published. Requires `piece.archive`.' })
   @ApiOkResponse({ type: PieceResponseDto })
   unarchive(
     @CurrentUser() user: AuthenticatedUser,
@@ -184,7 +201,8 @@ export class PiecesController {
 
   @Post('pieces/:id/duplicate')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Duplicate a piece into a fresh draft.' })
+  @Permissions(PERMISSIONS.PieceCreate)
+  @ApiOperation({ summary: 'Duplicate a piece into a fresh draft. Requires `piece.create`.' })
   @ApiCreatedResponse({ type: PieceResponseDto })
   duplicate(
     @CurrentUser() user: AuthenticatedUser,
@@ -195,6 +213,7 @@ export class PiecesController {
 
   @Post('pieces/:id/cover')
   @ApiBearerAuth()
+  @Permissions(PERMISSIONS.PieceUpdate)
   @HttpCode(HttpStatus.OK)
   @ApiConsumes('multipart/form-data')
   @ApiBody({

@@ -6,6 +6,7 @@
 export * from './enums.js';
 export * from './error-codes.js';
 export * from './limits.js';
+export * from './permissions.js';
 export * from './rate-limits.js';
 export * from './regex.js';
 export * from './api-envelope.js';
