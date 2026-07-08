@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { MAX_COMMENT_DEPTH, ROLE_RANK, type Role } from '@qalam/shared';
 
 import { TransactionRunner } from '../../common/database/transaction-runner';
+import { DomainEventBus } from '../../common/events/domain-event-bus';
+import { DomainEventType } from '../../common/events/domain-events';
 import { decodeCursor } from '../../common/pagination/cursor.util';
 import { buildCursorPage } from '../../common/pagination/pagination.helper';
 import type { CursorPage } from '../../common/types/paginated-result';
@@ -41,6 +43,7 @@ export class CommentsService {
     private readonly users: UsersService,
     private readonly profiles: ProfileService,
     private readonly transactions: TransactionRunner,
+    private readonly events: DomainEventBus,
   ) {}
 
   /** Top-level comment on a piece (piece must be published + visible). */
@@ -49,7 +52,7 @@ export class CommentsService {
     authorId: string,
     dto: CreateCommentDto,
   ): Promise<CommentResponseDto> {
-    await this.pieces.getEngageablePiece(pieceId, authorId);
+    const piece = await this.pieces.getEngageablePiece(pieceId, authorId);
     const comment = await this.transactions.run(async (manager) => {
       const created = await this.comments.create(
         { pieceId, authorId, parentId: null, depth: 1, body: dto.body },
@@ -57,6 +60,16 @@ export class CommentsService {
       );
       await this.pieceStats.increment(pieceId, { comments: 1 }, manager);
       return created;
+    });
+    // E9: notify the piece author + any @mentions in the body (post-commit).
+    await this.events.emit(DomainEventType.CommentCreated, {
+      commentId: comment.id,
+      pieceId,
+      pieceAuthorId: piece.authorId,
+      commentAuthorId: authorId,
+      parentId: null,
+      parentAuthorId: null,
+      body: dto.body,
     });
     return this.resolveOwnDto(comment, 0);
   }
@@ -78,7 +91,7 @@ export class CommentsService {
       throw new CommentDepthExceededException();
     }
     // The parent's piece must still be published + visible to the replier.
-    await this.pieces.getEngageablePiece(parent.pieceId, authorId);
+    const piece = await this.pieces.getEngageablePiece(parent.pieceId, authorId);
 
     const comment = await this.transactions.run(async (manager) => {
       const created = await this.comments.create(
@@ -93,6 +106,17 @@ export class CommentsService {
       );
       await this.pieceStats.increment(parent.pieceId, { comments: 1 }, manager);
       return created;
+    });
+    // E9: notify the parent-comment author (reply) + the piece author is reached
+    // only for top-level comments; mentions in the body are handled by the listener.
+    await this.events.emit(DomainEventType.CommentCreated, {
+      commentId: comment.id,
+      pieceId: parent.pieceId,
+      pieceAuthorId: piece.authorId,
+      commentAuthorId: authorId,
+      parentId: parent.id,
+      parentAuthorId: parent.authorId,
+      body: dto.body,
     });
     return this.resolveOwnDto(comment, 0);
   }

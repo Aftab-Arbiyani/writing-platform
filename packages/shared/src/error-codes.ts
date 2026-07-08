@@ -112,6 +112,12 @@ export const ERROR_CODES = {
   /** A recent-search row to delete does not exist (or is not the caller's). */
   SEARCH_RECENT_NOT_FOUND: 'SEARCH_RECENT_NOT_FOUND',
 
+  // ── Notifications (E9) ────────────────────────────────────────────────────
+  /** No such notification, or it belongs to another user (privacy-preserving 404). */
+  NOTIFICATION_NOT_FOUND: 'NOTIFICATION_NOT_FOUND',
+  /** Admin system-notification target does not exist. */
+  SYSTEM_NOTIFICATION_NOT_FOUND: 'SYSTEM_NOTIFICATION_NOT_FOUND',
+
   // ── Moderation ──────────────────────────────────────────────────────────
   REPORT_NOT_FOUND: 'REPORT_NOT_FOUND',
   REPORT_ALREADY_RESOLVED: 'REPORT_ALREADY_RESOLVED',

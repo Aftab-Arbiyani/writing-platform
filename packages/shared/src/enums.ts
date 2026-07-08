@@ -70,18 +70,55 @@ export const AuthProvider = {
 } as const;
 export type AuthProvider = (typeof AuthProvider)[keyof typeof AuthProvider];
 
-/** In-app notification kinds (in-app only in Phase 1, ADR §10). */
+/**
+ * In-app notification kinds (in-app only in Phase 1, ADR §10). Open catalogue —
+ * `notifications.type` is a `varchar(40)`, so adding a kind never needs a
+ * migration (docs 04 §1.7, §3.7). New kinds land here first.
+ */
 export const NotificationType = {
   Follow: 'follow',
   FollowRequest: 'follow_request',
+  FollowAccepted: 'follow_accepted',
+  Comment: 'comment',
+  CommentReply: 'comment_reply',
   Like: 'like',
   Clap: 'clap',
   Response: 'response',
   Mention: 'mention',
   Repost: 'repost',
   Featured: 'featured',
+  /** Future-ready (collections follow ships later) — reserved so the type is stable. */
+  CollectionFollow: 'collection_follow',
+  System: 'system',
 } as const;
 export type NotificationType = (typeof NotificationType)[keyof typeof NotificationType];
+
+/**
+ * Notification lifecycle state (E9). Derived from timestamps on the row
+ * (`read_at`/`archived_at`) — `deleted` is the soft-delete tombstone and is never
+ * returned. Used as the `?status=` list filter and the response discriminator.
+ */
+export const NotificationStatus = {
+  Unread: 'unread',
+  Read: 'read',
+  Archived: 'archived',
+} as const;
+export type NotificationStatus = (typeof NotificationStatus)[keyof typeof NotificationStatus];
+
+/**
+ * Polymorphic target of a notification (`notifications.entity_type`, docs 04
+ * §3.7). `entity_id` points at a row of this kind; `null` for actor-less/system
+ * notifications.
+ */
+export const NotificationEntityType = {
+  Piece: 'piece',
+  Comment: 'comment',
+  User: 'user',
+  Collection: 'collection',
+  System: 'system',
+} as const;
+export type NotificationEntityType =
+  (typeof NotificationEntityType)[keyof typeof NotificationEntityType];
 
 /** Moderation lifecycle of a user report. */
 export const ReportStatus = {

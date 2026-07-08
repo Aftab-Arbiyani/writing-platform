@@ -2,6 +2,7 @@ import { MAX_COMMENT_DEPTH, Role } from '@qalam/shared';
 import type { EntityManager } from 'typeorm';
 
 import type { TransactionRunner } from '../../common/database/transaction-runner';
+import type { DomainEventBus } from '../../common/events/domain-event-bus';
 import type { PiecesService } from '../pieces/pieces.service';
 import type { ProfileService } from '../users/profile.service';
 import type { UsersService } from '../users/users.service';
@@ -59,6 +60,7 @@ function build(repoOverrides: Partial<Record<string, jest.Mock>> = {}) {
     users as unknown as UsersService,
     profiles as unknown as ProfileService,
     tx,
+    { emit: jest.fn().mockResolvedValue(undefined) } as unknown as DomainEventBus,
   );
   return { service, comments, pieceStats, pieces };
 }

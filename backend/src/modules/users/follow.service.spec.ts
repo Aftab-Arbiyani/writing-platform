@@ -2,6 +2,7 @@ import { FollowStatus } from '@qalam/shared';
 import type { EntityManager } from 'typeorm';
 
 import type { TransactionRunner } from '../../common/database/transaction-runner';
+import type { DomainEventBus } from '../../common/events/domain-event-bus';
 import type { Follow } from './entities/follow.entity';
 import { Profile } from './entities/profile.entity';
 import {
@@ -55,6 +56,7 @@ function build(overrides: Partial<{ target: Profile; existing: unknown }> = {}):
     m.profileService as unknown as ProfileService,
     m.users as unknown as UsersService,
     txRunner as unknown as TransactionRunner,
+    { emit: jest.fn().mockResolvedValue(undefined) } as unknown as DomainEventBus,
   );
   return { service, m };
 }

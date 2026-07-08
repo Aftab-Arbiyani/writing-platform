@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 
 import { TransactionRunner } from '../../common/database/transaction-runner';
+import { DomainEventBus } from '../../common/events/domain-event-bus';
+import { DomainEventType } from '../../common/events/domain-events';
 import { decodeCursor } from '../../common/pagination/cursor.util';
 import { buildCursorPage } from '../../common/pagination/pagination.helper';
 import type { CursorPage } from '../../common/types/paginated-result';
@@ -27,6 +29,7 @@ export class ResponsesService {
     private readonly pieceStats: PieceStatsRepository,
     private readonly pieces: PiecesService,
     private readonly transactions: TransactionRunner,
+    private readonly events: DomainEventBus,
   ) {}
 
   /**
@@ -39,7 +42,7 @@ export class ResponsesService {
     authorId: string,
     dto: CreatePieceDto,
   ): Promise<PieceResponseDto> {
-    await this.pieces.getEngageablePiece(parentPieceId, authorId);
+    const parent = await this.pieces.getEngageablePiece(parentPieceId, authorId);
 
     // A response is a fresh piece — reuse the existing draft-creation path.
     const responsePiece = await this.pieces.createDraft(authorId, dto);
@@ -51,6 +54,13 @@ export class ResponsesService {
     await this.transactions.run(async (manager) => {
       await this.responses.create(responsePiece.id, parentPieceId, manager);
       await this.pieceStats.increment(parentPieceId, { responses: 1 }, manager);
+    });
+    // E9: notify the parent-piece author that someone responded.
+    await this.events.emit(DomainEventType.PieceResponseCreated, {
+      responsePieceId: responsePiece.id,
+      parentPieceId,
+      parentAuthorId: parent.authorId,
+      actorId: authorId,
     });
     return responsePiece;
   }

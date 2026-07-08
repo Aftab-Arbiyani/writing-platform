@@ -4,6 +4,8 @@ import { slugify } from '@qalam/utils';
 import { randomBytes } from 'node:crypto';
 
 import { TransactionRunner } from '../../common/database/transaction-runner';
+import { DomainEventBus } from '../../common/events/domain-event-bus';
+import { DomainEventType } from '../../common/events/domain-events';
 import { decodeCursor } from '../../common/pagination/cursor.util';
 import { buildCursorPage } from '../../common/pagination/pagination.helper';
 import type { CursorPage } from '../../common/types/paginated-result';
@@ -54,6 +56,7 @@ export class PiecesService {
     private readonly follows: FollowService,
     private readonly media: MediaService,
     private readonly transactions: TransactionRunner,
+    private readonly events: DomainEventBus,
   ) {}
 
   async createDraft(authorId: string, dto: CreatePieceDto): Promise<PieceResponseDto> {
@@ -173,6 +176,8 @@ export class PiecesService {
       );
       await this.profiles.adjustPublishedCount(ownerId, 1);
     });
+    // E9: notify users @mentioned in the published piece (listener reads content).
+    await this.events.emit(DomainEventType.PiecePublished, { pieceId: id, authorId: ownerId });
     return this.getOwn(id, ownerId);
   }
 

@@ -2,6 +2,7 @@ import { MAX_CLAPS_PER_USER_PER_PIECE } from '@qalam/shared';
 import type { EntityManager } from 'typeorm';
 
 import type { TransactionRunner } from '../../common/database/transaction-runner';
+import type { DomainEventBus } from '../../common/events/domain-event-bus';
 import type { PiecesService } from '../pieces/pieces.service';
 import { ClapLimitReachedException } from './exceptions/engagement.exceptions';
 import type { PieceStatsRepository } from './piece-stats.repository';
@@ -42,6 +43,7 @@ function build(reactionOverrides: Partial<Record<string, jest.Mock>> = {}) {
     pieceStats as unknown as PieceStatsRepository,
     pieces as unknown as PiecesService,
     tx,
+    { emit: jest.fn().mockResolvedValue(undefined) } as unknown as DomainEventBus,
   );
   return { service, reactions, pieceStats, pieces };
 }

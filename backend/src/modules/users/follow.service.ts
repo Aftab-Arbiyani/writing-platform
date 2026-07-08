@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { FollowStatus } from '@qalam/shared';
 
 import { TransactionRunner } from '../../common/database/transaction-runner';
+import { DomainEventBus } from '../../common/events/domain-event-bus';
+import { DomainEventType } from '../../common/events/domain-events';
 import { decodeCursor } from '../../common/pagination/cursor.util';
 import { buildCursorPage } from '../../common/pagination/pagination.helper';
 import type { CursorPage } from '../../common/types/paginated-result';
@@ -37,6 +39,7 @@ export class FollowService {
     private readonly profileService: ProfileService,
     private readonly users: UsersService,
     private readonly transactions: TransactionRunner,
+    private readonly events: DomainEventBus,
   ) {}
 
   /**
@@ -68,12 +71,24 @@ export class FollowService {
     }
 
     const status = targetProfile.isPrivate ? FollowStatus.Pending : FollowStatus.Accepted;
-    await this.transactions.run(async (manager) => {
-      await this.follows.create({ followerId, followeeId: targetUserId, status }, manager);
+    const created = await this.transactions.run(async (manager) => {
+      const edge = await this.follows.create(
+        { followerId, followeeId: targetUserId, status },
+        manager,
+      );
       if (status === FollowStatus.Accepted) {
         await this.profiles.incrementCounts(targetUserId, { followers: 1 }, manager);
         await this.profiles.incrementCounts(followerId, { following: 1 }, manager);
       }
+      return edge;
+    });
+    // E9: notify the target (new follower / follow request). Emitted post-commit;
+    // the bus isolates handler errors so notifications never affect the follow.
+    await this.events.emit(DomainEventType.UserFollowed, {
+      followId: created.id,
+      followerId,
+      followeeId: targetUserId,
+      status,
     });
     return { status };
   }
@@ -116,6 +131,12 @@ export class FollowService {
       await this.follows.setStatus(request.id, FollowStatus.Accepted, manager);
       await this.profiles.incrementCounts(currentUserId, { followers: 1 }, manager);
       await this.profiles.incrementCounts(request.followerId, { following: 1 }, manager);
+    });
+    // E9: notify the requester that their follow request was accepted.
+    await this.events.emit(DomainEventType.FollowAccepted, {
+      followId: request.id,
+      followerId: request.followerId,
+      followeeId: currentUserId,
     });
   }
 

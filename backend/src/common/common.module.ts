@@ -1,6 +1,7 @@
 import { Global, Module } from '@nestjs/common';
 
 import { TransactionRunner } from './database/transaction-runner';
+import { DomainEventBus } from './events/domain-event-bus';
 import { RateLimitGuard } from './guards/rate-limit.guard';
 
 /**
@@ -18,7 +19,7 @@ import { RateLimitGuard } from './guards/rate-limit.guard';
  */
 @Global()
 @Module({
-  providers: [RateLimitGuard, TransactionRunner],
-  exports: [RateLimitGuard, TransactionRunner],
+  providers: [RateLimitGuard, TransactionRunner, DomainEventBus],
+  exports: [RateLimitGuard, TransactionRunner, DomainEventBus],
 })
 export class CommonModule {}

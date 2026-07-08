@@ -2,6 +2,7 @@ import { PieceStatus, Visibility } from '@qalam/shared';
 import type { EntityManager } from 'typeorm';
 
 import type { TransactionRunner } from '../../common/database/transaction-runner';
+import type { DomainEventBus } from '../../common/events/domain-event-bus';
 import type { MediaService } from '../../media/media.service';
 import type { FollowService } from '../users/follow.service';
 import type { ProfileService } from '../users/profile.service';
@@ -79,6 +80,7 @@ function build(current: Piece | null): {
     follows as unknown as FollowService,
     {} as MediaService,
     tx as unknown as TransactionRunner,
+    { emit: jest.fn().mockResolvedValue(undefined) } as unknown as DomainEventBus,
   );
   return { service, repo, profiles };
 }

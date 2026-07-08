@@ -87,3 +87,12 @@ export const GLOBAL_SEARCH_GROUP_SIZE = 5;
 export const RECENT_SEARCHES_MAX = 20;
 /** Default number of items returned per group in `GET /search/trending`. */
 export const TRENDING_SEARCHES_LIMIT = 10;
+
+/**
+ * Notifications (E9). The unread badge is displayed capped at "99+"
+ * (docs 04 §3.7); the API returns the true count and this cap alongside so the
+ * client renders consistently. System-notification (admin broadcast) text bounds.
+ */
+export const NOTIFICATION_UNREAD_DISPLAY_CAP = 99;
+export const SYSTEM_NOTIFICATION_TITLE_MAX = 150;
+export const SYSTEM_NOTIFICATION_BODY_MAX = 1000;

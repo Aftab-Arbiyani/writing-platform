@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { MAX_CLAPS_PER_USER_PER_PIECE } from '@qalam/shared';
 
 import { TransactionRunner } from '../../common/database/transaction-runner';
+import { DomainEventBus } from '../../common/events/domain-event-bus';
+import { DomainEventType } from '../../common/events/domain-events';
 import { decodeCursor } from '../../common/pagination/cursor.util';
 import { buildCursorPage } from '../../common/pagination/pagination.helper';
 import type { CursorPage } from '../../common/types/paginated-result';
@@ -32,20 +34,32 @@ export class ReactionsService {
     private readonly pieceStats: PieceStatsRepository,
     private readonly pieces: PiecesService,
     private readonly transactions: TransactionRunner,
+    private readonly events: DomainEventBus,
   ) {}
 
   // ── likes ────────────────────────────────────────────────────────────────
 
   /** Like a piece (idempotent — a second like is a no-op). */
   async like(pieceId: string, userId: string): Promise<LikeResponseDto> {
-    await this.pieces.getEngageablePiece(pieceId, userId);
-    await this.transactions.run(async (manager) => {
-      if (!(await this.reactions.hasLiked(userId, pieceId, manager))) {
-        await this.reactions.insertLike(userId, pieceId, manager);
-        await this.pieceStats.increment(pieceId, { likes: 1 }, manager);
+    const piece = await this.pieces.getEngageablePiece(pieceId, userId);
+    const added = await this.transactions.run(async (manager) => {
+      if (await this.reactions.hasLiked(userId, pieceId, manager)) {
+        return false;
       }
+      await this.reactions.insertLike(userId, pieceId, manager);
+      await this.pieceStats.increment(pieceId, { likes: 1 }, manager);
+      return true;
     });
     const counts = await this.pieceStats.getCounts(pieceId);
+    // E9: only notify on a NEW like (a repeat like is an idempotent no-op).
+    if (added) {
+      await this.events.emit(DomainEventType.ReactionCreated, {
+        kind: 'like',
+        pieceId,
+        pieceAuthorId: piece.authorId,
+        actorId: userId,
+      });
+    }
     return { liked: true, totalLikes: counts.likes };
   }
 
@@ -66,8 +80,8 @@ export class ReactionsService {
    * `LEAST(…)` + the CHECK; the applied delta feeds `piece_stats.claps_count`.
    */
   async clap(pieceId: string, userId: string, count: number): Promise<ClapResponseDto> {
-    await this.pieces.getEngageablePiece(pieceId, userId);
-    return this.transactions.run(async (manager) => {
+    const piece = await this.pieces.getEngageablePiece(pieceId, userId);
+    const result = await this.transactions.run(async (manager) => {
       const current = await this.reactions.getClapCount(userId, pieceId, manager);
       if (current >= MAX_CLAPS_PER_USER_PER_PIECE) {
         throw new ClapLimitReachedException();
@@ -80,6 +94,15 @@ export class ReactionsService {
       const counts = await this.pieceStats.getCounts(pieceId, manager);
       return { viewerClaps, totalClaps: counts.claps };
     });
+    // E9: notify the author of claps. Repeated clap flushes dedupe in the engine
+    // to one active clap notification per user per piece (no clap-storm flooding).
+    await this.events.emit(DomainEventType.ReactionCreated, {
+      kind: 'clap',
+      pieceId,
+      pieceAuthorId: piece.authorId,
+      actorId: userId,
+    });
+    return result;
   }
 
   /** Remove all of the viewer's claps from a piece (resets to 0). Idempotent. */
