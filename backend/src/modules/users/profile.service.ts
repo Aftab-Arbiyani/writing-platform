@@ -51,6 +51,15 @@ export class ProfileService {
     return this.profiles.create({ userId, penName: user.username });
   }
 
+  /**
+   * Adjusts the denormalized published-pieces count (docs 04 §7). Exported so the
+   * pieces module maintains it on publish/archive/delete without duplicating the
+   * counter logic. `delta` is +1 (publish) or -1 (archive/delete a published piece).
+   */
+  adjustPublishedCount(userId: string, delta: number): Promise<void> {
+    return this.profiles.incrementCounts(userId, { pieces: delta });
+  }
+
   async getOwnProfile(userId: string): Promise<ProfileResponseDto> {
     const profile = await this.getOrCreateByUserId(userId);
     const user = await this.users.findById(userId);

@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { Genre } from './entities/genre.entity';
 import { Language } from './entities/language.entity';
+import { Tag } from './entities/tag.entity';
 import { TaxonomyRepository } from './taxonomy.repository';
 import { TaxonomyService } from './taxonomy.service';
 
@@ -12,7 +13,7 @@ import { TaxonomyService } from './taxonomy.service';
  * (lookups) + `TaxonomyRepository` (seed helpers) as the module surface.
  */
 @Module({
-  imports: [TypeOrmModule.forFeature([Language, Genre])],
+  imports: [TypeOrmModule.forFeature([Language, Genre, Tag])],
   providers: [TaxonomyRepository, TaxonomyService],
   exports: [TaxonomyService, TaxonomyRepository],
 })

@@ -2,9 +2,10 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import { ERROR_CODES } from '@qalam/shared';
 
 import { AppException } from '../../common/exceptions/app.exception';
-import type { GenreDto, LanguageDto } from './dto/taxonomy-item.dto';
+import type { GenreDto, LanguageDto, TagDto } from './dto/taxonomy-item.dto';
 import type { Genre } from './entities/genre.entity';
 import type { Language } from './entities/language.entity';
+import type { Tag } from './entities/tag.entity';
 import { TaxonomyRepository } from './taxonomy.repository';
 
 class LanguageInvalidException extends AppException {
@@ -72,6 +73,23 @@ export class TaxonomyService {
   getGenresByIds(ids: string[]): Promise<GenreDto[]> {
     return this.repository.findGenresByIds(ids).then((rows) => rows.map(toGenreDto));
   }
+
+  /** Hydrates a language id into its DTO (piece responses need code + direction). */
+  async getLanguage(id: string): Promise<LanguageDto | null> {
+    const language = await this.repository.findLanguageById(id);
+    return language === null ? null : toLanguageDto(language);
+  }
+
+  /** Get-or-creates tags from `#hashtag` names (dedup) and returns their DTOs. */
+  resolveTags(names: string[]): Promise<TagDto[]> {
+    const unique = [...new Set(names.map((n) => n.trim()).filter((n) => n.length > 0))];
+    return this.repository.getOrCreateTags(unique).then((rows) => rows.map(toTagDto));
+  }
+
+  /** Hydrates tag ids into public DTOs (for piece responses). */
+  getTagsByIds(ids: string[]): Promise<TagDto[]> {
+    return this.repository.findTagsByIds(ids).then((rows) => rows.map(toTagDto));
+  }
 }
 
 function toLanguageDto(l: Language): LanguageDto {
@@ -86,4 +104,7 @@ function toLanguageDto(l: Language): LanguageDto {
 }
 function toGenreDto(g: Genre): GenreDto {
   return { id: g.id, slug: g.slug, name: g.name };
+}
+function toTagDto(t: Tag): TagDto {
+  return { id: t.id, slug: t.slug, name: t.name };
 }

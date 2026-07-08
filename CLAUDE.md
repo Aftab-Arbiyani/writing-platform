@@ -27,9 +27,17 @@ order.
   — no background job), profile search indexing (tsvector + trigram, no API), cursor-paginated
   follower/following/request lists, and the private-account visibility teaser (docs 13 §4.2).
   Note: `penName` still absent from auth registration — profiles own it (get-or-create).
-- **E3–E10:** not started (Editor, Publishing, Reading, Feeds, Social, Search,
-  Notifications, Admin). Engagement counts on the profile (reads/likes/claps/bookmarks/
-  responses) return 0 until those epics ship.
+- **E3 (Editor & Drafts) + E4 (Publishing) — implemented as the "Writing Engine".**
+  `pieces` (+`piece_tags`, `tags`) with the full lifecycle draft → (scheduled) → published →
+  archived + duplicate/preview; TipTap JSON canonical + server-side schema-whitelist
+  sanitizer (docs 13 §5.2); derived `content_text`/`word_count`/`reading_time` via
+  `@qalam/utils`; slug generated at first publish, immutable after; one language per piece,
+  optional genre (required at publish), get-or-create hashtag tags; cover upload (reuses the
+  media pipeline); owner-only mutations, visibility-gated reads; cursor-paginated
+  `/me/drafts` + `/me/pieces`; `pieces.search_vector` + trigram indexes as search prep (no
+  search API). **Scheduled publishing stores the schedule only — the BullMQ worker is a
+  later epic.** `piece_stats` (engagement counters) also deferred (E7).
+- **E5–E10:** not started (Reading experience, Feeds, Social, Search, Notifications, Admin).
 
 Do not implement Phase 2 concerns (AI, payments, Apple login) anywhere.
 

@@ -5,5 +5,6 @@
  */
 export * from './slugify.js';
 export * from './reading-time.js';
+export * from './tiptap-text.js';
 export * from './clamp.js';
 export * from './is-defined.js';

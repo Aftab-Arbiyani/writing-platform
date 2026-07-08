@@ -17,3 +17,10 @@ export class GenreDto {
   @ApiProperty({ example: 'ghazal' }) slug!: string;
   @ApiProperty({ example: 'Ghazal' }) name!: string;
 }
+
+/** Public shape of a tag (docs 04 §3.3). */
+export class TagDto {
+  @ApiProperty() id!: string;
+  @ApiProperty({ example: 'barish' }) slug!: string;
+  @ApiProperty({ example: 'barish' }) name!: string;
+}

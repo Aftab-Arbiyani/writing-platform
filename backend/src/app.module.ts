@@ -24,6 +24,7 @@ import { AppLoggerModule } from './logger/logger.module';
 import { MailModule } from './mail/mail.module';
 import { MediaModule } from './media/media.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { PiecesModule } from './modules/pieces/pieces.module';
 import { TaxonomyModule } from './modules/taxonomy/taxonomy.module';
 import { UsersModule } from './modules/users/users.module';
 import { QueueModule } from './queue/queue.module';
@@ -43,6 +44,7 @@ import { RedisModule } from './redis/redis.module';
     TaxonomyModule,
     AuthModule,
     UsersModule,
+    PiecesModule,
   ],
 })
 export class AppModule {}

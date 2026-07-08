@@ -287,6 +287,12 @@ chk_pieces_published  CHECK (status <> 'published'
                                  AND genre_id IS NOT NULL))
 ```
 
+**E4 additions to `pieces`** (implemented this epic): `archived_at timestamptz NULL` (set on
+archive, cleared on unarchive) and `seo_metadata jsonb NULL` (`{ title?, description? }`).
+`search_vector` (generated, docs §6.2) + `idx_pieces_search`/`idx_pieces_title_trgm` are
+created now as search prep only — no search API until E8. Tags are get-or-created from
+`#hashtags` on write; the `scheduled-publish` worker is deferred (schedule is stored only).
+
 **`scheduled_at` semantics.** Set only while `status = 'scheduled'`; must be in the future
 at scheduling time (service validates → `PIECE_SCHEDULE_IN_PAST`). The `scheduled-publish`
 worker polls due rows (partial index below), flips `status → 'published'` and stamps

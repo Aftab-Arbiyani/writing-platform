@@ -39,6 +39,15 @@ export class FollowService {
     private readonly transactions: TransactionRunner,
   ) {}
 
+  /**
+   * Whether `viewerId` is an accepted follower of `authorId`. Exported so other
+   * modules (e.g. pieces) reuse the follow graph for content-visibility checks
+   * (docs 13 §4.2) instead of duplicating it.
+   */
+  isAcceptedFollower(viewerId: string, authorId: string): Promise<boolean> {
+    return this.follows.isAcceptedFollower(viewerId, authorId);
+  }
+
   async follow(followerId: string, targetUserId: string): Promise<FollowActionResponseDto> {
     if (followerId === targetUserId) {
       throw new CannotFollowSelfException();

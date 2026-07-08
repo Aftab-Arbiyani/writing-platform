@@ -53,11 +53,19 @@ export const ERROR_CODES = {
   FOLLOW_NOT_FOUND: 'FOLLOW_NOT_FOUND',
   FOLLOW_REQUEST_NOT_FOUND: 'FOLLOW_REQUEST_NOT_FOUND',
 
-  // ── Pieces (publishing) ─────────────────────────────────────────────────
+  // ── Pieces (writing lifecycle) ────────────────────────────────────────────
   PIECE_NOT_FOUND: 'PIECE_NOT_FOUND',
+  /** Editing/deleting/publishing a piece that isn't yours. */
+  PIECE_FORBIDDEN: 'PIECE_FORBIDDEN',
   PIECE_SCHEDULE_IN_PAST: 'PIECE_SCHEDULE_IN_PAST',
   PIECE_ALREADY_PUBLISHED: 'PIECE_ALREADY_PUBLISHED',
   PIECE_NOT_PUBLISHED: 'PIECE_NOT_PUBLISHED',
+  /** Illegal lifecycle transition (e.g. archive a draft, publish an archived piece). */
+  PIECE_INVALID_TRANSITION: 'PIECE_INVALID_TRANSITION',
+  /** Publish/schedule attempted with required fields missing (title/genre/content). */
+  PIECE_INCOMPLETE: 'PIECE_INCOMPLETE',
+  /** Stored TipTap document failed the server-side schema whitelist (docs 13 §5.2). */
+  PIECE_CONTENT_INVALID: 'PIECE_CONTENT_INVALID',
   PIECE_TAG_LIMIT_EXCEEDED: 'PIECE_TAG_LIMIT_EXCEEDED',
 
   // ── Engagement ──────────────────────────────────────────────────────────

@@ -24,6 +24,14 @@ export class MediaService {
     return key;
   }
 
+  /** Piece cover (reuses the cover image pipeline; E4). Key is `pieces/{pieceId}/…`. */
+  async uploadPieceCover(pieceId: string, file: UploadedImage): Promise<string> {
+    const { buffer, contentType } = await this.images.process('cover', file);
+    const key = `pieces/${pieceId}/cover-${uuidv7()}.webp`;
+    await this.storage.put(key, buffer, contentType);
+    return key;
+  }
+
   /** Best-effort removal of a superseded object (never blocks the request). */
   async deleteQuietly(key: string | null): Promise<void> {
     if (key === null) {
