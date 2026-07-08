@@ -30,6 +30,7 @@ import {
   PieceIncompleteException,
   PieceInvalidTransitionException,
   PieceNotFoundException,
+  PieceNotPublishedException,
   PieceScheduleInPastException,
 } from './exceptions/pieces.exceptions';
 import { PiecesRepository } from './pieces.repository';
@@ -277,6 +278,27 @@ export class PiecesService {
       id: p.id,
     }));
     return { items: page.items.map(toListItem), meta: page.meta };
+  }
+
+  /**
+   * Loads a piece for **engagement** (like/clap/bookmark/comment/respond/share),
+   * enforcing the two gates every engagement path shares: read visibility (a
+   * hidden piece is 404, privacy-preserving — docs 13 §4.2) and publication
+   * (engagement is only allowed on a published piece — `PIECE_NOT_PUBLISHED`
+   * 409). Exported so the engagement module (E7) reuses this exact
+   * logic instead of duplicating it or importing this module's repository
+   * (docs 16 §3.1). Returns the entity; callers read `id` / `authorId`.
+   */
+  async getEngageablePiece(pieceId: string, viewerId: string | null): Promise<Piece> {
+    const piece = await this.pieces.findById(pieceId);
+    if (piece === null) {
+      throw new PieceNotFoundException();
+    }
+    await this.assertReadable(piece, viewerId);
+    if (piece.status !== PieceStatus.Published) {
+      throw new PieceNotPublishedException();
+    }
+    return piece;
   }
 
   // ── helpers ────────────────────────────────────────────────────────────
