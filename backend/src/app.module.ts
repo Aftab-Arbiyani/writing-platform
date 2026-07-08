@@ -25,6 +25,7 @@ import { MailModule } from './mail/mail.module';
 import { MediaModule } from './media/media.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { EngagementModule } from './modules/engagement/engagement.module';
+import { FeedModule } from './modules/feed/feed.module';
 import { PiecesModule } from './modules/pieces/pieces.module';
 import { TaxonomyModule } from './modules/taxonomy/taxonomy.module';
 import { UsersModule } from './modules/users/users.module';
@@ -47,6 +48,7 @@ import { RedisModule } from './redis/redis.module';
     UsersModule,
     PiecesModule,
     EngagementModule,
+    FeedModule,
   ],
 })
 export class AppModule {}
