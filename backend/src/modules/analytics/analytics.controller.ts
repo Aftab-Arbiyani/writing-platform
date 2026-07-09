@@ -206,6 +206,7 @@ export class AnalyticsController {
   @Permissions(PERMISSIONS.AnalyticsView)
   @RateLimit('write')
   @HttpCode(HttpStatus.CREATED)
+  @ApiBearerAuth()
   @ApiOperation({
     summary:
       'Generate platform + writer snapshots for a period (on demand). Requires `analytics.view`.',

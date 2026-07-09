@@ -1,0 +1,86 @@
+name: E2E
+
+# Integration / e2e suite against real Postgres + Redis + MinIO. Manual for now
+# (docs 18: e2e becomes a blocking PR gate once Testcontainers lands in Phase 1.5;
+# until then it is runnable on demand and on merges to main).
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: qalam
+          POSTGRES_PASSWORD: qalam
+          POSTGRES_DB: qalam
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U qalam"
+          --health-interval 10s --health-timeout 5s --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s --health-timeout 5s --health-retries 5
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://qalam:qalam@localhost:5432/qalam
+      REDIS_URL: redis://localhost:6379
+      JWT_ACCESS_SECRET: ci-access-secret-not-a-real-secret-000000
+      JWT_REFRESH_SECRET: ci-refresh-secret-not-a-real-secret-00000
+      S3_ENDPOINT: http://localhost:9000
+      S3_REGION: us-east-1
+      S3_BUCKET: qalam-media
+      S3_ACCESS_KEY: minioadmin
+      S3_SECRET_KEY: minioadmin
+      SMTP_URL: smtp://localhost:1025
+      # Scheduler off in tests — cron would fire mid-suite; workers stay on so
+      # queue-backed flows still process.
+      SCHEDULER_ENABLED: 'false'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      # MinIO needs a `server` command, which GH service containers can't set —
+      # run it as a background container and create the media bucket.
+      - name: Start MinIO + create bucket
+        run: |
+          docker run -d --name minio -p 9000:9000 \
+            -e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=minioadmin \
+            minio/minio server /data
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:9000/minio/health/ready && break || sleep 2
+          done
+          aws --endpoint-url http://localhost:9000 s3 mb s3://qalam-media || true
+        env:
+          AWS_ACCESS_KEY_ID: minioadmin
+          AWS_SECRET_ACCESS_KEY: minioadmin
+          AWS_DEFAULT_REGION: us-east-1
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run migrations
+        run: pnpm --filter backend migration:run
+
+      - name: E2E tests
+        run: pnpm --filter backend test:e2e

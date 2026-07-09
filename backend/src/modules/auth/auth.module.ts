@@ -4,6 +4,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { RateLimitGuard } from '../../common/guards/rate-limit.guard';
 import { UsersModule } from '../users/users.module';
 import { AuthController } from './auth.controller';
 import { AuthIdentityRepository } from './auth-identity.repository';
@@ -59,7 +60,11 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     RolesGuard,
     OptionalAuthGuard,
     VerifiedUserGuard,
+    // Order matters: JwtAuthGuard first (populates request.user), then the global
+    // RateLimitGuard so user-keyed tiers resolve correctly. Every endpoint is now
+    // rate-limited (baseline `apiDefault`); routes with @RateLimit override it.
     { provide: APP_GUARD, useClass: JwtAuthGuard },
+    { provide: APP_GUARD, useClass: RateLimitGuard },
   ],
   exports: [
     AuthService,

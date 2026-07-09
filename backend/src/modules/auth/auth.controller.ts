@@ -30,6 +30,7 @@ import { CurrentUser } from './decorators/current-user.decorator';
 import { Public } from './decorators/public.decorator';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { GoogleExchangeDto } from './dto/google-exchange.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -232,8 +233,8 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Exchange the one-time OAuth code for an access token.' })
   @ApiOkResponse({ type: GoogleExchangeResponseDto })
-  async googleExchange(@Body('code') code: string): Promise<GoogleExchangeResponseDto> {
-    const accessToken = await this.authService.exchangeGoogleCode(code);
+  async googleExchange(@Body() dto: GoogleExchangeDto): Promise<GoogleExchangeResponseDto> {
+    const accessToken = await this.authService.exchangeGoogleCode(dto.code);
     return { accessToken };
   }
 

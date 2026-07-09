@@ -20,11 +20,24 @@ interface TierResult {
   breached: boolean;
 }
 
+/** Marks a request the guard has already processed (global + route dedupe). */
+const RATE_LIMIT_APPLIED = Symbol('rateLimitApplied');
+
+/** Fallback tier for any endpoint that does not declare its own (docs 05 §8). */
+const DEFAULT_TIER: RateLimitTierName = 'apiDefault';
+
 /**
  * Redis sliding-window rate limiting (docs 05 §8, docs 13 §8) on Redis DB 2.
- * Exact sorted-set algorithm (no fixed-window boundary bursts). Applied per
- * route via `@RateLimit(...)`; keyed per the tier's `keyBy` (user id when
- * authenticated, else client IP, plus email for auth tiers).
+ * Exact sorted-set algorithm (no fixed-window boundary bursts).
+ *
+ * Registered **globally** (APP_GUARD, after `JwtAuthGuard` so the authenticated
+ * user is available for user-keyed tiers): every endpoint is rate-limited, using
+ * its declared `@RateLimit(...)` tier(s) or the `apiDefault` baseline otherwise —
+ * so no route can ship unlimited. Idempotent per request (a route that also
+ * carries `@UseGuards(RateLimitGuard)` is counted once), skips the
+ * liveness/readiness/metrics probe paths (docs 14 §3), and is disabled by
+ * `RATE_LIMIT_ENABLED=false` (load tests). Keyed per the tier's `keyBy` (user id
+ * when authenticated, else client IP, plus email for auth tiers).
  *
  * Runs before the ValidationPipe, so `request.body` is raw — fine for deriving a
  * key (email is lowercased; missing = IP-only). Sets `X-RateLimit-*` on every
@@ -42,16 +55,33 @@ export class RateLimitGuard implements CanActivate {
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const tiers = this.reflector.getAllAndOverride<RateLimitTierName[] | undefined>(
-      RATE_LIMIT_KEY,
-      [context.getHandler(), context.getClass()],
-    );
-    if (tiers === undefined || tiers.length === 0) {
+    if (process.env.RATE_LIMIT_ENABLED === 'false' || context.getType() !== 'http') {
       return true;
     }
 
     const request = context.switchToHttp().getRequest<Request>();
     const response = context.switchToHttp().getResponse<Response>();
+
+    // Never rate-limit health probes / the metrics scrape target (docs 14 §3).
+    const path = request.path ?? request.url ?? '';
+    if (path === '/health' || path.startsWith('/health/') || path.startsWith('/metrics')) {
+      return true;
+    }
+
+    // Idempotent: the global guard runs first and marks the request, so a
+    // route-level `@UseGuards(RateLimitGuard)` never double-counts.
+    const marker = request as Request & { [RATE_LIMIT_APPLIED]?: boolean };
+    if (marker[RATE_LIMIT_APPLIED] === true) {
+      return true;
+    }
+    marker[RATE_LIMIT_APPLIED] = true;
+
+    // Declared tier(s) win; unclassified endpoints fall back to the baseline.
+    const declared = this.reflector.getAllAndOverride<RateLimitTierName[] | undefined>(
+      RATE_LIMIT_KEY,
+      [context.getHandler(), context.getClass()],
+    );
+    const tiers = declared !== undefined && declared.length > 0 ? declared : [DEFAULT_TIER];
 
     let tightest: TierResult | null = null;
     let breach: TierResult | null = null;

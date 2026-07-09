@@ -7,39 +7,29 @@ wins: **`docs/00_ArchitectureDecisions.md`**.
 
 ## Current phase
 
-**Phase 1 — MVP (in progress).** Phase 0 (docs + scaffold) is complete. Phase 1 epics
-(E1–E10) are defined in `docs/18_DevelopmentRoadmap.md` and are being built in dependency
-order.
+**Phase 1 — MVP: ✅ COMPLETE (closed 2026-07-09).** Phase 0 (docs + scaffold) is complete.
+The backend API is **frozen at `v1`** — see `docs/25_BackendFreeze.md`; from here all work is
+**additive-only** (any breaking change requires a new API version `/api/v2`). Per-epic detail
+lives in the auto-memory phase tracker + `docs/18_DevelopmentRoadmap.md`; this is the summary.
 
-- **E1 — Auth & Identity: implemented.** Entities (`users`, `auth_identities`, `roles`,
-  `user_roles`, `verification_tokens`, `password_reset_tokens`) + migration + roles seed;
-  email register/login/logout(+all)/refresh with **rotating tokens + reuse detection**
-  (Redis DB 3), email verification + resend, forgot/reset password, change password,
-  **Google OAuth** (code+PKCE), Argon2id, RBAC (roles + rank guard), guards
-  (`JwtAuthGuard` global default-deny, `Roles`, `Optional`, `Verified`), decorators, and a
-  real Redis sliding-window rate limiter (DB 2). Auth events log via the Pino taxonomy.
-  Deferred within E1: the `audit_logs` **table** + super-admin bootstrap (both E10-adjacent).
-- **E2 — Profiles & Follow: implemented.** `profiles` (get-or-create, bio/links/genres/
-  language/privacy), `user_settings` (theme/default-visibility/notification prefs), `follows`
-  with a `status` state machine (public → accepted, private → pending request +
-  accept/reject/cancel), transactional follower/following counts, `taxonomy` module
-  (languages/genres reference + seed), `media` module (synchronous S3 + `sharp` avatar/cover
-  — no background job), profile search indexing (tsvector + trigram, no API), cursor-paginated
-  follower/following/request lists, and the private-account visibility teaser (docs 13 §4.2).
-  Note: `penName` still absent from auth registration — profiles own it (get-or-create).
-- **E3 (Editor & Drafts) + E4 (Publishing) — implemented as the "Writing Engine".**
-  `pieces` (+`piece_tags`, `tags`) with the full lifecycle draft → (scheduled) → published →
-  archived + duplicate/preview; TipTap JSON canonical + server-side schema-whitelist
-  sanitizer (docs 13 §5.2); derived `content_text`/`word_count`/`reading_time` via
-  `@qalam/utils`; slug generated at first publish, immutable after; one language per piece,
-  optional genre (required at publish), get-or-create hashtag tags; cover upload (reuses the
-  media pipeline); owner-only mutations, visibility-gated reads; cursor-paginated
-  `/me/drafts` + `/me/pieces`; `pieces.search_vector` + trigram indexes as search prep (no
-  search API). **Scheduled publishing stores the schedule only — the BullMQ worker is a
-  later epic.** `piece_stats` (engagement counters) also deferred (E7).
-- **E5–E10:** not started (Reading experience, Feeds, Social, Search, Notifications, Admin).
+**Delivered (backend):** E1 Auth & Identity · E2 Profiles & Follow · E3+E4 Writing Engine
+(drafts + publishing) · E6 Feeds & Discovery · E7 Social & Curation (engagement) · E8 Search ·
+E9 Notifications · PBAC authorization · E10-Analytics · E11 Asynchronous Processing
+(BullMQ queues/workers/scheduler/cache/monitoring) · E12 Production Hardening (security,
+observability, deployment, CI/CD, docs 19–25). The backend is production-ready: 272 unit
+tests, `nest build` + `docker build` green, 7 health probes, `/metrics`, Sentry, global rate
+limiting. Readiness report: `docs/24_BackendReadinessReport.md`.
 
-Do not implement Phase 2 concerns (AI, payments, Apple login) anywhere.
+**Deferred out of Phase 1 (NOT built — revisit in a later phase if still wanted):** E5 Reading
+experience; the E10-Admin dashboard/moderation UI + card templates (admin **APIs** are partial
+— monitoring, system-notifications, and analytics exist; the full moderation workflow does
+not); and within-epic deferrals (`reading_lists`, reposts, quotes; cross-actor notification
+aggregation).
+
+**Next: Phase 2** (AI, payments/subscriptions/monetization, Apple login) — **not yet started;
+do not implement until explicitly planned.** When it begins, build as new modules + additive
+endpoints/columns that never break the frozen `v1` contract (`docs/25` §8). The React frontend
+and the separate Flutter app consume `v1` via `openapi.json` → `@qalam/api-types`.
 
 ## Monorepo map
 

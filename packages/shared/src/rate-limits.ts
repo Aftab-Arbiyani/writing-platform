@@ -48,6 +48,10 @@ export const RATE_LIMIT_TIERS = {
   engagement: { windowSeconds: 60, max: 60, keyBy: 'user' },
   search: { windowSeconds: 60, max: 30, keyBy: 'user-or-ip' },
   read: { windowSeconds: 60, max: 300, keyBy: 'user-or-ip' },
+  // Baseline applied class-level to every controller so no endpoint is ever
+  // unlimited (docs 05 §8 "default"). Endpoints that declare a specific tier
+  // override it; this is the safety net for reads/writes not otherwise classified.
+  apiDefault: { windowSeconds: 60, max: 300, keyBy: 'user-or-ip' },
 } as const satisfies Record<string, RateLimitTier>;
 
 /** Name of a defined rate-limit tier. */

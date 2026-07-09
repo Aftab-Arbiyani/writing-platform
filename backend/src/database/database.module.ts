@@ -26,6 +26,13 @@ import { databaseConfig } from '../config/database.config';
         synchronize: false,
         namingStrategy: new SnakeNamingStrategy(),
         logging: db.logging,
+        // Connection pool (Epic 12) — explicit + production-tunable (DB_POOL_*).
+        extra: {
+          max: db.pool.max,
+          min: db.pool.min,
+          idleTimeoutMillis: db.pool.idleTimeoutMs,
+          connectionTimeoutMillis: db.pool.connectionTimeoutMs,
+        },
       }),
     }),
   ],

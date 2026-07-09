@@ -4,6 +4,10 @@
  * versioning / validation), then the response contract (filter + interceptor),
  * then docs.
  */
+// MUST be first — initializes Sentry before Nest/OpenTelemetry so auto-instrumentation
+// hooks are in place (docs 14 §2). No-op when SENTRY_DSN is empty.
+import './instrument';
+
 import 'reflect-metadata';
 
 import { RequestMethod, ValidationPipe, VersioningType } from '@nestjs/common';
@@ -58,12 +62,14 @@ async function bootstrap(): Promise<void> {
   });
 
   // All routes live under /api; URI versioning yields /api/v1/... (ADR §5).
-  // Health probes are excluded so orchestrators hit bare /health, /health/ready
-  // (version-neutral controller) without knowing the API version (docs 14).
+  // Health + metrics probes are excluded so orchestrators/scrapers hit bare
+  // /health/* and /metrics (version-neutral) without knowing the API version
+  // (docs 14 §3/§4). `health/(.*)` covers every per-dependency probe.
   app.setGlobalPrefix('api', {
     exclude: [
       { path: 'health', method: RequestMethod.GET },
-      { path: 'health/ready', method: RequestMethod.GET },
+      { path: 'health/(.*)', method: RequestMethod.GET },
+      { path: 'metrics', method: RequestMethod.GET },
     ],
   });
   app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
@@ -94,7 +100,22 @@ async function bootstrap(): Promise<void> {
   if (config.nodeEnv !== 'production') {
     const swaggerConfig = new DocumentBuilder()
       .setTitle('Qalam API')
+      .setDescription(
+        [
+          'Qalam backend REST API (URI-versioned under `/api/v1`).',
+          '',
+          'Every success response is wrapped in `{ success: true, data, meta? }`;',
+          'list endpoints add `meta.pagination`. Every error is',
+          '`{ success: false, error: { code, message, details, requestId } }` where',
+          '`code` is a stable `@qalam/shared` `ERROR_CODES` value and `requestId`',
+          'correlates the client error, the server log line, and the Sentry event.',
+          'Common statuses: 400 `VALIDATION_FAILED`, 401 `UNAUTHORIZED`,',
+          '403 `AUTH_PERMISSION_DENIED`, 404 `NOT_FOUND`, 409 `CONFLICT`,',
+          '429 `RATE_LIMITED` (with `Retry-After`).',
+        ].join('\n'),
+      )
       .setVersion('1.0')
+      .addServer(config.apiUrl, 'This environment')
       .addBearerAuth()
       .build();
     const document = SwaggerModule.createDocument(app, swaggerConfig);

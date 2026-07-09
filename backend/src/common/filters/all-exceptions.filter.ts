@@ -1,5 +1,6 @@
 import { Catch, HttpException, HttpStatus } from '@nestjs/common';
 import type { ArgumentsHost, ExceptionFilter, LoggerService } from '@nestjs/common';
+import * as Sentry from '@sentry/nestjs';
 import type { Request, Response } from 'express';
 
 import { REQUEST_ID_HEADER } from '../constants/http.constants';
@@ -78,12 +79,22 @@ export class AllExceptionsFilter implements ExceptionFilter {
       message = 'An unexpected error occurred.';
     }
 
-    // 5xx are bugs or outages — log with stack; 4xx are normal API traffic.
+    // 5xx are bugs or outages — log with stack + report to Sentry (no-op when the
+    // DSN is unset); 4xx are normal API traffic. The requestId is the shared
+    // correlation key between the client envelope, the log line, and Sentry.
     if (status >= 500) {
       this.logger.error(
         `Unhandled ${status} on ${request.method} ${request.url} [requestId=${requestId}]`,
         exception instanceof Error ? exception.stack : String(exception),
       );
+      Sentry.withScope((scope) => {
+        scope.setTag('requestId', requestId);
+        const userId = (request as { user?: { id?: string } }).user?.id;
+        if (userId !== undefined) {
+          scope.setUser({ id: userId }); // id only — never email/username (docs 14 §2.4)
+        }
+        Sentry.captureException(exception);
+      });
     }
 
     const envelope: ApiErrorEnvelope = {

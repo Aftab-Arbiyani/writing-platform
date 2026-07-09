@@ -12,6 +12,8 @@ import { MediaStorageService } from './media-storage.service';
 @Global()
 @Module({
   providers: [MediaStorageService, ImageService, MediaService],
-  exports: [MediaService],
+  // MediaStorageService is exported so the health module can HEAD the bucket
+  // for the storage readiness probe (docs 14 §3).
+  exports: [MediaService, MediaStorageService],
 })
 export class MediaModule {}

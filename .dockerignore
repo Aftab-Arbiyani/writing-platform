@@ -7,7 +7,12 @@ node_modules
 **/.turbo
 .git
 docs
+**/*.md
 coverage
 **/coverage
 .env
 .env.*
+# Local tooling / CI artifacts that must never bloat the image context.
+.github
+**/*.spec.ts
+**/*.e2e-spec.ts

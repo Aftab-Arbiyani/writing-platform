@@ -11,9 +11,10 @@
 #   docker build -f infrastructure/docker/backend.Dockerfile .
 # ─────────────────────────────────────────────────────────────────────────────
 
-# ── Stage 1: base — Node 24 with pnpm activated via corepack ────────────────
+# ── Stage 1: base — Node 24 with the pinned pnpm activated via corepack ─────
 FROM node:24-alpine AS base
-RUN corepack enable
+# Pin pnpm to the repo's packageManager version (reproducible builds, no drift).
+RUN corepack enable && corepack prepare pnpm@9.12.0 --activate
 WORKDIR /repo
 
 # ── Stage 2: build — full monorepo install + turbo build ───────────────────
@@ -44,4 +45,11 @@ COPY --from=build --chown=node:node /prod/backend .
 
 USER node
 EXPOSE 4000
+
+# Liveness healthcheck — hits /health (process-up only; no dependency checks, so
+# a DB/Redis blip never marks the container unhealthy). Uses Node's global fetch
+# (no curl/wget in the slim image). Orchestrators/compose gate on this.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||4000)+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+
 CMD ["node", "dist/main.js"]

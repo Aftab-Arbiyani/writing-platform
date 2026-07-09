@@ -1,22 +1,32 @@
 import { Controller, Get, VERSION_NEUTRAL } from '@nestjs/common';
-import { ApiOkResponse, ApiServiceUnavailableResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiOkResponse,
+  ApiOperation,
+  ApiServiceUnavailableResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { HealthCheck, HealthCheckService, TypeOrmHealthIndicator } from '@nestjs/terminus';
 import type { HealthCheckResult } from '@nestjs/terminus';
 
 import { QueueHealthIndicator } from '../infrastructure/queue/queue-health.indicator';
 import { Public } from '../modules/auth/decorators/public.decorator';
 import { RedisHealthIndicator } from './indicators/redis.health-indicator';
+import { StorageHealthIndicator } from './indicators/storage.health-indicator';
 
 /**
- * Probe endpoints for orchestrators (docs 14). Mounted at the root
- * (`/health`, `/health/ready`) — version-neutral and excluded from the `/api`
- * prefix in `main.ts` — so infra can probe without knowing the API version.
+ * Probe endpoints for orchestrators (docs 14 §3). Mounted at the ROOT
+ * (`/health/*`, version-neutral, excluded from the `/api` prefix in `main.ts`)
+ * so infra can probe without knowing the API version, and all are `@Public` +
+ * exempt from rate limiting.
  *
- * - Liveness (`/health`): "is the process up?" — no dependency checks, so a
- *   dependency blip never triggers a restart.
- * - Readiness (`/health/ready`): "can it serve traffic?" — pings Postgres and
- *   Redis; returns 503 (via Terminus) when a dependency is down, and the load
- *   balancer stops routing to this instance.
+ * - **Liveness** (`GET /health`, alias `GET /health/live`): "is the process up?"
+ *   — no dependency checks, so a dependency blip never triggers a pod restart.
+ * - **Readiness** (`GET /health/ready`): "can it serve traffic?" — Postgres +
+ *   Redis + queues. Storage is deliberately NOT in this hard gate: it is
+ *   degraded-not-dead (reads still work if only storage is down, docs 14 §3), so
+ *   a storage blip must not pull the instance out of rotation.
+ * - **Per-dependency** (`/health/database`, `/redis`, `/storage`, `/queues`): a
+ *   targeted probe each, for dashboards and on-call triage.
  */
 @ApiTags('health')
 @Public()
@@ -27,24 +37,75 @@ export class HealthController {
     private readonly db: TypeOrmHealthIndicator,
     private readonly redis: RedisHealthIndicator,
     private readonly queues: QueueHealthIndicator,
+    private readonly storage: StorageHealthIndicator,
   ) {}
 
   @Get()
   @HealthCheck()
+  @ApiOperation({ summary: 'Liveness — is the process alive? No dependency checks.' })
   @ApiOkResponse({ description: 'Process is alive.' })
   liveness(): Promise<HealthCheckResult> {
     return this.health.check([]);
   }
 
+  @Get('live')
+  @HealthCheck()
+  @ApiOperation({ summary: 'Liveness alias (Kubernetes livenessProbe convention).' })
+  @ApiOkResponse({ description: 'Process is alive.' })
+  live(): Promise<HealthCheckResult> {
+    return this.health.check([]);
+  }
+
   @Get('ready')
   @HealthCheck()
+  @ApiOperation({ summary: 'Readiness — Postgres + Redis + queues reachable.' })
   @ApiOkResponse({ description: 'Process is ready to serve traffic.' })
-  @ApiServiceUnavailableResponse({ description: 'A dependency (Postgres/Redis/queues) is down.' })
+  @ApiServiceUnavailableResponse({
+    description: 'A hard dependency (Postgres/Redis/queues) is down.',
+  })
   readiness(): Promise<HealthCheckResult> {
     return this.health.check([
       () => this.db.pingCheck('database'),
       () => this.redis.isHealthy('redis'),
       () => this.queues.isHealthy('queues'),
     ]);
+  }
+
+  @Get('database')
+  @HealthCheck()
+  @ApiOperation({ summary: 'Postgres connectivity (SELECT 1).' })
+  @ApiOkResponse({ description: 'Database reachable.' })
+  @ApiServiceUnavailableResponse({ description: 'Database unreachable.' })
+  database(): Promise<HealthCheckResult> {
+    return this.health.check([() => this.db.pingCheck('database')]);
+  }
+
+  @Get('redis')
+  @HealthCheck()
+  @ApiOperation({ summary: 'Redis connectivity (PING, DB 0).' })
+  @ApiOkResponse({ description: 'Redis reachable.' })
+  @ApiServiceUnavailableResponse({ description: 'Redis unreachable.' })
+  redisHealth(): Promise<HealthCheckResult> {
+    return this.health.check([() => this.redis.isHealthy('redis')]);
+  }
+
+  @Get('storage')
+  @HealthCheck()
+  @ApiOperation({ summary: 'Object-storage connectivity (HEAD media bucket).' })
+  @ApiOkResponse({ description: 'Storage reachable.' })
+  @ApiServiceUnavailableResponse({
+    description: 'Storage unreachable (degraded — reads still work).',
+  })
+  storageHealth(): Promise<HealthCheckResult> {
+    return this.health.check([() => this.storage.isHealthy('storage')]);
+  }
+
+  @Get('queues')
+  @HealthCheck()
+  @ApiOperation({ summary: 'BullMQ queue connectivity + per-queue depth snapshot.' })
+  @ApiOkResponse({ description: 'Queues reachable.' })
+  @ApiServiceUnavailableResponse({ description: 'Queue Redis unreachable.' })
+  queuesHealth(): Promise<HealthCheckResult> {
+    return this.health.check([() => this.queues.isHealthy('queues')]);
   }
 }

@@ -365,6 +365,37 @@ No new database tables.
   Docker stability); the metrics taxonomy (depth-by-state, oldest-waiting age, worker count)
   is preserved for the Phase 1.5 Prometheus export.
 
+**E12 build amendment (Production Hardening).** No business changes; security /
+observability / deployment / release readiness only. Full report: `docs/24`.
+
+- **Rate limiting is now global.** `RateLimitGuard` is an APP_GUARD (registered
+  after `JwtAuthGuard`), so every endpoint is limited — its declared `@RateLimit`
+  tier, or the new `apiDefault` (300/min user-or-ip) baseline. Idempotent per
+  request (route-level `@UseGuards(RateLimitGuard)` is now redundant but harmless),
+  health/metrics-exempt, and disabled by `RATE_LIMIT_ENABLED=false` for load tests.
+  This closes the pre-E12 gap where ~50 endpoints (incl. a public write) were
+  unlimited.
+- **Sentry** is initialized in `instrument.ts` (first import; no-op without DSN) —
+  10% traces, `sendDefaultPii:false`, id-only user, `/auth/*` body + secret
+  scrubbing mirroring `logger/redaction.ts` (the single redaction source, docs 14
+  §1.6). 5xx captured in the exception filter with the `requestId` tag.
+- **Health** expanded from 2 to 7 probes (`/health/{live,ready,database,redis,
+storage,queues}`); storage is degraded-not-dead (not in the hard readiness gate).
+  **`/metrics`** ships now (hand-rolled Prometheus text, token-gated) rather than
+  waiting for the 1.5 `prom-client` rollout — same fixed taxonomy.
+- **DB connection pool** made explicit + env-tunable (`DB_POOL_*`); index added on
+  `notifications.actor_id`.
+- **Dependency security**: nodemailer 6→9 and a `multer ≥2.2.0` pnpm override clear
+  all HIGH advisories; `pnpm audit --prod --audit-level high` is a CI gate.
+- **Deployment/CI**: `docker-compose.prod.yml` (restart/limits/grace/healthchecks),
+  Dockerfile `HEALTHCHECK` + pinned pnpm, and CI jobs for audit + gitleaks +
+  migration up/down validation + image build (plus a manual e2e workflow).
+- **Backend Freeze v1** (`docs/25`): post-E12 the API surface is frozen at `v1`.
+  Future work (AI, subscriptions, admin, reading experience, clients) is
+  **additive-only** — no breaking change to the `v1` envelope, error codes,
+  permissions, or schema semantics; a genuine breaking change requires a new API
+  version (`/api/v2`). This is the governing contract for all subsequent epics.
+
 **Version pins (caret ranges):** NestJS ^11 · TypeORM ^0.3 · React ^19 · Vite ^7 ·
 AntD ^5 · Tailwind ^4 · TanStack Query ^5 · Zustand ^5 · RHF ^7 · Zod ^3.24 (v4 blocked
 by `@hookform/resolvers` peer range — migrate when supported) · TipTap ^3 · ESLint ^9 ·

@@ -1,6 +1,7 @@
 import {
   DeleteObjectCommand,
   GetObjectCommand,
+  HeadBucketCommand,
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
@@ -55,5 +56,14 @@ export class MediaStorageService {
 
   async delete(key: string): Promise<void> {
     await this.client.send(new DeleteObjectCommand({ Bucket: this.config.bucket, Key: key }));
+  }
+
+  /**
+   * Readiness probe — `HEAD` the media bucket (docs 14 §3). Throws if the bucket
+   * is unreachable/missing; the caller treats storage as "degraded, not dead"
+   * (reads still work), so this never fails liveness.
+   */
+  async checkHealth(): Promise<void> {
+    await this.client.send(new HeadBucketCommand({ Bucket: this.config.bucket }));
   }
 }

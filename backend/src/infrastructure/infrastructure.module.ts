@@ -1,4 +1,5 @@
 import { Global, Module } from '@nestjs/common';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 import { BullModule } from '@nestjs/bullmq';
 import { ConfigModule } from '@nestjs/config';
 
@@ -17,6 +18,9 @@ import { EventBridgeService } from './events/event-bridge.service';
 import { MaintenanceService } from './maintenance/maintenance.service';
 import { AdminCacheController } from './monitoring/admin-cache.controller';
 import { AdminQueueController } from './monitoring/admin-queue.controller';
+import { MetricsController } from './monitoring/metrics.controller';
+import { MetricsInterceptor } from './monitoring/metrics.interceptor';
+import { MetricsService } from './monitoring/metrics.service';
 import { QueueMonitorService } from './monitoring/queue-monitor.service';
 import { DeadLetterService } from './queue/dead-letter.service';
 import { QueueProducer } from './queue/queue-producer.service';
@@ -113,7 +117,7 @@ const workers =
     SearchModule,
     AuthModule,
   ],
-  controllers: [AdminQueueController, AdminCacheController],
+  controllers: [AdminQueueController, AdminCacheController, MetricsController],
   providers: [
     QueueRegistry,
     QueueProducer,
@@ -122,6 +126,8 @@ const workers =
     CacheService,
     CacheWarmerService,
     QueueMonitorService,
+    MetricsService,
+    { provide: APP_INTERCEPTOR, useClass: MetricsInterceptor },
     MaintenanceService,
     SchedulerService,
     EventBridgeService,
