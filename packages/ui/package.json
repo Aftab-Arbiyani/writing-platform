@@ -16,6 +16,10 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
+    "./motion": {
+      "types": "./dist/motion.d.ts",
+      "import": "./dist/motion.js"
+    },
     "./styles/tokens.css": "./styles/tokens.css",
     "./styles/tailwind.css": "./styles/tailwind.css"
   },
@@ -37,5 +41,11 @@
     "react": "^19.0.0",
     "tsup": "^8.0.0",
     "typescript": "^5.6.0"
+  },
+  "dependencies": {
+    "clsx": "^2",
+    "framer-motion": "^12",
+    "lucide-react": "^0.468",
+    "tailwind-merge": "^3"
   }
 }

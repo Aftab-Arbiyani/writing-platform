@@ -337,6 +337,43 @@ review** — lint restricts `fetch` imports outside `lib/`.
 - No inline `style={{}}` except values that are computed at runtime (progress widths,
   virtualized offsets).
 
+### 4.7 Where each value lives (frontend placement)
+
+The package graph (`03` §4–5) dictates placement; a value has exactly one home. This is the
+table reviewers hold frontend PRs against:
+
+| Kind                                                                     | Home                                  | Rule                                                                                    |
+| ------------------------------------------------------------------------ | ------------------------------------- | --------------------------------------------------------------------------------------- |
+| Wire request/response types                                              | `@qalam/api-types`                    | Generated from `openapi.json`; never hand-duplicated.                                   |
+| Domain enums (`PieceStatus`, `Visibility`, `Role`, `NotificationType`…)  | `@qalam/shared`                       | Imported, never re-declared; `as const` object + union in Vite packages (§1.3).         |
+| Domain constants/limits/regex (`MAX_CLAPS_PER_USER`, `USERNAME_REGEX`…)  | `@qalam/shared`                       | The one source both FE and BE import.                                                   |
+| Error codes / permissions catalogue                                      | `@qalam/shared`                       | `ERROR_CODES`, `PERMISSIONS`, `DEFAULT_ROLE_PERMISSIONS`, `permissionSatisfies`.        |
+| Pure functions (`slugify`, `readingTime`, cursor helpers, `assertNever`) | `@qalam/utils`                        | No I/O, no domain constants, no framework.                                              |
+| Design tokens / theme / motion variants                                  | `@qalam/ui`                           | Single token source (`07` §1, §12).                                                     |
+| Query-key factory                                                        | `src/lib/query-keys.ts` (`qk.*`)      | Data-shaped, one factory per app; ad-hoc string keys banned (`12` §2.1).                |
+| App-local types (props, view models)                                     | `features/<name>/types` / `src/types` | Feature-local unless used by 2+ features → move down. Never a `features/common` drawer. |
+
+Client permission gating decodes `role` from the JWT and derives capabilities from
+`@qalam/shared` `DEFAULT_ROLE_PERMISSIONS` — a **UX hint only**; the server is authoritative
+(`12` §7, `26` §8).
+
+### 4.8 Frontend performance rules
+
+- **Route-group `lazy()`** is the unit of code-splitting; `React.lazy` for below-route heavy
+  islands (TipTap editor, publish sheet, analytics charts) — the editor is **never** in the
+  visitor-critical path (`11` §9).
+- **Render discipline:** narrow Zustand selectors (bare `useStore()` re-renders on every slice
+  change — banned); `useMemo`/`useCallback` only where a measured cost or dependency-identity
+  demands it, not by reflex; stable list keys (never array index for dynamic lists).
+- **TanStack does caching/dedup** — never reimplement with `useEffect`+`useState`; `staleTime`
+  tiers live in hooks, not components (`12` §2.2). Effects are a last resort: prefer deriving
+  during render and event handlers over "sync X to Y" effects; never an effect to sync
+  URL⇄state (the URL _is_ the state) or to fetch.
+- **Editor:** TipTap owns the document; React reads on demand (`12` §5). **Images:** S3 keys →
+  `mediaUrl()`; `loading="lazy"`, explicit dimensions, `max-width:100%`. **Fonts:** Nastaliq
+  lazy-loaded on the Urdu reading surface only (`07` §3.3). **Motion:** shared variants only,
+  all degrade under reduced motion (`07` §14).
+
 ---
 
 ## 5. Imports & Barrels

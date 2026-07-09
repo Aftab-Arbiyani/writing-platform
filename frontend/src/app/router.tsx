@@ -1,19 +1,58 @@
 import type { ReactElement } from 'react';
-
 import { createBrowserRouter, RouterProvider } from 'react-router';
 
-import NotFound from '@/app/pages/not-found';
-import PlaceholderHome from '@/app/pages/placeholder-home';
+import { RequireAuth } from '@/app/guards/require-auth';
+import { RequireGuest } from '@/app/guards/require-guest';
+import { AuthLayout } from '@/app/layouts/auth-layout';
+import { RootLayout } from '@/app/layouts/root-layout';
+import { Forbidden } from '@/app/pages/forbidden';
+import { NotFound } from '@/app/pages/not-found';
+import { Offline } from '@/app/pages/offline';
+import { Landing } from '@/app/pages/placeholder-home';
+import { RouteErrorBoundary } from '@/app/pages/route-error';
+import { Unauthorized } from '@/app/pages/unauthorized';
 
 /**
- * Routing shell only. The full route map lives in docs/11_RoutingArchitecture.md
- * (`/feed`, `/p/:slug`, `/@:username`, `/write`, `/search`, `/me/*`, `/settings/*`,
- * `/auth/*`). Feature routes register here in Phase 1 as lazy() route groups so
- * each feature ships as its own chunk.
+ * Route tree (docs/11). Public + authenticated surfaces share RootLayout (chrome); the
+ * auth corridor is a SIBLING tree under AuthLayout (no chrome). Feature route groups are
+ * lazy() for per-route code-splitting; F1 ships placeholders only. Full map: docs/11 §10.
  */
 const router = createBrowserRouter([
-  { path: '/', element: <PlaceholderHome /> },
-  { path: '*', element: <NotFound /> },
+  {
+    element: <RootLayout />,
+    errorElement: <RouteErrorBoundary />,
+    children: [
+      { index: true, element: <Landing /> },
+      { path: 'feed', lazy: () => import('@/app/routes/feed') },
+      { path: 'search', lazy: () => import('@/app/routes/search') },
+      // Error surfaces (also reachable directly / via deep links):
+      { path: '401', element: <Unauthorized /> },
+      { path: '403', element: <Forbidden /> },
+      { path: '404', element: <NotFound /> },
+      { path: 'offline', element: <Offline /> },
+      // Authenticated surfaces — gated by RequireAuth (a pathless layout route):
+      {
+        element: <RequireAuth />,
+        children: [
+          { path: 'write', lazy: () => import('@/app/routes/write') },
+          { path: 'notifications', lazy: () => import('@/app/routes/notifications') },
+          { path: 'settings', lazy: () => import('@/app/routes/settings') },
+        ],
+      },
+      { path: '*', element: <NotFound /> },
+    ],
+  },
+  {
+    // Guest-only auth corridor — no app chrome (docs/11 §3).
+    element: <RequireGuest />,
+    errorElement: <RouteErrorBoundary />,
+    children: [
+      {
+        element: <AuthLayout />,
+        children: [{ path: 'auth/login', lazy: () => import('@/app/routes/auth-login') }],
+      },
+    ],
+  },
 ]);
 
 export function AppRouter(): ReactElement {

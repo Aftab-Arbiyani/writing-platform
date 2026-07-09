@@ -1,20 +1,35 @@
+import { QButton, QEmptyState, QPageContainer } from '@qalam/ui';
+import { Compass } from 'lucide-react';
 import type { ReactElement } from 'react';
+import { useNavigate } from 'react-router';
 
-import { Link } from 'react-router';
+import { usePageTitle } from '@/hooks/use-page-title';
+import { ROUTES } from '@/lib/routes';
 
-// Default export: route pages are default-exported for React Router lazy()
-// code-splitting in Phase 1 (see placeholder-home.tsx).
-export default function NotFound(): ReactElement {
+/**
+ * 404 — full chrome, offers an exit (docs/11 §6). Renders inside RootLayout's <main>, so it
+ * gets the app shell. Also the fallback for private/invisible resources (existence not leaked).
+ */
+export function NotFound(): ReactElement {
+  const navigate = useNavigate();
+  usePageTitle('Page not found');
   return (
-    <main className="flex min-h-dvh flex-col items-center justify-center bg-canvas ps-6 pe-6 text-center">
-      <p className="text-sm text-ink-muted">404</p>
-      <h1 className="mt-2 font-serif text-3xl text-ink">This page does not exist</h1>
-      <Link
-        to="/"
-        className="mt-6 text-accent underline underline-offset-4 hover:text-accent-hover"
-      >
-        Return home
-      </Link>
-    </main>
+    <QPageContainer className="py-16">
+      <QEmptyState
+        icon={Compass}
+        title="This page has wandered off."
+        description="The link may be broken, or the piece may have been unpublished."
+        action={
+          <QButton
+            variant="primary"
+            onClick={() => {
+              void navigate(ROUTES.feed);
+            }}
+          >
+            Back to the feed
+          </QButton>
+        }
+      />
+    </QPageContainer>
   );
 }

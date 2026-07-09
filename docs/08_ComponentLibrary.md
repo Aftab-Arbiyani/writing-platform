@@ -310,3 +310,86 @@ template for the package.
 _Why this shape:_ the expensive failure mode of shared libraries is not bad components —
 it is wrong-layer components and token drift. Steps 1 and 2 exist to kill exactly those
 two failure modes before any JSX is written.
+
+---
+
+## 8. Authoring standards (all apps)
+
+§1–§7 charter the `@qalam/ui` package. This section is the standard for authoring components
+**everywhere** — `@qalam/ui`, `frontend/`, and `admin/` app components. It enforces `16` §4
+for React and complements the placement table in §1.1.
+
+### 8.1 Where a component lives (the procedure)
+
+Run §1.1's table for every new component (first "yes" wins): token/theme/motion →
+`@qalam/ui/tokens`; generic primitive → `@qalam/ui` (`Q*`); presentational + domain-shaped +
+≥2 apps/features → `@qalam/ui` product component; app-wide composite wiring shell/session →
+`src/components/`; single-feature → `features/<name>/components/`. **Promotion is one-way**
+(§7) — a feature component a second feature needs moves _up_, never copy-pasted sideways
+(cross-feature imports are lint-blocked, `03` §5 rule 7).
+
+### 8.2 Container vs presentational (enforced by tier)
+
+|          | Presentational                                    | Container                                            |
+| -------- | ------------------------------------------------- | ---------------------------------------------------- |
+| Lives in | all of `@qalam/ui`, most `features/*/components/` | thin `features/*/components/` wrapper, route modules |
+| Knows    | props only (tokens, motion, a11y)                 | query hooks, mutations, URL params, stores           |
+| Data     | via props; **controlled** for social state        | fetches via the feature `api/` hooks                 |
+
+**Components never fetch** — component → feature query hook (`usePiece(id)`) → feature `api/`
+→ `lib/api-client` (three mockable layers, `16` §4.2). A component importing `api-client`/
+`fetch` fails review. **Social state is controlled** (§5): `PieceCard`/`ClapButton` receive
+`bookmarked`/`mine` and emit `onToggleBookmark`/`onClap`; the optimistic logic lives in the
+container's TanStack Query hook (`12` §2.5), never the presentational component.
+
+### 8.3 Folder & file conventions
+
+```
+features/<name>/
+├── api/        # query/mutation hooks — the only place this feature calls endpoints
+├── components/ # feature-private components
+├── hooks/      # use-*.ts
+├── stores/     # feature-private Zustand slices (client state only)
+├── schemas/    # Zod schemas for this feature's forms
+├── types/      # feature-local types (wire types from @qalam/api-types)
+└── index.ts    # the feature's PUBLIC surface — the only cross-feature import point
+```
+
+`@qalam/ui` component: `QButton/QButton.tsx` + `QButton.stories.tsx` + `index.ts`. Files
+kebab-case; component PascalCase. **No re-export barrels inside `components/`, `dto/`,
+`entities/`** (cycles + broken tree-shaking, `16` §5.2); allowed barrels: one per feature +
+the package root.
+
+### 8.4 Props design (applied)
+
+Data-shaped props (`piece={piece}`, not 14 scalars) — the wire contract is the design
+contract; **slots over boolean explosions** (`trailing`/`footer`/`prefix`); **controlled by
+default** for social state (no uncontrolled convenience variants); **`forwardRef` to the root
+
+- merge `className`** (never clobber); **required a11y props for non-text UI** (`QBadge.
+srLabel`, `QTag.removeLabel`, `QDialog.title`); **`LinkComponent` injection** for navigation
+  in `@qalam/ui` (no `react-router` import). Props interface `PascalCase`+`Props`, declared
+  above the component; explicit types, no `any`; user-content fields default `dir="auto"`.
+
+### 8.5 Composition, size & boundaries
+
+Compound components for cohesive groups (`Component.Root/.Header/.Body`) over 12-prop
+monoliths; **extract at 200 lines** (component's job is rendering, not orchestration —
+`16` §4.2); custom hooks for 3+-dep effects / state machines / twice-reused logic; reuse
+graduates _down_ (`components/`/`@qalam/ui`/`@qalam/utils`) — **never** a `features/common`
+junk drawer. **Feature boundary (load-bearing):** features never import other features'
+internals (go through `index.ts`); `app/` composes features, features never import `app/`;
+the exit check is `rm -rf features/<name>` + route removal (`03` §5 rule 7, §6.2).
+
+### 8.6 Applied checklist (any component, any app)
+
+```
+□ Placement correct per §8.1 (right tier; no cross-feature/side imports)
+□ Tokens only; dark correct (variable swap; dark: only shadow→border); RTL logical props + icon flip
+□ Keyboard reachable + :focus-visible ring; Esc/arrow where the pattern needs it (07 §13)
+□ Reduced motion via shared variants (07 §14); states loading/disabled(+reason)/error/empty designed
+□ forwardRef to root; className merged; a11y contract per §4 / 07 §9,§13
+□ No app imports in @qalam/ui; social state controlled; no fetch in components
+□ Function component; props interface above; < 200 lines; named export (default only for route lazy)
+□ Story per variant + Matrix (theme×dir) for @qalam/ui; Vitest for logic
+```

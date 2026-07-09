@@ -582,3 +582,163 @@ reserved for the rare structural difference (e.g., swapping shadow for border on
 elevated cards). Physical-direction utilities (`ml-*`, `pl-*`, `left-*`, `text-left`)
 are banned by lint in favor of logical ones (`ms-*`, `ps-*`, `start-*`, `text-start`) —
 ADR §6, RTL day one.
+
+---
+
+## 12. Applied usage — building with the system
+
+The sections above define the **values**; this section is the **consumption guide** — the
+decision procedures and guardrails for screen/component work. Behavior/layout: `06`;
+component contracts: `08`.
+
+### 12.1 How tokens reach your code
+
+- **Layout/spacing/color/type on your own markup → Tailwind utilities** that resolve to
+  `var(--q-*)` (`bg-surface`, `text-secondary`, `p-4`, `rounded-card`, `text-xl`).
+- **A one-off value not covered by a utility → `var(--q-*)` in a CSS file** (never a literal).
+- **An AntD widget's look → the theme** (`getAntdTheme(resolved)`, wired once in
+  `providers.tsx`) — never restyle AntD internals with Tailwind/inline styles; fix the mapping
+  in §10 if wrong.
+- **Guardrail (lint, review-blocking):** no raw hex/px/ms in app or `@qalam/ui` code — a hex
+  literal in a `.tsx` is a bug even when it looks right in both themes today.
+
+### 12.2 Color decision procedure
+
+1. **Backgrounds:** page `bg-canvas`; cards/inputs/popovers `bg-surface`; hover/selected/
+   filled/sidebar `bg-raised`. Reading view sits directly on `bg-canvas` (no card).
+2. **Text:** body/headings `text-primary`; small meta/stats `text-secondary`. **`text-muted`
+   is large-only** (§2.3.1) — timestamps/counts use `text-secondary`, never `text-muted`.
+3. **Accent (terracotta) is the only brand hue** — one primary action per view. Charts/badges
+   derive from neutral+semantic ramps; no ad-hoc blues/purples.
+4. **Semantics:** `*-text` for words (AA-tuned), base hue for icons/borders, `*-bg` for washes;
+   `warning` base is **never** text (§2.3.2).
+5. **Borders:** decorative `--q-border` for card edges; control boundaries use
+   `--q-border-strong` (≥3:1) or a filled `bg-raised` treatment (§2.3.4).
+
+### 12.3 Dark mode — you rarely write `dark:`
+
+Utilities resolve to `var(--q-*)` and swap on `data-theme="dark"`, so
+`bg-surface text-primary border-border` is correct in both modes with zero `dark:`. `dark:`
+is reserved for the structural case: **elevation = shadow in light, border + lighter surface
+in dark** (§4.3). `data-theme` is owned by `useThemeStore` after boot / the inline `<head>`
+script before boot — never written from a component.
+
+### 12.4 RTL — logical properties, always
+
+Two independent axes: UI-chrome direction (LTR in Phase 1) and content direction (per piece/
+per card). Use logical utilities only (§11 ban table); wrap every user string in `<bdi>`;
+`@username` is always LTR-isolated; directional icons flip (§6), time/media/checkmarks/
+wordmark/undo-redo do not. Verify every surface at `dir="rtl"` before merge.
+
+### 12.5 Type & spacing quick-picks
+
+- Chrome → `font-ui`; reading body/titles/editor → `font-reading` (Urdu → `font-reading-ur`,
+  reading surfaces only). Feed card title `text-xl`; piece title `text-3xl` serif; dialog
+  title `text-lg`. Reading column `max-width: 68ch`. Nastaliq rules are non-negotiable
+  (`06` §7).
+- Spacing allowlist `1,2,3,4,6,8,12,16,24` (`p-5`=20px is banned). Radii: `control` 6 /
+  `card` 10 / `modal` 16 / `full`. Z-index from the §4.4 scale — never invent a number.
+
+### 12.6 Applied checklist (per surface)
+
+```
+□ No raw hex/px/ms; correct text tier (secondary small meta; muted large-only)
+□ One accent role per view; semantics -text/base/-bg correctly
+□ Works light AND dark (variable swap; dark: only for shadow→border)
+□ Logical CSS only; user strings <bdi>; @username LTR-isolated
+□ Correct font stack + on-scale size; Nastaliq rules honored on reading surfaces
+□ Motion/icons from @qalam/ui only (§13.x, §6)
+```
+
+---
+
+## 13. Accessibility — implementation detail
+
+> **Extends §9** (the rules table + focus-ring/hit-area/ARIA policy) and §2.4 (contrast).
+> **Target: WCAG 2.1 AA**, a Definition-of-Done gate (`16` §8), enforced by the §2.4 token
+> test, `eslint-plugin-jsx-a11y`, and axe in Storybook CI (`08` §6). RTL + language-of-parts
+> are treated as a11y requirements. UX-level a11y behavior: `06` §9.
+
+### 13.1 Keyboard maps
+
+**Global** (`06` §2): `/` focus search · `c` → `/write` · `g f` → `/feed` · `Esc` closes the
+topmost layer (one per press) · `Tab`/`Shift+Tab` in reading order (first stop = skip-link).
+Global shortcuts are disabled while a text field/editor holds focus; registered in one
+app-level hook.
+
+**Widgets:** Tabs — `role="tablist"`, `←/→` move, `Home/End` to ends, selection updates the
+URL param. Editor toolbar — **roving tabindex**, `←/→` between buttons, `Esc` returns to text,
+`Cmd/Ctrl+B/I/U`. Dialog/Sheet — focus trapped, `Esc` closes (disabled for danger typed
+confirms), focus restored to invoker. Menu — `↑/↓`, `Enter`, `Esc`. ClapButton —
+`Enter`/`Space` = one clap, total announced after settle. Footnote ref — `Enter`/`Space`
+toggles in-place expansion. No keyboard traps except intentional modal traps; no positive
+`tabindex`.
+
+### 13.2 Focus management
+
+`:focus-visible` ring on **every** interactive element (§9; never `outline:none` without a
+replacement). Overlays trap + restore focus. On PUSH navigation, move focus to the top of
+`<main>` (paired with `<ScrollRestoration/>`, `11` §7). On invalid form submit, focus the
+first invalid field (`form.setFocus`) and scroll it in (`33`). Hit areas ≥44×44 on touch —
+small controls expand via a pseudo-element (§9).
+
+### 13.3 Screen readers & ARIA
+
+Prefer native semantics; ARIA only where no element carries the meaning. Skip-link is the
+first tab stop → `<main>`; landmarks `<header>/<nav>/<main>`. Icons decorative
+(`aria-hidden`) — the control carries the name. Toggles `aria-pressed` (`ClapButton` = `mine
+
+> 0`); `QBadge`requires`srLabel`; reading progress `role="progressbar"`throttled`aria-valuenow`(10% steps); feed`role="feed"`+`aria-busy`; toasts/autosave/clap-total
+`aria-live="polite"`(clap total once after batch); dialogs`role="dialog"`+`aria-labelledby`/`describedby`; form fields `aria-invalid`+`aria-describedby`. One polite
+> live region per concern — don't over-announce.
+
+### 13.4 Colour, language, testing
+
+Never rely on colour alone (WCAG 1.4.1) — pair semantic colour with an icon and/or text.
+Every content node carries `lang` + `dir` from the piece (SC 3.1.2); user strings `<bdi>`;
+Nastaliq legibility (§3, `06` §7) is an a11y concern. **Testing:** `eslint-plugin-jsx-a11y` at
+lint; **axe CI-blocking** on every Storybook story; a manual keyboard + screen-reader +
+`dir="rtl"` + dark pass before merge (behavior, not snapshots).
+
+---
+
+## 14. Motion — implementation detail
+
+> **Extends §5** (durations, easings, standard variants). Stack: **Framer Motion**. All motion
+> is implemented **only** through the variants exported from `@qalam/ui/motion` and the
+> `MotionProvider` — never inline `transition={{ duration }}` literals. Philosophy: motion
+> **clarifies, never entertains**; entrances decelerate, exits accelerate, **pages fade never
+> slide**.
+
+### 14.1 Which motion where
+
+- **Route change → `pageTransition`** (exit fade 150ms → enter fadeRise 250ms); no slides;
+  wraps routed content inside the layout (chrome doesn't re-animate); coordinate with
+  `lazy()` so the fade covers chunk-load tail.
+- **Cards mount → `fadeRise`**; in infinite feeds **only newly appended pages animate**,
+  content is **never auto-inserted above the viewport** (the "New pieces" pill prepends on
+  click). Stagger, if any, ≤20–30ms/item on first paint only.
+- **Overlays → `scaleIn`** enter / faster `fade` exit; scrim fades to `rgba(19,17,16,.55)`;
+  mobile bottom sheets slide up, side sheets slide from **inline-end** (mirrors in RTL).
+- **Buttons:** hover/active 150ms colour only (no press-scale); `loading` swaps icon for a
+  16px spinner, locks width, `aria-busy`.
+- **Clap burst → `clapBurst`** per tap (the one spring), disabled under reduced motion → static
+  increment; total announced via `aria-live` after the 600ms batch settles.
+- **Skeletons:** shimmer 1.8s inline-start→inline-end (mirrors RTL), appear ≤100ms, dims match
+  real min-heights; content surfaces never spin (spinners only inside buttons).
+- **Toasts:** `fadeRise` in, auto-dismiss (3s/5s/10s), pause on hover/focus, max 3 stacked,
+  `aria-live="polite"`; badges are static accent dots (no pulsing — quiet numbers).
+
+### 14.2 Reduced motion (non-negotiable)
+
+Honor `prefers-reduced-motion` **and** the Appearance override, once in `MotionProvider`:
+transform variants → opacity-only ≤150ms; shimmer → static; clap → static; page transition →
+instant/≤150ms fade; scroll behavior `auto`. Importing the shared variants gets this for free
+— never re-implement the media query per component.
+
+### 14.3 Performance & correctness
+
+Animate only `opacity`/`transform` on hot paths (never `width`/`height`/`top`/`box-shadow`);
+progress-bar width is the sanctioned runtime inline style, throttled to 10% steps. `will-
+change` only for the duration of an interaction. Never animate anything tied to TipTap's
+per-keystroke transactions — motion belongs to chrome and feedback, never the manuscript.

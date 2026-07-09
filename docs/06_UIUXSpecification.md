@@ -546,4 +546,98 @@ affordances (card overflow menus, footnote popovers) always have tap equivalents
   voices correctly. This is as important as `dir` and is set from the same piece field.
 - **Keyboard:** full app operable; editor uses standard shortcuts (Cmd/Ctrl+B/I/U);
   dialogs trap focus and restore it on close; `Esc` always exits the topmost layer.
-- Contrast commitments and exact ratios: `07_DesignSystem.md` §2.4 and §9.
+- Contrast commitments and exact ratios: `07_DesignSystem.md` §2.4 and §9. Full a11y
+  implementation detail (keyboard maps, focus, ARIA, testing): `07` §13.
+
+---
+
+## 10. Cross-screen guidelines & consistency
+
+The per-screen sections above specify _screens_; this section is the _guideline layer_ — the
+rules every feature obeys so many engineers produce one product. Navigation model: `10`
+(IA); token values: `07`; motion: `07` §14.
+
+### 10.1 The four feedback states (always design all four)
+
+A surface is not done until **loading, empty, error, and success** are specified — not just
+the happy path. The patterns are §4.1–§4.6 above; the contract:
+
+- **Loading** — skeleton-first within 100ms, layout-matched (no reflow); spinners only inside
+  buttons; route transitions never block on data (§4.3).
+- **Empty** — `QEmptyState` (`07` §7.7) with **catalogue copy** (§4.4): title ≤8 words, body
+  ≤20, ≤1 action, never blames the user, no exclamation marks.
+- **Error** — inline (field) / toast (background action) / in-place panel (content load);
+  copy maps from `error.code` (`lib/error-messages.ts`); 400→field errors, 422→inline/toast,
+  401→refresh-or-login, 403→"no". Never a blank screen or full-page error for a partial
+  failure (§4.5).
+- **Success** — quiet and reversible-first: reversible actions get a neutral/success toast
+  (often _with Undo_, not a separate confirm); consequential success navigates + confirms once
+  (publish → `/p/:slug` + quiet "Published." banner; schedule → `/me/drafts` "Scheduled"
+  group). Toasts never carry critical-path info (`07` §7.9).
+
+### 10.2 Interaction rule (reversible vs not)
+
+Reversible (like, clap, bookmark, follow, remove-from-collection, unfollow) → **optimistic +
+undo toast**; logic in the feature's TanStack Query hooks (`12` §2.5), not the component.
+Irreversible / server-authoritative (publish, schedule, delete published, delete account,
+report) → **never optimistic**, full round-trip, typed-confirm dialog for the destructive
+ones (§4.1, §4.6).
+
+### 10.3 Consistency rules (anti-drift)
+
+1. **One component per concept** — one `PieceCard`, one `ClapButton`; variants are props/
+   slots, never forks (`08` §5).
+2. **Copy lives in catalogues** (§4.4 / `lib/error-messages.ts`), referenced, never inlined.
+3. **Tokens only; logical props only; one motion source** (`@qalam/ui/motion`) — `07` §12,
+   §14.
+4. **Interaction patterns defined once** (optimistic recipe `12` §2.5, undo toast `07` §7.9,
+   infinite-scroll sentinel §4.2) — reuse the helper, don't re-implement per feature.
+5. **Numerals policy** (§6.5): UI chrome/stats/dates use Latin digits; author text untouched.
+6. **Two scripts, one dignity** — every feature verified in `dir="rtl"` before merge.
+
+---
+
+## 11. Responsive — layout & component rules
+
+> **Extends §8** (the breakpoint table + per-screen behavior). Breakpoints are Tailwind
+> defaults — **no custom breakpoints, ever** (ADR §7). Design mobile-first; whitespace grows
+> with the viewport, **columns do not**. This app is `frontend/`; `admin/` is desktop-only.
+
+### 11.1 Grid & layout
+
+- **Two columns max**, ever, except analytics tiles and admin tables. Single centered column
+  until `lg`, where an optional 320px secondary column appears.
+- **Content max-width 1280px** (reached at `xl`; beyond it margins grow, content doesn't
+  widen; `2xl` = same layout as `xl`). **Reading column never widens past 68ch** at any size.
+- Gutters 16px (base) → 24px (`sm`+); section spacing 32/48px mobile/desktop via tokens.
+- CSS grid/flexbox with **logical** properties; no `float`, no fixed non-shrinking widths.
+
+### 11.2 Navigation & sidebar behavior
+
+- **< 768:** bottom tab bar is primary nav (≤5, Write survives); secondary nav (feed/profile
+  tabs, search type) becomes a **swipeable/scrollable bar**; overflow filters → a bottom sheet.
+- **≥ lg:** the feed sidebar (320px) and settings side-nav (240px) appear; below that, sidebar
+  content relocates (feed → Discover tab; settings → list screen).
+- **Reading action rail:** sticky inline-start at `md`+; bottom action bar below `md` (hides on
+  scroll-down); after the body in the DOM so text is reached first; rail side + progress fill
+  mirror with content direction (§6.3).
+- **Dialogs → bottom sheets below `sm`** (`QDialog`, `07` §7.4).
+
+### 11.3 Tables, cards & media
+
+- The reader app avoids tables; the one (analytics "By piece") uses the AntD `Table` wrapper in
+  compact mode. **Below `lg`, tables scroll inside their own `overflow-x:auto`** — the page body
+  never scrolls sideways; numeric columns end-aligned with `tabular-nums`.
+- `PieceCard` is fluid (edge-to-edge + 16px padding mobile; inside the 680px column at `md`+);
+  the card grid does **not** flip in RTL — only each card's text block does (§6.6).
+- Covers/avatars: `max-width:100%` + **explicit width/height** (no layout shift), `loading=
+"lazy"`, `object-fit:cover`; dark dims to `brightness(0.92)`; built from S3 keys via a
+  `mediaUrl()` helper. Horizontal scrollers allowed only on featured/Discover shelves.
+- Touch targets grow to ≥44px below `lg`; hover-only affordances always have tap equivalents.
+
+### 11.4 Implementation
+
+Utility-prefix breakpoints only (`sm:`…`2xl:`) — no hand-written media queries in components;
+a shared `useMediaQuery` hook only where layout _logic_ must branch (Drawer vs bottom sheet).
+No off-scale spacing at any breakpoint. Verify at 375 / 768 / 1024 / 1440 in light+dark and
+ltr+rtl before merge.

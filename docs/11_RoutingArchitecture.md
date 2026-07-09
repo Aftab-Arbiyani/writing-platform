@@ -320,3 +320,105 @@ explicit wall gets reported.
 - Shared vendor chunks (`react`, router, TanStack Query, AntD core) split by Vite
   `manualChunks`; `@qalam/ui` tokens ship in the entry CSS so first paint is on-theme in
   both light and dark (ADR §6 dark mode is day one).
+
+---
+
+## 10. Route → API endpoint mapping (applied)
+
+> Routes **navigate**; TanStack Query **fetches** (§header). This section maps each route to
+> the **real, frozen `v1` endpoints** it drives (`05` is the contract; state keys in
+> `12` §2). `/api/v1` prefix omitted. ⚠ marks an integration gap (§10.4).
+
+| Route                             | Guard              | Lazy chunk   | Endpoints driven                                                                                                                                              |
+| --------------------------------- | ------------------ | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/` (landing)                     | —                  | `landing`    | `GET /me` (redirect users → `/feed`)                                                                                                                          |
+| `/feed?tab=`                      | — (following=auth) | `feed+piece` | `GET /feed/{following,latest,trending,discover}` (§10.1)                                                                                                      |
+| `/p/:slug`                        | optional-auth      | `feed+piece` | `GET /pieces/:id` ⚠, `/pieces/:id/engagement`, `/comments`, `/responses`; `POST /analytics/pieces/:id/view`,`/read`                                           |
+| `/search?q=&type=&…`              | optional-auth      | `search`     | `GET /search`, `/search/{pieces,writers,tags,genres,languages}`, `/autocomplete`, `/trending`, `/recent`; `DELETE /search/recent[/:id]`                       |
+| `/tag/:slug`                      | —                  | `feed+piece` | `GET /feed/latest?tag=:slug`                                                                                                                                  |
+| `/genre/:slug`                    | —                  | `feed+piece` | `GET /feed/latest?genre=:slug`                                                                                                                                |
+| `/write`, `/write/:draftId`       | `RequireAuth`      | `editor`     | `POST /pieces`, `PATCH /pieces/:id`, `POST /pieces/:id/{preview,publish,schedule,archive,unarchive,duplicate,cover}`                                          |
+| `/me/drafts`                      | `RequireAuth`      | `me/*`       | `GET /me/drafts`, `GET /me/pieces?status=`                                                                                                                    |
+| `/me/stats?range=`                | `RequireAuth`      | `me/stats`   | `GET /analytics/{me,me/growth,readers/me,dashboard}`, `GET /analytics/pieces/:id`                                                                             |
+| `/me/bookmarks`                   | `RequireAuth`      | `me/*`       | `GET /me/bookmarks`; `POST\|DELETE /pieces/:id/bookmarks`                                                                                                     |
+| `/me/lists` ⚠                     | `RequireAuth`      | `me/*`       | **none — not built** (§10.4)                                                                                                                                  |
+| `/me/collections`                 | `RequireAuth`      | `me/*`       | `GET/POST/PATCH/DELETE /collections[/:id]`, `GET/POST/DELETE /collections/:id/pieces`                                                                         |
+| `/settings/profile`               | `RequireAuth`      | `settings`   | `GET/PATCH /me`, `POST /profile/avatar`,`/profile/cover`                                                                                                      |
+| `/settings/account`               | `RequireAuth`      | `settings`   | `POST /auth/change-password`, `/auth/logout-all`                                                                                                              |
+| `/settings/appearance`            | `RequireAuth`      | `settings`   | `GET/PATCH /settings` + local `useThemeStore`                                                                                                                 |
+| `/auth/login`                     | `RequireGuest`     | `auth`       | `POST /auth/login`                                                                                                                                            |
+| `/auth/register`                  | `RequireGuest`     | `auth`       | `POST /auth/register` (no live username check — §10.4)                                                                                                        |
+| `/auth/forgot-password`           | `RequireGuest`     | `auth`       | `POST /auth/forgot-password`                                                                                                                                  |
+| `/auth/reset-password?token=`     | `RequireGuest`     | `auth`       | `POST /auth/reset-password`                                                                                                                                   |
+| `/auth/callback?code=`            | `RequireGuest`     | `auth`       | `POST /auth/google/exchange` (§10.2)                                                                                                                          |
+| `/@:username?tab=`                | optional-auth      | `profile`    | `GET /users/:username`, `/followers`, `/following`; `POST\|DELETE /users/:id/follow`; `GET /me/follow-requests`, `PATCH /follow-requests/:id/{accept,reject}` |
+| `/@:username/collections/:slug` ⚠ | —                  | `profile`    | owner-scoped only in `v1` (§10.4)                                                                                                                             |
+| `/notifications`                  | `RequireAuth`      | `me/*`       | `GET /notifications`, `/unread-count`, `PATCH …/read`,`/read-all`,`/:id/archive`, `DELETE /:id`; `GET/PATCH /notification-preferences`                        |
+| `*` (NotFound)                    | —                  | in shell     | none                                                                                                                                                          |
+
+Verify-email lands on a public/guest route or a banner action → `POST /auth/verify-email`
+`{ token }`; resend → `POST /auth/resend-verification`.
+
+### 10.1 Feed tab ↔ endpoint path
+
+The frontend URL is `/feed?tab=following|trending|latest|discover` (§5), but the **API is
+path-based**:
+
+```
+?tab=       →  endpoint                 auth
+following   →  GET /feed/following      JWT required
+trending    →  GET /feed/trending       public
+latest      →  GET /feed/latest         public
+discover    →  GET /feed/discover  (+ GET /discover/{writers,pieces,tags,genres,languages})  public
+```
+
+`useFeedTab()` Zod-coerces `?tab=` to the default (`following` users / `discover` visitors);
+the tab maps to the endpoint path **and** is the query-key discriminator (`qk.feed.list(tab)`,
+`12` §2.1). Latest-feed filters (`?language=`, `?genre=`, `?tag=`) pass through to
+`GET /feed/latest`; `/tag/:slug` and `/genre/:slug` are `latest` feeds with a fixed filter.
+The server forces `sort=trending` on `/feed/trending` — don't send a client `sort` there.
+
+### 10.2 Google OAuth is a redirect route, not a fetch
+
+The two Google endpoints are the **only non-enveloped (302) responses**:
+
+```
+[Login] --click--▶ top-level navigation to GET /auth/google   (NOT a fetch)
+   └─ Google consent
+   └─ GET /auth/google/callback  (backend sets httpOnly refresh cookie)
+        └─ 302 → ${VITE_APP_URL}/auth/callback?code=<oneTimeCode>
+[/auth/callback route] (RequireGuest, spinner, no chrome)
+   └─ POST /auth/google/exchange { code } → { accessToken } → memory
+   └─ navigate(returnTo ?? "/feed", { replace: true })
+```
+
+Never `fetch('/auth/google')` — it must be a top-level navigation so the browser follows the
+302 and stores the cookie. A failed exchange (`AUTH_OAUTH_FAILED`, `AUTH_OAUTH_STATE_INVALID`)
+drops to `/auth/login` with an inline banner.
+
+### 10.3 The `:id` types are not interchangeable
+
+`POST\|DELETE /users/:id/follow` — `:id` = **target user UUID**.
+`PATCH /follow-requests/:id/{accept,reject}` — `:id` = **follow-row UUID** (from
+`GET /me/follow-requests`). `GET /users/:username`, `/followers`, `/following` take the
+**username** string. Piece detail + sub-resources take the **piece UUID**. Route/hook code
+must not conflate these.
+
+### 10.4 Route ↔ API mismatches the frozen surface imposes
+
+Recorded so route modules handle them honestly (`26` §11 lists all Phase-1 gaps); each
+resolves via an **additive** backend endpoint (`docs/25` §8), never a frontend fake:
+
+1. **`/p/:slug` cannot cold-load by slug** ⚠ — `GET /pieces/:id` takes a UUID; there is no
+   public `slug → piece` endpoint. Navigating _from a list_ can pass the `id` (list items
+   carry both). A shared link / hard refresh has only the slug and cannot resolve an id today
+   (consistent with E5 Reading deferred). Build the reader against `GET /pieces/:id`; gate
+   cold-load `/p/:slug` behind a future `GET /pieces/by-slug/:slug`. Never guess an id.
+2. **`/me/lists`, reposts, quotes — not built** ⚠ (deferred E7). No endpoints; keep the IA
+   slot reserved, do not register a live data route.
+3. **Live username availability — no endpoint** ⚠ (`06` §3.7 wanted it). Validate the
+   _format_ client-side against `USERNAME_REGEX`; surface _taken_ only on submit
+   (`AUTH_USERNAME_TAKEN` → username field).
+4. **Public collection `/@:u/collections/:slug`** ⚠ — collections are owner-scoped +
+   `collection.manage` in `v1`; there is no public read, so this route fully works only for
+   the owner in Phase 1.

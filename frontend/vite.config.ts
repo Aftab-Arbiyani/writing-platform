@@ -22,5 +22,16 @@ export default defineConfig({
   build: {
     // Sourcemaps are uploaded to Sentry release-tagged (docs/00 §9).
     sourcemap: true,
+    rollupOptions: {
+      output: {
+        // Split heavy, stable vendors into their own cacheable chunks (docs/11 §9).
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router'],
+          'vendor-antd': ['antd'],
+          'vendor-query': ['@tanstack/react-query'],
+          'vendor-motion': ['framer-motion'],
+        },
+      },
+    },
   },
 });

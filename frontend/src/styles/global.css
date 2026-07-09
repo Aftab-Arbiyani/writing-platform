@@ -17,6 +17,11 @@
 @import '@qalam/ui/styles/tokens.css';
 @import '@qalam/ui/styles/tailwind.css';
 
+/* Tailwind v4 ignores node_modules, so it won't see the token-mapped utility classes
+ * used inside @qalam/ui components. Scan the package SOURCE so those classes are
+ * generated in this app's build. */
+@source '../../../packages/ui/src';
+
 /* Self-hosted fonts via @fontsource — no CDN (privacy + perf, docs/00 §6). */
 @import '@fontsource-variable/inter';
 @import '@fontsource/lora/400.css';

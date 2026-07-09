@@ -38,46 +38,113 @@ One factory per app in `src/lib/query-keys.ts`; ad-hoc key arrays are banned by 
 _Why a factory:_ invalidation targets prefixes — keys must be constructed, never typed.
 
 ```ts
+// Grounded in the frozen v1 surface; each key notes the endpoint it fetches.
 export const qk = {
   auth: {
-    me: () => ['auth', 'me'] as const,
+    me: () => ['auth', 'me'] as const, // GET /me
   },
+
+  // Feed — `tab` is the discriminator; the tab maps to an endpoint PATH (§2.1.1). Infinite.
   feed: {
     all: ['feed'] as const,
-    list: (tab: FeedTab) => ['feed', 'list', tab] as const, // infinite (§2.3)
+    list: (tab: FeedTab, filters?: FeedFilters) => ['feed', 'list', tab, filters ?? {}] as const, // GET /feed/{tab} — tab→path (§2.1.1)
   },
+  // Discover rails (the Discover tab's editorial content — separate endpoints).
+  discover: {
+    writers: (kind: WriterKind) => ['discover', 'writers', kind] as const, // GET /discover/writers?kind=
+    pieces: (kind: DiscoverPieceKind) => ['discover', 'pieces', kind] as const, // GET /discover/pieces?kind=
+    tags: () => ['discover', 'tags'] as const, // GET /discover/tags
+    genres: () => ['discover', 'genres'] as const, // GET /discover/genres
+    languages: () => ['discover', 'languages'] as const, // GET /discover/languages
+  },
+
   pieces: {
     all: ['pieces'] as const,
-    detail: (slug: string) => ['pieces', 'detail', slug] as const,
-    responses: (pieceId: string) => ['pieces', pieceId, 'responses'] as const,
+    detail: (id: string) => ['pieces', 'detail', id] as const, // GET /pieces/:id  (by UUID — §2.1.1)
+    engagement: (id: string) => ['pieces', id, 'engagement'] as const, // GET /pieces/:id/engagement
+    comments: (id: string) => ['pieces', id, 'comments'] as const, // GET /pieces/:id/comments (infinite)
+    responses: (id: string) => ['pieces', id, 'responses'] as const, // GET /pieces/:id/responses (infinite)
   },
+  comments: {
+    replies: (commentId: string) => ['comments', commentId, 'replies'] as const, // GET /comments/:id/replies
+  },
+
   profiles: {
-    detail: (username: string) => ['profiles', username] as const,
-    pieces: (username: string) => ['profiles', username, 'pieces'] as const,
+    detail: (username: string) => ['profiles', username] as const, // GET /users/:username
+    followers: (username: string) => ['profiles', username, 'followers'] as const, // GET /users/:username/followers
+    following: (username: string) => ['profiles', username, 'following'] as const, // GET /users/:username/following
   },
+
   me: {
     all: ['me'] as const,
-    drafts: () => ['me', 'drafts'] as const,
-    bookmarks: () => ['me', 'bookmarks'] as const,
-    lists: () => ['me', 'lists'] as const,
-    collections: () => ['me', 'collections'] as const,
-    stats: (range: StatsRange) => ['me', 'stats', range] as const,
+    drafts: () => ['me', 'drafts'] as const, // GET /me/drafts (infinite; status forced 'draft')
+    pieces: (status?: PieceStatus) => ['me', 'pieces', status ?? 'all'] as const, // GET /me/pieces?status=
+    bookmarks: () => ['me', 'bookmarks'] as const, // GET /me/bookmarks (infinite)
+    followRequests: () => ['me', 'follow-requests'] as const, // GET /me/follow-requests (infinite)
+    settings: () => ['me', 'settings'] as const, // GET /settings
+    stats: (range: StatsRange) => ['me', 'stats', range] as const, // → GET /analytics/me* (see analytics)
   },
-  search: (params: SearchParams) => ['search', params] as const,
+
+  collections: {
+    list: () => ['collections', 'list'] as const, // GET /collections (infinite)
+    detail: (id: string) => ['collections', id] as const, // GET /collections/:id
+    pieces: (id: string) => ['collections', id, 'pieces'] as const, // GET /collections/:id/pieces (infinite)
+  },
+
+  // Search — params object is the key; recent/trending/autocomplete are their own keys.
+  search: {
+    global: (q: string) => ['search', 'global', q] as const, // GET /search?q=
+    pieces: (params: SearchParams) => ['search', 'pieces', params] as const, // GET /search/pieces (infinite)
+    writers: (params: SearchParams) => ['search', 'writers', params] as const, // GET /search/writers (infinite)
+    tags: (q: string) => ['search', 'tags', q] as const, // GET /search/tags (infinite)
+    genres: (q: string) => ['search', 'genres', q] as const, // GET /search/genres (infinite)
+    languages: (q: string) => ['search', 'languages', q] as const, // GET /search/languages (infinite)
+    autocomplete: (q: string, type: SearchType) => ['search', 'autocomplete', q, type] as const,
+    trending: () => ['search', 'trending'] as const, // GET /search/trending
+    recent: () => ['search', 'recent'] as const, // GET /search/recent
+  },
+
+  // Taxonomy catalogues — NO /taxonomy endpoints exist (§2.1.1). Sourced from search/discover.
   taxonomy: {
-    tags: () => ['taxonomy', 'tags'] as const,
-    genres: () => ['taxonomy', 'genres'] as const,
-    languages: () => ['taxonomy', 'languages'] as const,
+    genres: () => ['taxonomy', 'genres'] as const, // → GET /search/genres (q omitted = browse by usage)
+    languages: () => ['taxonomy', 'languages'] as const, // → GET /search/languages (q omitted)
+    tags: () => ['taxonomy', 'tags'] as const, // → GET /discover/tags (trending) / /search/tags
   },
+
   notifications: {
-    list: () => ['notifications', 'list'] as const,
-    unreadCount: () => ['notifications', 'unread-count'] as const,
+    list: (filters?: NotificationFilters) => ['notifications', 'list', filters ?? {}] as const, // GET /notifications
+    unreadCount: () => ['notifications', 'unread-count'] as const, // GET /notifications/unread-count
+    preferences: () => ['notifications', 'preferences'] as const, // GET /notification-preferences
+  },
+
+  analytics: {
+    me: () => ['analytics', 'me'] as const, // GET /analytics/me
+    readers: () => ['analytics', 'readers', 'me'] as const, // GET /analytics/readers/me
+    dashboard: () => ['analytics', 'dashboard'] as const, // GET /analytics/dashboard
+    growth: (period: AnalyticsPeriod, points: number) =>
+      ['analytics', 'growth', period, points] as const, // GET /analytics/me/growth
+    piece: (id: string) => ['analytics', 'piece', id] as const, // GET /analytics/pieces/:id
   },
 } as const;
 ```
 
-Keys are **data-shaped, not screen-shaped** (`["pieces","detail",slug]`, never
+Keys are **data-shaped, not screen-shaped** (`["pieces","detail",id]`, never
 `["piece-page"]`) — three screens showing the same piece share one cache entry.
+
+### 2.1.1 Reconciliations with the frozen `v1` surface
+
+This factory was originally sketched ahead of the backend freeze. Where it differed, the
+**implemented surface wins** (`05` is the contract; `26` §9 maps every screen to its
+endpoints):
+
+1. **Piece is keyed by `id` (UUID), not `slug`.** `GET /pieces/:id` takes a UUID
+   (`ParseUUIDPipe`); there is no public `slug → piece` endpoint. The reader resolves the
+   piece object first, then keys every sub-resource (`engagement`, `comments`, `responses`,
+   analytics) by `piece.id`. Cold-loading `/p/:slug` needs an additive endpoint (`11` §5.1).
+2. **Feed is per-tab endpoint paths**, not `GET /feed?tab=`. `qk.feed.list(tab)` holds — the
+   `tab` maps to `/feed/{following|latest|trending|discover}` in the `api/` layer (`11` §5.x).
+3. **Taxonomy has no dedicated endpoints.** `qk.taxonomy.*` resolves to `search`/`discover`
+   calls; cache it at the **Taxonomy tier (1h)** regardless.
 
 ### 2.2 `staleTime` tiers
 
@@ -99,36 +166,65 @@ Every timeline (`feed.list`, profile pieces, responses, notifications, search re
 
 ```ts
 useInfiniteQuery({
-  queryKey: qk.feed.list(tab),
-  queryFn: ({ pageParam }) => api.get('/feed', { tab, cursor: pageParam, limit: 20 }),
-  getNextPageParam: (last) => last.meta.nextCursor ?? undefined, // opaque base64; null = end
+  queryKey: qk.feed.list(tab, filters),
+  queryFn: ({ pageParam, signal }) =>
+    api.get(`/feed/${tab}`, { cursor: pageParam, limit: 20, ...filters }, { signal }),
+  // WIRE TRUTH: pagination is nested at meta.pagination (NOT meta directly) — the
+  // implemented transform interceptor returns meta: { pagination: CursorMeta }.
+  getNextPageParam: (last) => last.meta.pagination.nextCursor ?? undefined, // opaque; null = end
   initialPageParam: undefined,
 });
 ```
 
-Cursors are opaque server tokens — the client never inspects, stores, or URL-encodes them
-(doc 11 §5). Tab switches change the **key**, not the pages; each tab keeps its own page
-stack, which is what makes Back-with-restored-scroll work.
+`CursorMeta` = `{ nextCursor: string | null, hasMore: boolean, limit: number }`; `limit`
+default 20, **max 50** (clamp client-side). Cursors are opaque server tokens — the client
+never inspects, stores, or URL-encodes them (doc 11 §5); a stale/malformed cursor returns
+`FEED_INVALID_CURSOR` (400) → restart from page one. Tab switches change the **key**, not the
+pages; each tab keeps its own page stack, which is what makes Back-with-restored-scroll work.
+**Non-paginated list-shaped responses** (`GET /search` grouped, `/search/autocomplete`,
+`/search/trending`, `/search/recent`, all `/analytics/*`, `/notification-preferences`) return
+`data` with **no `meta`** — use a plain `useQuery`, not infinite.
+
+Infinite endpoints (cursor): `feed/*`, `discover/*` rails, `me/drafts`, `me/pieces`,
+`me/bookmarks`, `me/follow-requests`, `collections` + `collections/:id/pieces`,
+`pieces/:id/comments`, `comments/:id/replies`, `pieces/:id/responses`,
+`users/:username/followers|following`, `notifications`, and `search/{pieces,writers,tags,
+genres,languages}`.
 
 ### 2.4 Invalidation map
 
 The canonical mutation → invalidation table. Every new mutation adds a row here **in the
-same PR** — unlisted invalidation is the primary source of "stale UI" bugs.
+same PR** — unlisted invalidation is the primary source of "stale UI" bugs. Grounded in the
+frozen `v1` mutations (keys are by `id`, §2.1.1):
 
-| Mutation                             | Invalidates (prefix)                                                                                                       | Optimistic?                                                |
-| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| clap / like / bookmark               | `qk.pieces.detail(slug)` — after settle; feed lists are _not_ invalidated (embedded counts refresh on their own 30 s tier) | **Yes** (§2.5)                                             |
-| follow / unfollow / request          | `qk.profiles.detail(u)`, `qk.feed.list("following")`                                                                       | **Yes**                                                    |
-| publish / unpublish                  | `qk.me.drafts()`, `qk.pieces.detail(slug)`, `qk.feed.all`, `qk.profiles.pieces(me)`                                        | No — server-authoritative (slug/status minted server-side) |
-| draft autosave (PATCH)               | nothing — response written back via `setQueryData` (_Why:_ invalidating drafts every 2 s would thrash)                     | No                                                         |
-| schedule / reschedule / cancel       | `qk.me.drafts()`                                                                                                           | No                                                         |
-| collection create/update/add/reorder | `qk.me.collections()`, `qk.profiles.detail(me)`                                                                            | Reorder only                                               |
-| reading-list create/add/remove       | `qk.me.lists()`, `qk.me.bookmarks()`                                                                                       | Yes                                                        |
-| repost / quote                       | `qk.pieces.detail(slug)`, `qk.feed.list("following")`                                                                      | Repost yes; quote no (composer submit)                     |
-| notifications mark-seen/read         | `qk.notifications.list()`, `qk.notifications.unreadCount()`                                                                | Yes (badge zeroes instantly)                               |
-| settings (profile/account)           | `qk.auth.me()`, `qk.profiles.detail(me)`                                                                                   | No                                                         |
-| report content                       | nothing (fire-and-confirm)                                                                                                 | No                                                         |
-| login / logout / refresh-failure     | logout: `queryClient.clear()` — the whole cache is user-scoped                                                             | —                                                          |
+| Mutation (endpoint)                                                    | Invalidates (prefix)                                                                                                    | Optimistic?                      |
+| ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| like / unlike (`POST\|DELETE /pieces/:id/likes`)                       | `qk.pieces.engagement(id)`, `qk.pieces.detail(id)` — feed lists **not** invalidated (embedded counts refresh 30 s tier) | **Yes** (§2.5)                   |
+| clap / remove claps (`POST\|DELETE /pieces/:id/claps`)                 | `qk.pieces.engagement(id)` after settle                                                                                 | **Yes** (batched)                |
+| bookmark / unbookmark (`POST\|DELETE /pieces/:id/bookmarks`)           | `qk.pieces.engagement(id)`, `qk.me.bookmarks()`                                                                         | **Yes**                          |
+| comment / reply (`POST /pieces/:id/comments`, `/comments/:id/replies`) | `qk.pieces.comments(id)` or `qk.comments.replies(parentId)`, `qk.pieces.engagement(id)`                                 | No (composer submit)             |
+| edit / delete comment (`PATCH\|DELETE /comments/:id`)                  | `qk.pieces.comments(pieceId)` (+ replies key if threaded)                                                               | Delete: Yes (tombstone)          |
+| follow / unfollow (`POST\|DELETE /users/:id/follow`)                   | `qk.profiles.detail(u)`, `qk.feed.list("following")`                                                                    | **Yes** (Following/Requested)    |
+| accept / reject request (`PATCH /follow-requests/:id/*`)               | `qk.me.followRequests()`, `qk.profiles.detail(me)`, `qk.feed.list("following")`                                         | Yes                              |
+| create draft (`POST /pieces`)                                          | `qk.me.drafts()`                                                                                                        | No                               |
+| draft autosave (`PATCH /pieces/:id`)                                   | **nothing** — written back via `setQueryData(qk.pieces.detail(id))` (invalidating every 1.5 s would thrash)             | No                               |
+| publish / archive / unarchive (`POST /pieces/:id/*`)                   | `qk.me.drafts()`, `qk.me.pieces()`, `qk.pieces.detail(id)`, `qk.feed.all`, `qk.profiles.*(me)`                          | No — server-authoritative        |
+| schedule (`POST /pieces/:id/schedule`)                                 | `qk.me.drafts()`                                                                                                        | No                               |
+| delete piece (`DELETE /pieces/:id`)                                    | `qk.me.drafts()`, `qk.me.pieces()`, `qk.feed.all`, `qk.profiles.*(me)`                                                  | No (undo toast)                  |
+| duplicate (`POST /pieces/:id/duplicate`)                               | `qk.me.drafts()`                                                                                                        | No                               |
+| collection create/update/delete (`/collections[/:id]`)                 | `qk.collections.list()`, `qk.profiles.detail(me)`                                                                       | No                               |
+| add/remove collection piece (`/collections/:id/pieces[...]`)           | `qk.collections.detail(id)`, `qk.collections.pieces(id)`, `qk.collections.list()`                                       | Add: Yes                         |
+| share (`POST /pieces/:id/shares`)                                      | `qk.pieces.engagement(id)`                                                                                              | No (fire-and-confirm)            |
+| notifications read / read-all / archive / delete                       | `qk.notifications.list()`, `qk.notifications.unreadCount()`                                                             | **Yes** (badge zeroes instantly) |
+| notification preferences (`PATCH /notification-preferences`)           | `qk.notifications.preferences()`                                                                                        | No                               |
+| settings (`PATCH /settings`)                                           | `qk.me.settings()` (theme handled by `useThemeStore`, not a query)                                                      | No                               |
+| profile update / avatar / cover (`PATCH /me`, `/profile/*`)            | `qk.auth.me()`, `qk.profiles.detail(me)`                                                                                | No                               |
+| record view/read (`POST /analytics/pieces/:id/{view,read}`)            | **nothing** (204 fire-and-forget; own stats refresh on their 1 min tier)                                                | No                               |
+| login / logout / refresh-failure                                       | logout/failure: `queryClient.clear()` — the whole cache is user-scoped                                                  | —                                |
+
+> **Not built in `v1`** (deferred E7): **reading lists, reposts, quotes** have no endpoints —
+> their rows are removed until the backend adds them (`26` §11). **`report content`** has no
+> endpoint in the reader-app surface either. Do not wire mutations for these.
 
 ### 2.5 Optimistic updates — clap / like / bookmark / follow
 

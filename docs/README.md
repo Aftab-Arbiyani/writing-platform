@@ -14,11 +14,27 @@ Root [`CLAUDE.md`](../CLAUDE.md) is the day-to-day handbook; [`CONTRIBUTING.md`]
 | 04  | [Database Design](./04_DatabaseDesign.md)               | **full ERD**, tables, indexes, constraints                        |
 | 05  | [API Standards](./05_APIStandards.md)                   | envelope, errors, pagination, rate limits                         |
 
-## Frontend / design (not in scope for backend hardening)
+## Frontend / design — canonical specs (06–12)
 
 | #     | Doc                                                                                                                                                                                                                                                                                                        |
 | ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 06–12 | [UI/UX](./06_UIUXSpecification.md) · [Design System](./07_DesignSystem.md) · [Components](./08_ComponentLibrary.md) · [User Flows](./09_UserFlows.md) · [Information Architecture](./10_InformationArchitecture.md) · [Routing](./11_RoutingArchitecture.md) · [State Management](./12_StateManagement.md) |
+
+These are the **canonical** frontend spec homes, and each now also carries its **applied,
+build-against-frozen-`v1`** guidance folded in (Phase-2 build prep, 2026-07-09): design-system
+usage + accessibility + animation → `07` §12–§14; cross-screen guidelines + responsive → `06`
+§10–§11; component authoring standards → `08` §8; route→API endpoint map (+ id/slug gaps) →
+`11` §10; the `qk.*` factory for real endpoints + invalidation map → `12` §2; frontend value
+placement + performance rules → `16` §4.7–§4.8. `11` and `12` were also corrected in place
+where they predated the frozen API (feed tab→path, piece-by-`id`, no `/taxonomy` endpoints).
+
+## Frontend implementation guides (standalone)
+
+| #   | Doc                                                   | What                                                                                   |
+| --- | ----------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| 26  | [Frontend Architecture](./26_FrontendArchitecture.md) | **entry point** — bootstrap, folder map, screen→API + component inventories, perf      |
+| 32  | [API Integration](./32_APIIntegration.md)             | the real **fetch** client (not axios), refresh flow, uploads, pagination, cancellation |
+| 33  | [Form Validation](./33_FormValidation.md)             | RHF + Zod, server-error mapping, reusable fields, submission                           |
 
 ## Security, ops & delivery
 
