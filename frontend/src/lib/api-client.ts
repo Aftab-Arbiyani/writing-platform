@@ -33,6 +33,25 @@ interface ApiFailureEnvelope {
 
 type ApiEnvelope<T> = ApiSuccessEnvelope<T> | ApiFailureEnvelope;
 
+/** Internal: the unwrapped payload plus the raw envelope `meta` (for pagination). */
+interface RawResult<T> {
+  data: T;
+  meta: Record<string, unknown> | undefined;
+}
+
+/** Cursor pagination metadata as it rides on the wire (docs/32 §7.1) — `meta.pagination`. */
+export interface CursorMeta {
+  nextCursor: string | null;
+  hasMore: boolean;
+  limit?: number;
+}
+
+/** A single page of a cursor-paginated list — the shape `useInfiniteQuery` pages over. */
+export interface CursorPage<Item> {
+  items: Item[];
+  meta: CursorMeta;
+}
+
 /** The single error type the whole app catches. Branch on `.code`, never `.message`. */
 export class ApiError extends Error {
   readonly code: string;
@@ -87,7 +106,11 @@ async function refreshSession(): Promise<void> {
   return refreshPromise;
 }
 
-async function doRequest<T>(path: string, init: RequestInit, isRetry: boolean): Promise<T> {
+async function doRequest<T>(
+  path: string,
+  init: RequestInit,
+  isRetry: boolean,
+): Promise<RawResult<T>> {
   const headers = new Headers(init.headers);
   headers.set('Accept', 'application/json');
   const isFormBody = init.body instanceof FormData;
@@ -125,7 +148,7 @@ async function doRequest<T>(path: string, init: RequestInit, isRetry: boolean): 
     });
   }
 
-  if (response.status === 204) return undefined as T;
+  if (response.status === 204) return { data: undefined as T, meta: undefined };
 
   const body = (await response.json().catch(() => null)) as ApiEnvelope<T> | null;
   if (body === null) {
@@ -135,7 +158,7 @@ async function doRequest<T>(path: string, init: RequestInit, isRetry: boolean): 
     });
   }
 
-  if (response.ok && body.success) return body.data;
+  if (response.ok && body.success) return { data: body.data, meta: body.meta };
 
   const payload: ApiErrorPayload =
     body.success === false
@@ -169,9 +192,29 @@ async function doRequest<T>(path: string, init: RequestInit, isRetry: boolean): 
   throw new ApiError(response.status, payload);
 }
 
-/** Core request. `path` is relative to VITE_API_URL (e.g. '/pieces/abc'). */
+/** Core request. `path` is relative to VITE_API_URL (e.g. '/pieces/abc'). Unwraps to `data`. */
 export function request<T>(path: string, init: RequestInit = {}): Promise<T> {
-  return doRequest<T>(path, init, false);
+  return doRequest<T>(path, init, false).then((result) => result.data);
+}
+
+/**
+ * Cursor-paginated GET (docs/32 §7.1). Unlike `request`, this keeps the envelope `meta` so
+ * infinite queries can read `meta.nextCursor`. The payload `data` is the item array; the
+ * cursor lives at `meta.pagination` on the wire. Feed/list `api/` layers build the query
+ * string (`buildQueryString`) before calling this.
+ */
+export function getPage<Item>(path: string, init?: RequestInit): Promise<CursorPage<Item>> {
+  return doRequest<Item[]>(path, { ...init, method: 'GET' }, false).then((result) => {
+    const pagination = (result.meta?.pagination ?? {}) as Partial<CursorMeta>;
+    return {
+      items: result.data,
+      meta: {
+        nextCursor: pagination.nextCursor ?? null,
+        hasMore: pagination.hasMore ?? false,
+        limit: pagination.limit,
+      },
+    };
+  });
 }
 
 export function get<T>(path: string, init?: RequestInit): Promise<T> {

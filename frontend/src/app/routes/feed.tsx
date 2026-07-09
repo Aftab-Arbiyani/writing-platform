@@ -1,13 +1,8 @@
 import type { ReactElement } from 'react';
 
-import { Placeholder } from '@/app/pages/placeholder';
+import { FeedPage } from '@/features/feed';
 
-/** Lazy route module (docs/11 §9). Feed screens arrive in the feed epic. */
+/** Lazy route module (docs/11 §9) — the Home / Feed screen (public; following tab needs auth). */
 export function Component(): ReactElement {
-  return (
-    <Placeholder
-      title="Feed"
-      description="Following · Trending · Latest · Discover — arriving in the feed epic."
-    />
-  );
+  return <FeedPage />;
 }

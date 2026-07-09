@@ -55,3 +55,69 @@
     outline-offset: 2px;
   }
 }
+
+/*
+ * Reading/editing prose (docs/06 §3.2, §3.3, §7). One class styles both the TipTap editing
+ * surface (.ProseMirror) and the read-only preview, so what you write is what readers see.
+ * Reading serif, generous line-height, logical spacing; RTL flows from the element `dir`.
+ * Only the whitelisted nodes/marks are styled (headings 2-4, lists, blockquote, bold/italic/
+ * underline) — the same set the server accepts.
+ */
+@layer components {
+  .qalam-prose {
+    font-family: var(--q-font-serif), Georgia, serif;
+    font-size: 1.25rem;
+    line-height: 1.7;
+    color: var(--q-text-primary);
+  }
+  .qalam-prose:focus {
+    outline: none;
+  }
+  .qalam-prose > * + * {
+    margin-block-start: 1.1em;
+  }
+  .qalam-prose h2 {
+    font-size: 1.6rem;
+    font-weight: 600;
+    line-height: 1.3;
+    margin-block-start: 1.6em;
+  }
+  .qalam-prose h3 {
+    font-size: 1.35rem;
+    font-weight: 600;
+    line-height: 1.35;
+    margin-block-start: 1.4em;
+  }
+  .qalam-prose h4 {
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin-block-start: 1.2em;
+  }
+  .qalam-prose blockquote {
+    border-inline-start: 3px solid var(--q-accent);
+    padding-inline-start: 1rem;
+    color: var(--q-text-secondary);
+    font-style: italic;
+  }
+  .qalam-prose ul,
+  .qalam-prose ol {
+    padding-inline-start: 1.5rem;
+  }
+  .qalam-prose ul {
+    list-style: disc;
+  }
+  .qalam-prose ol {
+    list-style: decimal;
+  }
+  .qalam-prose li + li {
+    margin-block-start: 0.4em;
+  }
+  /* Placeholder for the empty editor (extension-placeholder adds is-editor-empty). */
+  .qalam-prose p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    color: var(--q-text-muted);
+    float: inline-start;
+    height: 0;
+    pointer-events: none;
+  }
+}

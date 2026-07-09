@@ -55,6 +55,18 @@ export function TopBar(): ReactElement {
               Sign in
             </QButton>
           ) : null}
+          {status === 'authenticated' ? (
+            <QButton
+              variant="ghost"
+              size="sm"
+              className="hidden sm:inline-flex"
+              onClick={() => {
+                void navigate(ROUTES.drafts);
+              }}
+            >
+              Your writing
+            </QButton>
+          ) : null}
           <QButton
             variant="primary"
             size="sm"

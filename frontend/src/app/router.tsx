@@ -6,9 +6,9 @@ import { RequireGuest } from '@/app/guards/require-guest';
 import { AuthLayout } from '@/app/layouts/auth-layout';
 import { RootLayout } from '@/app/layouts/root-layout';
 import { Forbidden } from '@/app/pages/forbidden';
+import { HomeRoute } from '@/app/pages/home-route';
 import { NotFound } from '@/app/pages/not-found';
 import { Offline } from '@/app/pages/offline';
-import { Landing } from '@/app/pages/placeholder-home';
 import { RouteErrorBoundary } from '@/app/pages/route-error';
 import { Unauthorized } from '@/app/pages/unauthorized';
 
@@ -22,7 +22,7 @@ const router = createBrowserRouter([
     element: <RootLayout />,
     errorElement: <RouteErrorBoundary />,
     children: [
-      { index: true, element: <Landing /> },
+      { index: true, element: <HomeRoute /> },
       { path: 'feed', lazy: () => import('@/app/routes/feed') },
       { path: 'search', lazy: () => import('@/app/routes/search') },
       // Error surfaces (also reachable directly / via deep links):
@@ -30,16 +30,27 @@ const router = createBrowserRouter([
       { path: '403', element: <Forbidden /> },
       { path: '404', element: <NotFound /> },
       { path: 'offline', element: <Offline /> },
-      // Authenticated surfaces — gated by RequireAuth (a pathless layout route):
+      // Authenticated surfaces (with app chrome) — gated by RequireAuth (a pathless route).
       {
         element: <RequireAuth />,
         children: [
-          { path: 'write', lazy: () => import('@/app/routes/write') },
+          { path: 'me/drafts', lazy: () => import('@/app/routes/drafts') },
           { path: 'notifications', lazy: () => import('@/app/routes/notifications') },
           { path: 'settings', lazy: () => import('@/app/routes/settings') },
         ],
       },
       { path: '*', element: <NotFound /> },
+    ],
+  },
+  {
+    // The editor is a distraction-free surface (docs/06 §3.3) — NO app chrome, its own header.
+    // Authenticated; its own sibling tree so RootLayout's top/tab bars don't intrude. TipTap is
+    // lazy so it (and its extensions) stay out of every other chunk.
+    element: <RequireAuth />,
+    errorElement: <RouteErrorBoundary />,
+    children: [
+      { path: 'write', lazy: () => import('@/app/routes/write') },
+      { path: 'write/:draftId', lazy: () => import('@/app/routes/write') },
     ],
   },
   {

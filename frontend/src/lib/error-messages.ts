@@ -27,6 +27,21 @@ const MESSAGES: Record<string, string> = {
   [ERROR_CODES.AUTH_OAUTH_FAILED]: "Google sign-in didn't work. Please try again.",
   [ERROR_CODES.AUTH_OAUTH_STATE_INVALID]: 'Google sign-in timed out. Please try again.',
 
+  // Pieces (writing lifecycle)
+  [ERROR_CODES.PIECE_NOT_FOUND]: "We couldn't find that piece.",
+  [ERROR_CODES.PIECE_FORBIDDEN]: 'You can only edit your own pieces.',
+  [ERROR_CODES.PIECE_SCHEDULE_IN_PAST]: 'That time has already passed.',
+  [ERROR_CODES.PIECE_ALREADY_PUBLISHED]: 'This piece is already published.',
+  [ERROR_CODES.PIECE_NOT_PUBLISHED]: 'This piece isn’t published.',
+  [ERROR_CODES.PIECE_INVALID_TRANSITION]: 'That change isn’t allowed from here.',
+  [ERROR_CODES.PIECE_INCOMPLETE]: 'A few things are needed before publishing.',
+  [ERROR_CODES.PIECE_CONTENT_INVALID]: 'Some formatting in your piece isn’t supported yet.',
+  [ERROR_CODES.PIECE_TAG_LIMIT_EXCEEDED]: 'You can add up to 5 tags.',
+
+  // Media (cover uploads)
+  [ERROR_CODES.MEDIA_TYPE_UNSUPPORTED]: 'Use a JPEG, PNG, or WebP image.',
+  [ERROR_CODES.MEDIA_TOO_LARGE]: 'That image is too large.',
+
   // Cross-cutting
   [ERROR_CODES.RATE_LIMITED]: "You're going a little fast — try again in a moment.",
   [ERROR_CODES.VALIDATION_FAILED]: 'Please check the highlighted fields.',

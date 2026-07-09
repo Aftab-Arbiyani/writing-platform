@@ -46,3 +46,9 @@ export function formatRelativeTime(input: string | Date): string {
 export function formatCount(value: number): string {
   return COUNT_FMT.format(value);
 }
+
+/** Reading time from seconds → "1 min" / "6 min" (always ≥ 1 min; Latin digits, §6.5). */
+export function formatReadingTime(seconds: number): string {
+  const minutes = Math.max(1, Math.round(seconds / 60));
+  return `${String(minutes)} min`;
+}

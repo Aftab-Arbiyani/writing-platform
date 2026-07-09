@@ -9,6 +9,7 @@ export const ROUTES = {
   feed: '/feed',
   search: '/search',
   write: '/write',
+  drafts: '/me/drafts',
   notifications: '/notifications',
   settings: '/settings',
   // Auth corridor (docs/11 §10):
@@ -26,3 +27,19 @@ export const ROUTES = {
 } as const;
 
 export type RoutePath = (typeof ROUTES)[keyof typeof ROUTES];
+
+/**
+ * Reading-view path for a piece (docs/06 §3.1 — the whole card links here). The reading view
+ * itself is a later epic; feed cards link to it now so the destination exists in markup. Slug
+ * is preferred; a null slug (rare) falls back to the id (docs/11 §10.4 — no slug→piece cold
+ * load yet, but navigation from a list carries the identifier).
+ */
+export function piecePath(idOrSlug: string): string {
+  return `/p/${encodeURIComponent(idOrSlug)}`;
+}
+
+/** A feed URL for a given tab + optional filter params (used by rail chips → filtered feed). */
+export function feedPath(params: Record<string, string> = {}): string {
+  const query = new URLSearchParams(params).toString();
+  return query ? `${ROUTES.feed}?${query}` : ROUTES.feed;
+}
