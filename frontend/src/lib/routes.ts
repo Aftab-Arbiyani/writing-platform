@@ -11,8 +11,13 @@ export const ROUTES = {
   write: '/write',
   notifications: '/notifications',
   settings: '/settings',
-  // Auth corridor (built in the auth epic — placeholder for redirects now):
+  // Auth corridor (docs/11 §10):
   login: '/auth/login',
+  register: '/auth/register',
+  forgotPassword: '/auth/forgot-password',
+  resetPassword: '/auth/reset-password',
+  verifyEmail: '/auth/verify-email',
+  authCallback: '/auth/callback',
   // Error surfaces:
   unauthorized: '/401',
   forbidden: '/403',

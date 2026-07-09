@@ -43,15 +43,33 @@ const router = createBrowserRouter([
     ],
   },
   {
-    // Guest-only auth corridor — no app chrome (docs/11 §3).
+    // Guest-only auth corridor — no app chrome (docs/11 §3). Logged-in users are bounced
+    // to their returnTo/feed by RequireGuest.
     element: <RequireGuest />,
     errorElement: <RouteErrorBoundary />,
     children: [
       {
         element: <AuthLayout />,
-        children: [{ path: 'auth/login', lazy: () => import('@/app/routes/auth-login') }],
+        children: [
+          { path: 'auth/login', lazy: () => import('@/app/routes/auth-login') },
+          { path: 'auth/register', lazy: () => import('@/app/routes/auth-register') },
+          {
+            path: 'auth/forgot-password',
+            lazy: () => import('@/app/routes/auth-forgot-password'),
+          },
+          { path: 'auth/reset-password', lazy: () => import('@/app/routes/auth-reset-password') },
+          { path: 'auth/callback', lazy: () => import('@/app/routes/auth-callback') },
+        ],
       },
     ],
+  },
+  {
+    // Neutral auth corridor (NO guard): email verification must be reachable both by a
+    // signed-out visitor clicking the emailed link AND by a freshly-registered
+    // (authenticated-but-unverified) user (docs/11 §10). RequireGuest would bounce the latter.
+    element: <AuthLayout />,
+    errorElement: <RouteErrorBoundary />,
+    children: [{ path: 'auth/verify-email', lazy: () => import('@/app/routes/auth-verify-email') }],
   },
 ]);
 

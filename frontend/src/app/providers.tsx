@@ -3,12 +3,13 @@ import { MotionProvider } from '@qalam/ui/motion';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { App as AntApp, ConfigProvider } from 'antd';
-import { useEffect, type PropsWithChildren, type ReactElement } from 'react';
+import { useEffect, useRef, type PropsWithChildren, type ReactElement } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { HelmetProvider } from 'react-helmet-async';
 
 import { RootErrorFallback } from '@/app/error-boundary';
 import { reportError } from '@/app/sentry';
+import { bootstrapSession } from '@/features/auth/lib/session';
 import { setUnauthorizedHandler } from '@/lib/api-client';
 import { queryClient } from '@/lib/query-client';
 import { useAuthStore } from '@/stores/auth.store';
@@ -25,16 +26,25 @@ import { useThemeStore } from '@/stores/theme.store';
  */
 export function AppProviders({ children }: PropsWithChildren): ReactElement {
   const resolved = useThemeStore((state) => state.resolved);
+  // Ensures the boot refresh fires ONCE even under StrictMode's double-invoke (a second
+  // /auth/refresh would rotate the token twice → reuse-detection). The ref persists across
+  // StrictMode's setup→cleanup→setup on the same instance.
+  const booted = useRef(false);
 
   useEffect(() => {
-    // Terminal 401 → clear session; guards then redirect to login (docs/32 §3).
+    // Terminal 401 (a live session's token went invalid and refresh failed) → end the session
+    // with the "expired" reason + drop the user-scoped cache; guards bounce to login, which
+    // shows the reason (docs/32 §3.2). `/auth/*` 401s are excluded in the client and never
+    // reach here.
     setUnauthorizedHandler(() => {
-      useAuthStore.getState().clear();
+      useAuthStore.getState().expireSession();
+      queryClient.clear();
     });
-    // F1 has no auth bootstrap yet: resolve the boot check to "no session" so guarded routes
-    // stop showing the loader. The auth epic replaces this with a real /auth/refresh probe.
-    if (useAuthStore.getState().status === 'unknown') {
-      useAuthStore.getState().setAnonymous();
+    // Boot session restore: one silent /auth/refresh (docs/32 §3.1). Resolves the status to
+    // authenticated | anonymous so guards stop showing the loader; never throws.
+    if (!booted.current && useAuthStore.getState().status === 'unknown') {
+      booted.current = true;
+      void bootstrapSession();
     }
   }, []);
 

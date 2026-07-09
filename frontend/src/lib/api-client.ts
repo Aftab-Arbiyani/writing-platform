@@ -162,7 +162,9 @@ async function doRequest<T>(path: string, init: RequestInit, isRetry: boolean): 
   }
 
   // Any other 401 (invalid/reused/revoked, or a still-401 replay) → drop to login.
-  if (response.status === 401) onUnauthorized();
+  // Exclude `/auth/*`: a failed login/register/refresh is the caller's to handle (bad
+  // credentials, an absent boot cookie) and must NOT be read as a live session dying.
+  if (response.status === 401 && !path.startsWith('/auth/')) onUnauthorized();
 
   throw new ApiError(response.status, payload);
 }

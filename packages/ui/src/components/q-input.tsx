@@ -1,5 +1,5 @@
-import { Input } from 'antd';
-import type { ComponentProps, ReactElement } from 'react';
+import { Input, type InputRef } from 'antd';
+import { forwardRef, type ComponentProps, type ReactElement } from 'react';
 
 import { FieldShell } from './field.js';
 import { useFieldA11y } from './use-field-a11y.js';
@@ -12,12 +12,20 @@ export interface QInputProps extends Omit<ComponentProps<typeof Input>, 'size' |
   size?: 'md' | 'lg';
 }
 
-/** Labelled text input wrapping AntD `Input` with hint/error + a11y wiring. */
-export function QInput({ label, hint, error, size = 'md', ...rest }: QInputProps): ReactElement {
+/**
+ * Labelled text input wrapping AntD `Input` with hint/error + a11y wiring. `forwardRef` so
+ * form libraries can bind and focus it (RHF `Controller` / `setFocus`) — the forwarded ref is
+ * AntD's `InputRef` (exposes `.focus()`), not the raw DOM element.
+ */
+export const QInput = forwardRef<InputRef, QInputProps>(function QInput(
+  { label, hint, error, size = 'md', ...rest },
+  ref,
+): ReactElement {
   const a11y = useFieldA11y(error, hint);
   return (
     <FieldShell label={label} hint={hint} error={error} a11y={a11y}>
       <Input
+        ref={ref}
         id={a11y.id}
         size={size === 'lg' ? 'large' : 'middle'}
         status={error ? 'error' : undefined}
@@ -27,4 +35,4 @@ export function QInput({ label, hint, error, size = 'md', ...rest }: QInputProps
       />
     </FieldShell>
   );
-}
+});
