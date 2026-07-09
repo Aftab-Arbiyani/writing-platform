@@ -1,31 +1,22 @@
 import { QButton, QSearch } from '@qalam/ui';
-import { LogOut, PenLine } from 'lucide-react';
+import { PenLine } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { Link, useNavigate } from 'react-router';
 
 import { ThemeToggle } from '@/components/theme-toggle';
-import { useLogout } from '@/features/auth/hooks/use-logout';
+import { UserMenu } from '@/components/user-menu';
 import { ROUTES } from '@/lib/routes';
 import { useAuthStore } from '@/stores/auth.store';
 
 /**
  * Desktop/mobile top bar (docs/06 §2, docs/10 §3.1): wordmark → center search → Write CTA +
- * theme toggle. World-facing actions only; the rich user menu lives in a later epic. The auth
- * epic adds the minimal session affordance: Sign in when anonymous, Sign out when signed in.
- * Search is a disabled placeholder until the search epic.
+ * theme toggle. Signed-in users get the account menu (profile, writing, requests, settings, sign
+ * out); anonymous visitors get a Sign in button. Search is a disabled placeholder until the
+ * search epic.
  */
 export function TopBar(): ReactElement {
   const navigate = useNavigate();
   const status = useAuthStore((s) => s.status);
-  const logout = useLogout();
-
-  const onSignOut = (): void => {
-    logout.mutate(undefined, {
-      onSettled: () => {
-        void navigate(ROUTES.landing, { replace: true });
-      },
-    });
-  };
 
   return (
     <header className="border-line sticky top-0 z-[1020] border-b bg-canvas/95 backdrop-blur">
@@ -55,18 +46,6 @@ export function TopBar(): ReactElement {
               Sign in
             </QButton>
           ) : null}
-          {status === 'authenticated' ? (
-            <QButton
-              variant="ghost"
-              size="sm"
-              className="hidden sm:inline-flex"
-              onClick={() => {
-                void navigate(ROUTES.drafts);
-              }}
-            >
-              Your writing
-            </QButton>
-          ) : null}
           <QButton
             variant="primary"
             size="sm"
@@ -77,16 +56,7 @@ export function TopBar(): ReactElement {
           >
             Write
           </QButton>
-          {status === 'authenticated' ? (
-            <QButton
-              variant="ghost"
-              size="sm"
-              icon={LogOut}
-              loading={logout.isPending}
-              onClick={onSignOut}
-              aria-label="Sign out"
-            />
-          ) : null}
+          {status === 'authenticated' ? <UserMenu /> : null}
         </div>
       </div>
     </header>

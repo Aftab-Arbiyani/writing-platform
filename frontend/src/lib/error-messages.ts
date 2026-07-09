@@ -38,7 +38,20 @@ const MESSAGES: Record<string, string> = {
   [ERROR_CODES.PIECE_CONTENT_INVALID]: 'Some formatting in your piece isn’t supported yet.',
   [ERROR_CODES.PIECE_TAG_LIMIT_EXCEEDED]: 'You can add up to 5 tags.',
 
-  // Media (cover uploads)
+  // Profiles & follows (F5)
+  [ERROR_CODES.USER_NOT_FOUND]: "We couldn't find that writer.",
+  [ERROR_CODES.USER_PRIVATE_ACCOUNT]: 'This writer keeps a private notebook.',
+  [ERROR_CODES.USER_CANNOT_FOLLOW_SELF]: 'You cannot follow yourself.',
+  [ERROR_CODES.USER_USERNAME_IMMUTABLE]: 'Usernames are permanent and cannot be changed.',
+  [ERROR_CODES.PROFILE_FORBIDDEN]: 'You can only edit your own profile.',
+  [ERROR_CODES.LANGUAGE_INVALID]: 'Please choose a language from the list.',
+  [ERROR_CODES.GENRE_INVALID]: 'Please choose genres from the list.',
+  [ERROR_CODES.FOLLOW_ALREADY_EXISTS]: 'You already follow this writer.',
+  [ERROR_CODES.FOLLOW_REQUEST_PENDING]: 'Your follow request is still pending.',
+  [ERROR_CODES.FOLLOW_NOT_FOUND]: "You aren't following this writer.",
+  [ERROR_CODES.FOLLOW_REQUEST_NOT_FOUND]: 'That follow request is no longer available.',
+
+  // Media (avatar/cover uploads)
   [ERROR_CODES.MEDIA_TYPE_UNSUPPORTED]: 'Use a JPEG, PNG, or WebP image.',
   [ERROR_CODES.MEDIA_TOO_LARGE]: 'That image is too large.',
 

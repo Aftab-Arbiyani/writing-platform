@@ -152,6 +152,7 @@ export class ProfileService {
     const genreIds = await this.profiles.getGenreIds(profile.id);
     const genres = await this.taxonomy.getGenresByIds(genreIds);
     return {
+      id: profile.userId,
       username,
       penName: profile.penName,
       avatarKey: profile.avatarKey,
@@ -234,6 +235,7 @@ function buildTeaser(
   relation: ViewerRelationDto,
 ): ProfileResponseDto {
   return {
+    id: profile.userId,
     username,
     penName: profile.penName,
     avatarKey: profile.avatarKey,

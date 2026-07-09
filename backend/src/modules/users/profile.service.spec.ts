@@ -52,6 +52,7 @@ describe('ProfileService.getPublicProfile (visibility, docs 13 §4.2)', () => {
   it('shows a PUBLIC profile fully to a stranger', async () => {
     const dto = await build(false, null).getPublicProfile('owner', 'stranger');
     expect(dto.restricted).toBe(false);
+    expect(dto.id).toBe(OWNER); // user UUID exposed for the follow target (additive, docs/25 §8)
     expect(dto.bio).toBe('hello world');
     expect(dto.viewerRelation.isFollowing).toBe(false);
   });

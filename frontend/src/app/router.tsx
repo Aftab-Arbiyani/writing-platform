@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { createBrowserRouter, RouterProvider } from 'react-router';
+import { createBrowserRouter, Navigate, RouterProvider } from 'react-router';
 
 import { RequireAuth } from '@/app/guards/require-auth';
 import { RequireGuest } from '@/app/guards/require-guest';
@@ -34,11 +34,26 @@ const router = createBrowserRouter([
       {
         element: <RequireAuth />,
         children: [
+          { path: 'me', lazy: () => import('@/app/routes/me') },
           { path: 'me/drafts', lazy: () => import('@/app/routes/drafts') },
+          { path: 'me/follow-requests', lazy: () => import('@/app/routes/follow-requests') },
           { path: 'notifications', lazy: () => import('@/app/routes/notifications') },
-          { path: 'settings', lazy: () => import('@/app/routes/settings') },
+          // Settings is a nested layout surface (docs/11 §1); index → /settings/profile.
+          {
+            path: 'settings',
+            lazy: () => import('@/app/routes/settings/layout'),
+            children: [
+              { index: true, element: <Navigate to="/settings/profile" replace /> },
+              { path: 'profile', lazy: () => import('@/app/routes/settings/profile') },
+              { path: 'account', lazy: () => import('@/app/routes/settings/account') },
+              { path: 'appearance', lazy: () => import('@/app/routes/settings/appearance') },
+            ],
+          },
         ],
       },
+      // Writer profile — public/optional-auth. Registered LAST as a bare `:handle` (docs/11 §1.1):
+      // the module validates the `@` prefix + reserved words. Static routes above out-rank it.
+      { path: ':handle', lazy: () => import('@/app/routes/profile') },
       { path: '*', element: <NotFound /> },
     ],
   },

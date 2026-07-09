@@ -9,6 +9,8 @@ export class FollowActionResponseDto {
 
 /** A user row in a followers/following/requests list. */
 export class UserSummaryDto {
+  @ApiProperty({ description: 'User UUID — the follow target for POST/DELETE /users/:id/follow.' })
+  id!: string;
   @ApiProperty() username!: string;
   @ApiProperty({ nullable: true }) penName!: string | null;
   @ApiProperty({ nullable: true }) avatarKey!: string | null;

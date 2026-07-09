@@ -217,13 +217,23 @@ const edgeCursor = (row: FollowEdgeRow): { k: string; id: string } => ({
 });
 
 function toSummary(row: FollowEdgeRow): UserSummaryDto {
-  return { username: row.username, penName: row.penName, avatarKey: row.avatarKey };
+  return {
+    id: row.userId,
+    username: row.username,
+    penName: row.penName,
+    avatarKey: row.avatarKey,
+  };
 }
 
 function toRequestDto(row: FollowEdgeRow): FollowRequestDto {
   return {
     id: row.followId,
-    requester: { username: row.username, penName: row.penName, avatarKey: row.avatarKey },
+    requester: {
+      id: row.userId,
+      username: row.username,
+      penName: row.penName,
+      avatarKey: row.avatarKey,
+    },
     requestedAt: new Date(row.createdAt).toISOString(),
   };
 }

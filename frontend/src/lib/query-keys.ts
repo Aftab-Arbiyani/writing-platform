@@ -21,7 +21,15 @@ export interface FeedFilters {
 
 export const qk = {
   auth: {
-    me: () => ['auth', 'me'] as const, // GET /me — "who am I"
+    me: () => ['auth', 'me'] as const, // GET /me — "who am I" (own profile; single session source)
+  },
+
+  // Writer profiles — keyed by USERNAME (not id; §2.1). Followers/following are infinite.
+  profiles: {
+    all: ['profiles'] as const,
+    detail: (username: string) => ['profiles', username] as const, // GET /users/:username
+    followers: (username: string) => ['profiles', username, 'followers'] as const, // GET …/followers
+    following: (username: string) => ['profiles', username, 'following'] as const, // GET …/following
   },
 
   // Feed — `tab` is the discriminator; the tab maps to an endpoint PATH (§2.1.1). Infinite.
@@ -50,6 +58,8 @@ export const qk = {
     all: ['me'] as const,
     drafts: () => ['me', 'drafts'] as const, // GET /me/drafts
     pieces: (status?: PieceStatus) => ['me', 'pieces', status ?? 'all'] as const, // GET /me/pieces?status=
+    followRequests: () => ['me', 'follow-requests'] as const, // GET /me/follow-requests (infinite)
+    settings: () => ['me', 'settings'] as const, // GET /settings
   },
 
   // Taxonomy catalogues — NO /taxonomy endpoints exist (§2.1.1); sourced from search (browse).

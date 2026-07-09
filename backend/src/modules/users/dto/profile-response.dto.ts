@@ -31,6 +31,10 @@ export class ViewerRelationDto {
  * the restricted fields are omitted and `restricted` is true (docs 13 §4.2 teaser).
  */
 export class ProfileResponseDto {
+  @ApiProperty({
+    description: 'Owner user UUID — the follow target for POST/DELETE /users/:id/follow.',
+  })
+  id!: string;
   @ApiProperty() username!: string;
   @ApiProperty() penName!: string;
   @ApiProperty({ nullable: true }) avatarKey!: string | null;

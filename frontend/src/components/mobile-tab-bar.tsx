@@ -18,7 +18,7 @@ const ITEMS: readonly TabItem[] = [
   { to: ROUTES.search, label: 'Search', icon: Search },
   { to: ROUTES.write, label: 'Write', icon: PenLine, accent: true },
   { to: ROUTES.notifications, label: 'Alerts', icon: Bell },
-  { to: ROUTES.settings, label: 'You', icon: User },
+  { to: ROUTES.me, label: 'You', icon: User },
 ];
 
 /** Mobile bottom tab bar (< md). Hidden on desktop, where the top bar carries nav. */
