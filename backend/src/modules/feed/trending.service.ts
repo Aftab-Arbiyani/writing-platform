@@ -57,4 +57,20 @@ export class TrendingService {
   invalidate(): Promise<void> {
     return this.cache.invalidateTrending();
   }
+
+  /**
+   * Recompute the ranking now and materialize it into the cache — the
+   * `trending-score` worker + cache-warmer entry point (docs 18 E6 t4). Computes
+   * the ranking directly and writes it under the same key `getFeed` reads, so the
+   * next reader hits a warm snapshot instead of computing on the request path.
+   * Returns the number of ranked pieces.
+   */
+  async recompute(): Promise<number> {
+    const ranking = await this.feed.computeTrendingRanking(
+      this.config.weights,
+      this.config.snapshotSize,
+    );
+    await this.cache.set(FEED_CACHE_KEYS.trending, ranking, this.config.cacheTtlSeconds);
+    return ranking.length;
+  }
 }

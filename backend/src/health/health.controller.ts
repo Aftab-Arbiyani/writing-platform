@@ -3,6 +3,7 @@ import { ApiOkResponse, ApiServiceUnavailableResponse, ApiTags } from '@nestjs/s
 import { HealthCheck, HealthCheckService, TypeOrmHealthIndicator } from '@nestjs/terminus';
 import type { HealthCheckResult } from '@nestjs/terminus';
 
+import { QueueHealthIndicator } from '../infrastructure/queue/queue-health.indicator';
 import { Public } from '../modules/auth/decorators/public.decorator';
 import { RedisHealthIndicator } from './indicators/redis.health-indicator';
 
@@ -25,6 +26,7 @@ export class HealthController {
     private readonly health: HealthCheckService,
     private readonly db: TypeOrmHealthIndicator,
     private readonly redis: RedisHealthIndicator,
+    private readonly queues: QueueHealthIndicator,
   ) {}
 
   @Get()
@@ -37,11 +39,12 @@ export class HealthController {
   @Get('ready')
   @HealthCheck()
   @ApiOkResponse({ description: 'Process is ready to serve traffic.' })
-  @ApiServiceUnavailableResponse({ description: 'A dependency (Postgres/Redis) is down.' })
+  @ApiServiceUnavailableResponse({ description: 'A dependency (Postgres/Redis/queues) is down.' })
   readiness(): Promise<HealthCheckResult> {
     return this.health.check([
       () => this.db.pingCheck('database'),
       () => this.redis.isHealthy('redis'),
+      () => this.queues.isHealthy('queues'),
     ]);
   }
 }

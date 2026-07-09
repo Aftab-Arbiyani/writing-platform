@@ -21,6 +21,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { AppConfigModule } from './config/config.module';
 import { DatabaseModule } from './database/database.module';
 import { HealthModule } from './health/health.module';
+import { InfrastructureModule } from './infrastructure/infrastructure.module';
 import { AppLoggerModule } from './logger/logger.module';
 import { MailModule } from './mail/mail.module';
 import { MediaModule } from './media/media.module';
@@ -57,6 +58,10 @@ import { RedisModule } from './redis/redis.module';
     SearchModule,
     NotificationsModule,
     AnalyticsModule,
+    // Async processing backbone (E11): queues, workers, scheduler, cache,
+    // monitoring. @Global — imported last so the business modules it wraps are
+    // already defined; it reaches them via their exported services only.
+    InfrastructureModule,
   ],
 })
 export class AppModule {}

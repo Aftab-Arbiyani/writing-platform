@@ -126,6 +126,14 @@ export const ERROR_CODES = {
   MEDIA_TYPE_UNSUPPORTED: 'MEDIA_TYPE_UNSUPPORTED',
   MEDIA_TOO_LARGE: 'MEDIA_TOO_LARGE',
 
+  // ── Infrastructure / admin (Epic 11 — queue & cache management) ───────────
+  /** Admin referenced a queue name that is not registered. */
+  QUEUE_NOT_FOUND: 'QUEUE_NOT_FOUND',
+  /** Admin referenced a job id that does not exist in the given queue. */
+  JOB_NOT_FOUND: 'JOB_NOT_FOUND',
+  /** Retry requested for a job that is not in a failed state. */
+  JOB_NOT_RETRYABLE: 'JOB_NOT_RETRYABLE',
+
   // ── Cross-cutting ───────────────────────────────────────────────────────
   RATE_LIMITED: 'RATE_LIMITED',
   VALIDATION_FAILED: 'VALIDATION_FAILED',

@@ -191,4 +191,31 @@ export class NotificationsRepository {
     )) as Array<{ id: string }>;
     return rows.map((r) => r.id);
   }
+
+  /** Count of broadcast-eligible recipients (for the async-broadcast delivered estimate). */
+  async countBroadcastRecipients(): Promise<number> {
+    const rows = (await this.dataSource.query(
+      `SELECT COUNT(*)::int AS count
+         FROM users u
+         LEFT JOIN notification_preferences np ON np.user_id = u.id
+        WHERE u.status = 'active' AND u.deleted_at IS NULL
+          AND (np.user_id IS NULL OR np.system = true)`,
+    )) as Array<{ count: number }>;
+    return rows[0]?.count ?? 0;
+  }
+
+  /**
+   * Hard-deletes notifications created before `cutoff` (retention prune — docs 04
+   * §3.7). Removes rows in any state, soft-deleted or not; 12-month-old inbox
+   * entries are gone for good. Returns the number removed.
+   */
+  async deleteOlderThan(cutoff: Date): Promise<number> {
+    const result = await this.repo
+      .createQueryBuilder()
+      .delete()
+      .from(Notification)
+      .where('created_at < :cutoff', { cutoff })
+      .execute();
+    return result.affected ?? 0;
+  }
 }

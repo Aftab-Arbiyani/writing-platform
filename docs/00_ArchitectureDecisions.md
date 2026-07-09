@@ -321,6 +321,50 @@ tables** (the brief's optional `FeedScore`/`TrendingCache` were judged unnecessa
   domain-event wiring. New supporting indexes (`04` §3.2/§3.14): `idx_pieces_author_published`,
   `idx_piece_stats_claps`, `idx_piece_stats_comments`. Search is **not** part of this epic (E8).
 
+**E11 build amendment (Asynchronous Processing Infrastructure).** The dedicated
+`src/infrastructure/` module (Queue · Worker · Scheduler · Cache · Monitoring) turns on the
+BullMQ layer the earlier epics deferred, activating the previously-unused paths noted above.
+No new database tables.
+
+- **Queue catalogue extended.** The six canonical queues (§3 Queues row) are unchanged and
+  authoritative. Three queues are added: **`cache`** (warming / refresh / weekly
+  optimization), **`maintenance`** (token / notification / soft-delete cleanup + weekly
+  `ANALYZE`), and **`ai`** (registered placeholder for Phase 2 — **no worker**). `emails`
+  stays registered for parity but keeps no worker in Phase 1 (transactional mail is still the
+  synchronous `MailService` — email delivery is out of scope here). All nine live in Redis DB 1.
+- **Deferred workers now built.** `scheduled-publish` (per-minute reconciliation sweep +
+  delayed per-piece job, both re-verifying at fire time and reusing `PiecesService.publish`),
+  `trending-score` (recompute → materialize into the DB-0 cache — the E6 amendment's "future
+  path"), and `analytics-rollup` (hourly + nightly `AnalyticsService.generateSnapshots`).
+- **Cron via BullMQ job schedulers** (`upsertJobScheduler`, idempotent on boot) — no
+  `@nestjs/schedule`. Cadences env-configurable (`CRON_*`): every-minute publish sweep,
+  hourly trending + analytics, daily cleanup + nightly rollup, weekly DB maintenance + cache
+  optimization.
+- **Typed job contract.** Every job has a compile-time payload (`JobPayloads`, keyed by job
+  name like `DomainEventMap`) and a job→queue binding (`JOB_QUEUE`), so `enqueue(job, data)` is
+  type-checked end to end — a wrong-shaped payload or a job on the wrong queue is a compile
+  error, not a runtime cast. Each job is a **handler class** (`AbstractJobHandler`) with a `zod`
+  `validate` (payload DTO check at the queue boundary — a malformed/stale job throws
+  `UnrecoverableError` and dead-letters immediately instead of burning retries) and a `handle`
+  (reuses an exported service). One `@Processor` per queue dispatches to its handlers by job
+  name — "one worker per queue, one handler per job" without splitting the queue topology.
+  Per-job retry overrides (`JOB_RETRY`) layer over the per-queue policy. Logging/metrics stay
+  centralized in the base processor.
+- **Producer seam.** Business modules stay decoupled: they publish jobs through the
+  `JobEnqueuer` port (`common/queue`, injected `@Optional()`), never importing infrastructure.
+  The infra `EventBridgeService` subscribes to the in-process `DomainEventBus` and enqueues
+  **cache-invalidation only** (publish/archive → invalidate discovery + trending) — it does
+  not re-create notifications/analytics rows (those keep their synchronous listeners; async
+  fan-out would double-write).
+- **Cache strategy.** Generic `CacheService` (DB 0): read-through with single-flight stampede
+  lock, write-invalidate, prefix/flush clear, and warming. Full flush is safe at DB
+  granularity because DB 0 is cache-only (§3).
+- **Admin monitoring APIs** (`/api/v1/admin/*`, PBAC): reads gated on `admin.dashboard`,
+  mutations (job retry, cache clear/warm) on `system.manage`. In-process JSON monitoring
+  replaces the docs-14 `bull-board` mount to avoid an undeclared dependency (frozen-lockfile
+  Docker stability); the metrics taxonomy (depth-by-state, oldest-waiting age, worker count)
+  is preserved for the Phase 1.5 Prometheus export.
+
 **Version pins (caret ranges):** NestJS ^11 · TypeORM ^0.3 · React ^19 · Vite ^7 ·
 AntD ^5 · Tailwind ^4 · TanStack Query ^5 · Zustand ^5 · RHF ^7 · Zod ^3.24 (v4 blocked
 by `@hookform/resolvers` peer range — migrate when supported) · TipTap ^3 · ESLint ^9 ·

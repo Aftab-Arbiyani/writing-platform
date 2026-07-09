@@ -48,6 +48,38 @@ export class PiecesRepository {
     await this.repo(manager).softDelete({ id });
   }
 
+  /**
+   * Scheduled pieces whose publish time has arrived — the `scheduled-publish`
+   * worker's due query (docs 04 §3.2 `idx_pieces_due`). Ordered oldest-first so a
+   * backlog drains in schedule order; non-deleted only.
+   */
+  findDueScheduled(now: Date, limit: number, manager?: EntityManager): Promise<Piece[]> {
+    return this.repo(manager)
+      .createQueryBuilder('p')
+      .where('p.status = :status', { status: 'scheduled' })
+      .andWhere('p.scheduled_at <= :now', { now })
+      .andWhere('p.deleted_at IS NULL')
+      .orderBy('p.scheduled_at', 'ASC')
+      .limit(limit)
+      .getMany();
+  }
+
+  /**
+   * Hard-deletes soft-deleted pieces whose tombstone predates `cutoff` (the
+   * maintenance purge). Uses a raw delete with `withDeleted` semantics — the
+   * default repository only sees non-deleted rows. Returns the number removed.
+   */
+  async hardDeleteSoftDeletedBefore(cutoff: Date, manager?: EntityManager): Promise<number> {
+    const result = await this.repo(manager)
+      .createQueryBuilder()
+      .delete()
+      .from(Piece)
+      .where('deleted_at IS NOT NULL')
+      .andWhere('deleted_at < :cutoff', { cutoff })
+      .execute();
+    return result.affected ?? 0;
+  }
+
   /** Author's pieces, optionally filtered by status, keyset-paginated (over-fetch limit+1). */
   listByAuthor(
     authorId: string,

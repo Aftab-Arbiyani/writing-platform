@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import { PieceStatus, Visibility } from '@qalam/shared';
 import { slugify } from '@qalam/utils';
 import { randomBytes } from 'node:crypto';
@@ -6,6 +6,8 @@ import { randomBytes } from 'node:crypto';
 import { TransactionRunner } from '../../common/database/transaction-runner';
 import { DomainEventBus } from '../../common/events/domain-event-bus';
 import { DomainEventType } from '../../common/events/domain-events';
+import { JOB_ENQUEUER, type JobEnqueuer } from '../../common/queue/job-enqueuer.port';
+import { JOB } from '../../common/queue/queue.constants';
 import { decodeCursor } from '../../common/pagination/cursor.util';
 import { buildCursorPage } from '../../common/pagination/pagination.helper';
 import type { CursorPage } from '../../common/types/paginated-result';
@@ -57,7 +59,12 @@ export class PiecesService {
     private readonly media: MediaService,
     private readonly transactions: TransactionRunner,
     private readonly events: DomainEventBus,
+    // Optional so unit tests (and any worker-less context) construct without the
+    // queue; when present, `schedule()` also enqueues a delayed publish job.
+    @Optional() @Inject(JOB_ENQUEUER) private readonly jobs?: JobEnqueuer,
   ) {}
+
+  private readonly logger = new Logger(PiecesService.name);
 
   async createDraft(authorId: string, dto: CreatePieceDto): Promise<PieceResponseDto> {
     const languageId = await this.taxonomy.resolveLanguageCode(dto.languageCode);
@@ -195,9 +202,81 @@ export class PiecesService {
     }
     this.assertPublishable(piece);
     const slug = piece.slug ?? (await this.generateSlug(piece.title));
-    // Schedule is stored only — the publishing worker is a later epic (docs 18 E4).
     await this.pieces.update(id, { status: PieceStatus.Scheduled, scheduledAt, slug });
+
+    // Enqueue a delayed publish job (docs 02 §6.2): the low-latency path that
+    // fires at publishAt. jobId = pieceId so a reschedule replaces the pending
+    // job rather than stacking a second one. Best-effort — the per-minute
+    // reconciliation sweep is the durable guarantee, so a failed enqueue is
+    // logged and swallowed, never failing the schedule request.
+    if (this.jobs !== undefined) {
+      try {
+        await this.jobs.enqueue(
+          JOB.PublishOne,
+          { pieceId: id },
+          { jobId: `publish:${id}`, delayMs: Math.max(0, scheduledAt.getTime() - Date.now()) },
+        );
+      } catch (error) {
+        this.logger.warn(
+          `failed to enqueue delayed publish for ${id}: ${(error as Error).message}`,
+        );
+      }
+    }
     return this.getOwn(id, ownerId);
+  }
+
+  // ── Scheduled-publish worker entry points (Epic 11) ─────────────────────────
+
+  /**
+   * Publishes every scheduled piece whose time has arrived — the reconciliation
+   * sweep run every minute by the `scheduled-publish` worker (docs 18 E4). Reuses
+   * the owner-scoped {@link publish} path per piece (system context = the piece's
+   * own author), so the publish transaction, slug, count bump, and
+   * `PiecePublished` event are never duplicated. Idempotent: an already-published
+   * piece no longer matches the due query, and `publish` guards double-publish.
+   * Each piece is isolated — one failure is recorded and the sweep continues.
+   */
+  async publishDueScheduled(limit = 100): Promise<{ published: string[]; failed: string[] }> {
+    const due = await this.pieces.findDueScheduled(new Date(), limit);
+    const published: string[] = [];
+    const failed: string[] = [];
+    for (const piece of due) {
+      try {
+        await this.publish(piece.id, piece.authorId);
+        published.push(piece.id);
+      } catch (error) {
+        failed.push(piece.id);
+        this.logger.error(
+          `scheduled publish failed for piece ${piece.id}: ${(error as Error).message}`,
+        );
+      }
+    }
+    return { published, failed };
+  }
+
+  /**
+   * Publishes one scheduled piece by id — the delayed-job path. Re-verifies the
+   * piece is still scheduled and actually due before publishing (the writer may
+   * have edited, unscheduled, or deleted it since — docs 02 §6.2), so a stale
+   * delayed job is a safe no-op. Returns whether it published.
+   */
+  async publishScheduledById(pieceId: string): Promise<boolean> {
+    const piece = await this.pieces.findById(pieceId);
+    if (
+      piece === null ||
+      piece.status !== PieceStatus.Scheduled ||
+      piece.scheduledAt === null ||
+      piece.scheduledAt.getTime() > Date.now()
+    ) {
+      return false;
+    }
+    await this.publish(pieceId, piece.authorId);
+    return true;
+  }
+
+  /** Hard-purges soft-deleted pieces older than `cutoff` (maintenance). Returns count removed. */
+  purgeSoftDeleted(cutoff: Date): Promise<number> {
+    return this.pieces.hardDeleteSoftDeletedBefore(cutoff);
   }
 
   async archive(id: string, ownerId: string): Promise<PieceResponseDto> {

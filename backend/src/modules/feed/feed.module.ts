@@ -32,6 +32,8 @@ import { TrendingService } from './trending.service';
     TrendingService,
     DiscoveryService,
   ],
-  exports: [FeedCacheService],
+  // TrendingService + DiscoveryService are exported for the Epic-11 infrastructure
+  // layer (trending recompute worker + cache warmer); no other module imports them.
+  exports: [FeedCacheService, TrendingService, DiscoveryService],
 })
 export class FeedModule {}

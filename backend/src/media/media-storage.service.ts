@@ -1,4 +1,9 @@
-import { PutObjectCommand, DeleteObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import {
+  DeleteObjectCommand,
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 
@@ -34,6 +39,18 @@ export class MediaStorageService {
         ContentType: contentType,
       }),
     );
+  }
+
+  /** Downloads an object's bytes — used by the media worker to reprocess an upload. */
+  async get(key: string): Promise<Buffer> {
+    const response = await this.client.send(
+      new GetObjectCommand({ Bucket: this.config.bucket, Key: key }),
+    );
+    if (response.Body === undefined) {
+      throw new Error(`object "${key}" has no body`);
+    }
+    const bytes = await response.Body.transformToByteArray();
+    return Buffer.from(bytes);
   }
 
   async delete(key: string): Promise<void> {

@@ -16,6 +16,7 @@ import { OptionalAuthGuard } from './guards/optional-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { VerifiedUserGuard } from './guards/verified-user.guard';
 import { AuthEventLogger } from './services/auth-event.logger';
+import { AuthMaintenanceService } from './services/auth-maintenance.service';
 import { GoogleOAuthService } from './services/google-oauth.service';
 import { PasswordResetService } from './services/password-reset.service';
 import { PasswordService } from './services/password.service';
@@ -51,6 +52,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     PasswordResetService,
     GoogleOAuthService,
     AuthEventLogger,
+    AuthMaintenanceService,
     AuthIdentityRepository,
     JwtStrategy,
     JwtAuthGuard,
@@ -59,6 +61,13 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     VerifiedUserGuard,
     { provide: APP_GUARD, useClass: JwtAuthGuard },
   ],
-  exports: [AuthService, JwtAuthGuard, RolesGuard, OptionalAuthGuard, VerifiedUserGuard],
+  exports: [
+    AuthService,
+    AuthMaintenanceService,
+    JwtAuthGuard,
+    RolesGuard,
+    OptionalAuthGuard,
+    VerifiedUserGuard,
+  ],
 })
 export class AuthModule {}

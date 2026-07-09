@@ -18,6 +18,14 @@ export interface UploadedImage {
   size: number;
 }
 
+/** Metadata extracted from a stored image (media worker). */
+export interface ImageMetadata {
+  width: number | null;
+  height: number | null;
+  format: string | null;
+  sizeBytes: number;
+}
+
 /** Output dimensions per kind (docs 13 §7 — re-encode to WebP, metadata stripped). */
 const SPEC: Record<ImageKind, { maxMb: number; width: number; height: number }> = {
   avatar: { maxMb: AVATAR_IMAGE_MAX_MB, width: 512, height: 512 },
@@ -90,5 +98,33 @@ export class ImageService {
       }
       throw new MediaTypeException(); // sharp failed to decode → not a valid image
     }
+  }
+
+  /**
+   * Generates a smaller thumbnail rendition from an already-validated image
+   * (media worker — the expensive derived-rendition work moved off the request
+   * path). Width-bounded, aspect preserved, re-encoded to WebP (metadata stripped).
+   */
+  async generateThumbnail(
+    source: Buffer,
+    width = 256,
+  ): Promise<{ buffer: Buffer; contentType: string }> {
+    const buffer = await sharp(source, { limitInputPixels: 12_000 * 12_000 })
+      .rotate()
+      .resize({ width, withoutEnlargement: true })
+      .webp({ quality: 75 })
+      .toBuffer();
+    return { buffer, contentType: 'image/webp' };
+  }
+
+  /** Extracts basic image metadata (dimensions/format/size) for a stored object. */
+  async extractMetadata(source: Buffer): Promise<ImageMetadata> {
+    const meta = await sharp(source).metadata();
+    return {
+      width: meta.width ?? null,
+      height: meta.height ?? null,
+      format: meta.format ?? null,
+      sizeBytes: source.length,
+    };
   }
 }
