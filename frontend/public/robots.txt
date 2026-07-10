@@ -1,0 +1,16 @@
+# Qalam — robots policy. Public content (landing, feed, discover, search, writer profiles) is
+# indexable; private/authenticated + utility surfaces are disallowed. Deep app state behind auth
+# redirects to login for crawlers anyway; these rules make the intent explicit.
+User-agent: *
+Allow: /
+Disallow: /me
+Disallow: /settings
+Disallow: /write
+Disallow: /auth/
+Disallow: /401
+Disallow: /403
+Disallow: /404
+Disallow: /offline
+
+# Replace the host with the deployed origin at build/deploy time (see scripts/generate-sitemap.mjs).
+Sitemap: https://qalam.app/sitemap.xml

@@ -18,10 +18,6 @@ import { useTrending } from '../hooks/use-trending';
 import { useSearchStore } from '../stores/search.store';
 import { HighlightText } from './highlight-text';
 
-/** Platform-aware modifier label for the footer hint (⌘ on macOS, Ctrl elsewhere). */
-export const IS_MAC =
-  typeof navigator !== 'undefined' && /mac/i.test(navigator.platform || navigator.userAgent);
-
 interface Option {
   id: string;
   run: () => void;
@@ -370,6 +366,9 @@ export function CommandPalette(): ReactElement {
                         id={optionDomId(index)}
                         role="option"
                         aria-selected={active}
+                        // Options are driven via aria-activedescendant on the combobox input —
+                        // keep them out of the Tab order so Tab doesn't step through every result.
+                        tabIndex={-1}
                         onMouseMove={() => {
                           if (!active) setActiveIndex(index);
                         }}

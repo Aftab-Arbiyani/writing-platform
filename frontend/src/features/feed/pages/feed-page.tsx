@@ -1,6 +1,8 @@
 import type { ReactElement } from 'react';
 
+import { Seo } from '@/components/seo';
 import { usePageTitle } from '@/hooks/use-page-title';
+import { ROUTES } from '@/lib/routes';
 import { useAuthStore } from '@/stores/auth.store';
 
 import { FeedFilterBar } from '../components/feed-filter-bar';
@@ -29,7 +31,14 @@ export function FeedPage(): ReactElement {
 
   return (
     <div className="mx-auto grid w-full max-w-[1080px] gap-8 px-4 py-6 sm:px-6 lg:grid-cols-[minmax(0,680px)_320px] lg:justify-center">
+      <Seo
+        title="Home"
+        description="Your reading feed on Qalam — the latest and trending writing from voices you follow."
+        canonicalPath={ROUTES.feed}
+      />
       <div className="flex min-w-0 flex-col gap-4">
+        {/* Page-level heading for SR/document outline; the feed's visual title is its tab strip. */}
+        <h1 className="sr-only">Home</h1>
         <FeedTabs tab={params.tab} onSelect={params.setTab} />
         <FeedFilterBar
           params={params}

@@ -36,7 +36,8 @@ export function NotificationPopover({ onClose }: { onClose: () => void }): React
       aria-label="Notifications"
       className="border-line absolute end-0 top-full z-[1030] mt-2 flex max-h-[560px] w-[min(400px,calc(100vw-2rem))] flex-col overflow-hidden rounded-lg border bg-surface shadow-[var(--q-shadow-3)]"
     >
-      <header className="border-line flex items-center justify-between border-b px-4 py-3">
+      {/* Plain div, not <header>: a banner landmark inside a role=dialog duplicates the app banner. */}
+      <div className="border-line flex items-center justify-between border-b px-4 py-3">
         <h2 className="text-sm font-semibold text-ink">Notifications</h2>
         <QButton
           variant="ghost"
@@ -48,7 +49,7 @@ export function NotificationPopover({ onClose }: { onClose: () => void }): React
         >
           Mark all read
         </QButton>
-      </header>
+      </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto p-1">
         {query.isLoading ? (
@@ -91,7 +92,8 @@ export function NotificationPopover({ onClose }: { onClose: () => void }): React
         )}
       </div>
 
-      <footer className="border-line border-t px-2 py-2">
+      {/* Plain div, not <footer>: a contentinfo landmark inside a role=dialog duplicates the app footer. */}
+      <div className="border-line border-t px-2 py-2">
         <Link
           to={ROUTES.notifications}
           onClick={onClose}
@@ -99,7 +101,7 @@ export function NotificationPopover({ onClose }: { onClose: () => void }): React
         >
           See all notifications
         </Link>
-      </footer>
+      </div>
     </div>
   );
 }

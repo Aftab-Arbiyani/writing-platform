@@ -2,8 +2,12 @@ import { QErrorState, QSkeleton } from '@qalam/ui';
 import { useState, type ReactElement } from 'react';
 import { useSearchParams } from 'react-router';
 
+import { Seo } from '@/components/seo';
 import { usePageTitle } from '@/hooks/use-page-title';
 import { getErrorMessage, getRequestId, isApiError } from '@/lib/errors';
+import { mediaUrl } from '@/lib/media';
+import { profilePath } from '@/lib/routes';
+import { profileJsonLd } from '@/lib/seo';
 
 import { ProfileAbout } from '../components/profile-about';
 import {
@@ -85,8 +89,35 @@ export function ProfilePage({ username }: { username: string }): ReactElement {
     );
   }
 
+  const canonicalPath = profilePath(profile.username);
+  const avatarUrl = mediaUrl(profile.avatarKey);
+
   return (
     <div className="pb-10">
+      {/* A restricted (private) profile leaks only a teaser — keep it out of search indexes. */}
+      <Seo
+        title={`${profile.penName} (@${profile.username})`}
+        description={
+          !profile.restricted && profile.bio
+            ? profile.bio
+            : `${profile.penName} (@${profile.username}) on Qalam.`
+        }
+        canonicalPath={canonicalPath}
+        image={avatarUrl}
+        type="profile"
+        noindex={profile.restricted || profile.isPrivate}
+        jsonLd={
+          profile.restricted
+            ? undefined
+            : profileJsonLd({
+                penName: profile.penName,
+                username: profile.username,
+                bio: profile.bio,
+                avatarUrl,
+                path: canonicalPath,
+              })
+        }
+      />
       <ProfileHeader
         profile={profile}
         onOpenFollowers={() => setConnections('followers')}

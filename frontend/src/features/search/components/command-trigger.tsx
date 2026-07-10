@@ -1,8 +1,9 @@
 import { Search } from 'lucide-react';
 import type { ReactElement } from 'react';
 
+import { IS_MAC } from '@/lib/platform';
+
 import { useSearchStore } from '../stores/search.store';
-import { IS_MAC } from './command-palette';
 
 /**
  * The top-bar search affordance (docs/06 §2) — a button shaped like a search box that OPENS the

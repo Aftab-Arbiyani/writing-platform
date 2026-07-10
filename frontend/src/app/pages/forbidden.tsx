@@ -3,6 +3,7 @@ import { ShieldX } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { useNavigate } from 'react-router';
 
+import { Seo } from '@/components/seo';
 import { usePageTitle } from '@/hooks/use-page-title';
 import { ROUTES } from '@/lib/routes';
 
@@ -12,6 +13,7 @@ export function Forbidden(): ReactElement {
   usePageTitle('No access');
   return (
     <QPageContainer className="py-16">
+      <Seo title="No access" noindex />
       <QEmptyState
         icon={ShieldX}
         title="You don't have access to this."

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" role="img" aria-label="Qalam">
+  <!-- iOS ignores transparency/rounding and applies its own mask, so keep a solid square fill. -->
+  <rect width="180" height="180" fill="#9E4B28"/>
+  <text x="90" y="124" font-family="'Noto Naskh Arabic', 'Times New Roman', serif" font-size="96" fill="#FFFFFF" text-anchor="middle">&#1602;</text>
+</svg>

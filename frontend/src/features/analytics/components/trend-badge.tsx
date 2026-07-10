@@ -1,6 +1,6 @@
 import { cn } from '@qalam/ui';
 import { Minus, TrendingDown, TrendingUp } from 'lucide-react';
-import type { ReactElement, ReactNode } from 'react';
+import type { ReactElement } from 'react';
 
 import { formatCount } from '@/lib/format';
 
@@ -39,26 +39,6 @@ export function TrendBadge({ trend, srText }: { trend: Trend; srText?: string })
       <Icon size={13} strokeWidth={2} aria-hidden />
       <span aria-hidden>{trendLabel(trend)}</span>
       <span className="sr-only">{srText ?? `${trendLabel(trend)} over the selected range`}</span>
-    </span>
-  );
-}
-
-/**
- * A larger, labelled growth indicator (docs: "Growth Indicator") — for a headline number like
- * "▲ 214 followers gained". Same tone system as `TrendBadge`.
- */
-export function GrowthIndicator({
-  direction,
-  children,
-}: {
-  direction: Trend['direction'];
-  children: ReactNode;
-}): ReactElement {
-  const Icon = ICON[direction];
-  return (
-    <span className={cn('inline-flex items-center gap-1 text-sm font-medium', TONE[direction])}>
-      <Icon size={16} strokeWidth={2} aria-hidden />
-      {children}
     </span>
   );
 }

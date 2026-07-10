@@ -1,0 +1,20 @@
+{
+  "name": "Qalam — a writing sanctuary",
+  "short_name": "Qalam",
+  "description": "A premium writing sanctuary for Hindi and Urdu writers first, the world next. Write, publish, and read in a calm, distraction-free space.",
+  "id": "/",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "browser"],
+  "orientation": "portrait-primary",
+  "lang": "en",
+  "dir": "ltr",
+  "background_color": "#FAF7F1",
+  "theme_color": "#FAF7F1",
+  "categories": ["books", "education", "lifestyle", "social"],
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/maskable-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

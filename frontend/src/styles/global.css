@@ -69,6 +69,8 @@
     font-size: 1.25rem;
     line-height: 1.7;
     color: var(--q-text-primary);
+    /* Long unbreakable strings/URLs must wrap rather than overflow on narrow screens. */
+    overflow-wrap: anywhere;
   }
   .qalam-prose:focus {
     outline: none;

@@ -13,6 +13,7 @@ import {
 import type { ReactElement } from 'react';
 import { useNavigate } from 'react-router';
 
+import { Seo } from '@/components/seo';
 import { usePageTitle } from '@/hooks/use-page-title';
 import { feedPath, ROUTES } from '@/lib/routes';
 
@@ -70,6 +71,11 @@ export function DiscoverPage(): ReactElement {
 
   return (
     <div className="mx-auto flex w-full max-w-[1000px] flex-col gap-10 px-4 py-6 sm:px-6">
+      <Seo
+        title="Discover"
+        description="New voices, trending writing, and the themes readers are drawn to right now on Qalam."
+        canonicalPath={ROUTES.discover}
+      />
       <header className="flex flex-col gap-3">
         <h1 className="flex items-center gap-2 font-serif text-2xl font-semibold text-ink sm:text-3xl">
           <Compass size={26} strokeWidth={1.75} className="text-accent" aria-hidden />

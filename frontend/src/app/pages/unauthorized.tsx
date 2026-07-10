@@ -3,6 +3,7 @@ import { LogIn } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { useNavigate } from 'react-router';
 
+import { Seo } from '@/components/seo';
 import { usePageTitle } from '@/hooks/use-page-title';
 import { ROUTES } from '@/lib/routes';
 
@@ -15,6 +16,7 @@ export function Unauthorized(): ReactElement {
   usePageTitle('Sign in required');
   return (
     <QPageContainer className="py-16">
+      <Seo title="Sign in required" noindex />
       <QEmptyState
         icon={LogIn}
         title="Please sign in to continue."

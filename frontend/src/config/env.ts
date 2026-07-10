@@ -16,6 +16,12 @@ const envSchema = z.object({
   // Base URL for media assets (S3/CDN). Responses return storage KEYS, not URLs — the
   // client builds the full URL via lib/media.ts. Empty → fall back to VITE_API_URL origin.
   VITE_CDN_URL: optionalUrl,
+  // Public origin the app is served from (e.g. https://qalam.app) — used to build absolute
+  // canonical + Open Graph URLs for SEO (lib/seo.ts). Empty → fall back to window.location.origin.
+  VITE_SITE_URL: optionalUrl,
+  // Opt-in flag for the service-worker placeholder (src/pwa). Off by default — the app ships no
+  // offline sync yet (F10 scope). Set to 'true' only once a real PWA epic lands.
+  VITE_ENABLE_SW: z.enum(['true', 'false']).default('false'),
   // Empty string (the .env.example default) means "Sentry disabled".
   VITE_SENTRY_DSN: optionalUrl,
 });

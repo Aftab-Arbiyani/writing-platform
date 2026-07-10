@@ -10,6 +10,31 @@
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FAF7F1" />
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#131110" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- PWA (Epic F10) — installable manifest + iOS home-screen icon. -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.svg" />
+    <meta name="apple-mobile-web-app-title" content="Qalam" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+
+    <!-- Default social meta (per-page <Seo> overrides these on public routes). -->
+    <meta property="og:site_name" content="Qalam" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Qalam — a writing sanctuary" />
+    <meta
+      property="og:description"
+      content="A premium writing sanctuary for Hindi and Urdu writers first, the world next."
+    />
+    <meta property="og:image" content="/og-image.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Qalam — a writing sanctuary" />
+    <meta
+      name="twitter:description"
+      content="A premium writing sanctuary for Hindi and Urdu writers first, the world next."
+    />
+    <meta name="twitter:image" content="/og-image.svg" />
+
     <title>Qalam — a writing sanctuary</title>
     <script>
       // Runs BEFORE the app bundle: sets data-theme on <html> synchronously so the

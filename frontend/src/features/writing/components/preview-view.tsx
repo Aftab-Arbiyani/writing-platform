@@ -2,6 +2,7 @@ import { QAvatar, QButton } from '@qalam/ui';
 import { Monitor, Smartphone, X } from 'lucide-react';
 import { useEffect, type ReactElement } from 'react';
 
+import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { formatReadingTime } from '@/lib/format';
 import { mediaUrl } from '@/lib/media';
 
@@ -25,6 +26,8 @@ export function PreviewView({
 }): ReactElement {
   const mode = useEditorUiStore((s) => s.previewMode);
   const setMode = useEditorUiStore((s) => s.setPreviewMode);
+  // Full-page custom dialog → trap Tab inside it and restore focus to the trigger on close.
+  const dialogRef = useFocusTrap<HTMLDivElement>();
   const direction = piece.language?.direction;
   const displayName = piece.author.penName ?? `@${piece.author.username}`;
   const cover = mediaUrl(piece.coverImageKey);
@@ -41,10 +44,12 @@ export function PreviewView({
 
   return (
     <div
+      ref={dialogRef}
+      tabIndex={-1}
       role="dialog"
       aria-modal="true"
       aria-label="Preview"
-      className="fixed inset-0 z-[1100] flex flex-col bg-canvas"
+      className="fixed inset-0 z-[1100] flex flex-col bg-canvas outline-none"
     >
       <div className="border-line flex items-center justify-between gap-3 border-b px-4 py-3">
         <p className="text-sm text-ink-secondary">Previewing — readers will see this</p>

@@ -2,4 +2,6 @@
 // bans like no-ml/mr classes) lives in @qalam/config — do not add rules here.
 import reactPreset from '@qalam/config/eslint/react';
 
-export default [{ ignores: ['dist'] }, ...reactPreset];
+// `public/sw.js` is a service-worker template (worker globals, not a module) and `scripts/` are
+// Node build helpers — neither belongs to the app TS program, so keep them out of the app lint.
+export default [{ ignores: ['dist', 'public/sw.js', 'scripts'] }, ...reactPreset];

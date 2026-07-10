@@ -235,10 +235,12 @@ export function PublishSheet({
                   value={field.value}
                   onChange={field.onChange}
                   onBlur={field.onBlur}
+                  aria-invalid={fieldState.error ? true : undefined}
+                  aria-describedby={fieldState.error ? 'scheduledAt-error' : undefined}
                   className="rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink"
                 />
                 {fieldState.error ? (
-                  <span role="alert" className="text-xs text-danger">
+                  <span id="scheduledAt-error" role="alert" className="text-xs text-danger">
                     {fieldState.error.message}
                   </span>
                 ) : null}

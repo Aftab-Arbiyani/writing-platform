@@ -20,7 +20,7 @@ describe('validateCoverImage', () => {
     expect(validateCoverImage(fileOf('application/pdf', 1_000))).toBe('MEDIA_TYPE_UNSUPPORTED');
   });
 
-  it('rejects an image over the 15MB cap', () => {
+  it('rejects an image over the shared cover-size cap', () => {
     expect(validateCoverImage(fileOf('image/jpeg', 16 * 1024 * 1024))).toBe('MEDIA_TOO_LARGE');
   });
 });

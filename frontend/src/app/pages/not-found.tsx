@@ -3,6 +3,7 @@ import { Compass } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { useNavigate } from 'react-router';
 
+import { Seo } from '@/components/seo';
 import { usePageTitle } from '@/hooks/use-page-title';
 import { ROUTES } from '@/lib/routes';
 
@@ -15,6 +16,7 @@ export function NotFound(): ReactElement {
   usePageTitle('Page not found');
   return (
     <QPageContainer className="py-16">
+      <Seo title="Page not found" noindex />
       <QEmptyState
         icon={Compass}
         title="This page has wandered off."
