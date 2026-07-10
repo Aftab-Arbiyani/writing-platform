@@ -183,8 +183,17 @@ function refreshSession(): Promise<boolean> {
   return refreshInFlight;
 }
 
-/** Only an expired access token is refreshable; invalid/revoked/reused end the session. */
-const REFRESHABLE_CODE = 'AUTH_TOKEN_EXPIRED';
+/**
+ * A protected route rejects an expired access token with the GENERIC `UNAUTHORIZED` code (verified
+ * against the backend — it does NOT emit `AUTH_TOKEN_EXPIRED` here; that only comes from the refresh
+ * path). So we refresh on any non-terminal 401. These codes mean the whole session is dead — refresh
+ * would fail, so end it immediately.
+ */
+const TERMINAL_AUTH_CODES = new Set([
+  'AUTH_TOKEN_INVALID',
+  'AUTH_SESSION_REVOKED',
+  'AUTH_REFRESH_REUSED',
+]);
 
 async function request<T>(
   method: HttpMethod,
@@ -193,18 +202,23 @@ async function request<T>(
 ): Promise<ApiResult<T>> {
   let response = await sendOnce(method, path, options);
 
-  if (response.status === 401 && !path.startsWith('/auth/')) {
+  // Only try to recover a session we actually had (a token in memory), and never on /auth/* itself.
+  if (response.status === 401 && !path.startsWith('/auth/') && getAccessToken() !== null) {
     // Peek the code without consuming the body we still need on the happy path.
     let code = '';
     try {
       const body = (await response.clone().json()) as Partial<ApiFailureEnvelope>;
       code = body.error?.code ?? '';
     } catch {
-      /* non-JSON 401 — fall through to terminal handling */
+      /* non-JSON 401 — treat as a generic, refreshable 401 */
     }
 
-    if (code === REFRESHABLE_CODE && (await refreshSession())) {
-      response = await sendOnce(method, path, options); // retry once with the fresh token
+    if (!TERMINAL_AUTH_CODES.has(code) && (await refreshSession())) {
+      response = await sendOnce(method, path, options); // single retry with the fresh token
+      if (response.status === 401) {
+        setAccessToken(null);
+        onUnauthorized?.();
+      }
     } else {
       setAccessToken(null);
       onUnauthorized?.();

@@ -22,6 +22,7 @@ export const ROUTES = {
   moderators: '/moderators',
   roles: '/roles',
   // Utility
+  unauthorized: '/401',
   forbidden: '/403',
   offline: '/offline',
   notFound: '/404',

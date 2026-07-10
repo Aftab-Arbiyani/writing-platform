@@ -3,12 +3,13 @@ import { MotionProvider } from '@qalam/ui/motion';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { App as AntApp, ConfigProvider } from 'antd';
-import { useEffect, useSyncExternalStore, type ReactElement, type ReactNode } from 'react';
+import { useEffect, useRef, useSyncExternalStore, type ReactElement, type ReactNode } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { HelmetProvider } from 'react-helmet-async';
 
 import { RootErrorFallback } from '@/app/error-boundary';
 import { reportError } from '@/app/sentry';
+import { bootstrapSession } from '@/features/auth';
 import { setUnauthorizedHandler } from '@/lib/api-client';
 import { queryClient } from '@/lib/query-client';
 import { useAuthStore } from '@/stores/auth.store';
@@ -48,14 +49,21 @@ interface AppProvidersProps {
  */
 export function AppProviders({ children }: AppProvidersProps): ReactElement {
   const resolvedTheme = useResolvedTheme();
+  // Ensures the boot refresh fires ONCE under StrictMode's double-invoke — a second /auth/refresh
+  // would rotate the refresh token twice and trip reuse detection.
+  const booted = useRef(false);
 
   useEffect(() => {
-    // A terminal 401 (refresh failed / non-refreshable auth code) ends the session; guards then
-    // bounce to login. Server state is dropped so a re-login never shows a stale operator's data.
+    // An unrecoverable 401 raises the "session expired" reason; the SessionExpiredDialog handles it.
     setUnauthorizedHandler(() => {
-      useAuthStore.getState().clearSession();
-      queryClient.clear();
+      useAuthStore.getState().expireSession();
     });
+    // Boot session restore: one silent /auth/refresh (docs/32 §3.1). Resolves status to
+    // authenticated | anonymous so guards stop showing the loader; never throws.
+    if (!booted.current && useAuthStore.getState().status === 'unknown') {
+      booted.current = true;
+      void bootstrapSession();
+    }
     return () => setUnauthorizedHandler(null);
   }, []);
 

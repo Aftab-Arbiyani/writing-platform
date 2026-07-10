@@ -3,18 +3,25 @@ import { Dropdown, type MenuProps } from 'antd';
 import { LogOut } from 'lucide-react';
 import { createElement, type ReactElement } from 'react';
 
+import { useLogout } from '@/features/auth';
+import { useMe } from '@/hooks/use-me';
 import { useAuthStore } from '@/stores/auth.store';
 
 /**
- * Admin account menu (docs/10 §3.4). Shows the signed-in operator + role and a sign-out action.
- * Sign-out clears the in-memory session; the real logout endpoint + redirect land with the auth
- * epic (no auth UI in A1) — `clearSession` is the foundation stub.
+ * Admin account menu (docs/10 §3.4). Identity (name/handle) comes from `useMe` (`GET /me`); the role
+ * comes from the JWT via the auth store. Sign-out runs the logout mutation (revoke + clear); the
+ * store then goes anonymous and `RequireAuth` routes to /login automatically.
  */
 export function UserMenu(): ReactElement | null {
-  const user = useAuthStore((state) => state.user);
-  const clearSession = useAuthStore((state) => state.clearSession);
+  const status = useAuthStore((state) => state.status);
+  const role = useAuthStore((state) => state.role);
+  const me = useMe();
+  const logout = useLogout();
 
-  if (!user) return null;
+  if (status !== 'authenticated') return null;
+
+  const name = me.data?.penName ?? me.data?.username ?? 'Admin';
+  const handle = me.data?.username;
 
   const items: MenuProps['items'] = [
     {
@@ -22,11 +29,11 @@ export function UserMenu(): ReactElement | null {
       type: 'group',
       label: (
         <div className="flex flex-col py-1">
-          <span className="text-sm font-medium text-ink">{user.name}</span>
-          <span className="text-xs text-ink-muted">{user.email}</span>
-          <span className="mt-1 text-xs uppercase tracking-wide text-ink-secondary">
-            {user.role}
-          </span>
+          <span className="text-sm font-medium text-ink">{name}</span>
+          {handle ? <span className="text-xs text-ink-muted">@{handle}</span> : null}
+          {role ? (
+            <span className="mt-1 text-xs uppercase tracking-wide text-ink-secondary">{role}</span>
+          ) : null}
         </div>
       ),
     },
@@ -35,7 +42,8 @@ export function UserMenu(): ReactElement | null {
       key: 'sign-out',
       label: 'Sign out',
       icon: createElement(LogOut, { size: 16, 'aria-hidden': true }),
-      onClick: () => clearSession(),
+      disabled: logout.isPending,
+      onClick: () => logout.mutate(),
     },
   ];
 
@@ -43,10 +51,10 @@ export function UserMenu(): ReactElement | null {
     <Dropdown menu={{ items }} trigger={['click']} placement="bottomRight">
       <button
         type="button"
-        aria-label={`Account menu for ${user.name}`}
+        aria-label={`Account menu for ${name}`}
         className="flex items-center gap-2 rounded-md p-1 hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--q-accent)]"
       >
-        <QAvatar name={user.name} size={28} />
+        <QAvatar name={name} size={28} />
       </button>
     </Dropdown>
   );

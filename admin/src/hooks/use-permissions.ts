@@ -23,7 +23,7 @@ export interface Permissions {
 }
 
 export function usePermissions(): Permissions {
-  const role = useAuthStore((state) => state.user?.role ?? null);
+  const role = useAuthStore((state) => state.role);
 
   return useMemo<Permissions>(() => {
     const granted = new Set<string>(role ? DEFAULT_ROLE_PERMISSIONS[role] : []);

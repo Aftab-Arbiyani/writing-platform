@@ -1,52 +1,57 @@
 import { Role } from '@qalam/shared';
 import { create } from 'zustand';
 
+import { setAccessToken } from '@/lib/api-client';
+import { decodeAccessToken } from '@/lib/jwt';
+
 /**
- * Admin session (client state → Zustand; docs/00 §6). Role comes ONLY from the JWT `role` claim
- * (docs/26 §8) — there is no role field in response bodies and no `/me/permissions` endpoint. This
- * store is a UX-hint layer for guards + nav filtering; the server re-checks every admin endpoint and
- * audit-logs every mutation, so this is never a trust boundary.
+ * Admin session (client state → Zustand; docs/00 §6). The `role` comes ONLY from the access-token
+ * JWT claim (docs/26 §8) — `/me` returns no role. The access token itself lives in api-client memory
+ * (never here, never localStorage); this store holds only the derived session state. It's a UX-hint
+ * layer for guards + nav filtering — the server re-checks every admin endpoint and audit-logs every
+ * mutation, so it is never a trust boundary.
  *
- * ── FOUNDATION STUB ──
- * A1 ships no authentication UI (out of scope) and there is no way to obtain a real token yet, so
- * the session is seeded as an authenticated super_admin. The auth epic replaces `bootstrapSession`
- * with a real boot `POST /auth/refresh` → decode the JWT `role` (docs/32 §3) and wires login/logout.
- * TODO(admin-auth): remove the seeded session; resolve status from the refresh call at boot.
+ * `sessionExpired` is the involuntary-logout reason: set by `expireSession` (from the api-client's
+ * unauthorized handler on an unrecoverable 401), read by the `SessionExpiredDialog`. `expireSession`
+ * deliberately leaves `status` intact so the dialog — not a silent redirect — handles re-auth.
  */
 export type SessionStatus = 'unknown' | 'authenticated' | 'anonymous';
 
-export interface AdminUser {
-  name: string;
-  email: string;
-  role: Role;
-}
-
 interface AuthState {
   status: SessionStatus;
-  user: AdminUser | null;
-  setSession: (user: AdminUser) => void;
-  clearSession: () => void;
+  role: Role | null;
+  sessionExpired: boolean;
+  /** Establish a session from a fresh access token (login / boot refresh): decode role + stash token. */
+  setSession: (accessToken: string) => void;
+  /** No session found at boot (remember-me off, or refresh failed). */
+  setAnonymous: () => void;
+  /** Session died mid-use (unrecoverable 401): drop the token + raise the expired reason. */
+  expireSession: () => void;
+  /** Explicit sign-out: drop the token + reset to anonymous with no "expired" reason. */
+  clear: () => void;
+  clearSessionExpired: () => void;
 }
-
-// Seeded stub — see the file header. Replace with a real refresh-on-boot in the auth epic.
-const STUB_USER: AdminUser = {
-  name: 'Admin',
-  email: 'admin@qalam.local',
-  role: Role.SuperAdmin,
-};
 
 export const useAuthStore = create<AuthState>((set) => ({
-  status: 'authenticated',
-  user: STUB_USER,
-  setSession: (user) => {
-    set({ status: 'authenticated', user });
+  status: 'unknown',
+  role: null,
+  sessionExpired: false,
+  setSession: (accessToken) => {
+    setAccessToken(accessToken);
+    const decoded = decodeAccessToken(accessToken);
+    set({ status: 'authenticated', role: decoded?.role ?? Role.User, sessionExpired: false });
   },
-  clearSession: () => {
-    set({ status: 'anonymous', user: null });
+  setAnonymous: () => {
+    setAccessToken(null);
+    set({ status: 'anonymous', role: null });
   },
+  expireSession: () => {
+    setAccessToken(null);
+    set({ sessionExpired: true });
+  },
+  clear: () => {
+    setAccessToken(null);
+    set({ status: 'anonymous', role: null, sessionExpired: false });
+  },
+  clearSessionExpired: () => set({ sessionExpired: false }),
 }));
-
-/** Current role, or null when unauthenticated. Consumed by `usePermissions` + nav filtering. */
-export function currentRole(): Role | null {
-  return useAuthStore.getState().user?.role ?? null;
-}

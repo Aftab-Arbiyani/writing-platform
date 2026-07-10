@@ -1,13 +1,15 @@
 import { Role } from '@qalam/shared';
 import { renderHook } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
 import { usePermissions } from '@/hooks/use-permissions';
 import { useAuthStore } from '@/stores/auth.store';
 
+afterEach(() => useAuthStore.getState().clear());
+
 describe('usePermissions', () => {
   it('treats role floors as a rank comparison (super_admin satisfies everything)', () => {
-    useAuthStore.getState().setSession({ name: 'A', email: 'a@x', role: Role.SuperAdmin });
+    useAuthStore.setState({ status: 'authenticated', role: Role.SuperAdmin });
     const { result } = renderHook(() => usePermissions());
     expect(result.current.hasRole(Role.Admin)).toBe(true);
     expect(result.current.hasRole(Role.Moderator)).toBe(true);
@@ -15,7 +17,7 @@ describe('usePermissions', () => {
   });
 
   it('denies a role floor above the current role', () => {
-    useAuthStore.getState().setSession({ name: 'M', email: 'm@x', role: Role.Moderator });
+    useAuthStore.setState({ status: 'authenticated', role: Role.Moderator });
     const { result } = renderHook(() => usePermissions());
     expect(result.current.hasRole(Role.Moderator)).toBe(true);
     expect(result.current.hasRole(Role.Admin)).toBe(false);
@@ -23,7 +25,7 @@ describe('usePermissions', () => {
   });
 
   it('reports no access when unauthenticated', () => {
-    useAuthStore.getState().clearSession();
+    useAuthStore.getState().clear();
     const { result } = renderHook(() => usePermissions());
     expect(result.current.role).toBeNull();
     expect(result.current.hasRole(Role.Moderator)).toBe(false);

@@ -3,9 +3,9 @@ import { ShieldX } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { useNavigate } from 'react-router';
 
+import { useLogout } from '@/features/auth';
 import { usePageTitle } from '@/hooks/use-page-title';
 import { ROUTES } from '@/lib/routes';
-import { useAuthStore } from '@/stores/auth.store';
 
 /**
  * 403 (docs/11 §4) — an honest deny when the role rank is below a section's floor. Rendered by
@@ -15,7 +15,7 @@ import { useAuthStore } from '@/stores/auth.store';
 export function Forbidden(): ReactElement {
   usePageTitle('No access');
   const navigate = useNavigate();
-  const clearSession = useAuthStore((state) => state.clearSession);
+  const logout = useLogout();
 
   return (
     <QEmptyState
@@ -28,7 +28,7 @@ export function Forbidden(): ReactElement {
           <QButton variant="secondary" onClick={() => void navigate(ROUTES.dashboard)}>
             Back to dashboard
           </QButton>
-          <QButton variant="ghost" onClick={() => clearSession()}>
+          <QButton variant="ghost" onClick={() => logout.mutate()} disabled={logout.isPending}>
             Sign out
           </QButton>
         </div>
