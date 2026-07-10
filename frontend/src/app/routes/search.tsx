@@ -1,12 +1,8 @@
 import type { ReactElement } from 'react';
 
-import { Placeholder } from '@/app/pages/placeholder';
+import { SearchPage } from '@/features/search';
 
+/** Lazy route module (docs/11 §9) — the Search & Discovery screen (public; recent needs auth). */
 export function Component(): ReactElement {
-  return (
-    <Placeholder
-      title="Search"
-      description="Writer, piece, tag, genre, and language search — arriving in the search epic."
-    />
-  );
+  return <SearchPage />;
 }

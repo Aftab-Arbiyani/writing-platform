@@ -1,18 +1,19 @@
-import { QButton, QSearch } from '@qalam/ui';
+import { QButton } from '@qalam/ui';
 import { PenLine } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { Link, useNavigate } from 'react-router';
 
 import { ThemeToggle } from '@/components/theme-toggle';
 import { UserMenu } from '@/components/user-menu';
+import { CommandTrigger } from '@/features/search';
 import { ROUTES } from '@/lib/routes';
 import { useAuthStore } from '@/stores/auth.store';
 
 /**
  * Desktop/mobile top bar (docs/06 §2, docs/10 §3.1): wordmark → center search → Write CTA +
  * theme toggle. Signed-in users get the account menu (profile, writing, requests, settings, sign
- * out); anonymous visitors get a Sign in button. Search is a disabled placeholder until the
- * search epic.
+ * out); anonymous visitors get a Sign in button. The centered search box opens the ⌘K/Ctrl+K
+ * command palette (md+); mobile reaches search via the bottom tab bar.
  */
 export function TopBar(): ReactElement {
   const navigate = useNavigate();
@@ -30,7 +31,7 @@ export function TopBar(): ReactElement {
         </Link>
         <div className="hidden flex-1 justify-center md:flex">
           <div className="w-full max-w-[480px]">
-            <QSearch placeholder="Search writers, pieces, tags…" disabled aria-label="Search" />
+            <CommandTrigger />
           </div>
         </div>
         <div className="ms-auto flex items-center gap-1">

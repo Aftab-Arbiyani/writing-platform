@@ -2,9 +2,11 @@
 
 export const APP_NAME = 'Qalam';
 
-/** localStorage keys owned by this app (theme is the only persisted store — docs/12 §3). */
+/** localStorage keys owned by this app (docs/12 §3). */
 export const STORAGE_KEYS = {
   theme: 'qalam-theme',
+  /** Device-local recent searches (mirrors the server list for authed users; sole list for guests). */
+  recentSearches: 'qalam-recent-searches',
 } as const;
 
 /** Cursor pagination sizes (docs/05 §5). */

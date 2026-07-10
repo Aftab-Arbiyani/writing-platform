@@ -8,6 +8,7 @@ export const ROUTES = {
   // Authenticated placeholder surfaces (feature epics replace the placeholders):
   feed: '/feed',
   search: '/search',
+  discover: '/discover',
   write: '/write',
   drafts: '/me/drafts',
   notifications: '/notifications',
@@ -52,6 +53,19 @@ export function feedPath(params: Record<string, string> = {}): string {
 }
 
 /**
+ * A `/search` URL (docs/06 §3.6 — all search state in the URL). `q` plus optional params
+ * (`type`, `genre`, `lang`, `tag`, `sort`, …). Empty values are dropped so the link stays clean.
+ */
+export function searchPath(params: Record<string, string | undefined> = {}): string {
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value) search.set(key, value);
+  }
+  const query = search.toString();
+  return query ? `${ROUTES.search}?${query}` : ROUTES.search;
+}
+
+/**
  * Writer profile path (docs/06 §3.5, docs/11 §1.1). Handles are `@username`; the route is
  * registered as a bare `:handle` (React Router cannot match a static-prefix + param in one
  * segment), so we mint the `@` prefix here and strip it in the route loader.
@@ -67,6 +81,7 @@ export function profilePath(username: string): string {
 export const RESERVED_HANDLES: readonly string[] = [
   'feed',
   'search',
+  'discover',
   'me',
   'settings',
   'auth',

@@ -1,4 +1,11 @@
-import type { DiscoverPieceKind, FeedSort, PieceStatus, WriterKind } from '@qalam/shared';
+import type {
+  DiscoverPieceKind,
+  FeedSort,
+  PieceStatus,
+  SearchSort,
+  SearchType,
+  WriterKind,
+} from '@qalam/shared';
 
 /**
  * Hierarchical query-key factory (docs/12 §2.1). One factory per app; ad-hoc key arrays
@@ -17,6 +24,22 @@ export interface FeedFilters {
   sort?: FeedSort;
   minReadingTime?: number;
   maxReadingTime?: number;
+}
+
+/**
+ * Search filters that participate in the results query key + the `SearchPiecesQueryDto` /
+ * `SearchWritersQueryDto` wire params (E8, docs/05 §5.1). A stable object → a stable key, so
+ * results cache per (type, q, filters). Cursors NEVER live here (opaque; TanStack pageParam).
+ */
+export interface SearchFilters {
+  language?: string;
+  genre?: string;
+  tag?: string;
+  sort?: SearchSort;
+  minReadingTime?: number;
+  maxReadingTime?: number;
+  dateFrom?: string;
+  dateTo?: string;
 }
 
 export const qk = {
@@ -38,13 +61,26 @@ export const qk = {
     list: (tab: FeedTab, filters?: FeedFilters) => ['feed', 'list', tab, filters ?? {}] as const, // GET /feed/{tab}
   },
 
-  // Discover rails — the Discover tab's editorial content + taxonomy source (no /taxonomy API).
+  // Discover rails + the Discovery screen (E6). Editorial slices + taxonomy source (no /taxonomy API).
   discover: {
     writers: (kind: WriterKind) => ['discover', 'writers', kind] as const, // GET /discover/writers?kind=
     pieces: (kind: DiscoverPieceKind) => ['discover', 'pieces', kind] as const, // GET /discover/pieces?kind=
+    trendingPieces: () => ['discover', 'pieces', 'trending'] as const, // GET /feed/trending (discovery row)
     tags: () => ['discover', 'tags'] as const, // GET /discover/tags
     genres: () => ['discover', 'genres'] as const, // GET /discover/genres
     languages: () => ['discover', 'languages'] as const, // GET /discover/languages
+  },
+
+  // Search & Discovery (E8, docs/12 §2.1). `q` is the normalized query; results are keyed by
+  // (type, q, filters) and paginate infinitely. Autocomplete/global/trending/recent are flat.
+  search: {
+    all: ['search'] as const,
+    global: (q: string) => ['search', 'global', q] as const, // GET /search (grouped preview)
+    results: (type: SearchType, q: string, filters?: SearchFilters) =>
+      ['search', 'results', type, q, filters ?? {}] as const, // GET /search/{type} (infinite)
+    autocomplete: (q: string) => ['search', 'autocomplete', q] as const, // GET /search/autocomplete
+    trending: () => ['search', 'trending'] as const, // GET /search/trending
+    recent: () => ['search', 'recent'] as const, // GET /search/recent (authenticated)
   },
 
   // A single piece (keyed by UUID — §2.1.1). The editor loads the draft through this once.

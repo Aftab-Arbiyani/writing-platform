@@ -25,6 +25,7 @@ const router = createBrowserRouter([
       { index: true, element: <HomeRoute /> },
       { path: 'feed', lazy: () => import('@/app/routes/feed') },
       { path: 'search', lazy: () => import('@/app/routes/search') },
+      { path: 'discover', lazy: () => import('@/app/routes/discover') },
       // Error surfaces (also reachable directly / via deep links):
       { path: '401', element: <Unauthorized /> },
       { path: '403', element: <Forbidden /> },

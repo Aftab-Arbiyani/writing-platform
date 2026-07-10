@@ -8,6 +8,7 @@ import { MobileTabBar } from '@/components/mobile-tab-bar';
 import { OfflineBanner } from '@/components/offline-banner';
 import { SkipLink } from '@/components/skip-link';
 import { TopBar } from '@/components/top-bar';
+import { CommandPalette } from '@/features/search';
 
 /**
  * The reader/writer app shell (docs/06 §2, docs/11 §3) — the only place app chrome renders.
@@ -35,6 +36,8 @@ export function RootLayout(): ReactElement {
       </main>
       <Footer />
       <MobileTabBar />
+      {/* Universal ⌘K / Ctrl+K command palette — one instance for the whole app shell. */}
+      <CommandPalette />
       <ScrollRestoration />
     </div>
   );

@@ -4,11 +4,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '@/test/render';
 import type { FollowRequest } from '@/types/profile';
 
+import type * as UseFollowRequestsModule from '../hooks/use-follow-requests';
 import { useFollowRequests } from '../hooks/use-follow-requests';
 import { FollowRequestsPage } from './follow-requests-page';
 
 vi.mock('../hooks/use-follow-requests', async () => {
-  const actual = await vi.importActual<typeof import('../hooks/use-follow-requests')>(
+  const actual = await vi.importActual<typeof UseFollowRequestsModule>(
     '../hooks/use-follow-requests',
   );
   return { ...actual, useFollowRequests: vi.fn() };
