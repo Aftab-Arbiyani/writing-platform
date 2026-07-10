@@ -1,9 +1,11 @@
 import { QAvatar } from '@qalam/ui';
+import { useQueryClient } from '@tanstack/react-query';
 import { Dropdown, type MenuProps } from 'antd';
-import { FileText, LogOut, Settings, UserPlus, UserRound } from 'lucide-react';
+import { BarChart3, FileText, LogOut, Settings, UserPlus, UserRound } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { useNavigate } from 'react-router';
 
+import { prefetchDashboard } from '@/features/analytics';
 import { useLogout } from '@/features/auth/hooks/use-logout';
 import { useMe } from '@/hooks/use-me';
 import { mediaUrl } from '@/lib/media';
@@ -16,6 +18,7 @@ import { ROUTES } from '@/lib/routes';
  */
 export function UserMenu(): ReactElement {
   const navigate = useNavigate();
+  const client = useQueryClient();
   const me = useMe();
   const logout = useLogout();
   const name = me.data?.penName ?? me.data?.username ?? 'You';
@@ -58,6 +61,12 @@ export function UserMenu(): ReactElement {
       onClick: () => void navigate(ROUTES.drafts),
     },
     {
+      key: 'stats',
+      icon: <BarChart3 size={16} strokeWidth={1.5} />,
+      label: 'Your stats',
+      onClick: () => void navigate(ROUTES.stats),
+    },
+    {
       key: 'requests',
       icon: <UserPlus size={16} strokeWidth={1.5} />,
       label: 'Follow requests',
@@ -80,7 +89,15 @@ export function UserMenu(): ReactElement {
   ];
 
   return (
-    <Dropdown menu={{ items }} trigger={['click']} placement="bottomRight">
+    <Dropdown
+      menu={{ items }}
+      trigger={['click']}
+      placement="bottomRight"
+      onOpenChange={(open) => {
+        // Warm the analytics dashboard on menu open (docs: prefetch dashboard overview).
+        if (open) void prefetchDashboard(client);
+      }}
+    >
       <button
         type="button"
         aria-label="Account menu"

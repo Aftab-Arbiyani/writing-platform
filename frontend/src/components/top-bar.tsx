@@ -21,7 +21,10 @@ export function TopBar(): ReactElement {
   const status = useAuthStore((s) => s.status);
 
   return (
-    <header className="border-line sticky top-0 z-[1020] border-b bg-canvas/95 backdrop-blur">
+    <header
+      data-print-hidden
+      className="border-line sticky top-0 z-[1020] border-b bg-canvas/95 backdrop-blur"
+    >
       <div className="mx-auto flex h-14 max-w-[1280px] items-center gap-3 px-4 sm:h-16 sm:px-6">
         <Link
           to={ROUTES.landing}

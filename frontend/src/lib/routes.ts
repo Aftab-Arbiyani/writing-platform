@@ -15,6 +15,8 @@ export const ROUTES = {
   // Own-profile redirect target (resolves the signed-in user's handle, docs/11 §10) + requests inbox.
   me: '/me',
   followRequests: '/me/follow-requests',
+  // Writer analytics (docs/06 §3.10) — the dashboard + per-piece detail.
+  stats: '/me/stats',
   // Settings is a nested surface (docs/11 §1): index redirects to /settings/profile.
   settings: '/settings',
   settingsProfile: '/settings/profile',
@@ -64,6 +66,11 @@ export function searchPath(params: Record<string, string | undefined> = {}): str
   }
   const query = search.toString();
   return query ? `${ROUTES.search}?${query}` : ROUTES.search;
+}
+
+/** Per-piece analytics detail path (docs/06 §3.10) — the writer's own piece, keyed by UUID. */
+export function pieceStatsPath(pieceId: string): string {
+  return `/me/stats/pieces/${encodeURIComponent(pieceId)}`;
 }
 
 /**

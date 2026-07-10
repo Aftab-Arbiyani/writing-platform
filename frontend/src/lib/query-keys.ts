@@ -1,4 +1,5 @@
 import type {
+  AnalyticsPeriod,
   DiscoverPieceKind,
   FeedSort,
   NotificationStatus,
@@ -6,6 +7,7 @@ import type {
   PieceStatus,
   SearchSort,
   SearchType,
+  TrendType,
   WriterKind,
 } from '@qalam/shared';
 
@@ -83,6 +85,20 @@ export const qk = {
     autocomplete: (q: string) => ['search', 'autocomplete', q] as const, // GET /search/autocomplete
     trending: () => ['search', 'trending'] as const, // GET /search/trending
     recent: () => ['search', 'recent'] as const, // GET /search/recent (authenticated)
+  },
+
+  // Writer analytics (E10). Self-scoped aggregates + growth series + per-piece detail (docs/12 §2.1).
+  analytics: {
+    all: ['analytics'] as const,
+    dashboard: () => ['analytics', 'dashboard'] as const, // GET /analytics/dashboard
+    growth: (period: AnalyticsPeriod, points: number) =>
+      ['analytics', 'growth', period, points] as const, // GET /analytics/me/growth
+    readers: () => ['analytics', 'readers'] as const, // GET /analytics/readers/me
+    piece: (id: string) => ['analytics', 'piece', id] as const, // GET /analytics/pieces/:id
+    pieceMeta: (id: string) => ['analytics', 'piece-meta', id] as const, // GET /pieces/:id (title/dates)
+    myPieces: (status?: PieceStatus) => ['analytics', 'my-pieces', status ?? 'all'] as const, // GET /me/pieces
+    trending: (period: AnalyticsPeriod, type?: TrendType) =>
+      ['analytics', 'trending', period, type ?? 'all'] as const, // GET /analytics/trending
   },
 
   // Notifications & activity (E9). The inbox is keyed by its (status, type) filter and paginates

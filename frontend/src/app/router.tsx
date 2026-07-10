@@ -38,6 +38,8 @@ const router = createBrowserRouter([
           { path: 'me', lazy: () => import('@/app/routes/me') },
           { path: 'me/drafts', lazy: () => import('@/app/routes/drafts') },
           { path: 'me/follow-requests', lazy: () => import('@/app/routes/follow-requests') },
+          { path: 'me/stats', lazy: () => import('@/app/routes/stats') },
+          { path: 'me/stats/pieces/:id', lazy: () => import('@/app/routes/piece-stats') },
           { path: 'notifications', lazy: () => import('@/app/routes/notifications') },
           // Settings is a nested layout surface (docs/11 §1); index → /settings/profile.
           {

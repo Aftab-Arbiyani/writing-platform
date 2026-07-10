@@ -21,7 +21,18 @@
       "Bash(npx eslint:*)",
       "Bash(npx tsc:*)",
       "Bash(docker compose ps:*)",
-      "Bash(docker compose logs:*)"
+      "Bash(docker compose logs:*)",
+      "Grep",
+      "Glob",
+      "Bash(grep:*)",
+      "Bash(rg:*)",
+      "Bash(find:*)",
+      "Bash(ls:*)",
+      "Bash(fd:*)",
+      "Bash(pnpm exec jest:*)",
+      "Bash(pnpm exec vitest:*)",
+      "Bash(npx jest:*)",
+      "Bash(npx vitest:*)"
     ],
     "deny": [],
     "ask": []

@@ -121,3 +121,17 @@
     pointer-events: none;
   }
 }
+
+/* Print-friendly view (docs: Print Friendly View) — hide app chrome so printing the analytics
+   dashboard yields a clean report. Chrome is tagged with `data-print-hidden`. */
+@media print {
+  [data-print-hidden] {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+  }
+  main {
+    padding-bottom: 0 !important;
+  }
+}

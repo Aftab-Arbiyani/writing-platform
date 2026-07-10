@@ -27,6 +27,7 @@ export function MobileTabBar(): ReactElement {
   return (
     <nav
       aria-label="Primary"
+      data-print-hidden
       className="border-line fixed inset-x-0 bottom-0 z-[1020] border-t bg-canvas pb-[env(safe-area-inset-bottom)] md:hidden"
     >
       <ul className="mx-auto flex max-w-[720px] items-stretch justify-around">
