@@ -1,10 +1,8 @@
 import type { ReactElement } from 'react';
 
-import { SectionPlaceholder } from '@/app/pages/section-placeholder';
+import { DashboardPage } from '@/features/dashboard';
 
-/** Lazy route module (docs/11 §9) — the Dashboard section (placeholder in A1; code-split). */
+/** Lazy route module (docs/11 §9) — the admin dashboard (code-split). */
 export function Component(): ReactElement {
-  return (
-    <SectionPlaceholder title="Dashboard" description="Operational overview of the platform." />
-  );
+  return <DashboardPage />;
 }
