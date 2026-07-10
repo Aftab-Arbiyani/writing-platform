@@ -34,25 +34,20 @@ describe('AppearancePage', () => {
     } as unknown as ReturnType<typeof useUpdateSettings>);
   });
 
-  it('renders theme, default visibility, and notification controls', () => {
+  it('renders theme, default visibility, and a link to notification settings', () => {
     renderWithProviders(<AppearancePage />, { route: '/settings/appearance' });
     expect(screen.getByRole('radiogroup', { name: 'Theme' })).toBeInTheDocument();
     expect(screen.getByText('Default visibility for new pieces')).toBeInTheDocument();
-    expect(screen.getByRole('switch', { name: 'New followers' })).toBeInTheDocument();
+    // Notification categories moved to their own page (F8); Appearance links there.
+    expect(screen.getByRole('link', { name: /Manage notification settings/ })).toHaveAttribute(
+      'href',
+      '/settings/notifications',
+    );
   });
 
   it('persists a theme change to the settings API', () => {
     renderWithProviders(<AppearancePage />, { route: '/settings/appearance' });
     fireEvent.click(screen.getByRole('radio', { name: /Dark/ }));
     expect(mutate).toHaveBeenCalledWith({ theme: 'dark' }, expect.anything());
-  });
-
-  it('toggles a notification preference', () => {
-    renderWithProviders(<AppearancePage />, { route: '/settings/appearance' });
-    fireEvent.click(screen.getByRole('switch', { name: 'New followers' }));
-    expect(mutate).toHaveBeenCalledWith(
-      { notificationPreferences: { newFollower: false } },
-      expect.anything(),
-    );
   });
 });

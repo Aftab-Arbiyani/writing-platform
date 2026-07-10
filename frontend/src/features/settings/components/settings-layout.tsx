@@ -1,5 +1,5 @@
 import { cn } from '@qalam/ui';
-import { Palette, ShieldCheck, UserRound } from 'lucide-react';
+import { Bell, Palette, ShieldCheck, UserRound } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { NavLink, Outlet } from 'react-router';
@@ -9,6 +9,7 @@ import { ROUTES } from '@/lib/routes';
 const SECTIONS: readonly { to: string; label: string; icon: LucideIcon }[] = [
   { to: ROUTES.settingsProfile, label: 'Profile', icon: UserRound },
   { to: ROUTES.settingsAccount, label: 'Account', icon: ShieldCheck },
+  { to: ROUTES.settingsNotifications, label: 'Notifications', icon: Bell },
   { to: ROUTES.settingsAppearance, label: 'Appearance', icon: Palette },
 ];
 

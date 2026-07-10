@@ -3,6 +3,7 @@ import type { LucideIcon } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { NavLink } from 'react-router';
 
+import { NotificationTabBadge } from '@/features/notifications';
 import { ROUTES } from '@/lib/routes';
 
 interface TabItem {
@@ -40,7 +41,13 @@ export function MobileTabBar(): ReactElement {
                 ].join(' ')
               }
             >
-              <Icon size={22} strokeWidth={1.5} aria-hidden />
+              {to === ROUTES.notifications ? (
+                <NotificationTabBadge>
+                  <Icon size={22} strokeWidth={1.5} aria-hidden />
+                </NotificationTabBadge>
+              ) : (
+                <Icon size={22} strokeWidth={1.5} aria-hidden />
+              )}
               <span>{label}</span>
             </NavLink>
           </li>

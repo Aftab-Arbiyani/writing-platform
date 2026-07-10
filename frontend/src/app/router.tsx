@@ -48,6 +48,7 @@ const router = createBrowserRouter([
               { path: 'profile', lazy: () => import('@/app/routes/settings/profile') },
               { path: 'account', lazy: () => import('@/app/routes/settings/account') },
               { path: 'appearance', lazy: () => import('@/app/routes/settings/appearance') },
+              { path: 'notifications', lazy: () => import('@/app/routes/settings/notifications') },
             ],
           },
         ],

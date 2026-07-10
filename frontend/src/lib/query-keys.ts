@@ -1,6 +1,8 @@
 import type {
   DiscoverPieceKind,
   FeedSort,
+  NotificationStatus,
+  NotificationType,
   PieceStatus,
   SearchSort,
   SearchType,
@@ -81,6 +83,18 @@ export const qk = {
     autocomplete: (q: string) => ['search', 'autocomplete', q] as const, // GET /search/autocomplete
     trending: () => ['search', 'trending'] as const, // GET /search/trending
     recent: () => ['search', 'recent'] as const, // GET /search/recent (authenticated)
+  },
+
+  // Notifications & activity (E9). The inbox is keyed by its (status, type) filter and paginates
+  // infinitely; the unread count is a small polled query; preferences are a single flat query.
+  notifications: {
+    all: ['notifications'] as const,
+    /** Prefix matcher for every inbox variant — optimistic updates target this across filters. */
+    lists: () => ['notifications', 'list'] as const,
+    list: (status?: NotificationStatus, type?: NotificationType) =>
+      ['notifications', 'list', status ?? 'all', type ?? 'all'] as const, // GET /notifications
+    unreadCount: () => ['notifications', 'unread-count'] as const, // GET /notifications/unread-count
+    preferences: () => ['notifications', 'preferences'] as const, // GET /notification-preferences
   },
 
   // A single piece (keyed by UUID — §2.1.1). The editor loads the draft through this once.

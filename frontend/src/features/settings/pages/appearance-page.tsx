@@ -1,12 +1,14 @@
 import { Visibility, type ThemePreference } from '@qalam/shared';
 import { QErrorState, QSelect, QSpinner, useToast } from '@qalam/ui';
+import { Bell } from 'lucide-react';
 import type { ReactElement } from 'react';
+import { Link } from 'react-router';
 
 import { usePageTitle } from '@/hooks/use-page-title';
 import { useTheme } from '@/hooks/use-theme';
 import { getErrorMessage, getRequestId } from '@/lib/errors';
+import { ROUTES } from '@/lib/routes';
 
-import { NotificationPreferences } from '../components/notification-preferences';
 import { ThemePicker } from '../components/theme-picker';
 import { useSettings, useUpdateSettings } from '../hooks/use-settings';
 
@@ -51,16 +53,6 @@ export function AppearancePage(): ReactElement {
     );
   };
 
-  const onNotificationToggle = (key: string, value: boolean): void => {
-    const current = settings.data?.notificationPreferences ?? {};
-    update.mutate(
-      { notificationPreferences: { ...current, [key]: value } },
-      {
-        onError: (err) => toast.error('Couldn’t save that', { description: getErrorMessage(err) }),
-      },
-    );
-  };
-
   return (
     <div className="flex flex-col gap-8">
       <section>
@@ -100,20 +92,23 @@ export function AppearancePage(): ReactElement {
               options={VISIBILITY_OPTIONS}
             />
           </section>
-
-          <section>
-            <h3 className="mb-1 text-sm font-semibold text-ink">Notifications</h3>
-            <p className="mb-2 text-xs text-ink-muted">
-              Choose what you’d like to hear about. Delivery arrives in a later release.
-            </p>
-            <NotificationPreferences
-              preferences={settings.data.notificationPreferences}
-              disabled={update.isPending}
-              onToggle={onNotificationToggle}
-            />
-          </section>
         </>
       ) : null}
+
+      {/* Notification categories moved to their own page once E9 delivery shipped (F8). */}
+      <section>
+        <h3 className="mb-1 text-sm font-semibold text-ink">Notifications</h3>
+        <p className="mb-2 text-xs text-ink-muted">
+          Choose what you’re notified about and manage new-notification toasts.
+        </p>
+        <Link
+          to={ROUTES.settingsNotifications}
+          className="inline-flex items-center gap-2 text-sm font-medium text-accent hover:underline"
+        >
+          <Bell size={16} strokeWidth={1.75} aria-hidden />
+          Manage notification settings
+        </Link>
+      </section>
     </div>
   );
 }

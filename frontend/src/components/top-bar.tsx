@@ -5,6 +5,7 @@ import { Link, useNavigate } from 'react-router';
 
 import { ThemeToggle } from '@/components/theme-toggle';
 import { UserMenu } from '@/components/user-menu';
+import { NotificationBell } from '@/features/notifications';
 import { CommandTrigger } from '@/features/search';
 import { ROUTES } from '@/lib/routes';
 import { useAuthStore } from '@/stores/auth.store';
@@ -35,6 +36,11 @@ export function TopBar(): ReactElement {
           </div>
         </div>
         <div className="ms-auto flex items-center gap-1">
+          {status === 'authenticated' ? (
+            <div className="hidden md:block">
+              <NotificationBell />
+            </div>
+          ) : null}
           <ThemeToggle />
           {status === 'anonymous' ? (
             <QButton

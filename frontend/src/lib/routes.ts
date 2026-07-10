@@ -20,6 +20,7 @@ export const ROUTES = {
   settingsProfile: '/settings/profile',
   settingsAccount: '/settings/account',
   settingsAppearance: '/settings/appearance',
+  settingsNotifications: '/settings/notifications',
   // Auth corridor (docs/11 §10):
   login: '/auth/login',
   register: '/auth/register',

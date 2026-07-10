@@ -1,12 +1,8 @@
 import type { ReactElement } from 'react';
 
-import { Placeholder } from '@/app/pages/placeholder';
+import { NotificationsPage } from '@/features/notifications';
 
+/** Lazy route module (docs/11 §9) — the Activity Center (authenticated; gated by RequireAuth). */
 export function Component(): ReactElement {
-  return (
-    <Placeholder
-      title="Notifications"
-      description="The in-app notification tray arrives in the notifications epic."
-    />
-  );
+  return <NotificationsPage />;
 }
