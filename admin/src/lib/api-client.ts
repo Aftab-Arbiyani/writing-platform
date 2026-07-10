@@ -1,25 +1,28 @@
 import { env } from '@/config/env';
 
 /**
- * Foundation API client — the single, typed `fetch` wrapper for the admin
- * panel. No ad-hoc fetches in components; per-feature query hooks call `api.*`
- * with response types from `@qalam/api-types`.
+ * The admin panel's single, typed `fetch` wrapper (docs/32 §1–§5; ADR §6 freezes fetch — axios is
+ * not a workspace dependency). No ad-hoc fetch in components: feature `api/` hooks call `api.*` with
+ * response types from `@qalam/api-types`. Admin endpoints mount under `/api/v1/admin/*`.
  *
- * Admin endpoints mount under `/api/v1/admin/*` in Phase 1, so feature hooks
- * call e.g. `api.get<UserListResponse>('/admin/users', { query: { page: 1 } })`
- * against the `VITE_API_URL` base (`http://localhost:4000/api/v1` in dev).
+ * Envelope (ADR §5): `{ success:true, data, meta }` | `{ success:false, error:{ code,message,… } }`.
+ * Admin returns `{ data, meta }` (tables need `meta.pagination.total` — docs/32 §7.3 offset model).
  *
- * Every response uses the ADR §5 envelope:
- *   { "success": true,  "data": …, "meta": { … } }
- *   { "success": false, "error": { "code", "message", "details", "requestId" } }
+ * Auth (docs/32 §3): the access token lives in JS memory only (never localStorage); the refresh
+ * token rides in an httpOnly cookie (`credentials:'include'`). A 401 with `AUTH_TOKEN_EXPIRED`
+ * triggers a SINGLE-FLIGHT refresh + one retry; other auth codes / a failed refresh end the session
+ * via the registered unauthorized handler. 403 is never retried.
  */
 
-/** Pagination etc. — admin tables use offset pagination (`?page&limit`) per ADR §5. */
+export interface ApiPagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
 export interface ApiMeta {
-  page?: number;
-  limit?: number;
-  total?: number;
-  cursor?: string | null;
+  pagination?: ApiPagination;
   [key: string]: unknown;
 }
 
@@ -48,7 +51,7 @@ export interface ApiResult<T> {
   meta: ApiMeta | undefined;
 }
 
-/** Thrown for any non-success envelope; carries the catalogue code from @qalam/shared. */
+/** Thrown for any non-success response; branch on `.code` (from `@qalam/shared` ERROR_CODES), never `.message`. */
 export class ApiError extends Error {
   readonly status: number;
   readonly code: string;
@@ -65,6 +68,27 @@ export class ApiError extends Error {
   }
 }
 
+// ── Auth token (in-memory only; docs/32 §3) ──────────────────────────────────
+
+let accessToken: string | null = null;
+
+export function setAccessToken(token: string | null): void {
+  accessToken = token;
+}
+
+export function getAccessToken(): string | null {
+  return accessToken;
+}
+
+/** Registered by app/providers — invoked when the session is terminally unauthorized. */
+let onUnauthorized: (() => void) | null = null;
+
+export function setUnauthorizedHandler(handler: (() => void) | null): void {
+  onUnauthorized = handler;
+}
+
+// ── Request plumbing ─────────────────────────────────────────────────────────
+
 type QueryValue = string | number | boolean | undefined;
 
 interface RequestOptions {
@@ -79,7 +103,7 @@ type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
 function buildUrl(path: string, query?: Record<string, QueryValue>): URL {
   const base = env.VITE_API_URL.replace(/\/+$/, '');
   const suffix = path.startsWith('/') ? path : `/${path}`;
-  // Second argument lets VITE_API_URL be relative (e.g. '/api/v1' behind the dev proxy).
+  // Second arg lets VITE_API_URL be relative (e.g. '/api/v1' behind the dev proxy).
   const url = new URL(`${base}${suffix}`, window.location.origin);
   if (query) {
     for (const [key, value] of Object.entries(query)) {
@@ -89,51 +113,105 @@ function buildUrl(path: string, query?: Record<string, QueryValue>): URL {
   return url;
 }
 
-async function request<T>(
-  method: HttpMethod,
-  path: string,
-  options: RequestOptions = {},
-): Promise<ApiResult<T>> {
-  const hasBody = options.body !== undefined;
-
-  const response = await fetch(buildUrl(path, options.query), {
-    method,
-    // Auth uses an httpOnly SameSite=Lax cookie (ADR §3) — always send it.
-    credentials: 'include',
-    headers: {
-      ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
-      ...options.headers,
-    },
-    body: hasBody ? JSON.stringify(options.body) : null,
-    signal: options.signal ?? null,
-  });
-
-  if (response.status === 204) {
-    return { data: undefined as T, meta: undefined };
-  }
+async function parseEnvelope<T>(response: Response): Promise<ApiResult<T>> {
+  if (response.status === 204) return { data: undefined as T, meta: undefined };
 
   let envelope: ApiEnvelope<T>;
   try {
     envelope = (await response.json()) as ApiEnvelope<T>;
   } catch {
     throw new ApiError(response.status, {
-      code: 'API_INVALID_RESPONSE',
+      code: 'API_MALFORMED_RESPONSE',
       message: `Expected a JSON envelope, got HTTP ${response.status}`,
     });
   }
 
-  if (!envelope.success) {
-    throw new ApiError(response.status, envelope.error);
-  }
-
+  if (!envelope.success) throw new ApiError(response.status, envelope.error);
   if (!response.ok) {
     throw new ApiError(response.status, {
       code: 'API_UNEXPECTED_STATUS',
       message: `Success envelope with unexpected HTTP ${response.status}`,
     });
   }
-
   return { data: envelope.data, meta: envelope.meta };
+}
+
+function sendOnce(method: HttpMethod, path: string, options: RequestOptions): Promise<Response> {
+  const hasBody = options.body !== undefined;
+  return fetch(buildUrl(path, options.query), {
+    method,
+    // Refresh cookie rides along (docs/32 §3).
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+      ...options.headers,
+    },
+    body: hasBody ? JSON.stringify(options.body) : null,
+    signal: options.signal ?? null,
+  });
+}
+
+// ── Single-flight refresh (docs/32 §3.2) ─────────────────────────────────────
+
+interface RefreshData {
+  accessToken: string;
+}
+
+let refreshInFlight: Promise<boolean> | null = null;
+
+/** One shared refresh promise — concurrent 401s must not race the rotating refresh token. */
+function refreshSession(): Promise<boolean> {
+  refreshInFlight ??= (async () => {
+    try {
+      const response = await fetch(buildUrl('/auth/refresh'), {
+        method: 'POST',
+        credentials: 'include',
+        headers: { Accept: 'application/json' },
+      });
+      if (!response.ok) return false;
+      const { data } = await parseEnvelope<RefreshData>(response);
+      setAccessToken(data.accessToken);
+      return true;
+    } catch {
+      return false;
+    } finally {
+      refreshInFlight = null;
+    }
+  })();
+  return refreshInFlight;
+}
+
+/** Only an expired access token is refreshable; invalid/revoked/reused end the session. */
+const REFRESHABLE_CODE = 'AUTH_TOKEN_EXPIRED';
+
+async function request<T>(
+  method: HttpMethod,
+  path: string,
+  options: RequestOptions = {},
+): Promise<ApiResult<T>> {
+  let response = await sendOnce(method, path, options);
+
+  if (response.status === 401 && !path.startsWith('/auth/')) {
+    // Peek the code without consuming the body we still need on the happy path.
+    let code = '';
+    try {
+      const body = (await response.clone().json()) as Partial<ApiFailureEnvelope>;
+      code = body.error?.code ?? '';
+    } catch {
+      /* non-JSON 401 — fall through to terminal handling */
+    }
+
+    if (code === REFRESHABLE_CODE && (await refreshSession())) {
+      response = await sendOnce(method, path, options); // retry once with the fresh token
+    } else {
+      setAccessToken(null);
+      onUnauthorized?.();
+    }
+  }
+
+  return parseEnvelope<T>(response);
 }
 
 export const api = {

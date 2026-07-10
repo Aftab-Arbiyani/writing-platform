@@ -1,20 +1,15 @@
 import '@/styles/global.css';
 
-import * as Sentry from '@sentry/react';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { RouterProvider } from 'react-router/dom';
 
 import { AppProviders } from '@/app/providers';
 import { router } from '@/app/router';
-import { env } from '@/config/env';
+import { initSentry } from '@/app/sentry';
 
-if (env.VITE_SENTRY_DSN) {
-  Sentry.init({
-    dsn: env.VITE_SENTRY_DSN,
-    environment: env.VITE_APP_ENV,
-  });
-}
+// Telemetry first (a no-op without a DSN) so early errors are captured (docs/00 §9).
+initSentry();
 
 const container = document.getElementById('root');
 
