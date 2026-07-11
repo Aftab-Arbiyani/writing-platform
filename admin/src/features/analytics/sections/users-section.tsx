@@ -64,6 +64,10 @@ export function UsersSection({ filters }: { filters: AnalyticsFilters }): ReactE
               title="Registration heat map"
               isEmpty={data.registrationsSeries.length === 0}
               height={200}
+              table={{
+                columns: ['Date', 'Registrations'],
+                rows: data.registrationsSeries.map((p) => [p.date, p.count]),
+              }}
             >
               <HeatmapChart
                 ariaLabel="Registrations calendar heat map"

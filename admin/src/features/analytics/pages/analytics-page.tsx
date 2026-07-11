@@ -110,6 +110,10 @@ export function AnalyticsPage(): ReactElement {
       />
 
       <div id="analytics-print">
+        {/* Heading between the page h1 and the chart h3s (heading hierarchy, WCAG 1.3.1). */}
+        <h2 className="sr-only">
+          {ANALYTICS_SECTIONS.find((s) => s.key === section)?.label ?? 'Overview'} analytics
+        </h2>
         <p className="mb-4 hidden text-sm text-ink-secondary print:block">
           Qalam platform analytics — {rangeLabel}
         </p>

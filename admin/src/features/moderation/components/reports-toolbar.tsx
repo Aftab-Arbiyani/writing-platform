@@ -1,10 +1,11 @@
 import { QButton } from '@qalam/ui';
 import { Checkbox, Dropdown, Popover, Select, type MenuProps } from 'antd';
 import { Columns3, Download, FileJson, RefreshCw, Sheet, SlidersHorizontal } from 'lucide-react';
-import { createElement, useEffect, useRef, useState, type ReactElement } from 'react';
+import { createElement, type ReactElement } from 'react';
 
 import { SearchInput } from '@/components/search-input';
 import { Toolbar } from '@/components/toolbar';
+import { useDebouncedSearch } from '@/hooks/use-debounced-search';
 
 import { REPORT_COLUMNS, REQUIRED_REPORT_COLUMNS } from '../moderation.constants';
 import { useModerationPrefs, type TableDensity } from '../stores/moderation-prefs.store';
@@ -41,17 +42,7 @@ export function ReportsToolbar({
   const setDensity = useModerationPrefs((state) => state.setDensity);
   const hiddenColumns = useModerationPrefs((state) => state.hiddenColumns);
   const toggleColumn = useModerationPrefs((state) => state.toggleColumn);
-  const [value, setValue] = useState(search);
-  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-
-  useEffect(() => setValue(search), [search]);
-  useEffect(() => () => clearTimeout(timer.current), []);
-
-  const commit = (next: string): void => {
-    setValue(next);
-    clearTimeout(timer.current);
-    timer.current = setTimeout(() => onSearchChange(next), 350);
-  };
+  const { value, commit } = useDebouncedSearch(search, onSearchChange);
 
   const columnsMenu = (
     <div

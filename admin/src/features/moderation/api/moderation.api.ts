@@ -1,8 +1,8 @@
 import type { Role } from '@qalam/shared';
 
 import type { ApiPagination } from '@/lib/api-client';
-import { api, getAccessToken } from '@/lib/api-client';
-import { env } from '@/config/env';
+import { api } from '@/lib/api-client';
+import { downloadExport, exportFilename } from '@/lib/download-export';
 
 import type {
   Appeal,
@@ -126,37 +126,16 @@ export const moderationApi = {
  * returns a RAW CSV/JSON stream (not the envelope), so it bypasses the api-client
  * and hits `fetch` directly with the same Bearer token + cookie.
  */
-export async function downloadReportExport(
+export function downloadReportExport(
   params: ReportListParams,
   format: 'csv' | 'json',
   signal?: AbortSignal,
 ): Promise<void> {
-  const search = new URLSearchParams();
-  for (const [key, value] of Object.entries({ ...params, format })) {
-    if (value !== undefined && value !== '') {
-      search.set(key, String(value));
-    }
-  }
-  const token = getAccessToken();
-  const response = await fetch(`${env.VITE_API_URL}/admin/reports/export?${search.toString()}`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: format === 'json' ? 'application/json' : 'text/csv',
-      ...(token !== null ? { Authorization: `Bearer ${token}` } : {}),
-    },
+  return downloadExport({
+    path: '/admin/reports/export',
+    query: params as Record<string, string | number | undefined>,
+    format,
+    filename: exportFilename('reports', format),
     signal,
   });
-  if (!response.ok) {
-    throw new Error(`Export failed (${response.status})`);
-  }
-  const blob = await response.blob();
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = `qalam-reports-${new Date().toISOString().slice(0, 10)}.${format}`;
-  document.body.append(anchor);
-  anchor.click();
-  anchor.remove();
-  URL.revokeObjectURL(url);
 }

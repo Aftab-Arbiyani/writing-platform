@@ -1,10 +1,11 @@
 import { QButton } from '@qalam/ui';
 import { Select } from 'antd';
 import { RefreshCw, SlidersHorizontal } from 'lucide-react';
-import { useEffect, useRef, useState, type ReactElement } from 'react';
+import type { ReactElement } from 'react';
 
 import { SearchInput } from '@/components/search-input';
 import { Toolbar } from '@/components/toolbar';
+import { useDebouncedSearch } from '@/hooks/use-debounced-search';
 
 import { useUsersTablePrefs, type TableDensity } from '../stores/users-table-prefs.store';
 import { ColumnVisibilityMenu } from './column-visibility-menu';
@@ -48,21 +49,7 @@ export function UsersToolbar({
 }: UsersToolbarProps): ReactElement {
   const density = useUsersTablePrefs((state) => state.density);
   const setDensity = useUsersTablePrefs((state) => state.setDensity);
-  const [value, setValue] = useState(search);
-  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-
-  // Keep the input in sync when the URL search changes elsewhere (saved view, reset).
-  useEffect(() => {
-    setValue(search);
-  }, [search]);
-
-  const commit = (next: string): void => {
-    setValue(next);
-    clearTimeout(timer.current);
-    timer.current = setTimeout(() => onSearchChange(next), 350);
-  };
-
-  useEffect(() => () => clearTimeout(timer.current), []);
+  const { value, commit } = useDebouncedSearch(search, onSearchChange);
 
   return (
     <Toolbar

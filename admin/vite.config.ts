@@ -27,6 +27,9 @@ export default defineConfig({
   build: {
     // Sourcemaps for Sentry release-tagged uploads (docs/00 §9).
     sourcemap: true,
+    // AntD is an intentionally large, long-cached vendor chunk (~300 kB gzip);
+    // raise the advisory limit above it so the build stays warning-free (A9).
+    chunkSizeWarningLimit: 1100,
     rollupOptions: {
       output: {
         // Split heavy, stable vendors into their own long-cacheable chunks (docs/11 §9).

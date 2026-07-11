@@ -57,6 +57,7 @@ export function buildUserColumns(
         <Avatar
           size="small"
           src={mediaUrl(user.avatarKey)}
+          alt={user.username}
           style={{ backgroundColor: 'var(--q-accent)' }}
         >
           {initialOf(user)}

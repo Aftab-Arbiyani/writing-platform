@@ -26,6 +26,13 @@ export function AdminShell(): ReactElement {
 
   return (
     <div className="flex min-h-dvh bg-canvas">
+      {/* Skip link — first focusable element; targets the <main id="main"> below (WCAG 2.4.1). */}
+      <a
+        href="#main"
+        className="sr-only rounded-md bg-accent px-3 py-2 text-sm font-medium text-[var(--q-accent-contrast,#fff)] focus:not-sr-only focus:absolute focus:start-4 focus:top-4 focus:z-50"
+      >
+        Skip to content
+      </a>
       {/* Desktop persistent rail */}
       <aside
         className={cn(

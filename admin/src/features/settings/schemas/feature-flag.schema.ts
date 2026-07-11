@@ -23,8 +23,3 @@ export const createFeatureFlagSchema = z.object({
 });
 
 export type CreateFeatureFlagValues = z.infer<typeof createFeatureFlagSchema>;
-
-/** Edit-flag form — same shape minus the immutable key. */
-export const editFeatureFlagSchema = createFeatureFlagSchema.omit({ key: true });
-
-export type EditFeatureFlagValues = z.infer<typeof editFeatureFlagSchema>;

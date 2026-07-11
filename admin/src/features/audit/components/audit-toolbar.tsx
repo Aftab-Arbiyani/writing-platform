@@ -1,10 +1,11 @@
 import { QButton } from '@qalam/ui';
 import { Checkbox, Dropdown, Popover, Select, type MenuProps } from 'antd';
 import { Columns3, Download, FileJson, RefreshCw, Sheet, SlidersHorizontal } from 'lucide-react';
-import { createElement, useEffect, useRef, useState, type ReactElement } from 'react';
+import { createElement, type ReactElement } from 'react';
 
 import { SearchInput } from '@/components/search-input';
 import { Toolbar } from '@/components/toolbar';
+import { useDebouncedSearch } from '@/hooks/use-debounced-search';
 
 import { AUDIT_COLUMNS, REQUIRED_AUDIT_COLUMNS } from '../audit.constants';
 import { useAuditPrefs, type TableDensity } from '../stores/audit-prefs.store';
@@ -41,17 +42,7 @@ export function AuditToolbar({
   const setDensity = useAuditPrefs((state) => state.setDensity);
   const hiddenColumns = useAuditPrefs((state) => state.hiddenColumns);
   const toggleColumn = useAuditPrefs((state) => state.toggleColumn);
-  const [value, setValue] = useState(search);
-  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-
-  useEffect(() => setValue(search), [search]);
-  useEffect(() => () => clearTimeout(timer.current), []);
-
-  const commit = (next: string): void => {
-    setValue(next);
-    clearTimeout(timer.current);
-    timer.current = setTimeout(() => onSearchChange(next), 350);
-  };
+  const { value, commit } = useDebouncedSearch(search, onSearchChange);
 
   const columnsMenu = (
     <div

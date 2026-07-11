@@ -1,10 +1,12 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { ROLE_RANK } from '@qalam/shared';
 import { QButton, useToast } from '@qalam/ui';
 import { Input, Select, Switch } from 'antd';
 import type { ReactElement } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 
 import { Modal } from '@/components/modal';
+import { usePermissions } from '@/hooks/use-permissions';
 import { getErrorMessage } from '@/lib/errors';
 
 import { useUpdateUser } from '../hooks/use-user-mutations';
@@ -42,6 +44,14 @@ function Field({
 export function EditUserModal({ user, isSelf, open, onClose }: EditUserModalProps): ReactElement {
   const toast = useToast();
   const updateUser = useUpdateUser();
+  const { role: operatorRole } = usePermissions();
+  // Defense-in-depth: never OFFER a role above the operator's own rank (the
+  // backend PBAC also blocks it). Always include the user's current role so it
+  // still displays.
+  const operatorRank = operatorRole !== null ? ROLE_RANK[operatorRole] : 0;
+  const assignableRoles = ROLE_OPTIONS.filter(
+    (option) => ROLE_RANK[option.value] <= operatorRank || option.value === user.role,
+  );
   const {
     control,
     handleSubmit,
@@ -112,7 +122,7 @@ export function EditUserModal({ user, isSelf, open, onClose }: EditUserModalProp
           control={control}
           render={({ field }) => (
             <Field label="Role" error={errors.role?.message}>
-              <Select {...field} options={ROLE_OPTIONS} disabled={isSelf} />
+              <Select {...field} options={assignableRoles} disabled={isSelf} />
             </Field>
           )}
         />

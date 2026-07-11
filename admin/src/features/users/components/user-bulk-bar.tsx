@@ -28,8 +28,11 @@ function downloadJson(rows: Array<Record<string, unknown>>): void {
   const anchor = document.createElement('a');
   anchor.href = url;
   anchor.download = `qalam-users-selected-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.append(anchor);
   anchor.click();
-  URL.revokeObjectURL(url);
+  anchor.remove();
+  // Defer the revoke so the download isn't aborted in some browsers.
+  setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
 /** Bulk-action bar for the current selection. Destructive ops confirm; export downloads JSON. */

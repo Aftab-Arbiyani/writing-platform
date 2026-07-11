@@ -1,7 +1,7 @@
 import { Role } from '@qalam/shared';
 import { describe, expect, it } from 'vitest';
 
-import { decodeAccessToken, isAccessTokenExpired } from '@/lib/jwt';
+import { decodeAccessToken } from '@/lib/jwt';
 
 /** Build an unsigned JWT (`header.payload.sig`) with the given claims — signature is never verified. */
 function makeToken(claims: Record<string, unknown>): string {
@@ -25,15 +25,5 @@ describe('decodeAccessToken', () => {
   it('returns null for a malformed token or missing sub', () => {
     expect(decodeAccessToken('not-a-jwt')).toBeNull();
     expect(decodeAccessToken(makeToken({ role: Role.Admin }))).toBeNull(); // no sub
-  });
-});
-
-describe('isAccessTokenExpired', () => {
-  it('is false for a future exp and true for a past/absent exp', () => {
-    expect(
-      isAccessTokenExpired(makeToken({ sub: 'u1', exp: Math.floor(Date.now() / 1000) + 3600 })),
-    ).toBe(false);
-    expect(isAccessTokenExpired(makeToken({ sub: 'u1', exp: 1 }))).toBe(true);
-    expect(isAccessTokenExpired(makeToken({ sub: 'u1' }))).toBe(true);
   });
 });

@@ -9,18 +9,6 @@ export function formatCount(value: number): string {
   return new Intl.NumberFormat().format(value);
 }
 
-/** Abbreviated large numbers for dense tiles, e.g. 12345 → "12.3K". */
-export function formatCompact(value: number): string {
-  return new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 }).format(
-    value,
-  );
-}
-
-/** A ratio 0–1 as a whole percent, e.g. 0.732 → "73%". */
-export function formatPercent(ratio: number): string {
-  return `${Math.round(ratio * 100)}%`;
-}
-
 /** Absolute date, e.g. "10 Jul 2026". */
 export function formatDate(value: string | number | Date): string {
   return new Intl.DateTimeFormat(undefined, {

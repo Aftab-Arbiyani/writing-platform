@@ -19,7 +19,6 @@ export const qk = {
     all: ['users'] as const, // invalidate the whole namespace after a mutation
     list: (params: Record<string, unknown>) => ['users', 'list', params] as const, // GET /admin/users
     detail: (id: string) => ['users', 'detail', id] as const, // GET /admin/users/:id
-    statistics: (id: string) => ['users', 'detail', id, 'statistics'] as const,
     activity: (id: string) => ['users', 'detail', id, 'activity'] as const,
     audit: (id: string, params: Record<string, unknown>) =>
       ['users', 'detail', id, 'audit', params] as const,

@@ -5,12 +5,7 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { qk } from '@/lib/query-keys';
 
 import { usersApi, type AuditPage } from '../api/users.api';
-import type {
-  AdminLoginHistory,
-  AdminUserActivity,
-  AdminUserDetail,
-  AdminUserStatistics,
-} from '../types/users.types';
+import type { AdminLoginHistory, AdminUserActivity, AdminUserDetail } from '../types/users.types';
 
 /**
  * Full detail for one user (`GET /admin/users/:id`). `id` is null when the drawer
@@ -22,20 +17,6 @@ export function useUser(id: string | null): UseQueryResult<AdminUserDetail, Erro
     queryKey: qk.users.detail(id ?? 'none'),
     queryFn: ({ signal }) => usersApi.detail(id ?? '', signal),
     enabled: id !== null && can(PERMISSIONS.UserView),
-    staleTime: 30_000,
-  });
-}
-
-/** `GET /admin/users/:id/statistics` — fetched lazily when its drawer tab is active. */
-export function useUserStatistics(
-  id: string | null,
-  enabled = true,
-): UseQueryResult<AdminUserStatistics, Error> {
-  const { can } = usePermissions();
-  return useQuery<AdminUserStatistics, Error>({
-    queryKey: qk.users.statistics(id ?? 'none'),
-    queryFn: ({ signal }) => usersApi.statistics(id ?? '', signal),
-    enabled: id !== null && enabled && can(PERMISSIONS.UserView),
     staleTime: 30_000,
   });
 }

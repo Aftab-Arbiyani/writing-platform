@@ -50,10 +50,3 @@ export function decodeAccessToken(token: string): DecodedAccessToken | null {
     exp: typeof claims.exp === 'number' ? claims.exp : undefined,
   };
 }
-
-/** True when the token is missing an `exp` or is past it (with a small clock-skew grace). */
-export function isAccessTokenExpired(token: string, skewSeconds = 10): boolean {
-  const decoded = decodeAccessToken(token);
-  if (!decoded?.exp) return true;
-  return decoded.exp * 1000 <= Date.now() - skewSeconds * 1000;
-}

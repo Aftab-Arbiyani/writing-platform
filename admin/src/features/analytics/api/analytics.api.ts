@@ -1,5 +1,5 @@
-import { env } from '@/config/env';
-import { api, getAccessToken } from '@/lib/api-client';
+import { api } from '@/lib/api-client';
+import { downloadExport, exportFilename } from '@/lib/download-export';
 
 import type {
   AnalyticsDataset,
@@ -78,36 +78,17 @@ export const analyticsApi = {
  * returns a RAW CSV/JSON stream (not the `{success,data}` envelope), so it
  * bypasses the api-client and hits `fetch` directly with the same Bearer token.
  */
-export async function downloadAnalyticsExport(
+export function downloadAnalyticsExport(
   filters: AnalyticsFilters,
   dataset: AnalyticsDataset,
   format: 'csv' | 'json',
   signal?: AbortSignal,
 ): Promise<void> {
-  const search = new URLSearchParams({ ...toQuery(filters), dataset, format } as Record<
-    string,
-    string
-  >);
-  const token = getAccessToken();
-  const response = await fetch(`${env.VITE_API_URL}/admin/analytics/export?${search.toString()}`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      Accept: format === 'json' ? 'application/json' : 'text/csv',
-      ...(token !== null ? { Authorization: `Bearer ${token}` } : {}),
-    },
+  return downloadExport({
+    path: '/admin/analytics/export',
+    query: { ...toQuery(filters), dataset },
+    format,
+    filename: exportFilename(`analytics-${dataset}`, format),
     signal,
   });
-  if (!response.ok) {
-    throw new Error(`Export failed (${response.status})`);
-  }
-  const blob = await response.blob();
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = `qalam-analytics-${dataset}-${new Date().toISOString().slice(0, 10)}.${format}`;
-  document.body.append(anchor);
-  anchor.click();
-  anchor.remove();
-  URL.revokeObjectURL(url);
 }
