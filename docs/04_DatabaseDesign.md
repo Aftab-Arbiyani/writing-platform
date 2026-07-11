@@ -714,6 +714,45 @@ trigger that raises on UPDATE/DELETE. Every admin mutation writes here in the **
 transaction** as the mutation (ADR §8). Indexes: `idx_audit_actor (actor_id, created_at
 DESC)` · `idx_audit_entity (entity_type, entity_id, created_at DESC)`.
 
+#### `settings` (E12.8 — generic key-value configuration store)
+
+| Column              | Type           | Null | Default    | Constraints / notes                                                               |
+| ------------------- | -------------- | ---- | ---------- | --------------------------------------------------------------------------------- |
+| `id`                | `uuid`         | no   | app UUIDv7 | PK                                                                                |
+| `key`               | `varchar(120)` | no   | —          | `uq_settings_key` — dot-cased, e.g. `platform.name`, `auth.registration.enabled`  |
+| `category`          | `varchar(40)`  | no   | —          | grouping bucket (`general`, `security`, `content`, … — open set, code catalogue)  |
+| `value`             | `jsonb`        | no   | —          | polymorphic current value (boolean/number/string/array/object)                    |
+| `data_type`         | `varchar(20)`  | no   | —          | `boolean \| string \| number \| json \| array \| enum` — how `value` is validated |
+| `default_value`     | `jsonb`        | no   | —          | catalogue default the value resets to                                             |
+| `validation_rules`  | `jsonb`        | no   | `'{}'`     | type-specific constraints (min/max/enum/regex/maxLength)                          |
+| `description`       | `text`         | no   | `''`       |                                                                                   |
+| `editable`          | `boolean`      | no   | `true`     | `false` = infra-managed (env-driven), rejected by the service                     |
+| `environment_scope` | `varchar(20)`  | no   | `'all'`    | `all \| production \| staging \| development`                                     |
+| `updated_by`        | `uuid`         | yes  | `NULL`     | no FK (config outlives the admin, cf. `audit_logs`); null while at the default    |
+
+No soft-delete (config is not a recoverability domain, §1.5). Rows are **seeded on boot**
+from a TypeScript catalogue (idempotent insert-missing) — a new setting is a new ROW, never a
+new column, so AI/Payments/Mobile/Creator-Economy config lands additively without a migration
+(§1.7). Index: `idx_settings_category (category)`. Every mutation is audited (`setting.update`)
+and cache-invalidated (Redis DB 0). Maintenance mode is the `maintenance.*` rows — no separate
+table.
+
+#### `feature_flags` (E12.8 — per-flag rollout model)
+
+| Column               | Type           | Null | Default    | Constraints / notes                                |
+| -------------------- | -------------- | ---- | ---------- | -------------------------------------------------- |
+| `id`                 | `uuid`         | no   | app UUIDv7 | PK                                                 |
+| `key`                | `varchar(120)` | no   | —          | `uq_feature_flags_key` — e.g. `feature.ai.enabled` |
+| `enabled`            | `boolean`      | no   | `false`    | master switch                                      |
+| `rollout_percentage` | `int`          | no   | `0`        | 0–100 staged exposure                              |
+| `environment`        | `varchar(20)`  | no   | `'all'`    | `all \| production \| staging \| development`      |
+| `description`        | `text`         | no   | `''`       |                                                    |
+| `updated_by`         | `uuid`         | yes  | `NULL`     | no FK                                              |
+
+Seeded on boot with the Phase-2+ capabilities (AI, Payments, Mobile, Creator Economy) as
+disabled flags. Index: `idx_feature_flags_enabled (enabled)`. Mutations audited
+(`feature_flag.create|update|delete`) and cache-invalidated.
+
 ### 3.9 Analytics
 
 #### `analytics_events` (partitioned, append-only, **no FKs**)

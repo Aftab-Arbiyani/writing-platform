@@ -35,6 +35,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { PermissionsModule } from './modules/permissions/permissions.module';
 import { PiecesModule } from './modules/pieces/pieces.module';
 import { SearchModule } from './modules/search/search.module';
+import { SettingsModule } from './modules/settings/settings.module';
 import { TaxonomyModule } from './modules/taxonomy/taxonomy.module';
 import { UsersModule } from './modules/users/users.module';
 import { QueueModule } from './queue/queue.module';
@@ -67,6 +68,10 @@ import { RedisModule } from './redis/redis.module';
     AuditModule,
     AdminModule,
     ModerationModule,
+    // System Settings (E12.8): generic config store + feature flags + maintenance
+    // mode. Additive tables; reuses the audit trail + Redis cache. Backs Phase-4
+    // Epic A7 (admin settings UI).
+    SettingsModule,
     // Async processing backbone (E11): queues, workers, scheduler, cache,
     // monitoring. @Global — imported last so the business modules it wraps are
     // already defined; it reaches them via their exported services only.

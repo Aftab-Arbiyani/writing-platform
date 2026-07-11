@@ -141,6 +141,18 @@ export const ERROR_CODES = {
   MEDIA_TYPE_UNSUPPORTED: 'MEDIA_TYPE_UNSUPPORTED',
   MEDIA_TOO_LARGE: 'MEDIA_TOO_LARGE',
 
+  // ── System settings (E12.8 — configuration, feature flags, maintenance) ───
+  /** Referenced a setting key that is not in the configuration catalogue. */
+  SETTING_NOT_FOUND: 'SETTING_NOT_FOUND',
+  /** Attempted to change a setting flagged `editable: false` (infra-managed). */
+  SETTING_NOT_EDITABLE: 'SETTING_NOT_EDITABLE',
+  /** A setting value failed its data-type / validation-rule check. */
+  SETTING_INVALID_VALUE: 'SETTING_INVALID_VALUE',
+  /** Referenced a feature-flag id/key that does not exist. */
+  FEATURE_FLAG_NOT_FOUND: 'FEATURE_FLAG_NOT_FOUND',
+  /** Creating a feature flag whose key is already registered. */
+  FEATURE_FLAG_ALREADY_EXISTS: 'FEATURE_FLAG_ALREADY_EXISTS',
+
   // ── Infrastructure / admin (Epic 11 — queue & cache management) ───────────
   /** Admin referenced a queue name that is not registered. */
   QUEUE_NOT_FOUND: 'QUEUE_NOT_FOUND',

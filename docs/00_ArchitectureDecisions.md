@@ -286,6 +286,23 @@ analytics: views, reads, reading time, completion, shares, followers, traffic, c
 devices · admin: dashboard, users, pieces, reports, card templates, daily prompts,
 languages, featured writers, analytics, moderators, roles, audit logs.
 
+**E12.8 build amendment (System Settings).** The admin completion track (E12.5 users,
+E12.6 moderation, E12.7 reports/audit) is extended with a **System Settings** backend —
+beyond the brief's locked admin list above (which named settings/config as neither in nor
+out). Backs Phase-4 Epic A7 (admin settings UI); additive-only over the frozen `v1` contract
+(docs 25), no reader-API change:
+
+- Two new tables — **`settings`** (a generic key-value configuration store) and
+  **`feature_flags`** (per-flag rollout) — see `04_DatabaseDesign.md` §3.8. Deliberately
+  schema-flexible: a new setting is a new ROW (boot-seeded from a TypeScript catalogue), never
+  a new column, so Phase-2+ config (AI, Payments, Mobile, Creator Economy) lands without a
+  migration (§1.7 open-set rule).
+- Endpoints under `/admin/settings`, `/admin/feature-flags`, `/admin/maintenance`; gated on
+  the existing `settings.manage` PBAC grant (admin+, already in `@qalam/shared`). Reuses the
+  shared audit trail (every mutation → `audit_logs`) and Redis cache (DB 0, invalidated on
+  write). **Maintenance mode** is the `maintenance.*` settings rows — no separate table.
+- Secrets stay in env only (ADR §8) — the store holds **non-secret operational config** only.
+
 **E7 build amendment (Social & Curation).** The engagement epic added, beyond the
 brief's locked social list above:
 
