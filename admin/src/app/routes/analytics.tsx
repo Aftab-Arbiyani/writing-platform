@@ -1,8 +1,8 @@
 import type { ReactElement } from 'react';
 
-import { SectionPlaceholder } from '@/app/pages/section-placeholder';
+import { AnalyticsPage } from '@/features/analytics';
 
-/** Lazy route module (docs/11 §9) — the Analytics section (placeholder in A1; code-split). */
+/** Lazy route module (docs/11 §9) — the Platform Analytics dashboard (A8; code-split). */
 export function Component(): ReactElement {
-  return <SectionPlaceholder title="Analytics" description="Platform-wide analytics." />;
+  return <AnalyticsPage />;
 }

@@ -49,4 +49,15 @@ export const qk = {
     featureFlags: () => ['settings', 'feature-flags'] as const, // GET /admin/feature-flags
     maintenance: () => ['settings', 'maintenance'] as const, // GET /admin/maintenance
   },
+  analytics: {
+    all: ['analytics'] as const, // platform analytics dashboard (A8 / E12.9)
+    overview: (filters: Record<string, unknown>) => ['analytics', 'overview', filters] as const,
+    users: (filters: Record<string, unknown>) => ['analytics', 'users', filters] as const,
+    content: (filters: Record<string, unknown>) => ['analytics', 'content', filters] as const,
+    engagement: (filters: Record<string, unknown>) => ['analytics', 'engagement', filters] as const,
+    moderation: (filters: Record<string, unknown>) => ['analytics', 'moderation', filters] as const,
+    system: () => ['analytics', 'system'] as const,
+    trending: () => ['analytics', 'trending'] as const,
+    moderationTrends: () => ['analytics', 'moderation-trends'] as const,
+  },
 } as const;
