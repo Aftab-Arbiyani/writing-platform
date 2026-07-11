@@ -315,4 +315,156 @@ export class AnalyticsQueryRepository {
       .query(`SELECT user_id AS id FROM writer_analytics`)
       .then((rows: Array<{ id: string }>) => rows.map((r) => r.id));
   }
+
+  // ── Admin platform analytics (E12.9) ─────────────────────────────────────────
+
+  countVerifiedUsers(): Promise<number> {
+    return this.count(
+      `SELECT COUNT(*) AS count FROM users WHERE deleted_at IS NULL AND email_verified_at IS NOT NULL`,
+    );
+  }
+  countPrivateAccounts(): Promise<number> {
+    return this.count(
+      `SELECT COUNT(*) AS count FROM profiles pr
+       JOIN users u ON u.id = pr.user_id AND u.deleted_at IS NULL
+       WHERE pr.is_private = true`,
+    );
+  }
+  countRegistrationsBetween(from: Date, to: Date): Promise<number> {
+    return this.count(
+      `SELECT COUNT(*) AS count FROM users
+       WHERE deleted_at IS NULL AND created_at >= $1 AND created_at < $2`,
+      [from, to],
+    );
+  }
+  /** Users whose last login falls inside the window (range-scoped active users). */
+  countActiveBetween(from: Date, to: Date): Promise<number> {
+    return this.count(
+      `SELECT COUNT(*) AS count FROM users
+       WHERE deleted_at IS NULL AND last_login_at >= $1 AND last_login_at < $2`,
+      [from, to],
+    );
+  }
+
+  /**
+   * Retention: of users who registered BEFORE the window opened, how many logged
+   * in during it. Returns the eligible base + the retained count (service → %).
+   */
+  async retention(from: Date): Promise<{ eligible: number; retained: number }> {
+    const row = await this.one<{ eligible: string; retained: string }>(
+      `SELECT COUNT(*) FILTER (WHERE created_at < $1) AS eligible,
+              COUNT(*) FILTER (WHERE created_at < $1 AND last_login_at >= $1) AS retained
+       FROM users WHERE deleted_at IS NULL`,
+      [from],
+    );
+    return { eligible: Number(row?.eligible ?? 0), retained: Number(row?.retained ?? 0) };
+  }
+
+  /** Daily registration counts across a window (dense days handled by the caller). */
+  registrationsSeries(from: Date, to: Date): Promise<Array<{ date: string; count: number }>> {
+    return this.dataSource.query(
+      `SELECT to_char(date_trunc('day', created_at), 'YYYY-MM-DD') AS date, COUNT(*)::int AS count
+       FROM users WHERE deleted_at IS NULL AND created_at >= $1 AND created_at < $2
+       GROUP BY 1 ORDER BY 1 ASC`,
+      [from, to],
+    ) as Promise<Array<{ date: string; count: number }>>;
+  }
+
+  /** Platform-wide reading aggregates from piece_analytics (avg reading + completion). */
+  async readingAggregates(): Promise<{
+    totalReadSeconds: number;
+    reads: number;
+    completedReads: number;
+    views: number;
+  }> {
+    const row = await this.one<{
+      totalReadSeconds: string;
+      reads: string;
+      completedReads: string;
+      views: string;
+    }>(
+      `SELECT COALESCE(SUM(total_read_seconds),0) AS "totalReadSeconds",
+              COALESCE(SUM(reads),0) AS reads,
+              COALESCE(SUM(completed_reads),0) AS "completedReads",
+              COALESCE(SUM(views),0) AS views
+       FROM piece_analytics`,
+      [],
+    );
+    return {
+      totalReadSeconds: Number(row?.totalReadSeconds ?? 0),
+      reads: Number(row?.reads ?? 0),
+      completedReads: Number(row?.completedReads ?? 0),
+      views: Number(row?.views ?? 0),
+    };
+  }
+
+  /** Builds an optional language/genre filter clause + params (content queries). */
+  private pieceFilter(
+    language: string | undefined,
+    genre: string | undefined,
+    start: number,
+  ): { clause: string; params: unknown[] } {
+    const parts: string[] = [];
+    const params: unknown[] = [];
+    if (language !== undefined) {
+      params.push(language);
+      parts.push(
+        `p.language_id = (SELECT id FROM languages WHERE code = $${start + params.length})`,
+      );
+    }
+    if (genre !== undefined) {
+      params.push(genre);
+      parts.push(`p.genre_id = (SELECT id FROM genres WHERE slug = $${start + params.length})`);
+    }
+    return { clause: parts.length > 0 ? ` AND ${parts.join(' AND ')}` : '', params };
+  }
+
+  mostViewedPieces(limit: number, language?: string, genre?: string): Promise<RankedRow[]> {
+    const filter = this.pieceFilter(language, genre, 1);
+    return this.dataSource.query(
+      `SELECT p.id AS key, p.title AS label, pa.views::int AS count
+       FROM piece_analytics pa JOIN pieces p ON p.id = pa.piece_id AND ${PUBLIC_PIECE}${filter.clause}
+       ORDER BY pa.views DESC, p.id DESC LIMIT $${filter.params.length + 1}`,
+      [...filter.params, limit],
+    ) as Promise<RankedRow[]>;
+  }
+
+  mostSharedPieces(limit: number, language?: string, genre?: string): Promise<RankedRow[]> {
+    const filter = this.pieceFilter(language, genre, 1);
+    return this.dataSource.query(
+      `SELECT p.id AS key, p.title AS label,
+              (pa.shares_internal + pa.shares_external + pa.shares_copy_link)::int AS count
+       FROM piece_analytics pa JOIN pieces p ON p.id = pa.piece_id AND ${PUBLIC_PIECE}${filter.clause}
+       ORDER BY count DESC, p.id DESC LIMIT $${filter.params.length + 1}`,
+      [...filter.params, limit],
+    ) as Promise<RankedRow[]>;
+  }
+
+  countAppeals(): Promise<number> {
+    return this.count(`SELECT COUNT(*) AS count FROM appeals`);
+  }
+
+  /** Total database size in bytes. */
+  async databaseSizeBytes(): Promise<number> {
+    const row = await this.one<{ bytes: string }>(
+      `SELECT pg_database_size(current_database()) AS bytes`,
+      [],
+    );
+    return Number(row?.bytes ?? 0);
+  }
+
+  /** The largest relations by total on-disk size. */
+  topTables(limit: number): Promise<Array<{ table: string; bytes: number }>> {
+    return this.dataSource
+      .query(
+        `SELECT relname AS "table", pg_total_relation_size(c.oid)::bigint::text AS bytes
+       FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+       WHERE n.nspname = 'public' AND c.relkind = 'r'
+       ORDER BY pg_total_relation_size(c.oid) DESC LIMIT $1`,
+        [limit],
+      )
+      .then((rows: Array<{ table: string; bytes: string }>) =>
+        rows.map((r) => ({ table: r.table, bytes: Number(r.bytes) })),
+      );
+  }
 }

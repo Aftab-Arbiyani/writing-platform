@@ -1,7 +1,10 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { AuditModule } from '../audit/audit.module';
+import { ModerationModule } from '../moderation/moderation.module';
 import { PiecesModule } from '../pieces/pieces.module';
+import { AdminAnalyticsController } from './admin-analytics.controller';
 import { AnalyticsController } from './analytics.controller';
 import { AnalyticsListener } from './analytics.listener';
 import { AnalyticsService } from './analytics.service';
@@ -36,8 +39,13 @@ import { WriterAnalytics } from './entities/writer-analytics.entity';
       ReadEvent,
     ]),
     PiecesModule,
+    // E12.9 admin analytics reuses the shared audit trail + moderation report
+    // statistics (no logic duplicated). `QueueRegistry` for system metrics is a
+    // @Global infra export — injected optionally, not imported (one-way rule).
+    AuditModule,
+    ModerationModule,
   ],
-  controllers: [AnalyticsController],
+  controllers: [AnalyticsController, AdminAnalyticsController],
   providers: [
     AnalyticsAggregatorRepository,
     AnalyticsQueryRepository,

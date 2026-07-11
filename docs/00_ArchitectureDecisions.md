@@ -303,6 +303,28 @@ out). Backs Phase-4 Epic A7 (admin settings UI); additive-only over the frozen `
   write). **Maintenance mode** is the `maintenance.*` settings rows — no separate table.
 - Secrets stay in env only (ADR §8) — the store holds **non-secret operational config** only.
 
+**E12.9 build amendment (Platform Analytics).** The admin completion track is extended
+with **administrator platform analytics** — insights about the whole platform, distinct
+from the writer/reader analytics on `/analytics/*`. Additive-only over frozen `v1`; **no new
+tables** (reuses the E10 analytics read-model + snapshots):
+
+- New endpoints under `/admin/analytics/*` — `overview`, `users`, `content`, `engagement`,
+  `moderation`, `system`, and a streaming `export` (CSV/JSON). Served by a thin
+  `AdminAnalyticsController` in the **existing `AnalyticsModule`**; all logic lives in
+  `AnalyticsService` (no `PlatformAnalyticsModule`/`AdminAnalyticsService` created).
+- Reuses without duplication: the analytics read-model (`AnalyticsQueryRepository`,
+  extended with platform aggregations), `ModerationService.getStatistics` (E12.7) for the
+  moderation section, the `@Global` `QueueRegistry` (system queue/worker depth), Redis INFO
+  (cache hit ratio), and `pg_database_size` (DB storage). Gated on `analytics.view` (PBAC);
+  the export is audited (`analytics.export`).
+- Caching reuses `AnalyticsCacheService` (Redis DB 0, short TTL) and the **existing** cron +
+  cache-warmer (the analytics warm target now also warms the admin overview + system caches);
+  no new queue/job introduced.
+- **Honest gaps (no mock data):** geo/device are not captured by the tracking model → Top
+  Countries/Devices return empty and the country/device/platform filters are inert; object
+  storage (MinIO) usage is not tracked; per-node API-request/error-rate live in the in-memory
+  Prometheus `/metrics` (returned null here, not cross-node aggregated).
+
 **E7 build amendment (Social & Curation).** The engagement epic added, beyond the
 brief's locked social list above:
 

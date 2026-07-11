@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { CursorPaginationDto } from '../../common/dto/cursor-pagination.dto';
 import { AnalyticsService } from '../../modules/analytics/analytics.service';
+import { AdminAnalyticsQueryDto } from '../../modules/analytics/dto/admin-analytics-query.dto';
 import { DiscoveryService } from '../../modules/feed/discovery.service';
 import { TrendingService } from '../../modules/feed/trending.service';
 import { WriterDiscoverQueryDto } from '../../modules/feed/dto/discover-query.dto';
@@ -43,7 +44,7 @@ export class CacheWarmerService {
     return Promise.all([
       this.run('trending', () => this.trending.recompute()),
       this.run('discovery', () => this.warmDiscovery()),
-      this.run('analytics', () => this.analytics.getPlatformAnalytics().then(() => undefined)),
+      this.run('analytics', () => this.warmAnalytics()),
       this.run('search', () => this.search.trending(new TrendingQueryDto()).then(() => undefined)),
     ]);
   }
@@ -56,9 +57,7 @@ export class CacheWarmerService {
       case 'discovery':
         return this.run('discovery', () => this.warmDiscovery());
       case 'analytics':
-        return this.run('analytics', () =>
-          this.analytics.getPlatformAnalytics().then(() => undefined),
-        );
+        return this.run('analytics', () => this.warmAnalytics());
       case 'search':
         return this.run('search', () =>
           this.search.trending(new TrendingQueryDto()).then(() => undefined),
@@ -74,6 +73,20 @@ export class CacheWarmerService {
       this.discovery.getTrendingTags(page),
       this.discovery.getTrendingGenres(page),
       this.discovery.getTrendingLanguages(page),
+    ]);
+  }
+
+  /**
+   * Warms the analytics caches by driving the same cached read paths the admin
+   * console hits — the writer/reader platform aggregate plus the E12.9 admin
+   * overview + system sections (default, unfiltered). No cache logic duplicated.
+   */
+  private async warmAnalytics(): Promise<void> {
+    const query = new AdminAnalyticsQueryDto();
+    await Promise.all([
+      this.analytics.getPlatformAnalytics(),
+      this.analytics.getOverview(query),
+      this.analytics.getSystemAnalytics(),
     ]);
   }
 

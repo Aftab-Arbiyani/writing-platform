@@ -12,7 +12,11 @@ function build(overrides: Record<string, jest.Mock> = {}) {
     getTrendingGenres: jest.fn().mockResolvedValue({ items: [] }),
     getTrendingLanguages: jest.fn().mockResolvedValue({ items: [] }),
   };
-  const analytics = { getPlatformAnalytics: jest.fn().mockResolvedValue({}) };
+  const analytics = {
+    getPlatformAnalytics: jest.fn().mockResolvedValue({}),
+    getOverview: jest.fn().mockResolvedValue({}),
+    getSystemAnalytics: jest.fn().mockResolvedValue({}),
+  };
   const search = { trending: jest.fn().mockResolvedValue({}) };
   Object.assign(trending, overrides);
   const service = new CacheWarmerService(

@@ -1,9 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import { AnalyticsPeriod, AnalyticsScope, PieceStatus, TrendType } from '@qalam/shared';
 import { createHash } from 'node:crypto';
 
 import { DomainEventBus } from '../../common/events/domain-event-bus';
 import { DomainEventType } from '../../common/events/domain-events';
+import { QueueRegistry } from '../../infrastructure/queue/queue-registry.service';
+import { ModerationService } from '../moderation/moderation.service';
 import { PiecesService } from '../pieces/pieces.service';
 import {
   ANALYTICS_CACHE_KEYS,
@@ -11,7 +13,9 @@ import {
   DAU_WINDOW_DAYS,
   MAU_WINDOW_DAYS,
   PERIOD_WINDOW_DAYS,
+  WAU_WINDOW_DAYS,
 } from './analytics.constants';
+import { previousRange, resolveRange, type ResolvedRange } from './analytics-range';
 import { AnalyticsAggregatorRepository } from './analytics-aggregator.repository';
 import { AnalyticsCacheService } from './analytics-cache.service';
 import {
@@ -29,8 +33,20 @@ import type {
   TrendingDto,
   WriterAnalyticsDto,
 } from './dto/analytics-response.dto';
+import type {
+  ContentAnalyticsDto,
+  EngagementAnalyticsDto,
+  ModerationAnalyticsDto,
+  PlatformOverviewDto,
+  QueueStatDto,
+  SystemAnalyticsDto,
+  UserAnalyticsDto,
+} from './dto/admin-analytics-response.dto';
+import type { AdminAnalyticsQueryDto } from './dto/admin-analytics-query.dto';
 import type { TrendingQueryDto, GrowthQueryDto } from './dto/analytics-query.dto';
 import { AnalyticsQueryRepository, type RankedRow } from './analytics-query.repository';
+
+const round2 = (value: number): number => Math.round(value * 100) / 100;
 
 type Viewer = { id: string } | null;
 
@@ -55,6 +71,10 @@ export class AnalyticsService {
     private readonly query: AnalyticsQueryRepository,
     private readonly aggregator: AnalyticsAggregatorRepository,
     private readonly cache: AnalyticsCacheService,
+    private readonly moderation: ModerationService,
+    // QueueRegistry is a @Global infra export ("injectable everywhere"); optional
+    // so an API-only/test context without the worker backbone still boots.
+    @Optional() @Inject(QueueRegistry) private readonly queues?: QueueRegistry,
   ) {}
 
   // ── Ingestion (emit events; listener aggregates) ───────────────────────────
@@ -324,6 +344,293 @@ export class AnalyticsService {
     }
     return { period, periodStart, snapshotsWritten: 1 + writerIds.length };
   }
+
+  // ── Admin platform analytics (E12.9) ─────────────────────────────────────────
+
+  /** Platform overview — headline counts + period-over-period growth. Cached. */
+  getOverview(q: AdminAnalyticsQueryDto): Promise<PlatformOverviewDto> {
+    const range = resolveRange(q.range, q.from, q.to);
+    return this.cache.remember(
+      ANALYTICS_CACHE_KEYS.admin('overview', filterKey(q, range)),
+      ANALYTICS_CACHE_TTL.admin,
+      () => this.computeOverview(range),
+    );
+  }
+
+  private async computeOverview(range: ResolvedRange): Promise<PlatformOverviewDto> {
+    const prev = previousRange(range);
+    const [
+      counters,
+      totalUsers,
+      verified,
+      activeUsers,
+      privateAccounts,
+      published,
+      drafts,
+      mod,
+      newUsers,
+      prevNewUsers,
+      dbSize,
+    ] = await Promise.all([
+      this.query.getPlatformCounters(),
+      this.query.countUsers(),
+      this.query.countVerifiedUsers(),
+      this.query.countActiveUsers(MAU_WINDOW_DAYS),
+      this.query.countPrivateAccounts(),
+      this.query.countPiecesByStatus(PieceStatus.Published),
+      this.query.countPiecesByStatus(PieceStatus.Draft),
+      this.moderation.getStatistics(),
+      this.query.countRegistrationsBetween(range.from, range.to),
+      this.query.countRegistrationsBetween(prev.from, prev.to),
+      this.query.databaseSizeBytes(),
+    ]);
+    const reports = mod.openReports + mod.resolvedReports + mod.dismissedReports;
+    const growthRatePct =
+      prevNewUsers > 0 ? ((newUsers - prevNewUsers) / prevNewUsers) * 100 : newUsers > 0 ? 100 : 0;
+    return {
+      totalUsers,
+      verifiedUsers: verified,
+      activeUsers,
+      newUsers,
+      privateAccounts,
+      publishedPieces: published,
+      drafts,
+      comments: num(counters?.comments),
+      responses: num(counters?.responses),
+      reports,
+      resolvedReports: mod.resolvedReports,
+      bookmarks: num(counters?.bookmarks),
+      claps: num(counters?.claps),
+      followers: num(counters?.follows),
+      databaseSizeBytes: dbSize,
+      growthRatePct: round2(growthRatePct),
+      generatedAt: new Date().toISOString(),
+    };
+  }
+
+  /** User analytics — registrations, active/retention, DAU/WAU/MAU, breakdowns. Cached. */
+  getUserAnalytics(q: AdminAnalyticsQueryDto): Promise<UserAnalyticsDto> {
+    const range = resolveRange(q.range, q.from, q.to);
+    return this.cache.remember(
+      ANALYTICS_CACHE_KEYS.admin('users', filterKey(q, range)),
+      ANALYTICS_CACHE_TTL.admin,
+      () => this.computeUserAnalytics(q, range),
+    );
+  }
+
+  private async computeUserAnalytics(
+    q: AdminAnalyticsQueryDto,
+    range: ResolvedRange,
+  ): Promise<UserAnalyticsDto> {
+    const [registrations, activeUsers, retention, dau, wau, mau, topLanguages, series] =
+      await Promise.all([
+        this.query.countRegistrationsBetween(range.from, range.to),
+        this.query.countActiveBetween(range.from, range.to),
+        this.query.retention(range.from),
+        this.query.countActiveUsers(DAU_WINDOW_DAYS),
+        this.query.countActiveUsers(WAU_WINDOW_DAYS),
+        this.query.countActiveUsers(MAU_WINDOW_DAYS),
+        this.query.topLanguages(q.limit),
+        this.query.registrationsSeries(range.from, range.to),
+      ]);
+    return {
+      registrations,
+      activeUsers,
+      retentionPct:
+        retention.eligible > 0 ? round2((retention.retained / retention.eligible) * 100) : 0,
+      dailyActiveUsers: dau,
+      weeklyActiveUsers: wau,
+      monthlyActiveUsers: mau,
+      // Geo + device are not captured by the tracking model → intentionally empty.
+      topCountries: [],
+      topLanguages: ranked(topLanguages),
+      topDevices: [],
+      registrationsSeries: series,
+    };
+  }
+
+  /** Content analytics — pieces, breakdowns, reading, most viewed/shared. Cached. */
+  getContentAnalytics(q: AdminAnalyticsQueryDto): Promise<ContentAnalyticsDto> {
+    const range = resolveRange(q.range, q.from, q.to);
+    return this.cache.remember(
+      ANALYTICS_CACHE_KEYS.admin('content', filterKey(q, range)),
+      ANALYTICS_CACHE_TTL.admin,
+      () => this.computeContentAnalytics(q),
+    );
+  }
+
+  private async computeContentAnalytics(q: AdminAnalyticsQueryDto): Promise<ContentAnalyticsDto> {
+    const [published, drafts, perLanguage, perGenre, reading, mostViewed, mostShared] =
+      await Promise.all([
+        this.query.countPiecesByStatus(PieceStatus.Published),
+        this.query.countPiecesByStatus(PieceStatus.Draft),
+        this.query.topLanguages(q.limit),
+        this.query.topGenres(q.limit),
+        this.query.readingAggregates(),
+        this.query.mostViewedPieces(q.limit, q.language, q.genre),
+        this.query.mostSharedPieces(q.limit, q.language, q.genre),
+      ]);
+    return {
+      publishedPieces: published,
+      drafts,
+      piecesPerLanguage: ranked(perLanguage),
+      piecesPerGenre: ranked(perGenre),
+      averageReadingSeconds: Math.round(rate(reading.totalReadSeconds, reading.reads)),
+      averageCompletionRate: round2(rate(reading.completedReads, reading.views)),
+      mostViewedPieces: ranked(mostViewed),
+      mostSharedPieces: ranked(mostShared),
+    };
+  }
+
+  /** Engagement analytics — platform-wide interaction totals. Cached. */
+  getEngagementAnalytics(q: AdminAnalyticsQueryDto): Promise<EngagementAnalyticsDto> {
+    const range = resolveRange(q.range, q.from, q.to);
+    return this.cache.remember(
+      ANALYTICS_CACHE_KEYS.admin('engagement', filterKey(q, range)),
+      ANALYTICS_CACHE_TTL.admin,
+      () => this.computeEngagementAnalytics(),
+    );
+  }
+
+  private async computeEngagementAnalytics(): Promise<EngagementAnalyticsDto> {
+    const [counters, reading] = await Promise.all([
+      this.query.getPlatformCounters(),
+      this.query.readingAggregates(),
+    ]);
+    return {
+      views: num(counters?.views),
+      reads: num(counters?.reads),
+      readingSeconds: reading.totalReadSeconds,
+      completionRate: round2(rate(reading.completedReads, reading.views)),
+      bookmarks: num(counters?.bookmarks),
+      claps: num(counters?.claps),
+      comments: num(counters?.comments),
+      responses: num(counters?.responses),
+      shares: num(counters?.shares),
+      followersGrowth: num(counters?.follows),
+    };
+  }
+
+  /** Moderation analytics — reuses the moderation report statistics (E12.7). Cached. */
+  getModerationAnalytics(q: AdminAnalyticsQueryDto): Promise<ModerationAnalyticsDto> {
+    return this.cache.remember(
+      ANALYTICS_CACHE_KEYS.admin('moderation', String(q.limit)),
+      ANALYTICS_CACHE_TTL.admin,
+      () => this.computeModerationAnalytics(q),
+    );
+  }
+
+  private async computeModerationAnalytics(
+    q: AdminAnalyticsQueryDto,
+  ): Promise<ModerationAnalyticsDto> {
+    const [mod, appeals] = await Promise.all([
+      this.moderation.getStatistics(),
+      this.query.countAppeals(),
+    ]);
+    const topReportReasons = Object.entries(mod.byCategory)
+      .map(([key, count]) => ({ key, label: key, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, q.limit);
+    return {
+      openReports: mod.openReports,
+      closedReports: mod.resolvedReports + mod.dismissedReports,
+      appeals,
+      averageResolutionSeconds: mod.avgResolutionSeconds,
+      topReportReasons,
+      moderatorActivity: mod.moderatorPerformance.map((m) => ({
+        key: m.moderatorId,
+        label: m.moderatorId.slice(0, 8),
+        count: m.resolved,
+      })),
+    };
+  }
+
+  /** System analytics — queues/workers, cache, and DB size. Short-TTL cache. */
+  getSystemAnalytics(): Promise<SystemAnalyticsDto> {
+    return this.cache.remember(
+      ANALYTICS_CACHE_KEYS.admin('system', 'current'),
+      ANALYTICS_CACHE_TTL.adminSystem,
+      () => this.computeSystemAnalytics(),
+    );
+  }
+
+  private async computeSystemAnalytics(): Promise<SystemAnalyticsDto> {
+    const [cacheStats, dbSize, topTables, queues] = await Promise.all([
+      this.cache.systemStats(),
+      this.query.databaseSizeBytes(),
+      this.query.topTables(10),
+      this.collectQueueStats(),
+    ]);
+    return {
+      // Per-node in-memory counters (Prometheus /metrics); not aggregated here.
+      apiRequests: null,
+      errorRate: null,
+      queues,
+      activeWorkers: queues.reduce((sum, queue) => sum + queue.active, 0),
+      workersEnabled: process.env.WORKERS_ENABLED !== 'false',
+      cacheHitRatio: cacheStats.hitRatio,
+      cacheKeys: cacheStats.keys,
+      cacheMemoryBytes: cacheStats.usedMemoryBytes,
+      databaseSizeBytes: dbSize,
+      topTables,
+      storageNote:
+        'Object storage (MinIO) usage is not tracked; databaseSizeBytes is the tracked storage.',
+    };
+  }
+
+  /** Per-queue depth from the BullMQ registry (empty if the backbone is absent). */
+  private async collectQueueStats(): Promise<QueueStatDto[]> {
+    if (this.queues === undefined) {
+      return [];
+    }
+    try {
+      return await Promise.all(
+        this.queues.all().map(async ({ name, queue }) => {
+          const counts = await queue.getJobCounts(
+            'waiting',
+            'active',
+            'completed',
+            'failed',
+            'delayed',
+          );
+          return {
+            name,
+            waiting: counts.waiting ?? 0,
+            active: counts.active ?? 0,
+            completed: counts.completed ?? 0,
+            failed: counts.failed ?? 0,
+            delayed: counts.delayed ?? 0,
+          };
+        }),
+      );
+    } catch {
+      return [];
+    }
+  }
+
+  /** Resolves one export dataset to its section payload (controller serializes). */
+  getExportData(q: AdminAnalyticsQueryDto, dataset: string): Promise<unknown> {
+    switch (dataset) {
+      case 'users':
+        return this.getUserAnalytics(q);
+      case 'content':
+        return this.getContentAnalytics(q);
+      case 'engagement':
+        return this.getEngagementAnalytics(q);
+      case 'moderation':
+        return this.getModerationAnalytics(q);
+      case 'system':
+        return this.getSystemAnalytics();
+      case 'overview':
+      default:
+        return this.getOverview(q);
+    }
+  }
+}
+
+/** Deterministic cache-key fragment for an admin analytics read. */
+function filterKey(q: AdminAnalyticsQueryDto, range: ResolvedRange): string {
+  return `${range.key}|${q.language ?? ''}|${q.genre ?? ''}|${q.limit}`;
 }
 
 /** UTC start-of-period date (YYYY-MM-DD) for snapshot bucketing. */

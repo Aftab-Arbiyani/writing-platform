@@ -36,6 +36,37 @@ export class AnalyticsCacheService {
     }
   }
 
+  /**
+   * Live Redis (DB 0) health for the admin system-analytics endpoint (E12.9):
+   * keyspace hit ratio, used memory, and key count. All fields degrade to null on
+   * a Redis blip (never fails the request).
+   */
+  async systemStats(): Promise<{
+    hitRatio: number | null;
+    usedMemoryBytes: number | null;
+    keys: number | null;
+  }> {
+    try {
+      const client = this.client();
+      const [stats, memory, keys] = await Promise.all([
+        client.info('stats'),
+        client.info('memory'),
+        client.dbsize(),
+      ]);
+      const hits = Number(/keyspace_hits:(\d+)/.exec(stats)?.[1] ?? 0);
+      const misses = Number(/keyspace_misses:(\d+)/.exec(stats)?.[1] ?? 0);
+      const usedMemory = /used_memory:(\d+)/.exec(memory)?.[1];
+      return {
+        hitRatio: hits + misses > 0 ? hits / (hits + misses) : null,
+        usedMemoryBytes: usedMemory !== undefined ? Number(usedMemory) : null,
+        keys,
+      };
+    } catch (error) {
+      this.logger.warn(`analytics system stats failed: ${(error as Error).message}`);
+      return { hitRatio: null, usedMemoryBytes: null, keys: null };
+    }
+  }
+
   /** Read-through cache for a computed payload. Cache failure never blocks compute. */
   async remember<T>(key: string, ttlSeconds: number, compute: () => Promise<T>): Promise<T> {
     try {

@@ -50,14 +50,16 @@ function build(queryOverrides: Partial<Record<string, jest.Mock>> = {}) {
   const cache = {
     remember: jest.fn((_k: string, _ttl: number, compute: () => Promise<unknown>) => compute()),
   };
+  const moderation = { getStatistics: jest.fn() };
   const service = new AnalyticsService(
     events as unknown as DomainEventBus,
     pieces as unknown as PiecesService,
     query as unknown as AnalyticsQueryRepository,
     aggregator as unknown as AnalyticsAggregatorRepository,
     cache as unknown as AnalyticsCacheService,
+    moderation as unknown as import('../moderation/moderation.service').ModerationService,
   );
-  return { service, events, pieces, query, aggregator, cache };
+  return { service, events, pieces, query, aggregator, cache, moderation };
 }
 
 describe('AnalyticsService', () => {
