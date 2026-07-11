@@ -15,4 +15,14 @@ export const qk = {
     queues: () => ['dashboard', 'queues'] as const, // GET /admin/queues
     systemNotifications: (limit: number) => ['dashboard', 'system-notifications', limit] as const,
   },
+  users: {
+    all: ['users'] as const, // invalidate the whole namespace after a mutation
+    list: (params: Record<string, unknown>) => ['users', 'list', params] as const, // GET /admin/users
+    detail: (id: string) => ['users', 'detail', id] as const, // GET /admin/users/:id
+    statistics: (id: string) => ['users', 'detail', id, 'statistics'] as const,
+    activity: (id: string) => ['users', 'detail', id, 'activity'] as const,
+    audit: (id: string, params: Record<string, unknown>) =>
+      ['users', 'detail', id, 'audit', params] as const,
+    loginHistory: (id: string) => ['users', 'detail', id, 'login-history'] as const,
+  },
 } as const;

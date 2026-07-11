@@ -33,6 +33,12 @@ export interface DataTableProps<T> {
   onLimitChange?: (limit: number) => void;
   // Row selection for bulk actions.
   selection?: BulkSelection;
+  // Density (docs/07 §7.5) — maps to AntD Table `size`; default 'middle'.
+  density?: 'small' | 'middle' | 'large';
+  // Server-side sort capture: fired when the operator clicks a `sorter` column
+  // header. Framework-agnostic (no AntD types leak to callers) — `key` is the
+  // clicked column's `key`; `order` is undefined when sorting is cleared.
+  onSortChange?: (key: string | undefined, order: 'asc' | 'desc' | undefined) => void;
   // Performance: AntD row virtualization (requires a fixed body height).
   virtual?: boolean;
   scrollX?: number | string;
@@ -54,6 +60,8 @@ export function DataTable<T extends object>({
   onPageChange,
   onLimitChange,
   selection,
+  density = 'middle',
+  onSortChange,
   virtual = false,
   scrollX = 'max-content',
   scrollY,
@@ -78,6 +86,22 @@ export function DataTable<T extends object>({
   const showPager =
     total !== undefined && page !== undefined && limit !== undefined && onPageChange;
 
+  // Translate AntD's sorter event into the framework-agnostic callback. Pagination
+  // and column filters are unused (external pager, no column filters), so `onChange`
+  // fires only for sort clicks.
+  const handleChange: TableProps<T>['onChange'] = (_pagination, _filters, sorter) => {
+    if (!onSortChange) {
+      return;
+    }
+    const single = Array.isArray(sorter) ? sorter[0] : sorter;
+    const key = single?.columnKey;
+    const order = single?.order;
+    onSortChange(
+      key === undefined ? undefined : String(key),
+      order === 'ascend' ? 'asc' : order === 'descend' ? 'desc' : undefined,
+    );
+  };
+
   return (
     <div className="flex flex-col gap-4">
       <Table<T>
@@ -87,8 +111,9 @@ export function DataTable<T extends object>({
         loading={loading}
         rowSelection={rowSelection}
         pagination={false}
+        onChange={handleChange}
         sticky
-        size="middle"
+        size={density}
         virtual={virtual}
         scroll={{ x: scrollX, y: scrollY }}
         locale={{

@@ -6,6 +6,8 @@ import { z } from 'zod';
  */
 const envSchema = z.object({
   VITE_API_URL: z.string().min(1).default('http://localhost:4000/api/v1'),
+  // S3/CDN base for media assets (avatars). Empty → falls back to the API origin.
+  VITE_CDN_URL: z.string().default(''),
   VITE_SENTRY_DSN: z.string().default(''),
   VITE_APP_ENV: z.enum(['development', 'staging', 'production']).default('development'),
 });

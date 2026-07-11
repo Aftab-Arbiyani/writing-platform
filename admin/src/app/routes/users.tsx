@@ -1,8 +1,8 @@
 import type { ReactElement } from 'react';
 
-import { SectionPlaceholder } from '@/app/pages/section-placeholder';
+import { UsersPage } from '@/features/users';
 
-/** Lazy route module (docs/11 §9) — the Users section (placeholder in A1; code-split). */
+/** Lazy route module (docs/11 §9) — the Users section (A4 User Management; code-split). */
 export function Component(): ReactElement {
-  return <SectionPlaceholder title="Users" description="Accounts, verification, and suspension." />;
+  return <UsersPage />;
 }
