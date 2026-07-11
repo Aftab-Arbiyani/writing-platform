@@ -66,6 +66,28 @@ export class PiecesService {
 
   private readonly logger = new Logger(PiecesService.name);
 
+  /**
+   * Counts one author's non-deleted pieces, optionally by status (admin per-user
+   * statistics, E12.5). Published count is also available denormalized on the
+   * profile; this covers drafts/others which have no counter.
+   */
+  countByAuthor(authorId: string, status?: PieceStatus): Promise<number> {
+    return this.pieces.countByAuthor(authorId, status);
+  }
+
+  /**
+   * Draft counts for many authors, keyed by author id (admin grid). One batched
+   * query — no per-row N+1. Authors with zero drafts are absent from the map.
+   */
+  async countDraftsByAuthors(authorIds: string[]): Promise<Record<string, number>> {
+    const rows = await this.pieces.countDraftsByAuthors(authorIds);
+    const counts: Record<string, number> = {};
+    for (const row of rows) {
+      counts[row.authorId] = row.count;
+    }
+    return counts;
+  }
+
   async createDraft(authorId: string, dto: CreatePieceDto): Promise<PieceResponseDto> {
     const languageId = await this.taxonomy.resolveLanguageCode(dto.languageCode);
     const genreId =

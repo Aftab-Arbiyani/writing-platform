@@ -105,6 +105,46 @@ export class PiecesRepository {
     return qb.getMany();
   }
 
+  /**
+   * Counts a single author's non-deleted pieces, optionally by status (admin
+   * per-user stats). Staff-only, single-author, indexed on `author_id` — a
+   * bounded COUNT that is acceptable off the hot path (docs 05 §5.2).
+   */
+  countByAuthor(authorId: string, status?: PieceStatus, manager?: EntityManager): Promise<number> {
+    const qb = this.repo(manager)
+      .createQueryBuilder('p')
+      .where('p.author_id = :authorId', { authorId })
+      .andWhere('p.deleted_at IS NULL');
+    if (status !== undefined) {
+      qb.andWhere('p.status = :status', { status });
+    }
+    return qb.getCount();
+  }
+
+  /**
+   * Batched draft count for many authors in ONE query (admin grid — avoids the
+   * per-row N+1 while keeping the `pieces` table inside its own module, docs 16
+   * §3.1). Returns only authors that have ≥1 draft.
+   */
+  async countDraftsByAuthors(
+    authorIds: string[],
+    manager?: EntityManager,
+  ): Promise<Array<{ authorId: string; count: number }>> {
+    if (authorIds.length === 0) {
+      return [];
+    }
+    const rows = await this.repo(manager)
+      .createQueryBuilder('p')
+      .select('p.author_id', 'authorId')
+      .addSelect('COUNT(*)', 'count')
+      .where('p.author_id IN (:...authorIds)', { authorIds })
+      .andWhere('p.status = :status', { status: 'draft' })
+      .andWhere('p.deleted_at IS NULL')
+      .groupBy('p.author_id')
+      .getRawMany<{ authorId: string; count: string }>();
+    return rows.map((row) => ({ authorId: row.authorId, count: Number(row.count) }));
+  }
+
   getTagIds(pieceId: string, manager?: EntityManager): Promise<string[]> {
     return this.manager(manager)
       .getRepository(PieceTag)

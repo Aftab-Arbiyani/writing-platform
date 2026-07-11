@@ -59,4 +59,14 @@ export class RolesRepository {
       await repo.save(repo.create({ userId, roleId, grantedBy }));
     }
   }
+
+  /** Revokes a single elevated grant (idempotent — missing row is a no-op). */
+  async revoke(userId: string, roleId: string, manager?: EntityManager): Promise<void> {
+    await this.manager(manager).getRepository(UserRole).delete({ userId, roleId });
+  }
+
+  /** Revokes ALL elevated grants for a user (demote to the implicit `user`). */
+  async revokeAll(userId: string, manager?: EntityManager): Promise<void> {
+    await this.manager(manager).getRepository(UserRole).delete({ userId });
+  }
 }

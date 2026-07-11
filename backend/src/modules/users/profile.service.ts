@@ -123,6 +123,16 @@ export class ProfileService {
     return this.getOwnProfile(userId);
   }
 
+  /**
+   * Admin-forced pen-name (display name) update (E12.5 PATCH /admin/users/:id).
+   * Distinct from {@link updateOwnProfile}: no ownership check (the admin acts on
+   * another account), scoped to the single field the admin edit permits.
+   */
+  async adminUpdatePenName(userId: string, penName: string): Promise<void> {
+    await this.getOrCreateByUserId(userId);
+    await this.profiles.update(userId, { penName: penName.trim() });
+  }
+
   updateAvatar(userId: string, file: UploadedImage): Promise<MediaKeyResponseDto> {
     return this.replaceImage(userId, 'avatar', file);
   }

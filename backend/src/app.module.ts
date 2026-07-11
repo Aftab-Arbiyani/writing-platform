@@ -17,7 +17,9 @@
 import { Module } from '@nestjs/common';
 
 import { CommonModule } from './common/common.module';
+import { AdminModule } from './modules/admin/admin.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { AuditModule } from './modules/audit/audit.module';
 import { AppConfigModule } from './config/config.module';
 import { DatabaseModule } from './database/database.module';
 import { HealthModule } from './health/health.module';
@@ -58,6 +60,11 @@ import { RedisModule } from './redis/redis.module';
     SearchModule,
     NotificationsModule,
     AnalyticsModule,
+    // Admin completion patch (E12.5): the shared audit trail + the admin API
+    // surface (controllers only) that A4 consumes. Placed after the feature
+    // modules it orchestrates; before the infrastructure backbone.
+    AuditModule,
+    AdminModule,
     // Async processing backbone (E11): queues, workers, scheduler, cache,
     // monitoring. @Global — imported last so the business modules it wraps are
     // already defined; it reaches them via their exported services only.

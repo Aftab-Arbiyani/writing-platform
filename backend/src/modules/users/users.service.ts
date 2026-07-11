@@ -3,7 +3,11 @@ import { UserStatus, USERNAME_MAX, USERNAME_MIN } from '@qalam/shared';
 import { randomInt } from 'node:crypto';
 import type { EntityManager } from 'typeorm';
 
+import { buildOffsetMeta } from '../../common/pagination/pagination.helper';
+import type { OffsetPage } from '../../common/types/paginated-result';
 import { User } from './entities/user.entity';
+import { UserNotFoundException, UserStatusConflictException } from './exceptions/users.exceptions';
+import type { AdminUserFilters, AdminUserRow } from './users.repository';
 import { UsersRepository } from './users.repository';
 
 /**
@@ -80,6 +84,91 @@ export class UsersService {
 
   recordLogin(userId: string, manager?: EntityManager): Promise<void> {
     return this.usersRepository.update(userId, { lastLoginAt: new Date() }, manager);
+  }
+
+  // ── Admin surface (E12.5) ─────────────────────────────────────────────────
+  // Additive account-management operations the admin controllers orchestrate.
+  // Business logic lives here (the module that owns `users`); the admin module
+  // is controllers only (docs 16 §3.1). No existing method/behaviour changes.
+
+  /** Offset-paginated, filtered admin user grid (docs 05 §5.2). */
+  async adminList(filters: AdminUserFilters): Promise<OffsetPage<AdminUserRow>> {
+    const { rows, total } = await this.usersRepository.adminList(filters);
+    return { items: rows, meta: buildOffsetMeta(filters.page, filters.limit, total) };
+  }
+
+  /** The joined admin detail row (account + profile + role); includes soft-deleted. */
+  async adminGetRow(id: string): Promise<AdminUserRow> {
+    const row = await this.usersRepository.adminFindRowById(id);
+    if (row === null) {
+      throw new UserNotFoundException();
+    }
+    return row;
+  }
+
+  /** Joined admin rows for a set of ids (bulk export of a selection). */
+  adminFindRowsByIds(ids: string[]): Promise<AdminUserRow[]> {
+    return this.usersRepository.adminFindRowsByIds(ids);
+  }
+
+  /** Streams matching admin rows in id-ordered batches (full-set export). */
+  adminStream(filters: AdminUserFilters, batchSize: number): AsyncGenerator<AdminUserRow[]> {
+    return this.usersRepository.adminStream(filters, batchSize);
+  }
+
+  /**
+   * Loads a live (non-deleted) account for a mutation, throwing
+   * `USER_NOT_FOUND` (404) when absent — the action endpoints' target lookup.
+   */
+  async adminGetAccount(id: string): Promise<User> {
+    const user = await this.findById(id);
+    if (user === null) {
+      throw new UserNotFoundException();
+    }
+    return user;
+  }
+
+  /**
+   * Transitions an account's status, enforcing sane transitions. `requireFrom`
+   * (used by unsuspend/reactivate) asserts the precondition; a no-op transition
+   * is rejected as a state conflict (409) so bulk callers can report per-user.
+   * Returns the before/after for the audit trail.
+   */
+  async setStatus(
+    id: string,
+    to: UserStatus,
+    options: { requireFrom?: UserStatus } = {},
+  ): Promise<{ before: UserStatus; after: UserStatus }> {
+    const user = await this.adminGetAccount(id);
+    const before = user.status;
+
+    if (options.requireFrom !== undefined && before !== options.requireFrom) {
+      throw new UserStatusConflictException(
+        `Account must be "${options.requireFrom}" for this action; it is "${before}".`,
+      );
+    }
+    if (before === to) {
+      throw new UserStatusConflictException(`Account is already "${to}".`);
+    }
+
+    await this.usersRepository.update(id, { status: to });
+    return { before, after: to };
+  }
+
+  /**
+   * Sets (or clears) email verification. Idempotent-safe: returns before/after
+   * and skips the write when already in the requested state.
+   */
+  async setEmailVerified(
+    id: string,
+    verified: boolean,
+  ): Promise<{ before: boolean; after: boolean }> {
+    const user = await this.adminGetAccount(id);
+    const before = user.isEmailVerified;
+    if (before !== verified) {
+      await this.usersRepository.update(id, { emailVerifiedAt: verified ? new Date() : null });
+    }
+    return { before, after: verified };
   }
 
   /**

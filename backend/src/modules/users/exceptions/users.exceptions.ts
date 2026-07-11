@@ -59,3 +59,15 @@ export class FollowRequestNotFoundException extends AppException {
     super(ERROR_CODES.FOLLOW_REQUEST_NOT_FOUND, 'No such follow request.', HttpStatus.NOT_FOUND);
   }
 }
+
+/**
+ * An admin account-state transition that conflicts with the current state
+ * (e.g. suspending an already-suspended user, unsuspending an active one). A
+ * state conflict → 409 (docs 05 §4). Reuses the generic `CONFLICT` code so no
+ * change to the frozen `@qalam/shared` catalogue is needed (E12.5 is additive).
+ */
+export class UserStatusConflictException extends AppException {
+  constructor(message: string) {
+    super(ERROR_CODES.CONFLICT, message, HttpStatus.CONFLICT);
+  }
+}

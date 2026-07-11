@@ -56,4 +56,29 @@ export class RolesService {
     }
     await this.rolesRepository.grant(userId, role.id, grantedBy, manager);
   }
+
+  /**
+   * Sets a user's role to exactly `roleName` (admin role management, E12.5).
+   * Because the effective role is the highest granted rank, "setting" a role
+   * means clearing prior elevated grants first, then granting the target —
+   * demoting to `user` simply clears them. Returns the effective role before
+   * the change for the audit trail.
+   */
+  async setRole(
+    userId: string,
+    roleName: RoleName,
+    grantedBy: string | null,
+    manager?: EntityManager,
+  ): Promise<{ before: RoleName; after: RoleName }> {
+    const before = await this.getEffectiveRole(userId, manager);
+    await this.rolesRepository.revokeAll(userId, manager);
+    if (roleName !== RoleName.User) {
+      const role = await this.rolesRepository.findByName(roleName, manager);
+      if (role === null) {
+        throw new Error(`Role "${roleName}" is not seeded — run the roles seed first.`);
+      }
+      await this.rolesRepository.grant(userId, role.id, grantedBy, manager);
+    }
+    return { before, after: roleName };
+  }
 }
