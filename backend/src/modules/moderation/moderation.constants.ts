@@ -16,6 +16,7 @@ export const MODERATION_ACTIONS = {
   ReportAssign: 'report.assign',
   ReportPriority: 'report.priority',
   ReportEscalate: 'report.escalate',
+  ReportReopen: 'report.reopen',
   ReportNote: 'report.note',
   ReportBulk: 'report.bulk_action',
   ContentHide: 'content.hide',

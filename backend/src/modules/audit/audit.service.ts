@@ -4,8 +4,9 @@ import type { OffsetPage } from '../../common/types/paginated-result';
 import { buildOffsetMeta } from '../../common/pagination/pagination.helper';
 import { AUDIT_TARGET, auditCategoryOf } from './audit.constants';
 import { AuditRepository } from './audit.repository';
+import type { AuditAdminFilters } from './audit.repository';
 import type { AuditLog } from './entities/audit-log.entity';
-import { AuditLogDto, AuditSummaryDto } from './dto/audit-log.dto';
+import { AuditLogDto, AuditStatisticsDto, AuditSummaryDto } from './dto/audit-log.dto';
 
 /** Context resolved from the originating HTTP request (best-effort). */
 export interface AuditContext {
@@ -106,6 +107,48 @@ export class AuditService {
   ): Promise<AuditLogDto[]> {
     const rows = await this.repository.recentForTarget(targetType, targetId, limit);
     return rows.map(toAuditLogDto);
+  }
+
+  // ── Global admin audit browser (E12.7) ────────────────────────────────────────
+
+  /** Filtered, offset-paginated global audit list (admin browser). */
+  async adminList(filters: AuditAdminFilters, page: number): Promise<OffsetPage<AuditLogDto>> {
+    const [rows, total] = await this.repository.adminList(filters);
+    return { items: rows.map(toAuditLogDto), meta: buildOffsetMeta(page, filters.limit, total) };
+  }
+
+  /** One audit entry by id (null when absent). */
+  async getById(id: string): Promise<AuditLogDto | null> {
+    const row = await this.repository.findById(id);
+    return row === null ? null : toAuditLogDto(row);
+  }
+
+  /** Global audit statistics — actions per window + top actions/actors. */
+  async statistics(): Promise<AuditStatisticsDto> {
+    const now = new Date();
+    const startOfToday = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+    );
+    const weekAgo = new Date(now.getTime() - 7 * 86_400_000);
+    const monthAgo = new Date(now.getTime() - 30 * 86_400_000);
+    const [today, thisWeek, thisMonth, topActions, mostActiveActors] = await Promise.all([
+      this.repository.countSince(startOfToday),
+      this.repository.countSince(weekAgo),
+      this.repository.countSince(monthAgo),
+      this.repository.topActions(monthAgo, 10),
+      this.repository.topActors(monthAgo, 10),
+    ]);
+    return { today, thisWeek, thisMonth, topActions, mostActiveActors };
+  }
+
+  /** Streams filtered audit rows in DTO batches for export. */
+  async *exportStream(
+    filters: AuditAdminFilters,
+    batchSize: number,
+  ): AsyncGenerator<AuditLogDto[]> {
+    for await (const batch of this.repository.stream(filters, batchSize)) {
+      yield batch.map(toAuditLogDto);
+    }
   }
 }
 

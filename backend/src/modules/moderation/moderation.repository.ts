@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { ReportStatus } from '@qalam/shared';
 import type { ReportEntityType, ReportReason } from '@qalam/shared';
 import { In, Repository } from 'typeorm';
+import type { SelectQueryBuilder } from 'typeorm';
 
 import type { AppealFilterDto } from './dto/appeal.dto';
 import type { ReportFilterDto } from './dto/report-filter.dto';
@@ -83,7 +84,8 @@ export class ModerationRepository {
     return this.reports.save(report);
   }
 
-  async listReports(filter: ReportFilterDto): Promise<{ items: Report[]; total: number }> {
+  /** Builds the filtered (unsorted, unpaged) report query — shared by list + export. */
+  private reportQuery(filter: ReportFilterDto): SelectQueryBuilder<Report> {
     const qb = this.reports.createQueryBuilder('report');
 
     if (filter.type) qb.andWhere('report.entity_type = :type', { type: filter.type });
@@ -112,17 +114,36 @@ export class ModerationRepository {
         qb.andWhere('report.description ILIKE :like', { like: `%${filter.q}%` });
       }
     }
+    return qb;
+  }
 
+  async listReports(filter: ReportFilterDto): Promise<{ items: Report[]; total: number }> {
+    const qb = this.reportQuery(filter);
     this.applySort(qb, filter.sort);
     qb.skip(filter.offset).take(filter.limit);
     const [items, total] = await qb.getManyAndCount();
     return { items, total };
   }
 
-  private applySort(
-    qb: ReturnType<Repository<Report>['createQueryBuilder']>,
-    sort: string | undefined,
-  ): void {
+  /** Streams the FILTERED report set in batches for export (no pager, E12.7). */
+  async *streamReports(filter: ReportFilterDto, batchSize: number): AsyncGenerator<Report[]> {
+    let offset = 0;
+    for (;;) {
+      const qb = this.reportQuery(filter);
+      this.applySort(qb, filter.sort);
+      const rows = await qb.skip(offset).take(batchSize).getMany();
+      if (rows.length === 0) {
+        break;
+      }
+      yield rows;
+      if (rows.length < batchSize) {
+        break;
+      }
+      offset += batchSize;
+    }
+  }
+
+  private applySort(qb: SelectQueryBuilder<Report>, sort: string | undefined): void {
     const token = sort ?? '-createdAt';
     const desc = token.startsWith('-');
     const field = desc ? token.slice(1) : token;
@@ -138,6 +159,18 @@ export class ModerationRepository {
 
   listNotes(reportId: string): Promise<ReportNote[]> {
     return this.notes.find({ where: { reportId }, order: { createdAt: 'ASC' } });
+  }
+
+  findNote(noteId: string): Promise<ReportNote | null> {
+    return this.notes.findOne({ where: { id: noteId } });
+  }
+
+  async updateNote(noteId: string, body: string): Promise<void> {
+    await this.notes.update({ id: noteId }, { body });
+  }
+
+  async deleteNote(noteId: string): Promise<void> {
+    await this.notes.delete({ id: noteId });
   }
 
   // ── Appeals ────────────────────────────────────────────────────────────────
@@ -187,5 +220,106 @@ export class ModerationRepository {
 
   countWarnings(userId: string): Promise<number> {
     return this.warnings.count({ where: { userId } });
+  }
+
+  // ── Statistics / trends (admin reporting, E12.7) ──────────────────────────────
+
+  /** Grouped counts over a fixed, safe column (status | severity | reason). */
+  private async groupCount(
+    column: 'status' | 'severity' | 'reason',
+  ): Promise<Record<string, number>> {
+    const rows = await this.reports
+      .createQueryBuilder('report')
+      .select(`report.${column}`, 'key')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy(`report.${column}`)
+      .getRawMany<{ key: string | null; count: string }>();
+    const out: Record<string, number> = {};
+    for (const row of rows) {
+      if (row.key !== null) {
+        out[row.key] = Number(row.count);
+      }
+    }
+    return out;
+  }
+
+  countByStatus(): Promise<Record<string, number>> {
+    return this.groupCount('status');
+  }
+  countBySeverity(): Promise<Record<string, number>> {
+    return this.groupCount('severity');
+  }
+  countByReason(): Promise<Record<string, number>> {
+    return this.groupCount('reason');
+  }
+
+  /** Mean seconds between report creation and resolution (null when none resolved). */
+  async avgResolutionSeconds(): Promise<number | null> {
+    const row = await this.reports
+      .createQueryBuilder('report')
+      .select('AVG(EXTRACT(EPOCH FROM (report.resolved_at - report.created_at)))', 'avg')
+      .where('report.resolved_at IS NOT NULL')
+      .getRawOne<{ avg: string | null }>();
+    return row?.avg != null ? Number(row.avg) : null;
+  }
+
+  /** Per-moderator resolved count + mean resolution time (moderator performance). */
+  async moderatorPerformance(): Promise<
+    Array<{ moderatorId: string; resolved: number; avgSeconds: number | null }>
+  > {
+    const rows = await this.reports
+      .createQueryBuilder('report')
+      .select('report.resolved_by_id', 'moderatorId')
+      .addSelect('COUNT(*)', 'resolved')
+      .addSelect('AVG(EXTRACT(EPOCH FROM (report.resolved_at - report.created_at)))', 'avgSeconds')
+      .where('report.resolved_by_id IS NOT NULL')
+      .groupBy('report.resolved_by_id')
+      .orderBy('COUNT(*)', 'DESC')
+      .getRawMany<{ moderatorId: string; resolved: string; avgSeconds: string | null }>();
+    return rows.map((row) => ({
+      moderatorId: row.moderatorId,
+      resolved: Number(row.resolved),
+      avgSeconds: row.avgSeconds != null ? Number(row.avgSeconds) : null,
+    }));
+  }
+
+  /** Per-day created + resolved counts over a date window (report trends). */
+  async trends(
+    dateFrom: string,
+    dateTo: string,
+  ): Promise<Array<{ date: string; created: number; resolved: number }>> {
+    const created = await this.reports
+      .createQueryBuilder('report')
+      .select("to_char(date_trunc('day', report.created_at), 'YYYY-MM-DD')", 'date')
+      .addSelect('COUNT(*)', 'count')
+      .where('report.created_at >= :from AND report.created_at <= :to', {
+        from: dateFrom,
+        to: dateTo,
+      })
+      .groupBy("date_trunc('day', report.created_at)")
+      .getRawMany<{ date: string; count: string }>();
+    const resolved = await this.reports
+      .createQueryBuilder('report')
+      .select("to_char(date_trunc('day', report.resolved_at), 'YYYY-MM-DD')", 'date')
+      .addSelect('COUNT(*)', 'count')
+      .where('report.resolved_at >= :from AND report.resolved_at <= :to', {
+        from: dateFrom,
+        to: dateTo,
+      })
+      .groupBy("date_trunc('day', report.resolved_at)")
+      .getRawMany<{ date: string; count: string }>();
+
+    const merged = new Map<string, { created: number; resolved: number }>();
+    for (const row of created) {
+      merged.set(row.date, { created: Number(row.count), resolved: 0 });
+    }
+    for (const row of resolved) {
+      const entry = merged.get(row.date) ?? { created: 0, resolved: 0 };
+      entry.resolved = Number(row.count);
+      merged.set(row.date, entry);
+    }
+    return [...merged.entries()]
+      .map(([date, value]) => ({ date, ...value }))
+      .sort((a, b) => a.date.localeCompare(b.date));
   }
 }

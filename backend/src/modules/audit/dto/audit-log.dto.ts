@@ -58,3 +58,26 @@ export class AuditSummaryDto {
   @ApiProperty({ nullable: true, description: 'Timestamp of the most recent action.' })
   lastActionAt!: string | null;
 }
+
+/** One (action, count) row for the audit statistics. */
+export class AuditActionCountDto {
+  @ApiProperty() action!: string;
+  @ApiProperty() count!: number;
+}
+
+/** One (actor, count) row for the audit statistics. */
+export class AuditActorCountDto {
+  @ApiProperty() actorId!: string;
+  @ApiProperty() count!: number;
+}
+
+/** Global audit statistics (`GET /admin/audit-logs/statistics`, E12.7). */
+export class AuditStatisticsDto {
+  @ApiProperty({ description: 'Actions recorded since 00:00 UTC today.' }) today!: number;
+  @ApiProperty({ description: 'Actions in the last 7 days.' }) thisWeek!: number;
+  @ApiProperty({ description: 'Actions in the last 30 days.' }) thisMonth!: number;
+  @ApiProperty({ type: [AuditActionCountDto], description: 'Top action codes (last 30 days).' })
+  topActions!: AuditActionCountDto[];
+  @ApiProperty({ type: [AuditActorCountDto], description: 'Most active actors (last 30 days).' })
+  mostActiveActors!: AuditActorCountDto[];
+}

@@ -33,6 +33,11 @@ import type {
   ReportNoteDto,
   WarningDto,
 } from './dto/moderation-response.dto';
+import type {
+  ReportStatisticsDto,
+  ReportTimelineEntryDto,
+  ReportTrendsDto,
+} from './dto/report-stats.dto';
 import type { Report } from './entities/report.entity';
 import {
   MODERATION_ACTIONS,
@@ -425,7 +430,136 @@ export class ModerationService {
     }
   }
 
+  // ── Report actions: reopen + note edit/delete (E12.7) ─────────────────────────
+
+  /** Reopens a resolved/dismissed report for re-review (clears the resolution). */
+  async reopenReport(id: string, actor: ModerationActor): Promise<ReportDto> {
+    const report = await this.loadReport(id);
+    if (report.status !== ReportStatus.Resolved && report.status !== ReportStatus.Dismissed) {
+      throw new ReportInvalidResolutionException(
+        'Only a resolved or dismissed report can be reopened.',
+      );
+    }
+    report.status = ReportStatus.Reviewing;
+    report.resolution = null;
+    report.resolutionReason = null;
+    report.resolvedById = null;
+    report.resolvedAt = null;
+    const saved = await this.repository.saveReport(report);
+    await this.record(actor, MODERATION_ACTIONS.ReportReopen, id, {});
+    return toReportDto(saved, false);
+  }
+
+  async updateNote(
+    reportId: string,
+    noteId: string,
+    body: string,
+    actor: ModerationActor,
+  ): Promise<ReportNoteDto> {
+    const note = await this.loadNote(reportId, noteId);
+    await this.repository.updateNote(noteId, body);
+    await this.record(actor, MODERATION_ACTIONS.ReportNote, reportId, { noteId, updated: true });
+    note.body = body;
+    return toReportNoteDto(note);
+  }
+
+  async deleteNote(reportId: string, noteId: string, actor: ModerationActor): Promise<void> {
+    await this.loadNote(reportId, noteId);
+    await this.repository.deleteNote(noteId);
+    await this.record(actor, MODERATION_ACTIONS.ReportNote, reportId, { noteId, deleted: true });
+  }
+
+  // ── Reporting: timeline + statistics + trends + export (E12.7) ─────────────────
+
+  /** Chronological timeline (moderation actions + appeal events + notes), newest first. */
+  async getTimeline(id: string): Promise<ReportTimelineEntryDto[]> {
+    await this.loadReport(id); // 404 if the report doesn't exist
+    const [reportHistory, notes, appeal] = await Promise.all([
+      this.audit.recentForTarget(MODERATION_TARGET.Report, id, 100),
+      this.repository.listNotes(id),
+      this.repository.findAppealByReport(id),
+    ]);
+    const appealHistory =
+      appeal === null
+        ? []
+        : await this.audit.recentForTarget(MODERATION_TARGET.Appeal, appeal.id, 100);
+
+    const entries: ReportTimelineEntryDto[] = [];
+    for (const event of [...reportHistory, ...appealHistory]) {
+      entries.push({
+        kind: 'action',
+        at: event.createdAt,
+        action: event.action,
+        category: event.category,
+        actorId: event.actorId,
+        actorRole: event.actorRole,
+        body: null,
+        auditRef: event.id,
+        metadata: event.metadata,
+      });
+    }
+    for (const note of notes) {
+      entries.push({
+        kind: 'note',
+        at: note.createdAt.toISOString(),
+        action: null,
+        category: null,
+        actorId: note.authorId,
+        actorRole: null,
+        body: note.body,
+        auditRef: null,
+        metadata: {},
+      });
+    }
+    return entries.sort((a, b) => b.at.localeCompare(a.at));
+  }
+
+  async getStatistics(): Promise<ReportStatisticsDto> {
+    const [byStatus, byCategory, bySeverity, avgResolutionSeconds, moderatorPerformance] =
+      await Promise.all([
+        this.repository.countByStatus(),
+        this.repository.countByReason(),
+        this.repository.countBySeverity(),
+        this.repository.avgResolutionSeconds(),
+        this.repository.moderatorPerformance(),
+      ]);
+    const openReports =
+      (byStatus[ReportStatus.Pending] ?? 0) +
+      (byStatus[ReportStatus.Reviewing] ?? 0) +
+      (byStatus[ReportStatus.Appealed] ?? 0);
+    return {
+      openReports,
+      resolvedReports: byStatus[ReportStatus.Resolved] ?? 0,
+      dismissedReports: byStatus[ReportStatus.Dismissed] ?? 0,
+      avgResolutionSeconds,
+      byStatus,
+      byCategory,
+      bySeverity,
+      moderatorPerformance,
+    };
+  }
+
+  async getTrends(dateFrom: string, dateTo: string): Promise<ReportTrendsDto> {
+    const points = await this.repository.trends(dateFrom, dateTo);
+    return { from: dateFrom, to: dateTo, points };
+  }
+
+  /** Streams the filtered report set in DTO batches for export. */
+  async *streamReports(filter: ReportFilterDto, batchSize: number): AsyncGenerator<ReportDto[]> {
+    for await (const batch of this.repository.streamReports(filter, batchSize)) {
+      yield batch.map((report) => toReportDto(report, report.status === ReportStatus.Appealed));
+    }
+  }
+
   // ── Helpers ──────────────────────────────────────────────────────────────────
+
+  private async loadNote(reportId: string, noteId: string) {
+    const note = await this.repository.findNote(noteId);
+    if (note === null || note.reportId !== reportId) {
+      throw new ReportNotFoundException();
+    }
+    return note;
+  }
 
   private async loadReport(id: string): Promise<Report> {
     const report = await this.repository.findReportById(id);
