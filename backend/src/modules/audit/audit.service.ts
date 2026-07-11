@@ -94,6 +94,19 @@ export class AuditService {
     const rows = await this.repository.recentForTarget(AUDIT_TARGET.User, userId, limit);
     return rows.map(toAuditLogDto);
   }
+
+  /**
+   * Most recent audit entries for any target type/id — used by the Moderation
+   * module for a report's action history and an appeal's timeline (docs A5).
+   */
+  async recentForTarget(
+    targetType: string,
+    targetId: string,
+    limit: number,
+  ): Promise<AuditLogDto[]> {
+    const rows = await this.repository.recentForTarget(targetType, targetId, limit);
+    return rows.map(toAuditLogDto);
+  }
 }
 
 /** Maps a persisted row to its wire shape (never returns the entity raw). */

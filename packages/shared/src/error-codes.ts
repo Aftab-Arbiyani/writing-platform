@@ -121,6 +121,21 @@ export const ERROR_CODES = {
   // ── Moderation ──────────────────────────────────────────────────────────
   REPORT_NOT_FOUND: 'REPORT_NOT_FOUND',
   REPORT_ALREADY_RESOLVED: 'REPORT_ALREADY_RESOLVED',
+  /** The reported entity (piece/comment/user/response) does not exist. */
+  REPORT_TARGET_NOT_FOUND: 'REPORT_TARGET_NOT_FOUND',
+  /** A user cannot report their own content/account. */
+  REPORT_SELF: 'REPORT_SELF',
+  /** The reporter already has an open report for this entity. */
+  REPORT_DUPLICATE: 'REPORT_DUPLICATE',
+  /** Resolution requires a decision incompatible with the report's target/state. */
+  REPORT_INVALID_RESOLUTION: 'REPORT_INVALID_RESOLUTION',
+  /** An appeal was requested but the caller is not the moderated subject, or the report isn't resolved. */
+  APPEAL_NOT_ALLOWED: 'APPEAL_NOT_ALLOWED',
+  APPEAL_NOT_FOUND: 'APPEAL_NOT_FOUND',
+  /** An appeal already exists for this report. */
+  APPEAL_ALREADY_EXISTS: 'APPEAL_ALREADY_EXISTS',
+  /** Approve/reject attempted on an appeal that is no longer pending. */
+  APPEAL_ALREADY_REVIEWED: 'APPEAL_ALREADY_REVIEWED',
 
   // ── Media ───────────────────────────────────────────────────────────────
   MEDIA_TYPE_UNSUPPORTED: 'MEDIA_TYPE_UNSUPPORTED',

@@ -25,6 +25,16 @@ export class PiecesRepository {
     return this.repo(manager).findOne({ where: { id } });
   }
 
+  /** Piece by id **including soft-deleted rows** (moderator restore, A5 appeals). */
+  findByIdWithDeleted(id: string, manager?: EntityManager): Promise<Piece | null> {
+    return this.repo(manager).findOne({ where: { id }, withDeleted: true });
+  }
+
+  /** Reverses a soft delete (moderator restore of removed content). */
+  async restore(id: string, manager?: EntityManager): Promise<void> {
+    await this.repo(manager).restore({ id });
+  }
+
   /**
    * Slug uniqueness check **including soft-deleted rows** (URLs are permanent —
    * a restored piece reclaims its slug, docs 04 §1.5).

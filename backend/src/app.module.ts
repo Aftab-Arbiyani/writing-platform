@@ -30,6 +30,7 @@ import { MediaModule } from './media/media.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { EngagementModule } from './modules/engagement/engagement.module';
 import { FeedModule } from './modules/feed/feed.module';
+import { ModerationModule } from './modules/moderation/moderation.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { PermissionsModule } from './modules/permissions/permissions.module';
 import { PiecesModule } from './modules/pieces/pieces.module';
@@ -65,6 +66,7 @@ import { RedisModule } from './redis/redis.module';
     // modules it orchestrates; before the infrastructure backbone.
     AuditModule,
     AdminModule,
+    ModerationModule,
     // Async processing backbone (E11): queues, workers, scheduler, cache,
     // monitoring. @Global — imported last so the business modules it wraps are
     // already defined; it reaches them via their exported services only.

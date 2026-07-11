@@ -120,14 +120,77 @@ export const NotificationEntityType = {
 export type NotificationEntityType =
   (typeof NotificationEntityType)[keyof typeof NotificationEntityType];
 
-/** Moderation lifecycle of a user report. */
+/** Moderation lifecycle of a report (Moderation module). `appealed` = a resolved report whose subject has filed an appeal. */
 export const ReportStatus = {
   Pending: 'pending',
   Reviewing: 'reviewing',
   Resolved: 'resolved',
   Dismissed: 'dismissed',
+  Appealed: 'appealed',
 } as const;
 export type ReportStatus = (typeof ReportStatus)[keyof typeof ReportStatus];
+
+/** What a report targets — polymorphic (`reports.entity_type`). A `response` is a piece linked to a parent. */
+export const ReportEntityType = {
+  Piece: 'piece',
+  Comment: 'comment',
+  User: 'user',
+  Response: 'response',
+} as const;
+export type ReportEntityType = (typeof ReportEntityType)[keyof typeof ReportEntityType];
+
+/** Why a report was filed (closed catalogue; `other` carries a free-text description). */
+export const ReportReason = {
+  Spam: 'spam',
+  Harassment: 'harassment',
+  HateSpeech: 'hate_speech',
+  Violence: 'violence',
+  SexualContent: 'sexual_content',
+  SelfHarm: 'self_harm',
+  Misinformation: 'misinformation',
+  Copyright: 'copyright',
+  Impersonation: 'impersonation',
+  Other: 'other',
+} as const;
+export type ReportReason = (typeof ReportReason)[keyof typeof ReportReason];
+
+/** Triage priority of a report in the queue. */
+export const ReportPriority = {
+  Low: 'low',
+  Normal: 'normal',
+  High: 'high',
+  Urgent: 'urgent',
+} as const;
+export type ReportPriority = (typeof ReportPriority)[keyof typeof ReportPriority];
+
+/** Assessed severity of the reported content/behaviour. */
+export const ReportSeverity = {
+  Low: 'low',
+  Medium: 'medium',
+  High: 'high',
+  Critical: 'critical',
+} as const;
+export type ReportSeverity = (typeof ReportSeverity)[keyof typeof ReportSeverity];
+
+/** The moderator's decision recorded when a report is resolved. */
+export const ReportResolution = {
+  NoAction: 'no_action',
+  Dismissed: 'dismissed',
+  ContentHidden: 'content_hidden',
+  ContentRemoved: 'content_removed',
+  UserWarned: 'user_warned',
+  UserSuspended: 'user_suspended',
+  UserBanned: 'user_banned',
+} as const;
+export type ReportResolution = (typeof ReportResolution)[keyof typeof ReportResolution];
+
+/** Lifecycle of an appeal against a moderation decision. */
+export const AppealStatus = {
+  Pending: 'pending',
+  Approved: 'approved',
+  Rejected: 'rejected',
+} as const;
+export type AppealStatus = (typeof AppealStatus)[keyof typeof AppealStatus];
 
 /** Content text direction — Urdu is RTL and a day-one requirement (ADR §0). */
 export const TextDirection = {

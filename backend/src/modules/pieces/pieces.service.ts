@@ -331,6 +331,53 @@ export class PiecesService {
     return this.getOwn(id, ownerId);
   }
 
+  /**
+   * Moderator take-down (A5 Moderation) — acts on ANY piece regardless of author
+   * by resolving the real `authorId` and delegating to the owner-scoped path, so
+   * all transaction / counter / event logic runs unchanged. Tolerant: a
+   * missing/already-gone target is a no-op (the report still resolves).
+   */
+  async moderateHide(id: string): Promise<void> {
+    const piece = await this.pieces.findById(id);
+    if (piece !== null && piece.status === PieceStatus.Published) {
+      await this.archive(id, piece.authorId);
+    }
+  }
+
+  async moderateRestore(id: string): Promise<void> {
+    const piece = await this.pieces.findById(id);
+    if (piece !== null) {
+      if (piece.status === PieceStatus.Archived) {
+        await this.unarchive(id, piece.authorId);
+      }
+      return;
+    }
+    // Removed (soft-deleted) content: reverse the delete and re-increment the
+    // published counter if it was live (A5 appeal-approve restore).
+    const removed = await this.pieces.findByIdWithDeleted(id);
+    if (removed !== null) {
+      await this.transactions.run(async (manager) => {
+        await this.pieces.restore(id, manager);
+        if (removed.status === PieceStatus.Published) {
+          await this.profiles.adjustPublishedCount(removed.authorId, 1);
+        }
+      });
+    }
+  }
+
+  async moderateRemove(id: string): Promise<void> {
+    const piece = await this.pieces.findById(id);
+    if (piece !== null) {
+      await this.delete(id, piece.authorId);
+    }
+  }
+
+  /** The author id of a piece, for moderation report attribution. Null if absent. */
+  async findAuthorId(id: string): Promise<string | null> {
+    const piece = await this.pieces.findById(id);
+    return piece?.authorId ?? null;
+  }
+
   async duplicate(id: string, ownerId: string): Promise<PieceResponseDto> {
     const source = await this.loadOwned(id, ownerId);
     const tagIds = await this.pieces.getTagIds(id);

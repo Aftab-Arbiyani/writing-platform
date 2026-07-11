@@ -77,6 +77,6 @@ import { SharesService } from './shares.service';
     SharesRepository,
     SharesService,
   ],
-  exports: [PieceStatsService],
+  exports: [PieceStatsService, CommentsService],
 })
 export class EngagementModule {}

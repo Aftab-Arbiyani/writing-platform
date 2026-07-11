@@ -159,6 +159,17 @@ export class CommentsService {
     await this.comments.softDelete(commentId);
   }
 
+  /** Moderator restore of a soft-deleted comment (A5 appeals). No-op if absent. */
+  async moderateRestore(commentId: string): Promise<void> {
+    await this.comments.restore(commentId);
+  }
+
+  /** The author id of a comment, for moderation report attribution. Null if absent. */
+  async findAuthorId(commentId: string): Promise<string | null> {
+    const comment = await this.comments.findById(commentId);
+    return comment?.authorId ?? null;
+  }
+
   /** Top-level comments on a piece, cursor-paginated with immediate reply counts. */
   async listForPiece(
     pieceId: string,

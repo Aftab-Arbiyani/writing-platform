@@ -57,6 +57,11 @@ export class CommentsRepository {
     await this.repo(manager).softDelete({ id });
   }
 
+  /** Reverses a soft delete (moderator restore, A5 appeals). */
+  async restore(id: string, manager?: EntityManager): Promise<void> {
+    await this.repo(manager).restore({ id });
+  }
+
   /**
    * Top-level comments on a piece joined with each author (single query — no
    * N+1), newest first, keyset-paginated over `(created_at, id)`. Soft-deleted
