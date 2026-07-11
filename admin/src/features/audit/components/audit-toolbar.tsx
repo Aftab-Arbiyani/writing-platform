@@ -6,10 +6,10 @@ import { createElement, useEffect, useRef, useState, type ReactElement } from 'r
 import { SearchInput } from '@/components/search-input';
 import { Toolbar } from '@/components/toolbar';
 
-import { REPORT_COLUMNS, REQUIRED_REPORT_COLUMNS } from '../moderation.constants';
-import { useModerationPrefs, type TableDensity } from '../stores/moderation-prefs.store';
+import { AUDIT_COLUMNS, REQUIRED_AUDIT_COLUMNS } from '../audit.constants';
+import { useAuditPrefs, type TableDensity } from '../stores/audit-prefs.store';
 
-interface ReportsToolbarProps {
+interface AuditToolbarProps {
   search: string;
   onSearchChange: (value: string) => void;
   filtersOpen: boolean;
@@ -26,8 +26,8 @@ const DENSITY_OPTIONS: { label: string; value: TableDensity }[] = [
   { label: 'Comfortable', value: 'large' },
 ];
 
-/** Report-queue toolbar: debounced search, filter toggle, density, column visibility, refresh. */
-export function ReportsToolbar({
+/** Audit-log toolbar: debounced search, filter toggle, density, column visibility, export, refresh. */
+export function AuditToolbar({
   search,
   onSearchChange,
   filtersOpen,
@@ -36,11 +36,11 @@ export function ReportsToolbar({
   isFetching,
   onExport,
   exporting,
-}: ReportsToolbarProps): ReactElement {
-  const density = useModerationPrefs((state) => state.density);
-  const setDensity = useModerationPrefs((state) => state.setDensity);
-  const hiddenColumns = useModerationPrefs((state) => state.hiddenColumns);
-  const toggleColumn = useModerationPrefs((state) => state.toggleColumn);
+}: AuditToolbarProps): ReactElement {
+  const density = useAuditPrefs((state) => state.density);
+  const setDensity = useAuditPrefs((state) => state.setDensity);
+  const hiddenColumns = useAuditPrefs((state) => state.hiddenColumns);
+  const toggleColumn = useAuditPrefs((state) => state.toggleColumn);
   const [value, setValue] = useState(search);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
@@ -59,7 +59,7 @@ export function ReportsToolbar({
       role="group"
       aria-label="Toggle columns"
     >
-      {REPORT_COLUMNS.filter((column) => !REQUIRED_REPORT_COLUMNS.has(column.key)).map((column) => (
+      {AUDIT_COLUMNS.filter((column) => !REQUIRED_AUDIT_COLUMNS.has(column.key)).map((column) => (
         <Checkbox
           key={column.key}
           checked={!hiddenColumns.includes(column.key)}
@@ -84,8 +84,8 @@ export function ReportsToolbar({
             value={value}
             onChange={commit}
             onSubmit={onSearchChange}
-            ariaLabel="Search reports"
-            placeholder="Search description or an exact reporter/target id…"
+            ariaLabel="Search audit logs"
+            placeholder="Search action code or an exact actor/target id…"
           />
           <QButton
             variant={filtersOpen ? 'primary' : 'secondary'}

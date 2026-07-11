@@ -18,6 +18,37 @@ function useInvalidate(): () => void {
   return () => void queryClient.invalidateQueries({ queryKey: qk.moderation.all });
 }
 
+/** PATCH /admin/reports/:id/notes/:noteId — edit an internal note. */
+export function useUpdateNote(): UseMutationResult<
+  ReportNote,
+  Error,
+  { id: string; noteId: string; body: string }
+> {
+  const invalidate = useInvalidate();
+  return useMutation({
+    mutationFn: ({ id, noteId, body }) => moderationApi.updateNote(id, noteId, body),
+    onSuccess: invalidate,
+  });
+}
+
+/** DELETE /admin/reports/:id/notes/:noteId — remove an internal note. */
+export function useDeleteNote(): UseMutationResult<void, Error, { id: string; noteId: string }> {
+  const invalidate = useInvalidate();
+  return useMutation({
+    mutationFn: ({ id, noteId }) => moderationApi.deleteNote(id, noteId),
+    onSuccess: invalidate,
+  });
+}
+
+/** PATCH /admin/reports/:id { status: reviewing } — reopen a resolved/dismissed report. */
+export function useReopenReport(): UseMutationResult<Report, Error, { id: string }> {
+  const invalidate = useInvalidate();
+  return useMutation({
+    mutationFn: ({ id }) => moderationApi.updateReport(id, { status: 'reviewing' }),
+    onSuccess: invalidate,
+  });
+}
+
 export function useAssignReport(): UseMutationResult<
   Report,
   Error,

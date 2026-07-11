@@ -1,8 +1,8 @@
 import type { ReactElement } from 'react';
 
-import { SectionPlaceholder } from '@/app/pages/section-placeholder';
+import { AuditPage } from '@/features/audit';
 
-/** Lazy route module (docs/11 §9) — the Audit logs section (placeholder in A1; code-split). */
+/** Lazy route module (docs/11 §9) — the Audit Logs section (A6; code-split). */
 export function Component(): ReactElement {
-  return <SectionPlaceholder title="Audit logs" description="A record of every admin action." />;
+  return <AuditPage />;
 }

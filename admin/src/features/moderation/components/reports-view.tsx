@@ -5,6 +5,7 @@ import { DataTable } from '@/components/data-table';
 import { useAdminTable } from '@/hooks/use-admin-table';
 import { getErrorMessage } from '@/lib/errors';
 
+import { downloadReportExport } from '../api/moderation.api';
 import { useEscalateReport } from '../hooks/use-moderation-mutations';
 import { useReports } from '../hooks/use-reports';
 import { DEFAULT_REPORT_SORT, REPORT_FILTER_KEYS } from '../moderation.constants';
@@ -29,6 +30,7 @@ export function ReportsView(): ReactElement {
   const [drawerId, setDrawerId] = useState<string | null>(null);
   const [resolveReport, setResolveReport] = useState<Report | null>(null);
   const [assignReport, setAssignReport] = useState<Report | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   const sort = table.filters.values.sort ?? DEFAULT_REPORT_SORT;
   const params: ReportListParams = {
@@ -37,6 +39,13 @@ export function ReportsView(): ReactElement {
     ...table.filters.values,
   };
   const query = useReports(params);
+
+  const onExport = (format: 'csv' | 'json'): void => {
+    setExporting(true);
+    downloadReportExport(table.filters.values, format)
+      .catch((error: unknown) => toast.error(getErrorMessage(error)))
+      .finally(() => setExporting(false));
+  };
 
   const onEscalate = (report: Report): void => {
     escalate.mutate(
@@ -77,6 +86,8 @@ export function ReportsView(): ReactElement {
         onToggleFilters={() => setFiltersOpen((open) => !open)}
         onRefresh={() => void query.refetch()}
         isFetching={query.isFetching}
+        onExport={onExport}
+        exporting={exporting}
       />
       {filtersOpen ? <ReportsFilters filters={table.filters} /> : null}
       <ReportBulkBar selection={table.selection} />

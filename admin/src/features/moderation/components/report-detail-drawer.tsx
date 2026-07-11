@@ -1,7 +1,7 @@
 import { PERMISSIONS, ReportStatus } from '@qalam/shared';
 import { QButton, useToast } from '@qalam/ui';
-import { Descriptions, Input, Select, Tabs } from 'antd';
-import { ChevronsUp } from 'lucide-react';
+import { Descriptions, Input, Popconfirm, Select, Tabs } from 'antd';
+import { ChevronsUp, Pencil, RotateCcw, Trash2, X } from 'lucide-react';
 import { useState, type ReactElement, type ReactNode } from 'react';
 
 import { Drawer } from '@/components/drawer';
@@ -10,12 +10,20 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { getErrorMessage } from '@/lib/errors';
 import { formatDate, formatDateTime } from '@/lib/format';
 
-import { useAddNote, useEscalateReport, useSetPriority } from '../hooks/use-moderation-mutations';
+import {
+  useAddNote,
+  useDeleteNote,
+  useEscalateReport,
+  useReopenReport,
+  useSetPriority,
+  useUpdateNote,
+} from '../hooks/use-moderation-mutations';
 import { useReport } from '../hooks/use-reports';
 import { PRIORITY_OPTIONS, REASON_LABELS, TYPE_LABELS } from '../moderation.constants';
-import type { Report, ReportDetail } from '../types/moderation.types';
+import type { Report, ReportDetail, ReportNote } from '../types/moderation.types';
 import { PriorityBadge, ReportStatusBadge, SeverityBadge } from './moderation-badges';
 import { ModerationTimeline } from './moderation-timeline';
+import { ReportTimeline } from './report-timeline';
 
 interface DrawerProps {
   reportId: string | null;
@@ -37,6 +45,7 @@ function Overview({
   const toast = useToast();
   const escalate = useEscalateReport();
   const setPriority = useSetPriority();
+  const reopen = useReopenReport();
   const canResolve = can(PERMISSIONS.ReportResolve);
   const terminal =
     detail.status === ReportStatus.Resolved || detail.status === ReportStatus.Dismissed;
@@ -52,32 +61,48 @@ function Overview({
     <div className="flex flex-col gap-5">
       {canResolve ? (
         <div className="flex flex-wrap items-center gap-2">
-          <QButton
-            variant="primary"
-            size="sm"
-            onClick={() => onResolve(detail)}
-            disabled={terminal}
-          >
-            Resolve…
-          </QButton>
-          <QButton variant="secondary" size="sm" onClick={() => onAssign(detail)}>
-            Assign
-          </QButton>
-          <QButton
-            variant="secondary"
-            size="sm"
-            icon={ChevronsUp}
-            loading={escalate.isPending}
-            disabled={terminal}
-            onClick={() =>
-              escalate.mutate(
-                { id: detail.id },
-                { onError: (e) => toast.error(getErrorMessage(e)) },
-              )
-            }
-          >
-            Escalate
-          </QButton>
+          {terminal ? (
+            <QButton
+              variant="primary"
+              size="sm"
+              icon={RotateCcw}
+              loading={reopen.isPending}
+              onClick={() =>
+                reopen.mutate(
+                  { id: detail.id },
+                  {
+                    onSuccess: () => toast.success('Report reopened.'),
+                    onError: (e) => toast.error(getErrorMessage(e)),
+                  },
+                )
+              }
+            >
+              Reopen
+            </QButton>
+          ) : (
+            <>
+              <QButton variant="primary" size="sm" onClick={() => onResolve(detail)}>
+                Resolve…
+              </QButton>
+              <QButton variant="secondary" size="sm" onClick={() => onAssign(detail)}>
+                Assign
+              </QButton>
+              <QButton
+                variant="secondary"
+                size="sm"
+                icon={ChevronsUp}
+                loading={escalate.isPending}
+                onClick={() =>
+                  escalate.mutate(
+                    { id: detail.id },
+                    { onError: (e) => toast.error(getErrorMessage(e)) },
+                  )
+                }
+              >
+                Escalate
+              </QButton>
+            </>
+          )}
           <Select
             size="small"
             aria-label="Priority"
@@ -151,11 +176,113 @@ function Overview({
   );
 }
 
+function NoteItem({ note, editable }: { note: ReportNote; editable: boolean }): ReactElement {
+  const toast = useToast();
+  const updateNote = useUpdateNote();
+  const deleteNote = useDeleteNote();
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(note.body);
+
+  const save = (): void => {
+    const next = draft.trim();
+    if (next === '' || next === note.body) {
+      setEditing(false);
+      return;
+    }
+    updateNote.mutate(
+      { id: note.reportId, noteId: note.id, body: next },
+      {
+        onSuccess: () => {
+          setEditing(false);
+          toast.success('Note updated.');
+        },
+        onError: (error) => toast.error(getErrorMessage(error)),
+      },
+    );
+  };
+
+  return (
+    <li className="rounded-md border border-line bg-surface p-2 text-sm">
+      {editing ? (
+        <div className="flex flex-col gap-2">
+          <Input.TextArea
+            rows={2}
+            maxLength={2000}
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
+            aria-label="Edit note"
+          />
+          <div className="flex items-center gap-2">
+            <QButton variant="secondary" size="sm" onClick={save} loading={updateNote.isPending}>
+              Save
+            </QButton>
+            <QButton
+              variant="ghost"
+              size="sm"
+              icon={X}
+              onClick={() => {
+                setDraft(note.body);
+                setEditing(false);
+              }}
+            >
+              Cancel
+            </QButton>
+          </div>
+        </div>
+      ) : (
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex flex-col gap-0.5">
+            <div className="text-ink">{note.body}</div>
+            <div className="text-xs text-ink-muted">{formatDateTime(note.createdAt)}</div>
+          </div>
+          {editable ? (
+            <div className="flex shrink-0 items-center gap-1">
+              <QButton
+                variant="ghost"
+                size="sm"
+                icon={Pencil}
+                aria-label="Edit note"
+                onClick={() => {
+                  setDraft(note.body);
+                  setEditing(true);
+                }}
+              />
+              <Popconfirm
+                title="Delete this note?"
+                okText="Delete"
+                okButtonProps={{ danger: true }}
+                onConfirm={() =>
+                  deleteNote.mutate(
+                    { id: note.reportId, noteId: note.id },
+                    {
+                      onSuccess: () => toast.success('Note deleted.'),
+                      onError: (error) => toast.error(getErrorMessage(error)),
+                    },
+                  )
+                }
+              >
+                <QButton
+                  variant="ghost"
+                  size="sm"
+                  icon={Trash2}
+                  aria-label="Delete note"
+                  loading={deleteNote.isPending}
+                />
+              </Popconfirm>
+            </div>
+          ) : null}
+        </div>
+      )}
+    </li>
+  );
+}
+
 function NotesTab({ detail }: { detail: ReportDetail }): ReactElement {
   const { can } = usePermissions();
   const toast = useToast();
   const addNote = useAddNote();
   const [body, setBody] = useState('');
+  const canManage = can(PERMISSIONS.ReportResolve);
 
   const submit = (): void => {
     if (body.trim() === '') {
@@ -180,14 +307,11 @@ function NotesTab({ detail }: { detail: ReportDetail }): ReactElement {
       ) : (
         <ul className="flex flex-col gap-2">
           {detail.notes.map((note) => (
-            <li key={note.id} className="rounded-md border border-line bg-surface p-2 text-sm">
-              <div className="text-ink">{note.body}</div>
-              <div className="text-xs text-ink-muted">{formatDateTime(note.createdAt)}</div>
-            </li>
+            <NoteItem key={note.id} note={note} editable={canManage} />
           ))}
         </ul>
       )}
-      {can(PERMISSIONS.ReportResolve) ? (
+      {canManage ? (
         <div className="flex flex-col gap-2">
           <Input.TextArea
             rows={2}
@@ -242,6 +366,11 @@ export function ReportDetailDrawer({
             key: 'notes',
             label: `Notes (${data.notes.length})`,
             children: <NotesTab detail={data} />,
+          },
+          {
+            key: 'timeline',
+            label: 'Timeline',
+            children: <ReportTimeline reportId={data.id} enabled={tab === 'timeline'} />,
           },
           {
             key: 'history',

@@ -5,7 +5,14 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { qk } from '@/lib/query-keys';
 
 import { moderationApi, type ReportPage } from '../api/moderation.api';
-import type { Moderator, ReportDetail, ReportListParams } from '../types/moderation.types';
+import type {
+  Moderator,
+  ReportDetail,
+  ReportListParams,
+  ReportStatistics,
+  ReportTimelineEntry,
+  ReportTrends,
+} from '../types/moderation.types';
 
 /** The report queue (`GET /admin/reports`). Gated on `report.review`. */
 export function useReports(params: ReportListParams): UseQueryResult<ReportPage, Error> {
@@ -26,6 +33,45 @@ export function useReport(id: string | null): UseQueryResult<ReportDetail, Error
     queryKey: qk.moderation.report(id ?? 'none'),
     queryFn: ({ signal }) => moderationApi.report(id ?? '', signal),
     enabled: id !== null && can(PERMISSIONS.ReportReview),
+    staleTime: 20_000,
+  });
+}
+
+/** Report statistics (`GET /admin/reports/statistics`, E12.7). */
+export function useReportStatistics(): UseQueryResult<ReportStatistics, Error> {
+  const { can } = usePermissions();
+  return useQuery<ReportStatistics, Error>({
+    queryKey: qk.moderation.reportStatistics(),
+    queryFn: ({ signal }) => moderationApi.statistics(signal),
+    enabled: can(PERMISSIONS.ReportReview),
+    staleTime: 60_000,
+  });
+}
+
+/** Report trends over a window (`GET /admin/reports/trends`, E12.7). */
+export function useReportTrends(params: {
+  from?: string;
+  to?: string;
+}): UseQueryResult<ReportTrends, Error> {
+  const { can } = usePermissions();
+  return useQuery<ReportTrends, Error>({
+    queryKey: qk.moderation.reportTrends(params),
+    queryFn: ({ signal }) => moderationApi.trends(params, signal),
+    enabled: can(PERMISSIONS.ReportReview),
+    staleTime: 60_000,
+  });
+}
+
+/** A report's chronological timeline (`GET /admin/reports/:id/timeline`, E12.7). */
+export function useReportTimeline(
+  id: string | null,
+  enabled = true,
+): UseQueryResult<ReportTimelineEntry[], Error> {
+  const { can } = usePermissions();
+  return useQuery<ReportTimelineEntry[], Error>({
+    queryKey: qk.moderation.reportTimeline(id ?? 'none'),
+    queryFn: ({ signal }) => moderationApi.timeline(id ?? '', signal),
+    enabled: id !== null && enabled && can(PERMISSIONS.ReportReview),
     staleTime: 20_000,
   });
 }

@@ -1,7 +1,8 @@
 import type { Role } from '@qalam/shared';
 
 import type { ApiPagination } from '@/lib/api-client';
-import { api } from '@/lib/api-client';
+import { api, getAccessToken } from '@/lib/api-client';
+import { env } from '@/config/env';
 
 import type {
   Appeal,
@@ -14,7 +15,11 @@ import type {
   ReportDetail,
   ReportListParams,
   ReportNote,
+  ReportStatistics,
+  ReportTimelineEntry,
+  ReportTrends,
   ResolvePayload,
+  UpdateReportPayload,
 } from '../types/moderation.types';
 
 export interface ReportPage {
@@ -56,8 +61,27 @@ export const moderationApi = {
   addNote: (id: string, body: string): Promise<ReportNote> =>
     api.post<ReportNote>(`/admin/reports/${id}/notes`, { body }).then((r) => r.data),
 
+  updateNote: (id: string, noteId: string, body: string): Promise<ReportNote> =>
+    api.patch<ReportNote>(`/admin/reports/${id}/notes/${noteId}`, { body }).then((r) => r.data),
+
+  deleteNote: (id: string, noteId: string): Promise<void> =>
+    api.delete<undefined>(`/admin/reports/${id}/notes/${noteId}`).then(() => undefined),
+
   resolve: (id: string, payload: ResolvePayload): Promise<Report> =>
     api.post<Report>(`/admin/reports/${id}/resolve`, payload).then((r) => r.data),
+
+  /** PATCH /admin/reports/:id — unified update (assign/priority/resolve/close/reopen). */
+  updateReport: (id: string, payload: UpdateReportPayload): Promise<Report> =>
+    api.patch<Report>(`/admin/reports/${id}`, payload).then((r) => r.data),
+
+  timeline: (id: string, signal?: AbortSignal): Promise<ReportTimelineEntry[]> =>
+    api.get<ReportTimelineEntry[]>(`/admin/reports/${id}/timeline`, { signal }).then((r) => r.data),
+
+  statistics: (signal?: AbortSignal): Promise<ReportStatistics> =>
+    api.get<ReportStatistics>('/admin/reports/statistics', { signal }).then((r) => r.data),
+
+  trends: (params: { from?: string; to?: string }, signal?: AbortSignal): Promise<ReportTrends> =>
+    api.get<ReportTrends>('/admin/reports/trends', { query: params, signal }).then((r) => r.data),
 
   bulk: (payload: BulkReportPayload): Promise<BulkReportResult> =>
     api.post<BulkReportResult>('/admin/reports/bulk-actions', payload).then((r) => r.data),
@@ -96,3 +120,43 @@ export const moderationApi = {
     }));
   },
 };
+
+/**
+ * Streams the filtered report set to a file download (E12.7). The export endpoint
+ * returns a RAW CSV/JSON stream (not the envelope), so it bypasses the api-client
+ * and hits `fetch` directly with the same Bearer token + cookie.
+ */
+export async function downloadReportExport(
+  params: ReportListParams,
+  format: 'csv' | 'json',
+  signal?: AbortSignal,
+): Promise<void> {
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries({ ...params, format })) {
+    if (value !== undefined && value !== '') {
+      search.set(key, String(value));
+    }
+  }
+  const token = getAccessToken();
+  const response = await fetch(`${env.VITE_API_URL}/admin/reports/export?${search.toString()}`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      Accept: format === 'json' ? 'application/json' : 'text/csv',
+      ...(token !== null ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    signal,
+  });
+  if (!response.ok) {
+    throw new Error(`Export failed (${response.status})`);
+  }
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = `qalam-reports-${new Date().toISOString().slice(0, 10)}.${format}`;
+  document.body.append(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+}

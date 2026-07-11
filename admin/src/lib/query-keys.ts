@@ -32,5 +32,15 @@ export const qk = {
     appeals: (params: Record<string, unknown>) => ['moderation', 'appeals', params] as const,
     appeal: (id: string) => ['moderation', 'appeal', id] as const,
     moderators: () => ['moderation', 'moderators'] as const,
+    reportStatistics: () => ['moderation', 'report-statistics'] as const,
+    reportTrends: (params: Record<string, unknown>) =>
+      ['moderation', 'report-trends', params] as const,
+    reportTimeline: (id: string) => ['moderation', 'report-timeline', id] as const,
+  },
+  audit: {
+    all: ['audit'] as const,
+    list: (params: Record<string, unknown>) => ['audit', 'list', params] as const,
+    detail: (id: string) => ['audit', 'detail', id] as const,
+    statistics: () => ['audit', 'statistics'] as const,
   },
 } as const;

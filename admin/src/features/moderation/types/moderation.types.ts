@@ -160,3 +160,59 @@ export interface BulkReportPayload {
   moderatorId?: string;
   reason?: string;
 }
+
+// ── E12.7 reporting additions ─────────────────────────────────────────────────
+
+export interface ModeratorPerformance {
+  moderatorId: string;
+  resolved: number;
+  avgSeconds: number | null;
+}
+
+/** Report statistics (backend ReportStatisticsDto). */
+export interface ReportStatistics {
+  openReports: number;
+  resolvedReports: number;
+  dismissedReports: number;
+  avgResolutionSeconds: number | null;
+  byStatus: Record<string, number>;
+  byCategory: Record<string, number>;
+  bySeverity: Record<string, number>;
+  moderatorPerformance: ModeratorPerformance[];
+}
+
+export interface ReportTrendPoint {
+  date: string;
+  created: number;
+  resolved: number;
+}
+
+/** Report trends over a window (backend ReportTrendsDto). */
+export interface ReportTrends {
+  from: string;
+  to: string;
+  points: ReportTrendPoint[];
+}
+
+/** One chronological entry in a report's timeline (backend ReportTimelineEntryDto). */
+export interface ReportTimelineEntry {
+  kind: 'action' | 'note';
+  at: string;
+  action: string | null;
+  category: string | null;
+  actorId: string | null;
+  actorRole: string | null;
+  body: string | null;
+  auditRef: string | null;
+  metadata: Record<string, unknown>;
+}
+
+/** PATCH /admin/reports/:id body (assign / priority / resolve / close / reopen). */
+export interface UpdateReportPayload {
+  status?: string;
+  priority?: string;
+  assignedModeratorId?: string;
+  resolution?: string;
+  severity?: string;
+  reason?: string;
+}
