@@ -25,4 +25,12 @@ export const qk = {
       ['users', 'detail', id, 'audit', params] as const,
     loginHistory: (id: string) => ['users', 'detail', id, 'login-history'] as const,
   },
+  moderation: {
+    all: ['moderation'] as const, // invalidate the whole namespace after a mutation
+    reports: (params: Record<string, unknown>) => ['moderation', 'reports', params] as const,
+    report: (id: string) => ['moderation', 'report', id] as const,
+    appeals: (params: Record<string, unknown>) => ['moderation', 'appeals', params] as const,
+    appeal: (id: string) => ['moderation', 'appeal', id] as const,
+    moderators: () => ['moderation', 'moderators'] as const,
+  },
 } as const;

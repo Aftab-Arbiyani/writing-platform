@@ -1,8 +1,8 @@
 import type { ReactElement } from 'react';
 
-import { SectionPlaceholder } from '@/app/pages/section-placeholder';
+import { ModerationPage } from '@/features/moderation';
 
-/** Lazy route module (docs/11 §9) — the Reports section (placeholder in A1; code-split). */
+/** Lazy route module (docs/11 §9) — the Moderation section (A5; code-split). */
 export function Component(): ReactElement {
-  return <SectionPlaceholder title="Reports" description="The moderation queue." />;
+  return <ModerationPage />;
 }
