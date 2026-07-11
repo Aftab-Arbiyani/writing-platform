@@ -17,6 +17,7 @@ export const ROUTES = {
   // Platform
   analytics: '/analytics',
   auditLogs: '/audit-logs',
+  settings: '/settings',
   // Access
   users: '/users',
   moderators: '/moderators',

@@ -70,6 +70,7 @@ export const router = createBrowserRouter([
                       { path: ROUTES.featured, lazy: () => import('@/app/routes/featured') },
                       { path: ROUTES.analytics, lazy: () => import('@/app/routes/analytics') },
                       { path: ROUTES.auditLogs, lazy: () => import('@/app/routes/audit-logs') },
+                      { path: ROUTES.settings, lazy: () => import('@/app/routes/settings') },
                       { path: ROUTES.moderators, lazy: () => import('@/app/routes/moderators') },
                     ],
                   },

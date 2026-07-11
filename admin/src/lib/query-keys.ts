@@ -43,4 +43,10 @@ export const qk = {
     detail: (id: string) => ['audit', 'detail', id] as const,
     statistics: () => ['audit', 'statistics'] as const,
   },
+  settings: {
+    all: ['settings'] as const, // invalidate the whole namespace after a mutation
+    list: () => ['settings', 'list'] as const, // GET /admin/settings
+    featureFlags: () => ['settings', 'feature-flags'] as const, // GET /admin/feature-flags
+    maintenance: () => ['settings', 'maintenance'] as const, // GET /admin/maintenance
+  },
 } as const;
