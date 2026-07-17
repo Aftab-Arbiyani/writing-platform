@@ -519,7 +519,15 @@ export const FEATURE_FLAG_DEFINITIONS: readonly FeatureFlagDefinition[] = [
     enabled: false,
     rolloutPercentage: 0,
     environment: 'all',
-    description: 'AI craft coach (future feature).',
+    description: 'AI craft coach — chapter/scene/pacing/readability/consistency feedback (AF2).',
+  },
+  {
+    key: 'feature.ai.writingAssistant.enabled',
+    enabled: false,
+    rolloutPercentage: 0,
+    environment: 'all',
+    description:
+      'AI writing assistant — in-editor continue/rewrite/expand/condense/simplify/improve/tone (AF2).',
   },
   {
     key: 'feature.ai.characterAnalysis.enabled',

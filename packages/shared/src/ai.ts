@@ -76,6 +76,10 @@ export const AiFeature = {
   Rewrite: 'rewrite',
   Summarization: 'summarization',
   CraftCoach: 'craft_coach',
+  // AF2 — the first user-facing writing surface. One flag/feature for the whole
+  // in-editor assistant (continue/rewrite/expand/condense/simplify/improve/tone);
+  // the specific action is a prompt-template key, never a distinct feature/flag.
+  WritingAssistant: 'writing_assistant',
   CharacterAnalysis: 'character_analysis',
   PlotAnalysis: 'plot_analysis',
   SemanticSearch: 'semantic_search',
@@ -103,6 +107,7 @@ export const FLAGGED_AI_FEATURES: readonly AiFeature[] = [
   AiFeature.Rewrite,
   AiFeature.Summarization,
   AiFeature.CraftCoach,
+  AiFeature.WritingAssistant,
   AiFeature.CharacterAnalysis,
   AiFeature.PlotAnalysis,
   AiFeature.SemanticSearch,
