@@ -46,6 +46,11 @@ export const RATE_LIMIT_TIERS = {
   authRefresh: { windowSeconds: 3600, max: 30, keyBy: 'ip' },
   write: { windowSeconds: 60, max: 30, keyBy: 'user' },
   engagement: { windowSeconds: 60, max: 60, keyBy: 'user' },
+  // AI generation (AF1) — completions/streams are expensive upstream calls, so
+  // the interactive tier is deliberately tight (per authenticated user). The
+  // per-user daily/monthly TOKEN caps are a separate accounting concern (the
+  // AI usage service), not a sliding window; this bounds request bursts.
+  aiCompletion: { windowSeconds: 60, max: 20, keyBy: 'user' },
   search: { windowSeconds: 60, max: 30, keyBy: 'user-or-ip' },
   read: { windowSeconds: 60, max: 300, keyBy: 'user-or-ip' },
   // Baseline applied class-level to every controller so no endpoint is ever

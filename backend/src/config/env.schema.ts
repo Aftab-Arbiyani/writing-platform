@@ -48,6 +48,43 @@ export const envSchema = z.object({
 
   // ── Observability (empty string = Sentry disabled) ─────────────────────
   SENTRY_DSN: z.string().default(''),
+
+  // ── AI platform (AF1 — Phase 2). Provider API keys are secrets with NO
+  //    default beyond '' (blank = provider not configured → the whole AI
+  //    subsystem stays inert, matching the disabled feature.ai.enabled flag). ─
+  AI_DEFAULT_PROVIDER: z
+    .enum([
+      'openai',
+      'anthropic',
+      'google',
+      'azure_openai',
+      'ollama',
+      'openrouter',
+      'lm_studio',
+      'self_hosted',
+    ])
+    .default('openai'),
+  AI_DEFAULT_MODEL: z.string().default(''),
+  AI_REQUEST_TIMEOUT_MS: z.coerce.number().int().positive().default(60_000),
+  AI_DAILY_TOKEN_LIMIT: z.coerce.number().int().nonnegative().default(100_000),
+  AI_MONTHLY_TOKEN_LIMIT: z.coerce.number().int().nonnegative().default(2_000_000),
+  OPENAI_API_KEY: z.string().default(''),
+  OPENAI_BASE_URL: z.string().url().default('https://api.openai.com/v1'),
+  ANTHROPIC_API_KEY: z.string().default(''),
+  ANTHROPIC_BASE_URL: z.string().url().default('https://api.anthropic.com/v1'),
+  GOOGLE_AI_API_KEY: z.string().default(''),
+  GOOGLE_AI_BASE_URL: z.string().url().default('https://generativelanguage.googleapis.com/v1beta'),
+  // Extension-point providers (OpenAI-compatible; blank until used).
+  AZURE_OPENAI_API_KEY: z.string().default(''),
+  AZURE_OPENAI_BASE_URL: z.string().default(''),
+  OLLAMA_API_KEY: z.string().default(''),
+  OLLAMA_BASE_URL: z.string().default('http://localhost:11434/v1'),
+  OPENROUTER_API_KEY: z.string().default(''),
+  OPENROUTER_BASE_URL: z.string().url().default('https://openrouter.ai/api/v1'),
+  LM_STUDIO_API_KEY: z.string().default(''),
+  LM_STUDIO_BASE_URL: z.string().default('http://localhost:1234/v1'),
+  SELF_HOSTED_AI_API_KEY: z.string().default(''),
+  SELF_HOSTED_AI_BASE_URL: z.string().default(''),
 });
 
 export type Env = z.infer<typeof envSchema>;

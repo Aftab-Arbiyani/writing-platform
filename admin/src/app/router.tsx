@@ -71,6 +71,7 @@ export const router = createBrowserRouter([
                       { path: ROUTES.analytics, lazy: () => import('@/app/routes/analytics') },
                       { path: ROUTES.auditLogs, lazy: () => import('@/app/routes/audit-logs') },
                       { path: ROUTES.settings, lazy: () => import('@/app/routes/settings') },
+                      { path: ROUTES.aiSettings, lazy: () => import('@/app/routes/ai-settings') },
                       { path: ROUTES.moderators, lazy: () => import('@/app/routes/moderators') },
                     ],
                   },

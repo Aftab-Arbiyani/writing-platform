@@ -96,3 +96,30 @@ export const TRENDING_SEARCHES_LIMIT = 10;
 export const NOTIFICATION_UNREAD_DISPLAY_CAP = 99;
 export const SYSTEM_NOTIFICATION_TITLE_MAX = 150;
 export const SYSTEM_NOTIFICATION_BODY_MAX = 1000;
+
+/**
+ * AI platform bounds (AF1 — Phase 2 AI foundation). Validation caps enforced by
+ * backend DTOs, mirrored by client forms — never inline a duplicate literal. The
+ * operational defaults intrinsic to the AI domain (token limits, timeouts,
+ * generation params) live in `ai.ts` alongside the AI vocabulary.
+ */
+/** A prompt-template name/key length bound. */
+export const AI_PROMPT_NAME_MAX = 120;
+/** A prompt-template body length bound (characters). */
+export const AI_PROMPT_TEMPLATE_MAX = 20_000;
+/** A prompt-template description length bound. */
+export const AI_PROMPT_DESCRIPTION_MAX = 500;
+/** A single chat message (user/assistant) length bound (characters). */
+export const AI_MESSAGE_MAX_LENGTH = 32_000;
+/** A conversation title length bound. */
+export const AI_CONVERSATION_TITLE_MAX = 200;
+/** Max messages retained/assembled per conversation before context trimming. */
+export const AI_CONVERSATION_MAX_MESSAGES = 200;
+/** Default per-user daily token allowance (org default; admin-configurable). */
+export const AI_DEFAULT_DAILY_TOKEN_LIMIT = 100_000;
+/** Default per-user monthly token allowance (org default; admin-configurable). */
+export const AI_DEFAULT_MONTHLY_TOKEN_LIMIT = 2_000_000;
+/** Overall time budget for a single AI generation / stream (ms). */
+export const AI_STREAM_TIMEOUT_MS = 60_000;
+/** Idle gap between stream chunks before the stream is considered stalled (ms). */
+export const AI_STREAM_IDLE_TIMEOUT_MS = 30_000;

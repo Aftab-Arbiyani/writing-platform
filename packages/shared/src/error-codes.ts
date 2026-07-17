@@ -161,6 +161,52 @@ export const ERROR_CODES = {
   /** Retry requested for a job that is not in a failed state. */
   JOB_NOT_RETRYABLE: 'JOB_NOT_RETRYABLE',
 
+  // ── AI platform (AF1 — Phase 2 AI foundation) ─────────────────────────────
+  /** AI is globally disabled (`feature.ai.enabled` off). */
+  AI_DISABLED: 'AI_DISABLED',
+  /** The specific AI feature's flag is off. */
+  AI_FEATURE_DISABLED: 'AI_FEATURE_DISABLED',
+  /** The selected provider has no credentials / is not configured (503). */
+  AI_PROVIDER_NOT_CONFIGURED: 'AI_PROVIDER_NOT_CONFIGURED',
+  /** The upstream provider returned an error (502 — provider's fault, not ours). */
+  AI_PROVIDER_ERROR: 'AI_PROVIDER_ERROR',
+  /** The provider is unreachable/overloaded — safe to retry with backoff (503). */
+  AI_PROVIDER_UNAVAILABLE: 'AI_PROVIDER_UNAVAILABLE',
+  /** Referenced a model id that is not in the registry (404). */
+  AI_MODEL_NOT_FOUND: 'AI_MODEL_NOT_FOUND',
+  /** The model exists but is deprecated/disabled and cannot be used (409). */
+  AI_MODEL_UNAVAILABLE: 'AI_MODEL_UNAVAILABLE',
+  /** The request needs a capability (vision/json) the chosen model lacks (422). */
+  AI_CAPABILITY_UNSUPPORTED: 'AI_CAPABILITY_UNSUPPORTED',
+  /** Unknown prompt template key or version (404). */
+  AI_PROMPT_NOT_FOUND: 'AI_PROMPT_NOT_FOUND',
+  /** A prompt template failed validation (bad variables/syntax) (422). */
+  AI_PROMPT_INVALID: 'AI_PROMPT_INVALID',
+  /** Rendering failed — a required template variable was missing/invalid (422). */
+  AI_PROMPT_RENDER_FAILED: 'AI_PROMPT_RENDER_FAILED',
+  /** Assembled context exceeds the model's context window (422). */
+  AI_CONTEXT_TOO_LARGE: 'AI_CONTEXT_TOO_LARGE',
+  /** Input exceeds the allowed length (422). */
+  AI_INPUT_TOO_LONG: 'AI_INPUT_TOO_LONG',
+  /** Input was blocked by a safety hook (validation/sanitization) (422). */
+  AI_INPUT_BLOCKED: 'AI_INPUT_BLOCKED',
+  /** Generated output was blocked by an output-validation hook (422). */
+  AI_OUTPUT_BLOCKED: 'AI_OUTPUT_BLOCKED',
+  /** No such conversation, or it belongs to another user (privacy-preserving 404). */
+  AI_CONVERSATION_NOT_FOUND: 'AI_CONVERSATION_NOT_FOUND',
+  /** Acting on a conversation that isn't yours (403). */
+  AI_CONVERSATION_FORBIDDEN: 'AI_CONVERSATION_FORBIDDEN',
+  /** A per-user daily/monthly token or request cap was hit (429). */
+  AI_USAGE_LIMIT_EXCEEDED: 'AI_USAGE_LIMIT_EXCEEDED',
+  /** Provider/stream exceeded its time budget (504). */
+  AI_TIMEOUT: 'AI_TIMEOUT',
+  /** The request was cancelled by the caller (used in the stream `error` event). */
+  AI_REQUEST_CANCELLED: 'AI_REQUEST_CANCELLED',
+  /** A streaming response failed mid-flight (generic stream `error` code). */
+  AI_STREAM_ERROR: 'AI_STREAM_ERROR',
+  /** An AI configuration value failed validation (422). */
+  AI_CONFIG_INVALID: 'AI_CONFIG_INVALID',
+
   // ── Cross-cutting ───────────────────────────────────────────────────────
   RATE_LIMITED: 'RATE_LIMITED',
   VALIDATION_FAILED: 'VALIDATION_FAILED',

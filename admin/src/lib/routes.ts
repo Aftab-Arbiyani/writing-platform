@@ -18,6 +18,7 @@ export const ROUTES = {
   analytics: '/analytics',
   auditLogs: '/audit-logs',
   settings: '/settings',
+  aiSettings: '/ai-settings',
   // Access
   users: '/users',
   moderators: '/moderators',

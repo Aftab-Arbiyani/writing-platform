@@ -128,6 +128,19 @@ export const qk = {
     settings: () => ['me', 'settings'] as const, // GET /settings
   },
 
+  // AI platform (AF1). Reusable data layer for AI features — feature/flag state, the model
+  // registry, effective config, usage, and conversations. Streamed tokens are transient UI
+  // state (Zustand), never cached here; the settled result is written to the conversation.
+  ai: {
+    all: ['ai'] as const,
+    features: () => ['ai', 'features'] as const, // GET /ai/features
+    models: () => ['ai', 'models'] as const, // GET /ai/models
+    config: () => ['ai', 'config'] as const, // GET /ai/config
+    usage: () => ['ai', 'usage'] as const, // GET /ai/usage/me
+    conversations: () => ['ai', 'conversations'] as const, // GET /ai/conversations (infinite)
+    conversation: (id: string) => ['ai', 'conversation', id] as const, // GET /ai/conversations/:id
+  },
+
   // Taxonomy catalogues — NO /taxonomy endpoints exist (§2.1.1); sourced from search (browse).
   taxonomy: {
     genres: () => ['taxonomy', 'genres'] as const, // → GET /search/genres (q omitted)

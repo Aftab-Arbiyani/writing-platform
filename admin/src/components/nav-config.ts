@@ -131,6 +131,13 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: SlidersHorizontal,
         minRole: Role.Admin,
       },
+      {
+        key: 'ai-settings',
+        label: 'AI Defaults',
+        path: ROUTES.aiSettings,
+        icon: Sparkles,
+        minRole: Role.Admin,
+      },
     ],
   },
   {

@@ -8,3 +8,4 @@
  * `./manual`.
  */
 export * from './manual.js';
+export * from './ai.js';

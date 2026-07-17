@@ -244,3 +244,106 @@ export function upload<T>(
   form.append(fieldName, file);
   return request<T>(path, { ...init, method: 'POST', body: form });
 }
+
+// ── Server-Sent-Events streaming (AF1) ──────────────────────────────────────
+// Opens a text/event-stream POST reusing the same base URL, in-memory Bearer,
+// refresh cookie, and 401 refresh-and-retry as `request`. Native `EventSource`
+// can't send an Authorization header, so this uses fetch + a ReadableStream
+// reader. Errors normalize to `ApiError` exactly like the JSON path.
+async function openStream(path: string, init: RequestInit, isRetry: boolean): Promise<Response> {
+  const headers = new Headers(init.headers);
+  headers.set('Accept', 'text/event-stream');
+  if (init.body != null && !(init.body instanceof FormData) && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+  if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`);
+
+  let response: Response;
+  try {
+    response = await fetch(`${env.VITE_API_URL}${path}`, {
+      ...init,
+      headers,
+      credentials: 'include',
+    });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') throw err;
+    const offline = typeof navigator !== 'undefined' && !navigator.onLine;
+    throw new ApiError(0, {
+      code: offline ? 'API_OFFLINE' : 'API_NETWORK_ERROR',
+      message: offline ? "You're offline." : 'Could not reach the server.',
+    });
+  }
+
+  if (response.ok) return response;
+
+  const body = (await response.json().catch(() => null)) as ApiFailureEnvelope | null;
+  const payload: ApiErrorPayload =
+    body?.success === false
+      ? body.error
+      : {
+          code: 'API_UNEXPECTED_ERROR',
+          message: `Stream ${path} failed (HTTP ${String(response.status)}).`,
+        };
+
+  if (
+    response.status === 401 &&
+    !isRetry &&
+    !path.startsWith('/auth/') &&
+    payload.code === ERROR_CODES.AUTH_TOKEN_EXPIRED
+  ) {
+    try {
+      await refreshSession();
+    } catch {
+      onUnauthorized();
+      throw new ApiError(401, payload);
+    }
+    return openStream(path, init, true);
+  }
+  if (response.status === 401 && !path.startsWith('/auth/')) onUnauthorized();
+  throw new ApiError(response.status, payload);
+}
+
+/**
+ * POST an SSE stream and yield each parsed `data:` JSON payload as `T` (e.g. the
+ * AF1 `AiStreamEvent`). Pass `init.signal` (an AbortController) to cancel — the
+ * reader stops and releases the connection. The AI api/ layer types `T`.
+ */
+export async function* stream<T>(
+  path: string,
+  body?: unknown,
+  init: RequestInit = {},
+): AsyncGenerator<T> {
+  const response = await openStream(path, { ...init, method: 'POST', body: toBody(body) }, false);
+  if (response.body === null) {
+    throw new ApiError(response.status, {
+      code: 'API_MALFORMED_RESPONSE',
+      message: 'The server returned an empty stream.',
+    });
+  }
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      let newlineIndex = buffer.indexOf('\n');
+      while (newlineIndex !== -1) {
+        const line = buffer.slice(0, newlineIndex).replace(/\r$/, '');
+        buffer = buffer.slice(newlineIndex + 1);
+        if (line.startsWith('data:')) {
+          const payload = line.slice(5).trimStart();
+          try {
+            yield JSON.parse(payload) as T;
+          } catch {
+            // Ignore keep-alive / non-JSON comment lines.
+          }
+        }
+        newlineIndex = buffer.indexOf('\n');
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+}

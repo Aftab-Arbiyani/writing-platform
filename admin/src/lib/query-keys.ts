@@ -48,6 +48,12 @@ export const qk = {
     featureFlags: () => ['settings', 'feature-flags'] as const, // GET /admin/feature-flags
     maintenance: () => ['settings', 'maintenance'] as const, // GET /admin/maintenance
   },
+  ai: {
+    all: ['ai'] as const, // AI platform admin (AF1)
+    config: () => ['ai', 'config'] as const, // GET /admin/ai/config (org defaults)
+    providers: () => ['ai', 'providers'] as const, // GET /admin/ai/providers
+    models: () => ['ai', 'models'] as const, // GET /admin/ai/models
+  },
   analytics: {
     all: ['analytics'] as const, // platform analytics dashboard (A8 / E12.9)
     overview: (filters: Record<string, unknown>) => ['analytics', 'overview', filters] as const,

@@ -439,3 +439,38 @@ storage,queues}`); storage is degraded-not-dead (not in the hard readiness gate)
 AntD ^5 · Tailwind ^4 · TanStack Query ^5 · Zustand ^5 · RHF ^7 · Zod ^3.24 (v4 blocked
 by `@hookform/resolvers` peer range — migrate when supported) · TipTap ^3 · ESLint ^9 ·
 Prettier ^3 · Turborepo ^2 · Jest ^29 · Vitest ^3 · tsup ^8.
+
+---
+
+## §11 — AF1: AI Platform Foundation (Phase 2)
+
+**Decision.** AI enters Phase 2 as the placeholder in `docs/18` anticipated: a new,
+**additive** module (`backend/src/modules/ai`) + additive `/api/v1/ai/*` and
+`/api/v1/admin/ai/*` endpoints + seven new `ai_*` tables. It changes no existing
+`v1` contract (`docs/25` §8). Full design: **`docs/34_AIPlatformArchitecture.md`**.
+AF1 builds only the reusable _foundation_ — **no user-facing AI feature**.
+
+- **Provider abstraction wins over SDKs.** One port (`AiProviderAdapter`) with
+  fetch-based HTTP adapters (OpenAI/Anthropic/Gemini; Azure/Ollama/OpenRouter/
+  LM Studio/self-hosted reserved). No vendor SDK in business logic; providers are
+  interchangeable through configuration; the orchestrator depends only on the port.
+- **One reuse core.** `AiCompletionService` composes gate → limits → config →
+  model → prompt → context → safety → provider → accounting → persistence. Every
+  future AI feature reuses it — no duplicated prompt-render / token-count /
+  conversation logic (each has a single home).
+- **Reuse, don't rebuild.** Feature gating extends the existing feature-flag
+  subsystem (`feature.ai.enabled` + `feature.ai.<name>.enabled`); config layering
+  mirrors the settings-catalogue pattern; usage dashboards reuse analytics; clients
+  reuse the central api-client, TanStack Query (`qk.ai.*`) / Riverpod, and add a
+  single `stream()` primitive.
+- **Secrets never leave the server.** Provider API keys are env-only; clients never
+  call a provider and never see a key (admin sees a `configured` boolean).
+- **Safety hooks, not policy.** AF1 ships the safety hook architecture + permissive
+  defaults (length, sanitize); moderation/abuse **policy** is a later feature that
+  registers hooks — deliberately not implemented here.
+
+New vocabulary is append-only per `docs/25`: `AI_*` error codes, `ai.use`/`ai.manage`
+permissions, the `aiCompletion` rate tier, `AI_*` limits, and the AI enums in
+`@qalam/shared`. State management spans backend + React + admin + Flutter per
+`docs/34` §9. Backend implemented + verified (build, tests, migration up→down→up);
+client integrations follow the seams in `docs/34`.

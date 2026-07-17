@@ -18,6 +18,7 @@ import { Module } from '@nestjs/common';
 
 import { CommonModule } from './common/common.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { AiModule } from './modules/ai/ai.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { AppConfigModule } from './config/config.module';
@@ -72,6 +73,12 @@ import { RedisModule } from './redis/redis.module';
     // mode. Additive tables; reuses the audit trail + Redis cache. Backs Phase-4
     // Epic A7 (admin settings UI).
     SettingsModule,
+    // AI Platform (AF1 — Phase 2 AI foundation): provider abstraction, model +
+    // prompt registries, context pipeline, token accounting, conversations,
+    // configuration, safety hooks, completion orchestrator. Additive-only; reuses
+    // the settings feature-flag subsystem for gating. Placed after SettingsModule
+    // (whose SettingsService it consumes) and before the infrastructure backbone.
+    AiModule,
     // Async processing backbone (E11): queues, workers, scheduler, cache,
     // monitoring. @Global — imported last so the business modules it wraps are
     // already defined; it reaches them via their exported services only.

@@ -49,6 +49,10 @@ export const PERMISSIONS = {
   TaxonomyManage: 'taxonomy.manage',
   AdminDashboard: 'admin.dashboard',
   SystemManage: 'system.manage',
+  // ai (AF1) — `ai.use` invokes AI features + manages own overrides;
+  // `ai.manage` administers providers/models/prompts/org-defaults/usage.
+  AiUse: 'ai.use',
+  AiManage: 'ai.manage',
 } as const;
 
 /** Union of every concrete permission code. */
@@ -215,6 +219,18 @@ export const PERMISSION_CATALOGUE: readonly PermissionDefinition[] = [
     module: 'system',
     description: 'Full system administration.',
   },
+  {
+    code: PERMISSIONS.AiUse,
+    name: 'Use AI',
+    module: 'ai',
+    description: 'Invoke AI features and manage your own AI settings.',
+  },
+  {
+    code: PERMISSIONS.AiManage,
+    name: 'Manage AI platform',
+    module: 'ai',
+    description: 'Administer AI providers, models, prompts, defaults, and usage.',
+  },
 ];
 
 /**
@@ -237,6 +253,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<Role, readonly string[]> = {
     'report.*',
     'settings.*',
     'taxonomy.*',
+    'ai.*',
     'notification.manage',
     PERMISSIONS.AnalyticsView,
     PERMISSIONS.AdminDashboard,
@@ -260,6 +277,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<Role, readonly string[]> = {
     PERMISSIONS.ClapCreate,
     PERMISSIONS.BookmarkManage,
     PERMISSIONS.CollectionManage,
+    PERMISSIONS.AiUse,
   ],
 };
 

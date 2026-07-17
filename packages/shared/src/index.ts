@@ -3,6 +3,7 @@
  * Enums, error-code catalogue, product limits, regexes, API envelope types.
  * Zero runtime dependencies — this package must stay pure vocabulary.
  */
+export * from './ai.js';
 export * from './analytics.js';
 export * from './enums.js';
 export * from './error-codes.js';
