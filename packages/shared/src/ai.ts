@@ -82,6 +82,12 @@ export const AiFeature = {
   WritingAssistant: 'writing_assistant',
   CharacterAnalysis: 'character_analysis',
   PlotAnalysis: 'plot_analysis',
+  // AF3 — Story Intelligence analyses. Each maps to a prompt template and feeds the
+  // structured story knowledge graph (never plain text). Character/Plot reuse the
+  // features above; these are the remaining analysis lenses.
+  WorldBuilding: 'world_building',
+  StyleAnalysis: 'style_analysis',
+  StoryTimeline: 'story_timeline',
   SemanticSearch: 'semantic_search',
   Recommendations: 'recommendations',
   Moderation: 'moderation',
@@ -110,6 +116,9 @@ export const FLAGGED_AI_FEATURES: readonly AiFeature[] = [
   AiFeature.WritingAssistant,
   AiFeature.CharacterAnalysis,
   AiFeature.PlotAnalysis,
+  AiFeature.WorldBuilding,
+  AiFeature.StyleAnalysis,
+  AiFeature.StoryTimeline,
   AiFeature.SemanticSearch,
   AiFeature.Recommendations,
   AiFeature.Moderation,

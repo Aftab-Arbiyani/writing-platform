@@ -37,6 +37,7 @@ import { PermissionsModule } from './modules/permissions/permissions.module';
 import { PiecesModule } from './modules/pieces/pieces.module';
 import { SearchModule } from './modules/search/search.module';
 import { SettingsModule } from './modules/settings/settings.module';
+import { StoryIntelligenceModule } from './modules/story-intelligence/story-intelligence.module';
 import { TaxonomyModule } from './modules/taxonomy/taxonomy.module';
 import { UsersModule } from './modules/users/users.module';
 import { QueueModule } from './queue/queue.module';
@@ -79,6 +80,10 @@ import { RedisModule } from './redis/redis.module';
     // the settings feature-flag subsystem for gating. Placed after SettingsModule
     // (whose SettingsService it consumes) and before the infrastructure backbone.
     AiModule,
+    // Story Intelligence (AF3): the structured story knowledge graph + analyses.
+    // Imports AiModule and reuses AiCompletionService for every analysis — never
+    // bypasses AF1. Placed after AiModule (its dependency).
+    StoryIntelligenceModule,
     // Async processing backbone (E11): queues, workers, scheduler, cache,
     // monitoring. @Global — imported last so the business modules it wraps are
     // already defined; it reaches them via their exported services only.

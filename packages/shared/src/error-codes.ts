@@ -207,6 +207,16 @@ export const ERROR_CODES = {
   /** An AI configuration value failed validation (422). */
   AI_CONFIG_INVALID: 'AI_CONFIG_INVALID',
 
+  // ── Story intelligence (AF3 — structured story knowledge graph) ───────────
+  /** No story graph for this owner + story id (missing or foreign). */
+  STORY_NOT_FOUND: 'STORY_NOT_FOUND',
+  /** No such analysis run for this story (missing or foreign). */
+  STORY_ANALYSIS_NOT_FOUND: 'STORY_ANALYSIS_NOT_FOUND',
+  /** The model produced no usable structured analysis (422) — raw output retained. */
+  STORY_ANALYSIS_FAILED: 'STORY_ANALYSIS_FAILED',
+  /** The submitted story text was empty (422). */
+  STORY_CONTENT_EMPTY: 'STORY_CONTENT_EMPTY',
+
   // ── Cross-cutting ───────────────────────────────────────────────────────
   RATE_LIMITED: 'RATE_LIMITED',
   VALIDATION_FAILED: 'VALIDATION_FAILED',

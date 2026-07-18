@@ -42,12 +42,30 @@ const COACH_OUTPUT_CONTRACT =
   'writing for this review. Include every field; use an empty array where a field does ' +
   'not apply.';
 
+// ── Story Intelligence (AF3) shared fragments. Every analysis returns STRUCTURED JSON
+//    that feeds the story knowledge graph (never plain text). Bodies reference {{scope}}
+//    so the model knows whether it is reading a scene, chapter, or whole book.
+const STORY_IDENTITY =
+  "You are Qalam's story-intelligence analyst — a literary editor who extracts a precise, " +
+  'structured model of a story from its text. You are analysing a {{scope}} of a story. Ground ' +
+  'every claim in the text; when unsure, lower the confidence rather than inventing detail.';
+
+const STORY_JSON_RULES =
+  ' Respond with a SINGLE valid JSON object and nothing else — no markdown code fences and no ' +
+  'prose outside the JSON. Use only information supported by the text. Every "evidence" entry is ' +
+  '{"chapterRef": <string|null>, "quote": <short verbatim quote>}. Always include a "summary" ' +
+  '(2–4 sentences), a "recommendations" array (concrete next steps), a "confidence" number 0–100, ' +
+  'and "affectedChapters"/"affectedCharacters" string arrays. Use empty arrays where a field does ' +
+  'not apply; never omit a field.';
+
 /**
- * The seed prompt catalogue. Two layers:
+ * The seed prompt catalogue. Layers:
  *
  * 1. Infra templates (AF1) — `system.base`, `playground.freeform`.
  * 2. Product feature templates (AF2) — the Writing Assistant (`writing_assistant.*`,
  *    category `writing`) and the Craft Coach (`craft_coach.*`, category `analysis`).
+ * 3. Story Intelligence templates (AF3) — `story.*` (category `analysis`); each returns
+ *    STRUCTURED JSON that feeds the story knowledge graph.
  *
  * Source of truth for v1: `PromptRegistryService.onModuleInit` boot-upserts every
  * entry as version 1 if its `(key, version:1)` row is absent (idempotent; admin-added
@@ -245,5 +263,94 @@ export const AI_PROMPT_CATALOG: readonly PromptCatalogEntry[] = [
       '"sections", cover Voice, Structure, Character, and Prose.' +
       COACH_OUTPUT_CONTRACT,
     variables: [],
+  },
+
+  // ── Story Intelligence (AF3, structured graph feeders) ───────────────────────
+  {
+    key: 'story.character',
+    category: PromptCategory.Analysis,
+    description: 'Extract characters, roles, traits, goals, arcs, and relationships.',
+    body:
+      STORY_IDENTITY +
+      ' Detect every character. For each give: name, aliases[], role (protagonist/antagonist/' +
+      'supporting/minor/mentor/foil/narrator), traits[], goals[], motivations[], arc, growth, ' +
+      'firstChapter, evidence[]. Then detect relationships between them.' +
+      STORY_JSON_RULES +
+      ' Shape: {"characters": [{"name","aliases":[],"role","traits":[],"goals":[],"motivations":[],' +
+      '"arc","growth","firstChapter":<string|null>,"evidence":[]}], "relationships": [{"from","to",' +
+      '"type","description","evidence":[]}], "summary","recommendations":[],"confidence",' +
+      '"affectedChapters":[],"affectedCharacters":[]}.',
+    variables: ['scope'],
+  },
+  {
+    key: 'story.plot',
+    category: PromptCategory.Analysis,
+    description: 'Extract structure, acts, scenes, conflicts, climax, holes, threads, pacing.',
+    body:
+      STORY_IDENTITY +
+      ' Map the plot: acts (name, summary, scenes[]), scenes (title, summary, chapterRef), conflicts ' +
+      '(description, kind, evidence[]), resolutions, plotHoles + unresolvedThreads (as issues with ' +
+      'title, detail, severity info|minor|major, evidence[]), foreshadowing (setup, payoff), the ' +
+      'climax (description, chapterRef), pacing (assessment, score 0-100), and a narrativeArc label.' +
+      STORY_JSON_RULES +
+      ' Shape: {"acts":[{"name","summary","scenes":[]}],"scenes":[{"title","summary","chapterRef":' +
+      '<string|null>}],"conflicts":[{"description","kind","evidence":[]}],"resolutions":[{"description",' +
+      '"evidence":[]}],"plotHoles":[{"title","detail","severity","evidence":[]}],"unresolvedThreads":' +
+      '[{"title","detail","severity","evidence":[]}],"foreshadowing":[{"setup","payoff":<string|null>,' +
+      '"evidence":[]}],"climax":{"description","chapterRef":<string|null>},"pacing":{"assessment",' +
+      '"score"},"narrativeArc","summary","recommendations":[],"confidence","affectedChapters":[],' +
+      '"affectedCharacters":[]}.',
+    variables: ['scope'],
+  },
+  {
+    key: 'story.world',
+    category: PromptCategory.Analysis,
+    description: 'Extract locations, organizations, magic systems, objects, lore, terminology.',
+    body:
+      STORY_IDENTITY +
+      ' Extract the world: locations, organizations, magicSystems (with rules[]), objects (with ' +
+      'significance), lore, historicalEvents (with when), and terminology (term + definition).' +
+      STORY_JSON_RULES +
+      ' Shape: {"locations":[{"name","description","evidence":[]}],"organizations":[{"name",' +
+      '"description","evidence":[]}],"magicSystems":[{"name","rules":[],"description"}],"objects":' +
+      '[{"name","significance"}],"lore":[{"title","detail"}],"historicalEvents":[{"name","description",' +
+      '"when":<string|null>}],"terminology":[{"term","definition"}],"summary","recommendations":[],' +
+      '"confidence","affectedChapters":[],"affectedCharacters":[]}.',
+    variables: ['scope'],
+  },
+  {
+    key: 'story.style',
+    category: PromptCategory.Analysis,
+    description:
+      'Analyse prose: readability, variety, vocabulary, dialogue, passive, show-vs-tell.',
+    body:
+      STORY_IDENTITY +
+      ' Analyse the prose style. Score readability, sentenceVariety, and vocabulary 0-100 each with a ' +
+      'short assessment; report dialogueBalance (dialoguePercent, assessment), descriptionDensity ' +
+      '(assessment), passiveVoice (count, examples[]), showVsTell (assessment, tellingExamples[]), ' +
+      'repetition (phrase + count), and consistency issues (title, detail, severity).' +
+      STORY_JSON_RULES +
+      ' Shape: {"readability":{"score","assessment"},"sentenceVariety":{"score","assessment"},' +
+      '"vocabulary":{"score","assessment"},"dialogueBalance":{"dialoguePercent","assessment"},' +
+      '"descriptionDensity":{"assessment"},"passiveVoice":{"count","examples":[]},"showVsTell":' +
+      '{"assessment","tellingExamples":[]},"repetition":[{"phrase","count"}],"consistency":[{"title",' +
+      '"detail","severity","evidence":[]}],"summary","recommendations":[],"confidence",' +
+      '"affectedChapters":[],"affectedCharacters":[]}.',
+    variables: ['scope'],
+  },
+  {
+    key: 'story.timeline',
+    category: PromptCategory.Analysis,
+    description: 'Extract story events with chronological order, flashbacks, and future events.',
+    body:
+      STORY_IDENTITY +
+      ' Extract the story events in chronological (story-time) order. For each: name, description, ' +
+      'kind (chronological|flashback|future), chapterRef, order (integer, 0-based story-time order), ' +
+      'characters[] involved, location, evidence[].' +
+      STORY_JSON_RULES +
+      ' Shape: {"events":[{"name","description","kind","chapterRef":<string|null>,"order":<integer>,' +
+      '"characters":[],"location":<string|null>,"evidence":[]}],"summary","recommendations":[],' +
+      '"confidence","affectedChapters":[],"affectedCharacters":[]}.',
+    variables: ['scope'],
   },
 ];
