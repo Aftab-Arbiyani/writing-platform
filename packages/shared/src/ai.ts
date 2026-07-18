@@ -88,8 +88,14 @@ export const AiFeature = {
   WorldBuilding: 'world_building',
   StyleAnalysis: 'style_analysis',
   StoryTimeline: 'story_timeline',
+  // AF4 — AI Discovery / Search / Recommendation. `semantic_search` and
+  // `recommendations` were reserved in AF1; `ask_book` (grounded Q&A over the
+  // story knowledge graph) is the one net-new feature. Each is one flag + prompt
+  // template(s) consumed through the reusable Retrieval Platform — never a
+  // parallel search/LLM stack.
   SemanticSearch: 'semantic_search',
   Recommendations: 'recommendations',
+  AskBook: 'ask_book',
   Moderation: 'moderation',
   // Reserved future features (no flag seeded until scoped; here for usage + config).
   Expand: 'expand',
@@ -121,6 +127,7 @@ export const FLAGGED_AI_FEATURES: readonly AiFeature[] = [
   AiFeature.StoryTimeline,
   AiFeature.SemanticSearch,
   AiFeature.Recommendations,
+  AiFeature.AskBook,
   AiFeature.Moderation,
 ];
 

@@ -9,4 +9,5 @@
  */
 export * from './manual.js';
 export * from './ai.js';
+export * from './retrieval.js';
 export * from './story.js';

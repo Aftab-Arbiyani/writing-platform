@@ -35,6 +35,7 @@ import { ModerationModule } from './modules/moderation/moderation.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { PermissionsModule } from './modules/permissions/permissions.module';
 import { PiecesModule } from './modules/pieces/pieces.module';
+import { RetrievalModule } from './modules/retrieval/retrieval.module';
 import { SearchModule } from './modules/search/search.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { StoryIntelligenceModule } from './modules/story-intelligence/story-intelligence.module';
@@ -84,6 +85,12 @@ import { RedisModule } from './redis/redis.module';
     // Imports AiModule and reuses AiCompletionService for every analysis — never
     // bypasses AF1. Placed after AiModule (its dependency).
     StoryIntelligenceModule,
+    // AI Discovery / Search / Recommendation (AF4): the reusable Retrieval Platform
+    // (planner → retrievers → context assembly → ranking) + its consumers (semantic
+    // search, Ask My Book, story explorer, recommendations). Reuses AF1 (orchestrator),
+    // AF3 (graph SSOT), SearchModule (FTS seam), FeedModule (trending/discovery), and
+    // SettingsModule. Placed after all of those (its dependencies).
+    RetrievalModule,
     // Async processing backbone (E11): queues, workers, scheduler, cache,
     // monitoring. @Global — imported last so the business modules it wraps are
     // already defined; it reaches them via their exported services only.

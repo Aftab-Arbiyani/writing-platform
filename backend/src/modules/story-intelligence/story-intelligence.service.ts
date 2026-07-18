@@ -12,6 +12,8 @@ import type { CursorPayload } from '../../common/pagination/cursor.util';
 import { decodeCursor, encodeCursor } from '../../common/pagination/cursor.util';
 import { AiCompletionService } from '../ai/orchestration/ai-completion.service';
 import { parseStoryAnalysis } from './analysis/story-analysis.parser';
+import type { StoryGraphDto } from './dto/story-response.dto';
+import { toGraphDto } from './story.mappers';
 import type { StoryAnalysis } from './entities/story-analysis.entity';
 import type { StoryEdge } from './entities/story-edge.entity';
 import type { StoryGraph } from './entities/story-graph.entity';
@@ -111,6 +113,18 @@ export class StoryIntelligenceService {
       this.repo.listEdges(graph.id),
     ]);
     return { graph, nodes, edges };
+  }
+
+  /**
+   * A boundary-safe snapshot of the full knowledge graph for cross-module reuse (the AF4
+   * Retrieval Platform, and any future feature that grounds on the graph). Returns the
+   * shared wire shape (`@qalam/api-types` StoryGraph) so consumers never import this
+   * module's entities (docs 16 §3.1 module isolation). Owner-scoped → STORY_NOT_FOUND.
+   * This is the intended reuse seam from docs/35 §10: "future features inject the graph
+   * as context instead of re-analysing."
+   */
+  async getGraphSnapshot(userId: string, storyId: string): Promise<StoryGraphDto> {
+    return toGraphDto(await this.getGraph(userId, storyId));
   }
 
   /** Character nodes + the relationship edges among them. */

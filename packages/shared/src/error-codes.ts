@@ -217,6 +217,20 @@ export const ERROR_CODES = {
   /** The submitted story text was empty (422). */
   STORY_CONTENT_EMPTY: 'STORY_CONTENT_EMPTY',
 
+  // ── AI discovery / retrieval (AF4 — Retrieval Platform) ───────────────────
+  /** The query was empty/too short after normalization (422). */
+  RETRIEVAL_QUERY_INVALID: 'RETRIEVAL_QUERY_INVALID',
+  /** The retrieval phase failed across all planned sources (503). */
+  RETRIEVAL_FAILED: 'RETRIEVAL_FAILED',
+  /** Retrieval exceeded its wall-clock budget before any source returned (504). */
+  RETRIEVAL_TIMEOUT: 'RETRIEVAL_TIMEOUT',
+  /** A recommendation surface could not be produced (503). */
+  RECOMMENDATION_UNAVAILABLE: 'RECOMMENDATION_UNAVAILABLE',
+  /** No such saved search, or it belongs to another user (privacy-preserving 404). */
+  SAVED_SEARCH_NOT_FOUND: 'SAVED_SEARCH_NOT_FOUND',
+  /** The per-user saved-search cap was reached (409). */
+  SAVED_SEARCH_LIMIT_EXCEEDED: 'SAVED_SEARCH_LIMIT_EXCEEDED',
+
   // ── Cross-cutting ───────────────────────────────────────────────────────
   RATE_LIMITED: 'RATE_LIMITED',
   VALIDATION_FAILED: 'VALIDATION_FAILED',

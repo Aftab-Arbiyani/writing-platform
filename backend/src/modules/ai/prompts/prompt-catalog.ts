@@ -353,4 +353,49 @@ export const AI_PROMPT_CATALOG: readonly PromptCatalogEntry[] = [
       '"confidence","affectedChapters":[],"affectedCharacters":[]}.',
     variables: ['scope'],
   },
+
+  // ── AF4 — AI Discovery / Search / Recommendation (grounded synthesis) ──────
+  // These templates NEVER see the raw user question alone. The reusable Retrieval
+  // Platform assembles evidence from the story knowledge graph + library and passes
+  // it in `{{context}}`; the model may use ONLY that context (grounded, cited). The
+  // LLM explains; retrieval decides what it sees.
+  {
+    key: 'ask_book.answer',
+    category: PromptCategory.Conversation,
+    description: 'Answer a question about a story, grounded strictly in retrieved graph evidence.',
+    body:
+      'You are a precise literary assistant answering questions about one specific story, grounded ' +
+      'strictly in retrieved evidence from its knowledge graph. The scope of this question is ' +
+      '{{scope}}. Use ONLY the CONTEXT below — it is the single source of truth. If the CONTEXT does ' +
+      'not contain enough information, say clearly that the story does not provide it; never invent ' +
+      'characters, events, places, or facts. Prefer specific names, and cite the chapter cue in ' +
+      'square brackets (e.g. [ch. 3]) whenever the CONTEXT supplies one. Answer concisely in prose.' +
+      '\n\nCONTEXT:\n{{context}}',
+    variables: ['scope', 'context'],
+  },
+  {
+    key: 'semantic_search.answer',
+    category: PromptCategory.Analysis,
+    description: 'Summarise retrieved search results into a grounded natural-language answer.',
+    body:
+      'You summarise search results for a story-writing platform, grounded strictly in the retrieved ' +
+      'CONTEXT. The user searched for: {{query}}. Using ONLY the CONTEXT below, write a short ' +
+      'natural-language answer that directly addresses the query and points to the most relevant ' +
+      'results by name. Do not introduce any fact absent from the CONTEXT; if nothing relevant was ' +
+      'found, say so plainly.' +
+      '\n\nCONTEXT:\n{{context}}',
+    variables: ['query', 'context'],
+  },
+  {
+    key: 'recommendations.explain',
+    category: PromptCategory.Generation,
+    description: 'Explain, in one grounded sentence, why an item is recommended.',
+    body:
+      'You explain why an item is recommended, grounded in the provided signals. The subject is ' +
+      '{{subject}}. Using ONLY the CONTEXT below (the influencing entities and signals), write one ' +
+      'concise sentence explaining why this recommendation is relevant to the subject. Do not ' +
+      'overstate and do not introduce facts absent from the CONTEXT.' +
+      '\n\nCONTEXT:\n{{context}}',
+    variables: ['subject', 'context'],
+  },
 ];

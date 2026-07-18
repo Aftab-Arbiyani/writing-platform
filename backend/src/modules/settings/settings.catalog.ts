@@ -462,6 +462,37 @@ export const SETTING_DEFINITIONS: readonly SettingDefinition[] = [
     defaultValue: true,
     description: 'Enable right-to-left layouts (Urdu).',
   }),
+
+  // ── AI retrieval (AF4 — Retrieval Platform) ──────────────────────────────────
+  // Admin-tunable search/ranking/recommendation config. Stored as one JSON blob;
+  // RetrievalConfigService merges it over compiled defaults defensively, so a
+  // missing/partial value never breaks retrieval. Mirrors DEFAULT_RETRIEVAL_CONFIG.
+  def({
+    key: 'ai.retrieval.config',
+    category: 'content',
+    dataType: 'json',
+    defaultValue: {
+      topK: 10,
+      candidatesPerSource: 40,
+      contextTokens: 2000,
+      timeoutMs: 8000,
+      sources: { knowledge_graph: true, metadata: true, keyword: true, vector: true },
+      rankingWeights: {
+        semantic_similarity: 1.0,
+        graph_distance: 0.5,
+        popularity: 0.3,
+        freshness: 0.2,
+        user_preferences: 0.4,
+        reading_history: 0.3,
+        writing_history: 0.3,
+        engagement: 0.3,
+        confidence: 0.6,
+      },
+      synthesisEnabled: true,
+    },
+    description: 'AI Retrieval Platform config: sources, ranking weights, budgets (AF4).',
+    validationRules: {},
+  }),
 ];
 
 /** Fast key → definition lookup. */
@@ -577,6 +608,13 @@ export const FEATURE_FLAG_DEFINITIONS: readonly FeatureFlagDefinition[] = [
     rolloutPercentage: 0,
     environment: 'all',
     description: 'AI recommendations (future feature).',
+  },
+  {
+    key: 'feature.ai.askBook.enabled',
+    enabled: false,
+    rolloutPercentage: 0,
+    environment: 'all',
+    description: 'AI "Ask My Book" — grounded Q&A over the story knowledge graph (AF4).',
   },
   {
     key: 'feature.ai.moderation.enabled',
