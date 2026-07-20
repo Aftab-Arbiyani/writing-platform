@@ -49,4 +49,18 @@ export const TYPE_PREFERENCE: Record<NotificationType, PreferenceKey> = {
   [NType.PaymentReceipt]: 'system',
   [NType.QuotaExceeded]: 'system',
   [NType.CreditsLow]: 'system',
+  // Collaboration/Publishing/Trust (AF6) — collaboration mentions/comments ride
+  // their existing preference keys; invitations, suggestions, review, publishing,
+  // and trust events ride `system` (no dedicated toggle column yet).
+  [NType.CollaborationInvite]: 'system',
+  [NType.InvitationAccepted]: 'system',
+  [NType.CommentMention]: 'mention',
+  [NType.CollabComment]: 'comment',
+  [NType.SuggestionReceived]: 'system',
+  [NType.SuggestionResolved]: 'system',
+  [NType.ReviewRequested]: 'system',
+  [NType.ReviewCompleted]: 'system',
+  [NType.StoryPublished]: 'system',
+  [NType.TrustWarning]: 'system',
+  [NType.RestrictionApplied]: 'system',
 };

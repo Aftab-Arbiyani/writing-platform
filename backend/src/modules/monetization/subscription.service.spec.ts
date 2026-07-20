@@ -59,11 +59,7 @@ function makePlan(tier: PlanTier, monthlyCredits = 0): PlanDefinition {
     tier,
     name: tier,
     description: `${tier} plan`,
-    features: [...DEFAULT_PLAN_FEATURES[tier]] as ReturnType<
-      typeof DEFAULT_PLAN_FEATURES
-    >[typeof tier] extends readonly (infer U)[]
-      ? U[]
-      : never,
+    features: [...DEFAULT_PLAN_FEATURES[tier]],
     limits: { ...DEFAULT_PLAN_LIMITS[tier] },
     monthlyCredits,
     prices: {},
@@ -179,7 +175,7 @@ describe('SubscriptionService', () => {
         makeSub({ status: SubscriptionStatus.PendingActivation }),
       );
 
-      const result = await service.open({
+      await service.open({
         userId: 'u1',
         tier: PlanTier.Plus,
         interval: BillingInterval.Monthly,

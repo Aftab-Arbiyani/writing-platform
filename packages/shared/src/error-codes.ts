@@ -278,6 +278,74 @@ export const ERROR_CODES = {
   /** A restore/purchase-verification found nothing to restore (404). */
   PURCHASE_NOT_FOUND: 'PURCHASE_NOT_FOUND',
 
+  // ── Policy Engine (AF6 — the single authorization source of truth) ────────
+  /** The Policy Engine denied the action (403). `details` carries the matched rule. */
+  POLICY_DENIED: 'POLICY_DENIED',
+  /** The action is allowed only after review (409 — `requires_review` effect). */
+  POLICY_REQUIRES_REVIEW: 'POLICY_REQUIRES_REVIEW',
+
+  // ── Collaboration (AF6 — membership, invitations, comments, suggestions) ──
+  /** No membership row for this user on this story. */
+  STORY_MEMBERSHIP_NOT_FOUND: 'STORY_MEMBERSHIP_NOT_FOUND',
+  /** The user is already a collaborator on this story. */
+  STORY_MEMBER_EXISTS: 'STORY_MEMBER_EXISTS',
+  /** Adding a collaborator would exceed MAX_STORY_COLLABORATORS (409). */
+  STORY_COLLABORATOR_LIMIT: 'STORY_COLLABORATOR_LIMIT',
+  /** The caller's story role is insufficient for this action (403). */
+  STORY_ROLE_FORBIDDEN: 'STORY_ROLE_FORBIDDEN',
+  /** The owner role cannot be reassigned/removed via membership APIs. */
+  STORY_OWNER_IMMUTABLE: 'STORY_OWNER_IMMUTABLE',
+  /** No such invitation, or it is not the caller's (privacy-preserving 404). */
+  INVITATION_NOT_FOUND: 'INVITATION_NOT_FOUND',
+  /** The invitation window has elapsed (409). */
+  INVITATION_EXPIRED: 'INVITATION_EXPIRED',
+  /** Accept/decline attempted on an invitation that is no longer pending (409). */
+  INVITATION_ALREADY_RESPONDED: 'INVITATION_ALREADY_RESPONDED',
+  /** The caller is not the invitee of this invitation (403). */
+  INVITATION_NOT_INVITEE: 'INVITATION_NOT_INVITEE',
+  /** A user cannot invite themselves to their own story (409). */
+  INVITATION_SELF: 'INVITATION_SELF',
+  /** No such collaboration comment (privacy-preserving 404). */
+  COLLAB_COMMENT_NOT_FOUND: 'COLLAB_COMMENT_NOT_FOUND',
+  /** Editing/deleting a comment the caller may not act on (403). */
+  COLLAB_COMMENT_FORBIDDEN: 'COLLAB_COMMENT_FORBIDDEN',
+  /** Replying to / resolving a comment thread that is already resolved (409). */
+  COLLAB_COMMENT_RESOLVED: 'COLLAB_COMMENT_RESOLVED',
+  /** No such suggestion (privacy-preserving 404). */
+  SUGGESTION_NOT_FOUND: 'SUGGESTION_NOT_FOUND',
+  /** Acting on a suggestion the caller may not resolve/withdraw (403). */
+  SUGGESTION_FORBIDDEN: 'SUGGESTION_FORBIDDEN',
+  /** Accept/reject attempted on a suggestion that is no longer pending (409). */
+  SUGGESTION_ALREADY_RESOLVED: 'SUGGESTION_ALREADY_RESOLVED',
+  /** The suggestion's anchor no longer matches the content — conflict detected (409). */
+  SUGGESTION_CONFLICT: 'SUGGESTION_CONFLICT',
+
+  // ── Publishing workflow (AF6 — review, approval, snapshots) ───────────────
+  /** No review session for this story (404). */
+  REVIEW_NOT_FOUND: 'REVIEW_NOT_FOUND',
+  /** The review is in a state that does not permit this transition (409). */
+  REVIEW_INVALID_STATE: 'REVIEW_INVALID_STATE',
+  /** A review is already open for this story (409). */
+  REVIEW_ALREADY_REQUESTED: 'REVIEW_ALREADY_REQUESTED',
+  /** Publish blocked: the story is review-gated and not yet approved (409). */
+  PUBLICATION_NOT_APPROVED: 'PUBLICATION_NOT_APPROVED',
+  /** No such content snapshot (404). */
+  SNAPSHOT_NOT_FOUND: 'SNAPSHOT_NOT_FOUND',
+
+  // ── Trust & Safety (AF6 — reputation, strikes, restrictions, blocks) ──────
+  /** No trust profile for this user (404). */
+  TRUST_PROFILE_NOT_FOUND: 'TRUST_PROFILE_NOT_FOUND',
+  /** No such restriction (404). */
+  RESTRICTION_NOT_FOUND: 'RESTRICTION_NOT_FOUND',
+  /** The action is blocked by an active restriction on the caller (403). */
+  RESTRICTION_ACTIVE: 'RESTRICTION_ACTIVE',
+  /** Interaction blocked — one party has blocked the other (403). */
+  USER_BLOCKED: 'USER_BLOCKED',
+  /** A user cannot block/mute themselves (409). */
+  BLOCK_SELF: 'BLOCK_SELF',
+  /** No such block/mute edge to remove (404). */
+  BLOCK_NOT_FOUND: 'BLOCK_NOT_FOUND',
+
   // ── Cross-cutting ───────────────────────────────────────────────────────
   RATE_LIMITED: 'RATE_LIMITED',
   VALIDATION_FAILED: 'VALIDATION_FAILED',

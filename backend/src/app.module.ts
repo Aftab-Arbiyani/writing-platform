@@ -29,6 +29,7 @@ import { AppLoggerModule } from './logger/logger.module';
 import { MailModule } from './mail/mail.module';
 import { MediaModule } from './media/media.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { CollaborationModule } from './modules/collaboration/collaboration.module';
 import { EngagementModule } from './modules/engagement/engagement.module';
 import { FeedModule } from './modules/feed/feed.module';
 import { ModerationModule } from './modules/moderation/moderation.module';
@@ -36,7 +37,11 @@ import { MonetizationModule } from './modules/monetization/monetization.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { PermissionsModule } from './modules/permissions/permissions.module';
 import { PiecesModule } from './modules/pieces/pieces.module';
+import { PolicyModule } from './modules/policy/policy.module';
+import { PolicyIntegrationModule } from './modules/policy-integration/policy-integration.module';
+import { PublishingModule } from './modules/publishing/publishing.module';
 import { RetrievalModule } from './modules/retrieval/retrieval.module';
+import { TrustModule } from './modules/trust/trust.module';
 import { SearchModule } from './modules/search/search.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { StoryIntelligenceModule } from './modules/story-intelligence/story-intelligence.module';
@@ -99,6 +104,18 @@ import { RedisModule } from './redis/redis.module';
     // and BullMQ. @Global so it can provide the optional AI_USAGE_METER hook the AI
     // orchestrator delegates to (no reverse dependency on AiModule).
     MonetizationModule,
+    // Collaboration, Publishing & Trust Platform (AF6). The Policy Engine is the
+    // SINGLE SOURCE OF TRUTH for authorization: every collaborative/publishing/
+    // moderation write is authorized through it. PolicyModule (@Global) is the
+    // keystone; Trust + Collaboration self-register their data ports with it at
+    // bootstrap (no cycles); PolicyIntegrationModule plugs in the entitlement
+    // (AF5) + feature-flag (Settings) inputs. Reuses pieces (story lifecycle),
+    // audit, notifications, and the PBAC PermissionResolver — no duplication.
+    PolicyModule,
+    TrustModule,
+    CollaborationModule,
+    PublishingModule,
+    PolicyIntegrationModule,
     // Async processing backbone (E11): queues, workers, scheduler, cache,
     // monitoring. @Global — imported last so the business modules it wraps are
     // already defined; it reaches them via their exported services only.

@@ -58,6 +58,21 @@ export const PERMISSIONS = {
   // entitlement overrides/refunds and views revenue/usage/AI-cost analytics.
   BillingUse: 'billing.use',
   BillingManage: 'billing.manage',
+  // collaboration (AF6) — `collaboration.use` participates in stories you own or
+  // are a member of (the Policy Engine decides per-resource); `collaboration.manage`
+  // administers any story's membership (admin/support).
+  CollaborationUse: 'collaboration.use',
+  CollaborationManage: 'collaboration.manage',
+  // publishing (AF6) — the editorial review workflow. `publishing.review` acts as
+  // a reviewer; `publishing.approve` gatekeeps review-gated publication.
+  PublishingReview: 'publishing.review',
+  PublishingApprove: 'publishing.approve',
+  // trust & safety (AF6) — `trust.view` reads reputation/strikes/restrictions;
+  // `trust.manage` issues strikes and applies/lifts restrictions.
+  TrustView: 'trust.view',
+  TrustManage: 'trust.manage',
+  // policy (AF6) — `policy.manage` configures policies, rules, and feature flags.
+  PolicyManage: 'policy.manage',
 } as const;
 
 /** Union of every concrete permission code. */
@@ -249,6 +264,48 @@ export const PERMISSION_CATALOGUE: readonly PermissionDefinition[] = [
     description:
       'Administer plans, pricing, promotions, coupons, entitlement overrides, refunds, and revenue/usage analytics.',
   },
+  {
+    code: PERMISSIONS.CollaborationUse,
+    name: 'Use collaboration',
+    module: 'collaboration',
+    description: 'Participate in story collaboration you own or are invited to.',
+  },
+  {
+    code: PERMISSIONS.CollaborationManage,
+    name: 'Manage collaboration',
+    module: 'collaboration',
+    description: 'Administer membership and roles on any story.',
+  },
+  {
+    code: PERMISSIONS.PublishingReview,
+    name: 'Review publications',
+    module: 'publishing',
+    description: 'Act as a reviewer in the editorial publishing workflow.',
+  },
+  {
+    code: PERMISSIONS.PublishingApprove,
+    name: 'Approve publications',
+    module: 'publishing',
+    description: 'Approve or reject review-gated publications.',
+  },
+  {
+    code: PERMISSIONS.TrustView,
+    name: 'View trust & safety',
+    module: 'trust',
+    description: 'View reputation, strikes, and restrictions.',
+  },
+  {
+    code: PERMISSIONS.TrustManage,
+    name: 'Manage trust & safety',
+    module: 'trust',
+    description: 'Issue strikes and apply or lift user restrictions.',
+  },
+  {
+    code: PERMISSIONS.PolicyManage,
+    name: 'Manage policy',
+    module: 'policy',
+    description: 'Configure policies, rules, and feature flags.',
+  },
 ];
 
 /**
@@ -273,6 +330,10 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<Role, readonly string[]> = {
     'taxonomy.*',
     'ai.*',
     'billing.*',
+    'collaboration.*',
+    'publishing.*',
+    'trust.*',
+    'policy.*',
     'notification.manage',
     PERMISSIONS.AnalyticsView,
     PERMISSIONS.AdminDashboard,
@@ -284,6 +345,10 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<Role, readonly string[]> = {
     PERMISSIONS.PieceFeature,
     PERMISSIONS.CommentDelete,
     PERMISSIONS.CommentLock,
+    PERMISSIONS.PublishingReview,
+    PERMISSIONS.PublishingApprove,
+    PERMISSIONS.TrustView,
+    PERMISSIONS.TrustManage,
   ],
   [Role.User]: [
     PERMISSIONS.ProfileUpdate,
@@ -298,6 +363,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<Role, readonly string[]> = {
     PERMISSIONS.CollectionManage,
     PERMISSIONS.AiUse,
     PERMISSIONS.BillingUse,
+    PERMISSIONS.CollaborationUse,
   ],
 };
 

@@ -378,6 +378,25 @@ export class PiecesService {
     return piece?.authorId ?? null;
   }
 
+  /**
+   * Story facts the Policy Engine and collaboration/publishing modules need to
+   * authorize and publish a piece-as-story — resolved without those modules
+   * importing this one's repository (docs 16 §3.1). Null if the piece is absent.
+   */
+  async getStoryContext(
+    id: string,
+  ): Promise<{ authorId: string; visibility: Visibility; isPublished: boolean } | null> {
+    const piece = await this.pieces.findById(id);
+    if (piece === null) {
+      return null;
+    }
+    return {
+      authorId: piece.authorId,
+      visibility: piece.visibility,
+      isPublished: piece.status === PieceStatus.Published,
+    };
+  }
+
   async duplicate(id: string, ownerId: string): Promise<PieceResponseDto> {
     const source = await this.loadOwned(id, ownerId);
     const tagIds = await this.pieces.getTagIds(id);

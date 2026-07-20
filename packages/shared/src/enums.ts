@@ -100,6 +100,19 @@ export const NotificationType = {
   PaymentReceipt: 'payment_receipt',
   QuotaExceeded: 'quota_exceeded',
   CreditsLow: 'credits_low',
+  // ── Collaboration/Publishing/Trust (AF6) — open catalogue, additive without a
+  // migration; all map to the `system` preference key (notifications.constants).
+  CollaborationInvite: 'collaboration_invite',
+  InvitationAccepted: 'invitation_accepted',
+  CommentMention: 'comment_mention',
+  CollabComment: 'collab_comment',
+  SuggestionReceived: 'suggestion_received',
+  SuggestionResolved: 'suggestion_resolved',
+  ReviewRequested: 'review_requested',
+  ReviewCompleted: 'review_completed',
+  StoryPublished: 'story_published',
+  TrustWarning: 'trust_warning',
+  RestrictionApplied: 'restriction_applied',
 } as const;
 export type NotificationType = (typeof NotificationType)[keyof typeof NotificationType];
 
@@ -129,6 +142,11 @@ export const NotificationEntityType = {
   /** Monetization (AF5) — a subscription or invoice a notification links to. */
   Subscription: 'subscription',
   Invoice: 'invoice',
+  /** Collaboration/Publishing (AF6) — the entity a collab notification links to. */
+  Story: 'story',
+  Invitation: 'invitation',
+  Suggestion: 'suggestion',
+  Review: 'review',
 } as const;
 export type NotificationEntityType =
   (typeof NotificationEntityType)[keyof typeof NotificationEntityType];
