@@ -1,17 +1,35 @@
-# CODEOWNERS — automatic review assignment.
+# CODEOWNERS — automatic review assignment + enforced review.
 #
 # Each line maps a path pattern to one or more owners (GitHub usernames or
 # teams). The LAST matching pattern wins. Owners listed here are automatically
-# requested for review on PRs touching those paths, and branch protection can
-# require their approval.
+# requested for review on PRs touching those paths. Pair this with a branch
+# protection rule on `main` that enables "Require review from Code Owners" so
+# these approvals are mandatory to merge.
 #
-# Populate as the team forms. Examples:
-#
-# *                       @qalam/engineering
-# /backend/               @qalam/backend-team
-# /frontend/              @qalam/frontend-team
-# /admin/                 @qalam/frontend-team
-# /packages/ui/           @qalam/design-systems
-# /infrastructure/        @qalam/platform
-# /.github/               @qalam/platform
-# /docs/                  @qalam/leads
+# NOTE: `@qalam/maintainers` is a placeholder team. Create the GitHub teams
+# under the `qalam` org (or replace with real @usernames) before enabling the
+# branch-protection rule, or PRs will be blocked awaiting a non-existent owner.
+
+# Default owner for everything not matched by a more specific rule below.
+*                       @qalam/maintainers
+
+# ── Application code ────────────────────────────────────────────────────────
+/backend/               @qalam/maintainers
+/frontend/              @qalam/maintainers
+/admin/                 @qalam/maintainers
+/packages/              @qalam/maintainers
+
+# ── Platform / delivery surfaces (higher blast radius — keep tightly owned) ──
+/infrastructure/        @qalam/maintainers
+/scripts/               @qalam/maintainers
+/.github/               @qalam/maintainers
+
+# CI/CD, release, and rollback pipelines: changes here can ship or break prod.
+/.github/workflows/     @qalam/maintainers
+/.github/CODEOWNERS     @qalam/maintainers
+
+# Database migrations — schema changes deserve explicit sign-off.
+/backend/src/database/migrations/   @qalam/maintainers
+
+# Documentation.
+/docs/                  @qalam/maintainers

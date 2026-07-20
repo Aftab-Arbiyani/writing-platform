@@ -18,6 +18,12 @@ import 'reflect-metadata';
 import { DataSource } from 'typeorm';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 
+import { loadContainerSecrets } from './../config/load-secrets';
+
+// Resolve file-mounted secrets (e.g. DATABASE_URL_FILE) so `migration:run` works
+// under the same container-secret conventions as the runtime app (P7.1).
+loadContainerSecrets();
+
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
   throw new Error('DATABASE_URL is not set — copy .env.example to .env first.');

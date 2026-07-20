@@ -1,0 +1,148 @@
+# Deterministic rollback (docs 15 §10).
+#
+# Manual, deliberate redeploy of a KNOWN-GOOD image to a chosen environment.
+# Re-pins the backend to the requested tag/sha via scripts/deploy/rollback.sh
+# and re-smokes it. Use when a deploy went bad and the automatic rollback in
+# deploy-production.yml did not fire (or a later regression is found).
+#
+# APPROVAL: the job targets the selected GitHub Environment, so choosing
+# `production` inherits that environment's required-reviewer gate.
+#
+# SECRETS come from the selected Environment (staging | production): SSH_HOST,
+# SSH_USER, SSH_KEY, DATABASE_URL. All VM steps are gated on env.HAS_DEPLOY.
+#
+# Third-party actions are pinned to commit SHAs (# vX.Y.Z).
+name: Rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options: [staging, production]
+      image_tag:
+        description: 'Known-good image tag/sha to roll back to (e.g. sha-abc123def456 or v1.2.3)'
+        required: true
+        type: string
+      expected_version:
+        description: 'Optional /version string smoke.sh must find after rollback. Leave blank to check liveness only.'
+        required: false
+        type: string
+
+# Share the deploy lane for the chosen environment so a rollback and a deploy
+# of the same environment never run concurrently.
+concurrency:
+  group: deploy-${{ github.event.inputs.environment }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+    permissions:
+      contents: read
+      packages: read # pull the rollback image
+    env:
+      REGISTRY: ghcr.io
+      HAS_DEPLOY: ${{ secrets.SSH_HOST != '' }}
+      DEPLOY_DIR: ${{ vars.DEPLOY_DIR || '/opt/qalam' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve rollback target
+        id: meta
+        env:
+          INPUT_TAG: ${{ github.event.inputs.image_tag }}
+        run: |
+          IMAGE="${REGISTRY}/${GITHUB_REPOSITORY_OWNER}/qalam-backend"
+          IMAGE="$(echo "$IMAGE" | tr '[:upper:]' '[:lower:]')"
+          echo "backend_image=${IMAGE}:${INPUT_TAG}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Refuse to roll back to an image that does not exist in the registry.
+      - name: Verify rollback image exists
+        run: |
+          echo "Rolling ${{ github.event.inputs.environment }} back to ${{ steps.meta.outputs.backend_image }}"
+          docker manifest inspect "${{ steps.meta.outputs.backend_image }}" > /dev/null
+
+      - name: Configure SSH
+        if: env.HAS_DEPLOY == 'true'
+        env:
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Sync deploy scripts to VM
+        if: env.HAS_DEPLOY == 'true'
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+        run: |
+          # DEPLOY_DIR is a runner-side value — intentional client-side expansion.
+          # shellcheck disable=SC2029
+          ssh "$SSH_USER@$SSH_HOST" "mkdir -p '$DEPLOY_DIR'"
+          rsync -az --delete scripts infrastructure "$SSH_USER@$SSH_HOST:$DEPLOY_DIR/"
+
+      - name: Stage rollback environment
+        if: env.HAS_DEPLOY == 'true'
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          ROLLBACK_IMAGE: ${{ steps.meta.outputs.backend_image }}
+          BACKEND_IMAGE: ${{ steps.meta.outputs.backend_image }}
+          EXPECTED_VERSION: ${{ github.event.inputs.expected_version }}
+        run: |
+          umask 077
+          {
+            echo "ROLLBACK_IMAGE=$ROLLBACK_IMAGE"
+            echo "BACKEND_IMAGE=$BACKEND_IMAGE"
+            echo "DATABASE_URL=$DATABASE_URL"
+            [ -n "$EXPECTED_VERSION" ] && echo "EXPECTED_VERSION=$EXPECTED_VERSION"
+          } > deploy.env
+          scp deploy.env "$SSH_USER@$SSH_HOST:$DEPLOY_DIR/.deploy.env"
+          rm -f deploy.env
+
+      - name: Roll back and smoke
+        if: env.HAS_DEPLOY == 'true'
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+        run: |
+          ssh "$SSH_USER@$SSH_HOST" bash -s "$DEPLOY_DIR" <<'REMOTE'
+          set -euo pipefail
+          cd "$1"
+          set -a; . ./.deploy.env; set +a
+          bash scripts/deploy/rollback.sh
+          bash scripts/deploy/smoke.sh
+          REMOTE
+
+      - name: Cleanup staged environment
+        if: always() && env.HAS_DEPLOY == 'true'
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+        run: |
+          # DEPLOY_DIR is a runner-side value — intentional client-side expansion.
+          # shellcheck disable=SC2029
+          ssh "$SSH_USER@$SSH_HOST" "rm -f '$DEPLOY_DIR/.deploy.env'" || true
+
+      - name: Rollback skipped (no SSH secrets)
+        if: env.HAS_DEPLOY != 'true'
+        run: echo "::notice::SSH secrets not configured for ${{ github.event.inputs.environment }} — rollback image verified, VM step skipped."

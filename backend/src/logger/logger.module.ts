@@ -18,6 +18,12 @@ import { REDACT_CENSOR, REDACT_PATHS } from './redaction';
  * (ADR §9). Sensitive fields are redacted via the shared {@link REDACT_PATHS}
  * contract (docs 14 §1.6 / 13 §13). Pretty-printing is opt-in (`LOG_PRETTY=true`,
  * default on in development); staging/production ship raw JSON to stdout only.
+ *
+ * P7.1: every log line is bound with deployment metadata (`service`, `env`,
+ * `version`, `commit`, `instanceId`) via pino `base`, so logs are attributable
+ * to a specific build + instance without a separate enrichment step. A
+ * `logSampleRate` field is emitted as a hook for a downstream sampler/collector
+ * (we never drop lines in-process so errors are always retained).
  */
 @Module({
   imports: [
@@ -25,9 +31,22 @@ import { REDACT_CENSOR, REDACT_PATHS } from './redaction';
       inject: [appConfig.KEY],
       useFactory: (app: ConfigType<typeof appConfig>) => {
         const pretty = process.env.LOG_PRETTY === 'true' || app.nodeEnv === 'development';
+        const sampleRate = Number(process.env.LOG_SAMPLE_RATE ?? '1');
         return {
           pinoHttp: {
             level: app.logLevel,
+            // Deployment/service/env metadata on every line (P7.1 observability).
+            base: {
+              pid: process.pid,
+              service: process.env.SERVICE_NAME ?? 'qalam-backend',
+              env: app.nodeEnv,
+              version: process.env.APP_VERSION ?? '0.0.0',
+              commit: (process.env.GIT_SHA ?? '').slice(0, 12),
+              instanceId: process.env.INSTANCE_ID ?? undefined,
+              // Sampling hook: emitted for a downstream collector; not applied
+              // in-process so error/warn lines are never dropped.
+              logSampleRate: Number.isFinite(sampleRate) ? sampleRate : 1,
+            },
             genReqId: (req) => {
               const header = req.headers[REQUEST_ID_HEADER];
               return (Array.isArray(header) ? header[0] : header) ?? 'unknown';

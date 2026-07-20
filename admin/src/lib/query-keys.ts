@@ -65,4 +65,12 @@ export const qk = {
     trending: () => ['analytics', 'trending'] as const,
     moderationTrends: () => ['analytics', 'moderation-trends'] as const,
   },
+  system: {
+    all: ['system'] as const, // System / Ops views (P7.1)
+    info: () => ['system', 'info'] as const, // GET /admin/system/info
+    configHealth: () => ['system', 'config-health'] as const, // GET /admin/system/config-health
+    deepHealth: () => ['system', 'deep-health'] as const, // GET /health/deep (root probe)
+    cache: () => ['system', 'cache'] as const, // GET /admin/cache
+    version: () => ['system', 'version'] as const, // GET /version (root probe)
+  },
 } as const;

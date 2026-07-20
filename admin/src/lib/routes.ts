@@ -19,6 +19,10 @@ export const ROUTES = {
   auditLogs: '/audit-logs',
   settings: '/settings',
   aiSettings: '/ai-settings',
+  // System / Ops (P7.1)
+  systemInfo: '/system',
+  configHealth: '/system/config',
+  infraHealth: '/system/infrastructure',
   // Access
   users: '/users',
   moderators: '/moderators',

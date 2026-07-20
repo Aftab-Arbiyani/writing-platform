@@ -28,9 +28,11 @@ export type NotificationTone = 'accent' | 'success' | 'danger' | 'info' | 'warni
  * The presentational model for one notification row (docs/06 §3.9). Translates the frozen `v1`
  * `type` + denormalized `data` into a type glyph + colour tone, a literary message, an optional
  * preview line, and a link to the related resource — reading `data` defensively (it is
- * `Record<string, unknown>`) and never fabricating fields. Every backend `NotificationType` is
- * handled (incl. the reserved repost/featured/collection_follow), so an unknown type can never
- * render blank. The glyph + tone are what make the inbox read as an activity timeline.
+ * `Record<string, unknown>`) and never fabricating fields. Every Phase-1 backend
+ * `NotificationType` is handled (incl. the reserved repost/featured/collection_follow); the
+ * later monetization/collaboration types (AF5/AF6, whose reader-frontend rendering is deferred)
+ * fall through to the graceful Bell/neutral default below, so an unknown type can never render
+ * blank. The glyph + tone are what make the inbox read as an activity timeline.
  */
 export interface NotificationView {
   icon: LucideIcon;
@@ -42,7 +44,9 @@ export interface NotificationView {
   preview: string | null;
 }
 
-const ICON: Record<NotificationType, { icon: LucideIcon; tone: NotificationTone }> = {
+// Partial: Phase-1 types are mapped explicitly; AF5/AF6 types use the Bell/neutral
+// fallback in describeNotification() until their dedicated reader rendering lands.
+const ICON: Partial<Record<NotificationType, { icon: LucideIcon; tone: NotificationTone }>> = {
   [NotificationType.Follow]: { icon: UserPlus, tone: 'success' },
   [NotificationType.FollowRequest]: { icon: UserPlus, tone: 'accent' },
   [NotificationType.FollowAccepted]: { icon: UserCheck, tone: 'success' },

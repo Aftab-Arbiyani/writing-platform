@@ -129,7 +129,7 @@ export abstract class OpenAiCompatibleAdapter implements AiProviderAdapter {
         body: JSON.stringify(payload),
         signal: request.signal,
       });
-    } catch (error) {
+    } catch {
       // Network failure / DNS / connection reset — retryable.
       throw new AiProviderUnavailableException(this.provider);
     }

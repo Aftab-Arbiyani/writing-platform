@@ -15,6 +15,8 @@
 import * as Sentry from '@sentry/nestjs';
 import type { ErrorEvent } from '@sentry/nestjs';
 
+// Resolve file-mounted container secrets before Sentry reads its DSN (P7.1).
+import './config/bootstrap-secrets';
 import { isSensitiveKey } from './logger/redaction';
 
 const dsn = process.env.SENTRY_DSN ?? '';
@@ -29,6 +31,14 @@ if (dsn !== '') {
     sendDefaultPii: false,
     integrations: [Sentry.nestIntegration()],
     beforeSend,
+  });
+  // Tag every event with the build/instance so errors are attributable (P7.1).
+  Sentry.setTags({
+    service: process.env.SERVICE_NAME ?? 'qalam-backend',
+    'app.version': process.env.APP_VERSION ?? '0.0.0',
+    'app.commit': (process.env.GIT_SHA ?? '').slice(0, 12),
+    'app.instance': process.env.INSTANCE_ID ?? '',
+    'release.channel': process.env.RELEASE_CHANNEL ?? 'dev',
   });
 }
 

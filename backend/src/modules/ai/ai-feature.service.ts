@@ -6,6 +6,7 @@ import {
   aiFeatureFlagKey,
 } from '@qalam/shared';
 
+import { evaluateFeatureFlag } from '../settings/feature-flag-evaluator';
 import { SettingsService } from '../settings/settings.service';
 import { AiDisabledException, AiFeatureDisabledException } from './ai.exceptions';
 
@@ -60,7 +61,8 @@ export class AiFeatureService {
   /** Effective state of every flagged AI feature (for `GET /ai/features`). */
   async listFeatureStates(): Promise<{ aiEnabled: boolean; features: AiFeatureState[] }> {
     const flags = await this.settings.getFeatureFlags();
-    const enabledByKey = new Map(flags.map((flag) => [flag.key, flag.enabled]));
+    // Effective (env-scope + rollout aware) state, not the raw `enabled` column.
+    const enabledByKey = new Map(flags.map((flag) => [flag.key, evaluateFeatureFlag(flag)]));
     const aiEnabled = enabledByKey.get(AI_MASTER_FLAG_KEY) ?? false;
     const features = FLAGGED_AI_FEATURES.map((feature) => {
       const flagKey = aiFeatureFlagKey(feature);
@@ -71,6 +73,7 @@ export class AiFeatureService {
 
   private async flagEnabled(key: string): Promise<boolean> {
     const flags = await this.settings.getFeatureFlags();
-    return flags.find((flag) => flag.key === key)?.enabled ?? false;
+    const flag = flags.find((f) => f.key === key);
+    return flag !== undefined && evaluateFeatureFlag(flag);
   }
 }

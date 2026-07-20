@@ -13,6 +13,7 @@ import 'reflect-metadata';
 import { RequestMethod, ValidationPipe, VersioningType } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
@@ -20,17 +21,24 @@ import helmet from 'helmet';
 import { Logger } from 'nestjs-pino';
 
 import { AppModule } from './app.module';
+import { REQUEST_ID_HEADER } from './common/constants/http.constants';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
 import { validationExceptionFactory } from './common/pipes/validation-exception.factory';
 import { appConfig } from './config/app.config';
+// Populated at import time (via ./instrument) from container/file-mounted secrets.
+import { containerSecrets } from './config/bootstrap-secrets';
+import { deploymentConfig } from './config/deployment.config';
 
 async function bootstrap(): Promise<void> {
   // bufferLogs holds early log lines until the pino logger takes over below.
   // rawBody captures the unparsed request buffer (req.rawBody) so payment webhook
   // handlers can verify a provider's HMAC signature over the exact bytes (AF5).
-  const app = await NestFactory.create(AppModule, { bufferLogs: true, rawBody: true });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    bufferLogs: true,
+    rawBody: true,
+  });
 
   // Structured JSON logging via nestjs-pino (request-scoped correlation ids).
   const logger = app.get(Logger);
@@ -38,6 +46,16 @@ async function bootstrap(): Promise<void> {
 
   // Typed app config — env already validated by Zod at module init (env.schema.ts).
   const config = app.get<ConfigType<typeof appConfig>>(appConfig.KEY);
+  const deployment = app.get<ConfigType<typeof deploymentConfig>>(deploymentConfig.KEY);
+  const isProd = config.nodeEnv === 'production';
+
+  // Trust the edge proxy's X-Forwarded-* chain so client IPs (rate limiting),
+  // `secure` cookies and protocol detection are correct behind nginx/an LB
+  // (P7.1). 0 hops = don't trust (direct-exposed dev). Express-specific setting.
+  const trustProxyHops = Number(process.env.TRUST_PROXY_HOPS ?? '0');
+  if (trustProxyHops > 0) {
+    app.set('trust proxy', trustProxyHops);
+  }
 
   // Correlation id FIRST (ADR §9): honor a trusted proxy's X-Request-Id or mint
   // a UUIDv7, echo it on the response, and expose it so nestjs-pino binds the
@@ -46,8 +64,17 @@ async function bootstrap(): Promise<void> {
   const requestId = new RequestIdMiddleware();
   app.use(requestId.use.bind(requestId));
 
-  // Security headers (CSP, HSTS, nosniff, …) — ADR §8 baseline.
-  app.use(helmet());
+  // Security headers (CSP, HSTS, nosniff, …) — ADR §8 baseline, hardened for
+  // deployed tiers (P7.1): 1-year HSTS w/ preload, strict referrer policy,
+  // same-origin resource policy. TLS is terminated at the edge; HSTS only takes
+  // effect over HTTPS, so it is harmless in dev over http.
+  app.use(
+    helmet({
+      hsts: isProd ? { maxAge: 31_536_000, includeSubDomains: true, preload: true } : undefined,
+      referrerPolicy: { policy: 'no-referrer' },
+      crossOriginResourcePolicy: { policy: 'same-site' },
+    }),
+  );
 
   // Response compression. nginx also compresses in prod (docs 15); enabling it
   // here keeps dev + non-nginx deploys covered without harming the proxied path.
@@ -61,6 +88,10 @@ async function bootstrap(): Promise<void> {
   app.enableCors({
     origin: [config.appUrl, config.adminUrl],
     credentials: true,
+    // Let browser clients read the correlation id (support tickets, tracing).
+    exposedHeaders: [REQUEST_ID_HEADER],
+    // Cache preflight for a day to cut OPTIONS chatter.
+    maxAge: 86_400,
   });
 
   // All routes live under /api; URI versioning yields /api/v1/... (ADR §5).
@@ -72,6 +103,7 @@ async function bootstrap(): Promise<void> {
       { path: 'health', method: RequestMethod.GET },
       { path: 'health/(.*)', method: RequestMethod.GET },
       { path: 'metrics', method: RequestMethod.GET },
+      { path: 'version', method: RequestMethod.GET },
     ],
   });
   app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
@@ -129,7 +161,25 @@ async function bootstrap(): Promise<void> {
   app.enableShutdownHooks();
 
   await app.listen(config.port);
-  logger.log(`Qalam API listening on port ${config.port} (${config.nodeEnv})`);
+
+  // Structured deployment event (P7.1 observability): one machine-parseable line
+  // carrying the full build/instance identity so a log search can pin "which
+  // version started when, where". Secret *names* only — never values.
+  logger.log({
+    event: 'deployment.started',
+    service: deployment.serviceName,
+    environment: deployment.environment,
+    version: deployment.version,
+    commit: deployment.gitShaShort,
+    buildNumber: deployment.buildNumber,
+    releaseChannel: deployment.releaseChannel,
+    instanceId: deployment.instanceId,
+    configVersion: deployment.configVersion,
+    port: config.port,
+    workersEnabled: process.env.WORKERS_ENABLED !== 'false',
+    containerSecretsLoaded: containerSecrets.loaded,
+    containerSecretSource: containerSecrets.source,
+  });
 }
 
 bootstrap().catch((error: unknown) => {

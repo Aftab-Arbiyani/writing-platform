@@ -1,5 +1,6 @@
 import { Role } from '@qalam/shared';
 import {
+  Activity,
   BarChart3,
   FileText,
   Flag,
@@ -8,6 +9,7 @@ import {
   LayoutDashboard,
   LayoutTemplate,
   ScrollText,
+  Server,
   ShieldCheck,
   SlidersHorizontal,
   Sparkles,
@@ -136,6 +138,33 @@ export const NAV_GROUPS: NavGroup[] = [
         label: 'AI Defaults',
         path: ROUTES.aiSettings,
         icon: Sparkles,
+        minRole: Role.Admin,
+      },
+    ],
+  },
+  {
+    key: 'system',
+    label: 'System',
+    items: [
+      {
+        key: 'system-info',
+        label: 'System info',
+        path: ROUTES.systemInfo,
+        icon: Server,
+        minRole: Role.Admin,
+      },
+      {
+        key: 'config-health',
+        label: 'Config health',
+        path: ROUTES.configHealth,
+        icon: ShieldCheck,
+        minRole: Role.Admin,
+      },
+      {
+        key: 'infra-health',
+        label: 'Infrastructure',
+        path: ROUTES.infraHealth,
+        icon: Activity,
         minRole: Role.Admin,
       },
     ],

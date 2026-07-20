@@ -14,6 +14,12 @@ const num = (name: string, fallback: number): number => {
 export const databaseConfig = registerAs('database', () => ({
   /** Required — validateEnv() (env.schema.ts) fails the boot if missing. */
   url: process.env.DATABASE_URL as string,
+  /**
+   * Optional read-replica DSN (P7.1 replication-ready seam). Empty = single
+   * node. When set, wire TypeORM `replication.slaves` in app.module.ts /
+   * data-source.ts to route read-only queries here; the write master stays `url`.
+   */
+  replicaUrl: process.env.DATABASE_REPLICA_URL ?? '',
   /** SQL statement logging piggybacks on LOG_LEVEL (debug/trace only). */
   logging: process.env.LOG_LEVEL === 'debug' || process.env.LOG_LEVEL === 'trace',
   /**

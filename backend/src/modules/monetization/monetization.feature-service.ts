@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { MONETIZATION_MASTER_FLAG_KEY } from '@qalam/shared';
 
+import { evaluateFeatureFlag } from '../settings/feature-flag-evaluator';
 import { SettingsService } from '../settings/settings.service';
 import { MonetizationDisabledException } from './monetization.exceptions';
 
@@ -19,7 +20,8 @@ export class MonetizationFeatureService {
 
   async isEnabled(): Promise<boolean> {
     const flags = await this.settings.getFeatureFlags();
-    return flags.find((flag) => flag.key === MONETIZATION_MASTER_FLAG_KEY)?.enabled ?? false;
+    const flag = flags.find((f) => f.key === MONETIZATION_MASTER_FLAG_KEY);
+    return flag !== undefined && evaluateFeatureFlag(flag);
   }
 
   /** Throw MONETIZATION_DISABLED unless the platform flag is on. */

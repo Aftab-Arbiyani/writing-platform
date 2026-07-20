@@ -2,6 +2,7 @@ import { Injectable, type OnModuleInit } from '@nestjs/common';
 
 import { PolicyEngineService } from '../policy';
 import type { PolicyFeatureFlagPort } from '../policy/policy.types';
+import { evaluateFeatureFlag } from '../settings/feature-flag-evaluator';
 import { SettingsService } from '../settings/settings.service';
 
 /**
@@ -24,6 +25,8 @@ export class FeatureFlagPolicyProvider implements PolicyFeatureFlagPort, OnModul
 
   async isEnabled(flagKey: string): Promise<boolean> {
     const flags = await this.settings.getFeatureFlags();
-    return flags.find((flag) => flag.key === flagKey)?.enabled ?? true;
+    const flag = flags.find((f) => f.key === flagKey);
+    // Fails OPEN: an absent flag reads as enabled (collaboration default-on).
+    return flag === undefined ? true : evaluateFeatureFlag(flag);
   }
 }

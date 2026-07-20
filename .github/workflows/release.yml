@@ -1,0 +1,172 @@
+# Release — build-once, publish-many (docs 15 §2).
+#
+# Fires on a semver tag (v*.*.*). Builds each of the three production images
+# ONCE and pushes them to GHCR tagged with BOTH the immutable git-sha tag
+# (`sha-<short>`, the promotion handle used by deploy-*) AND the human semver
+# tag. Build metadata is baked into the image via Docker ARGs so /version can
+# report it. An SBOM + provenance attestation is attached to each image, and a
+# GitHub Release is cut with auto-generated notes.
+#
+# This is the artifact-publish + release-tagging surface. deploy-production.yml
+# PROMOTES the `sha-<short>` image built here — it never rebuilds.
+#
+# All third-party actions are pinned to a commit SHA (# vX.Y.Z), per the CD
+# supply-chain hardening standard.
+name: Release
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+# Never cancel a release mid-publish — a half-pushed tag is worse than a queue.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  # Build + push the three images. Matrix keeps the three legs identical and
+  # parallel; each leg builds once and pushes both tags.
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write # push to GHCR
+      id-token: write # keyless attestations / cosign OIDC (seam)
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: backend
+            dockerfile: infrastructure/docker/backend.Dockerfile
+          - image: frontend
+            dockerfile: infrastructure/docker/frontend.Dockerfile
+          - image: admin
+            dockerfile: infrastructure/docker/admin.Dockerfile
+    env:
+      REGISTRY: ghcr.io
+      HAS_COSIGN: ${{ secrets.COSIGN_KEY != '' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4 # tag: existing repo convention for actions/*
+
+      # Derive the semver, short sha, and build time once — shared by tags,
+      # build-args, and the /version metadata baked into the image.
+      - name: Compute build metadata
+        id: meta
+        run: |
+          VERSION="${GITHUB_REF_NAME}"          # e.g. v1.2.3
+          SHORT_SHA="${GITHUB_SHA:0:12}"
+          IMAGE="${REGISTRY}/${GITHUB_REPOSITORY_OWNER}/qalam-${{ matrix.image }}"
+          IMAGE="$(echo "$IMAGE" | tr '[:upper:]' '[:lower:]')"
+          {
+            echo "version=${VERSION}"
+            echo "short_sha=${SHORT_SHA}"
+            echo "image=${IMAGE}"
+            echo "build_time=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+
+      # Build ONCE, push BOTH tags. sbom + provenance attach supply-chain
+      # attestations to the image in the registry.
+      - name: Build and push ${{ matrix.image }}
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.image }}:sha-${{ steps.meta.outputs.short_sha }}
+            ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.version }}
+          build-args: |
+            BUILD_VERSION=${{ steps.meta.outputs.version }}
+            GIT_SHA=${{ github.sha }}
+            BUILD_TIME=${{ steps.meta.outputs.build_time }}
+            BUILD_NUMBER=${{ github.run_number }}
+            RELEASE_CHANNEL=stable
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ steps.meta.outputs.version }}
+          provenance: mode=max
+          sbom: true
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+
+      # ── Cosign signing (gated seam) ────────────────────────────────────────
+      # Real signing once an org COSIGN_KEY exists; inert (skipped) until then.
+      - name: Install cosign
+        if: env.HAS_COSIGN == 'true'
+        uses: sigstore/cosign-installer@7e8b541eb2e61bf99390e1afd4be13a184e9ebc5 # v3.10.1
+      - name: Sign pushed image
+        if: env.HAS_COSIGN == 'true'
+        env:
+          COSIGN_KEY: ${{ secrets.COSIGN_KEY }}
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+        run: |
+          cosign sign --yes --key env://COSIGN_KEY \
+            "${{ steps.meta.outputs.image }}:sha-${{ steps.meta.outputs.short_sha }}"
+          cosign sign --yes --key env://COSIGN_KEY \
+            "${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.version }}"
+
+  # Cut the GitHub Release once all images are published, with a downloadable
+  # SBOM for the backend attached alongside auto-generated notes.
+  github-release:
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # create the release
+      packages: read # pull the published image to SBOM it
+    env:
+      REGISTRY: ghcr.io
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # release-note diffing needs full tag history
+
+      - name: Resolve backend image ref
+        id: img
+        run: |
+          IMAGE="${REGISTRY}/${GITHUB_REPOSITORY_OWNER}/qalam-backend:${GITHUB_REF_NAME}"
+          IMAGE="$(echo "$IMAGE" | tr '[:upper:]' '[:lower:]')"
+          echo "ref=${IMAGE}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate backend SBOM
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+        with:
+          image: ${{ steps.img.outputs.ref }}
+          format: spdx-json
+          artifact-name: sbom-backend-${{ github.ref_name }}.spdx.json
+          output-file: sbom-backend.spdx.json
+
+      # Auto-generated notes; hyphenated tags (v1.2.3-rc.1) are marked prerelease.
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PRERELEASE=""
+          case "$GITHUB_REF_NAME" in *-*) PRERELEASE="--prerelease";; esac
+          gh release create "$GITHUB_REF_NAME" \
+            --title "$GITHUB_REF_NAME" \
+            --generate-notes \
+            $PRERELEASE \
+            sbom-backend.spdx.json

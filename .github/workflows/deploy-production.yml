@@ -1,0 +1,259 @@
+# Continuous deployment to PRODUCTION (docs 15 §10).
+#
+# Build-once-promote-many: this workflow NEVER builds. It PROMOTES the immutable
+# `sha-<short>` backend image that release.yml already built for the tagged
+# commit, deploying it to the single production VM over SSH.
+#
+# APPROVAL / GO-NO-GO: the job targets the GitHub `production` Environment. The
+# environment's protection rule (required reviewers) is the manual approval gate
+# — the run pauses until an authorised approver clicks "Approve", which is the
+# Go/No-Go checkpoint. Configure required reviewers on the `production`
+# environment in repo settings; no in-workflow gate is needed or wanted.
+#
+# FLOW: pull image → capture current image (rollback target) → DB backup
+# checkpoint → preflight → deploy (pull/migrate/health-gated switch) → smoke
+# (assert /version == tag) → tag Sentry. On smoke/deploy failure the previous
+# image is auto-rolled-back and re-smoked.
+#
+# SECRETS live on the `production` Environment: SSH_HOST, SSH_USER, SSH_KEY,
+# DATABASE_URL, BACKUP_DIR (optional; defaults below). Optional Sentry trio.
+#
+# FORK/PR SAFETY: no pull_request trigger; every VM step is gated on
+# env.HAS_DEPLOY, and the production environment gates the whole job.
+#
+# Third-party actions are pinned to commit SHAs (# vX.Y.Z).
+name: Deploy Production
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Image tag to promote (e.g. sha-abc123def456 or v1.2.3). Defaults to sha-<short> of the checked-out commit.'
+        required: false
+        type: string
+      expected_version:
+        description: 'Version string smoke.sh must find at /version. Defaults to the git tag name.'
+        required: false
+        type: string
+
+# Serialize with rollback.yml (same group) so a deploy and a rollback of prod
+# can never run at once. Never cancel a deploy in flight.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production # required-reviewer protection = the approval gate
+    permissions:
+      contents: read
+      packages: read # PULL the pre-built image (promotion, no rebuild)
+    env:
+      REGISTRY: ghcr.io
+      HAS_DEPLOY: ${{ secrets.SSH_HOST != '' }}
+      HAS_SENTRY: ${{ secrets.SENTRY_AUTH_TOKEN != '' }}
+      DEPLOY_DIR: ${{ vars.DEPLOY_DIR || '/opt/qalam' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Resolve the promotion target. On a tag push this reduces to the
+      # `sha-<short>` image release.yml built for the very same commit.
+      - name: Resolve promotion target
+        id: meta
+        env:
+          INPUT_TAG: ${{ github.event.inputs.image_tag }}
+          INPUT_VERSION: ${{ github.event.inputs.expected_version }}
+        run: |
+          SHORT_SHA="${GITHUB_SHA:0:12}"
+          TAG="${INPUT_TAG:-sha-${SHORT_SHA}}"
+          IMAGE="${REGISTRY}/${GITHUB_REPOSITORY_OWNER}/qalam-backend"
+          IMAGE="$(echo "$IMAGE" | tr '[:upper:]' '[:lower:]')"
+          # Expected /version: explicit input, else the tag name (v1.2.3).
+          EXPECTED="${INPUT_VERSION:-${GITHUB_REF_NAME}}"
+          {
+            echo "image=${IMAGE}"
+            echo "tag=${TAG}"
+            echo "backend_image=${IMAGE}:${TAG}"
+            echo "expected_version=${EXPECTED}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Fail fast if the promotion target does not exist — proves build-once.
+      - name: Verify promotion image exists
+        run: |
+          echo "Promoting ${{ steps.meta.outputs.backend_image }}"
+          docker manifest inspect "${{ steps.meta.outputs.backend_image }}" > /dev/null
+
+      - name: Configure SSH
+        if: env.HAS_DEPLOY == 'true'
+        env:
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Sync deploy scripts to VM
+        if: env.HAS_DEPLOY == 'true'
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+        run: |
+          # DEPLOY_DIR is a runner-side value — intentional client-side expansion.
+          # shellcheck disable=SC2029
+          ssh "$SSH_USER@$SSH_HOST" "mkdir -p '$DEPLOY_DIR'"
+          rsync -az --delete scripts infrastructure "$SSH_USER@$SSH_HOST:$DEPLOY_DIR/"
+
+      # Capture the image currently running so a failed deploy can roll back to
+      # it. Best-effort: assumes the backend container is named `qalam-backend`.
+      - name: Capture current image (rollback target)
+        if: env.HAS_DEPLOY == 'true'
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+        run: |
+          PREV="$(ssh "$SSH_USER@$SSH_HOST" "docker inspect --format '{{.Config.Image}}' qalam-backend 2>/dev/null || true")"
+          echo "PREVIOUS_IMAGE=${PREV}" >> "$GITHUB_ENV"
+          echo "Current image: ${PREV:-<none>}"
+
+      - name: Stage deploy environment
+        if: env.HAS_DEPLOY == 'true'
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          BACKEND_IMAGE: ${{ steps.meta.outputs.backend_image }}
+          EXPECTED_VERSION: ${{ steps.meta.outputs.expected_version }}
+          BACKUP_DIR: ${{ secrets.BACKUP_DIR }}
+        run: |
+          umask 077
+          {
+            echo "BACKEND_IMAGE=$BACKEND_IMAGE"
+            echo "EXPECTED_VERSION=$EXPECTED_VERSION"
+            echo "GIT_SHA=$GITHUB_SHA"
+            echo "RELEASE_CHANNEL=stable"
+            echo "DATABASE_URL=$DATABASE_URL"
+            echo "BACKUP_DIR=${BACKUP_DIR:-$DEPLOY_DIR/backups}"
+          } > deploy.env
+          scp deploy.env "$SSH_USER@$SSH_HOST:$DEPLOY_DIR/.deploy.env"
+          rm -f deploy.env
+
+      # Pre-deploy DB backup checkpoint — a restore point before migrations run.
+      - name: Pre-deploy DB backup
+        if: env.HAS_DEPLOY == 'true'
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+        run: |
+          ssh "$SSH_USER@$SSH_HOST" bash -s "$DEPLOY_DIR" <<'REMOTE'
+          set -euo pipefail
+          cd "$1"
+          set -a; . ./.deploy.env; set +a
+          bash scripts/db/backup.sh
+          REMOTE
+
+      - name: Preflight checks
+        if: env.HAS_DEPLOY == 'true'
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+        run: |
+          ssh "$SSH_USER@$SSH_HOST" bash -s "$DEPLOY_DIR" <<'REMOTE'
+          set -euo pipefail
+          cd "$1"
+          set -a; . ./.deploy.env; set +a
+          bash scripts/deploy/preflight.sh
+          REMOTE
+
+      - name: Deploy (pull, migrate, health-gated switch)
+        if: env.HAS_DEPLOY == 'true'
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+        run: |
+          ssh "$SSH_USER@$SSH_HOST" bash -s "$DEPLOY_DIR" <<'REMOTE'
+          set -euo pipefail
+          cd "$1"
+          set -a; . ./.deploy.env; set +a
+          bash scripts/deploy/deploy.sh
+          REMOTE
+
+      - name: Post-deploy smoke (assert /version == tag)
+        if: env.HAS_DEPLOY == 'true'
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+        run: |
+          ssh "$SSH_USER@$SSH_HOST" bash -s "$DEPLOY_DIR" <<'REMOTE'
+          set -euo pipefail
+          cd "$1"
+          set -a; . ./.deploy.env; set +a
+          bash scripts/deploy/smoke.sh
+          REMOTE
+
+      # ── Auto-rollback on any failure above (deploy or smoke) ────────────────
+      # Restores the previously-running image and re-smokes (health-only; the
+      # prior version string is not asserted).
+      - name: Auto-rollback on failure
+        if: failure() && env.HAS_DEPLOY == 'true' && env.PREVIOUS_IMAGE != ''
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          ROLLBACK_IMAGE: ${{ env.PREVIOUS_IMAGE }}
+        run: |
+          echo "::error::deploy/smoke failed — rolling back to ${ROLLBACK_IMAGE}"
+          ssh "$SSH_USER@$SSH_HOST" bash -s "$DEPLOY_DIR" "$ROLLBACK_IMAGE" <<'REMOTE'
+          set -euo pipefail
+          cd "$1"
+          export ROLLBACK_IMAGE="$2"
+          [ -f ./.deploy.env ] && { set -a; . ./.deploy.env; set +a; }
+          # Smoke after rollback checks liveness only — do not assert the old version.
+          unset EXPECTED_VERSION
+          bash scripts/deploy/rollback.sh
+          bash scripts/deploy/smoke.sh
+          REMOTE
+
+      - name: Tag Sentry release
+        if: success() && env.HAS_DEPLOY == 'true' && env.HAS_SENTRY == 'true'
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+          VERSION: ${{ steps.meta.outputs.expected_version }}
+        run: |
+          curl -sf -X POST \
+            "https://sentry.io/api/0/organizations/${SENTRY_ORG}/releases/" \
+            -H "Authorization: Bearer ${SENTRY_AUTH_TOKEN}" \
+            -H 'Content-Type: application/json' \
+            -d "{\"version\":\"${VERSION}\",\"projects\":[\"${SENTRY_PROJECT}\"],\"refs\":[{\"repository\":\"${GITHUB_REPOSITORY}\",\"commit\":\"${GITHUB_SHA}\"}]}" \
+            > /dev/null
+          echo "Sentry release ${VERSION} tagged."
+
+      - name: Cleanup staged environment
+        if: always() && env.HAS_DEPLOY == 'true'
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+        run: |
+          # DEPLOY_DIR is a runner-side value — intentional client-side expansion.
+          # shellcheck disable=SC2029
+          ssh "$SSH_USER@$SSH_HOST" "rm -f '$DEPLOY_DIR/.deploy.env'" || true
+
+      - name: Deploy skipped (no SSH secrets)
+        if: env.HAS_DEPLOY != 'true'
+        run: echo "::notice::production SSH secrets not configured — promotion image verified, VM deploy skipped."

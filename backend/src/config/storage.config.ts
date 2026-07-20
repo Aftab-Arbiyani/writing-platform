@@ -11,4 +11,8 @@ export const storageConfig = registerAs('storage', () => ({
   bucket: process.env.S3_BUCKET ?? 'qalam-media',
   accessKey: process.env.S3_ACCESS_KEY ?? 'minioadmin',
   secretKey: process.env.S3_SECRET_KEY ?? 'minioadmin',
+  /** Public CDN origin (P7.1). Empty = clients build URLs from `endpoint`. */
+  cdnUrl: process.env.CDN_URL ?? '',
+  /** Presigned-URL lifetime (seconds) for the signed-URL seam. */
+  signedUrlTtlSeconds: Number(process.env.S3_SIGNED_URL_TTL_SECONDS ?? 900),
 }));

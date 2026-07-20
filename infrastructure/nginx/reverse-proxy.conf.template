@@ -1,103 +1,128 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # Qalam — production edge reverse proxy TEMPLATE (nginx)
 #
-# This file is intentionally ALL COMMENTED OUT. It documents the intended
-# production topology; render a concrete config by replacing DOMAIN with the
-# real domain, uncommenting, and reviewing every value.
+# A single TLS-terminating vhost that serves the SPA bundle and proxies the API
+# paths (/api, /health, /metrics) to the NestJS backend. It is a TEMPLATE, not a
+# live config: render it with the placeholders below, review every value, then
+# drop it into /etc/nginx/conf.d/ (it is NOT auto-applied by any container).
 #
-#   app.DOMAIN    → frontend static bundle
-#   admin.DOMAIN  → admin static bundle
-#   api.DOMAIN    → NestJS API (upstream :4000)
+# Placeholders (envsubst): pass the names EXPLICITLY so nginx runtime vars like
+# $host / $request_id / $remote_addr are preserved and only these are expanded:
 #
-# TLS: use certbot (`certbot --nginx -d api.DOMAIN -d app.DOMAIN -d admin.DOMAIN`)
-# or provision certs out-of-band and point ssl_certificate/_key at them.
-# certbot rewrites the listen directives to 443 ssl and adds the cert paths.
+#   export SERVER_NAME=app.example.com \
+#          API_UPSTREAM=backend:4000 \
+#          SSL_CERTIFICATE=/etc/letsencrypt/live/app.example.com/fullchain.pem \
+#          SSL_CERTIFICATE_KEY=/etc/letsencrypt/live/app.example.com/privkey.pem \
+#          SPA_ROOT=/var/www/qalam/frontend
+#   envsubst '${SERVER_NAME} ${API_UPSTREAM} ${SSL_CERTIFICATE} ${SSL_CERTIFICATE_KEY} ${SPA_ROOT}' \
+#     < reverse-proxy.conf.template > /etc/nginx/conf.d/qalam.conf
+#   nginx -t && nginx -s reload
+#
+# TLS certs: provision via certbot or out-of-band; point the two SSL_* vars at
+# them. Enable HSTS only after TLS is confirmed on every host (max-age sticks).
 # ─────────────────────────────────────────────────────────────────────────────
 
-# ── Shared ───────────────────────────────────────────────────────────────────
-# gzip on;
-# gzip_vary on;
-# gzip_min_length 1024;
-# gzip_types text/plain text/css application/javascript application/json image/svg+xml;
+# ── API upstream (http context: lands inside conf.d → http{}) ───────────────
+upstream qalam_api {
+    # docker network: service name; bare metal: 127.0.0.1
+    server ${API_UPSTREAM};
+    keepalive 32;
+}
 
-# ── API upstream ─────────────────────────────────────────────────────────────
-# upstream qalam_api {
-#     # docker network: service name; bare metal: 127.0.0.1
-#     server backend:4000;
-#     keepalive 32;
-# }
+# ── Rate-limit zone — 10r/s per client IP, 20MB of state (~320k IPs) ────────
+limit_req_zone $binary_remote_addr zone=qalam_api:20m rate=10r/s;
 
-# ── api.DOMAIN — NestJS API ─────────────────────────────────────────────────
-# server {
-#     listen 80;
-#     server_name api.DOMAIN;
-#
-#     # Media uploads go directly to S3 via pre-signed URLs; 10m covers any
-#     # JSON payload (TipTap documents included) with room to spare.
-#     client_max_body_size 10m;
-#
-#     location / {
-#         proxy_pass http://qalam_api;
-#         proxy_http_version 1.1;
-#         proxy_set_header Connection "";
-#
-#         # Correlation ID — generated at the edge if the client didn't send one;
-#         # propagated frontend → API → queue jobs (see ADR §9).
-#         proxy_set_header X-Request-Id $request_id;
-#
-#         # Standard forwarding headers so the API sees the real client.
-#         proxy_set_header Host              $host;
-#         proxy_set_header X-Real-IP         $remote_addr;
-#         proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
-#         proxy_set_header X-Forwarded-Proto $scheme;
-#         proxy_set_header X-Forwarded-Host  $host;
-#     }
-#
-#     # Enable ONLY after confirming TLS works on every subdomain — HSTS is
-#     # effectively irreversible for its max-age.
-#     # add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
-# }
+# ── http → https redirect (also answers ACME http-01 challenges) ────────────
+server {
+    listen 80;
+    listen [::]:80;
+    server_name ${SERVER_NAME};
 
-# ── app.DOMAIN — reader/writer frontend (static) ────────────────────────────
-# server {
-#     listen 80;
-#     server_name app.DOMAIN;
-#
-#     root /var/www/qalam/frontend;   # deployed frontend/dist
-#     index index.html;
-#
-#     add_header X-Content-Type-Options nosniff always;
-#     add_header X-Frame-Options DENY always;
-#     add_header Referrer-Policy strict-origin-when-cross-origin always;
-#
-#     location /assets/ {
-#         add_header Cache-Control "public, max-age=31536000, immutable" always;
-#         try_files $uri =404;
-#     }
-#
-#     location / {
-#         try_files $uri /index.html;
-#     }
-# }
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
 
-# ── admin.DOMAIN — admin panel (static) ─────────────────────────────────────
-# server {
-#     listen 80;
-#     server_name admin.DOMAIN;
-#
-#     root /var/www/qalam/admin;      # deployed admin/dist
-#     index index.html;
-#
-#     add_header X-Content-Type-Options nosniff always;
-#     add_header X-Frame-Options DENY always;
-#     add_header Referrer-Policy strict-origin-when-cross-origin always;
-#
-#     location /assets/ {
-#         add_header Cache-Control "public, max-age=31536000, immutable" always;
-#         try_files $uri =404;
-#     }
-#
-#     location / {
-#         try_files $uri /index.html;
-#     }
-# }
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+# ── https — SPA + API proxy ─────────────────────────────────────────────────
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
+    server_name ${SERVER_NAME};
+
+    ssl_certificate     ${SSL_CERTIFICATE};
+    ssl_certificate_key ${SSL_CERTIFICATE_KEY};
+    ssl_protocols       TLSv1.2 TLSv1.3;
+    ssl_ciphers         HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers on;
+    ssl_session_cache   shared:SSL:10m;
+    ssl_session_timeout 1d;
+
+    # Media uploads go directly to S3 via pre-signed URLs; 10m covers any JSON
+    # payload (TipTap documents included) with room to spare.
+    client_max_body_size 10m;
+
+    # ── Security headers (sent on every response) ───────────────────────────
+    # HSTS is effectively irreversible for its max-age — keep it enabled only
+    # once TLS is verified everywhere.
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header X-Content-Type-Options nosniff always;
+    add_header X-Frame-Options DENY always;
+    add_header Referrer-Policy strict-origin-when-cross-origin always;
+    # Baseline CSP — TUNE per app (widen connect-src to your API origin, add any
+    # CDN/font hosts the bundle actually loads).
+    add_header Content-Security-Policy "default-src 'self'; connect-src 'self' https:; img-src 'self' data: https:; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'" always;
+
+    # ── Compression ─────────────────────────────────────────────────────────
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_types text/plain text/css application/javascript application/json image/svg+xml;
+
+    # ── Shared proxy headers → backend sees the real client ─────────────────
+    # X-Forwarded-For depth here must match the app's TRUST_PROXY_HOPS.
+    proxy_http_version 1.1;
+    proxy_set_header Connection        "";
+    proxy_set_header Host              $host;
+    proxy_set_header X-Real-IP         $remote_addr;
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-Host  $host;
+    # Correlation ID — generated at the edge if the client didn't send one;
+    # propagated edge → API → queue jobs (see ADR §9).
+    proxy_set_header X-Request-Id      $request_id;
+
+    # ── API ──────────────────────────────────────────────────────────────────
+    location /api {
+        limit_req zone=qalam_api burst=20 nodelay;
+        proxy_pass http://qalam_api;
+    }
+
+    # ── Health probes (unthrottled so a rate-limit never hides an outage) ───
+    location /health {
+        proxy_pass http://qalam_api;
+    }
+
+    # ── Prometheus metrics — INTERNAL ONLY. Restrict to your scrape network. ─
+    location /metrics {
+        # allow 10.0.0.0/8; deny all;   # ← uncomment + set your monitoring CIDR
+        proxy_pass http://qalam_api;
+    }
+
+    # ── SPA (static bundle) ──────────────────────────────────────────────────
+    root ${SPA_ROOT};
+    index index.html;
+
+    location /assets/ {
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+        try_files $uri =404;
+    }
+
+    location / {
+        try_files $uri /index.html;
+    }
+}

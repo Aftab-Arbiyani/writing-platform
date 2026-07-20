@@ -120,10 +120,10 @@ services:
     build:
       context: .
       dockerfile: infrastructure/docker/frontend.Dockerfile
-    # Container serves the static bundle via nginx on :80; host port mirrors
-    # the Vite dev port so URLs stay familiar.
+    # Container serves the static bundle via non-root nginx on :8080; host port
+    # mirrors the Vite dev port so URLs stay familiar.
     ports:
-      - '5173:80'
+      - '5173:8080'
     depends_on:
       - backend
     networks:
@@ -135,23 +135,25 @@ services:
       context: .
       dockerfile: infrastructure/docker/admin.Dockerfile
     ports:
-      - '5174:80'
+      - '5174:8080'
     depends_on:
       - backend
     networks:
       - qalam
 
-  # Edge reverse proxy for the fully containerized stack. The shipped file is a
-  # commented production template — render a concrete config from
-  # infrastructure/nginx/reverse-proxy.conf.template before relying on this
-  # service (until then nginx starts with its default config).
+  # Edge reverse proxy for the fully containerized stack. reverse-proxy.conf.template
+  # is a real production vhost but requires envsubst rendering + TLS certs, so it
+  # is mounted read-only for REFERENCE only (NOT under /etc/nginx/templates, so
+  # nginx does not auto-apply it) — this dev edge starts on its default config.
+  # Render a concrete config per infrastructure/nginx/reverse-proxy.conf.template
+  # before relying on this service for real proxying.
   nginx:
     profiles: ['full']
-    image: nginx:alpine
+    image: nginx:1.27-alpine
     ports:
       - '8080:80'
     volumes:
-      - ./infrastructure/nginx/reverse-proxy.conf.template:/etc/nginx/templates/qalam.conf.template:ro
+      - ./infrastructure/nginx/reverse-proxy.conf.template:/opt/qalam/reverse-proxy.conf.template:ro
     depends_on:
       - backend
       - frontend

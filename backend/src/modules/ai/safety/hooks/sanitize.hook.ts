@@ -3,7 +3,10 @@ import { AiSafetyStage, AiSafetyVerdict } from '@qalam/shared';
 
 import type { SafetyHook, SafetyInput, SafetyResult } from '../safety.types';
 
-// Control chars except tab (\x09), newline (\x0A), carriage return (\x0D).
+// Control chars except tab (\x09), newline (\x0A), carriage return (\x0D). The
+// control-char class is intentional (this is a sanitizer), so the lint rule that
+// forbids control chars in regexes is disabled for this one line.
+// eslint-disable-next-line no-control-regex
 const CONTROL_CHARS = /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g;
 
 /**

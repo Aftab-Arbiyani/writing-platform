@@ -1,10 +1,12 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 
 import { aiConfig } from './ai.config';
 import { appConfig } from './app.config';
 import { authConfig } from './auth.config';
+import { ConfigInspectorService } from './config-inspector.service';
 import { databaseConfig } from './database.config';
+import { deploymentConfig } from './deployment.config';
 import { validateEnv } from './env.schema';
 import { jwtConfig } from './jwt.config';
 import { mailConfig } from './mail.config';
@@ -20,8 +22,10 @@ import { storageConfig } from './storage.config';
  * `ConfigType<typeof appConfig>` etc.
  *
  * `isGlobal: true` — config is needed everywhere; importing this module once in
- * `AppModule` makes every namespace available app-wide.
+ * `AppModule` makes every namespace available app-wide. `@Global` additionally
+ * exports `ConfigInspectorService` (config/secret health, P7.1) app-wide.
  */
+@Global()
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -38,8 +42,11 @@ import { storageConfig } from './storage.config';
         storageConfig,
         aiConfig,
         paymentsConfig,
+        deploymentConfig,
       ],
     }),
   ],
+  providers: [ConfigInspectorService],
+  exports: [ConfigInspectorService],
 })
 export class AppConfigModule {}

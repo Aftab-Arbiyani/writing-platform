@@ -10,7 +10,11 @@ import type { HealthCheckResult } from '@nestjs/terminus';
 
 import { QueueHealthIndicator } from '../infrastructure/queue/queue-health.indicator';
 import { Public } from '../modules/auth/decorators/public.decorator';
+import { AiHealthIndicator } from './indicators/ai.health-indicator';
+import { ConfigHealthIndicator } from './indicators/config.health-indicator';
+import { PaymentHealthIndicator } from './indicators/payment.health-indicator';
 import { RedisHealthIndicator } from './indicators/redis.health-indicator';
+import { SearchHealthIndicator } from './indicators/search.health-indicator';
 import { StorageHealthIndicator } from './indicators/storage.health-indicator';
 
 /**
@@ -38,6 +42,10 @@ export class HealthController {
     private readonly redis: RedisHealthIndicator,
     private readonly queues: QueueHealthIndicator,
     private readonly storage: StorageHealthIndicator,
+    private readonly configHealth: ConfigHealthIndicator,
+    private readonly ai: AiHealthIndicator,
+    private readonly payments: PaymentHealthIndicator,
+    private readonly search: SearchHealthIndicator,
   ) {}
 
   @Get()
@@ -68,6 +76,43 @@ export class HealthController {
       () => this.db.pingCheck('database'),
       () => this.redis.isHealthy('redis'),
       () => this.queues.isHealthy('queues'),
+    ]);
+  }
+
+  @Get('startup')
+  @HealthCheck()
+  @ApiOperation({
+    summary: 'Startup — boot-critical deps + config valid (Kubernetes startupProbe).',
+  })
+  @ApiOkResponse({ description: 'Process has finished initializing.' })
+  @ApiServiceUnavailableResponse({ description: 'Still starting / boot-critical dep down.' })
+  startup(): Promise<HealthCheckResult> {
+    // Gates the slow-boot window: DB + Redis reachable and config valid. Queues
+    // and storage are intentionally excluded (they self-heal after start-up).
+    return this.health.check([
+      () => this.db.pingCheck('database'),
+      () => this.redis.isHealthy('redis'),
+      () => this.configHealth.isHealthy('config'),
+    ]);
+  }
+
+  @Get('deep')
+  @HealthCheck()
+  @ApiOperation({
+    summary: 'Deep aggregate — every dependency + subsystem. For dashboards/triage, NOT probes.',
+  })
+  @ApiOkResponse({ description: 'Full dependency snapshot.' })
+  @ApiServiceUnavailableResponse({ description: 'One or more hard dependencies is down.' })
+  deep(): Promise<HealthCheckResult> {
+    return this.health.check([
+      () => this.db.pingCheck('database'),
+      () => this.redis.isHealthy('redis'),
+      () => this.queues.isHealthy('queues'),
+      () => this.storage.isHealthy('storage'),
+      () => this.configHealth.isHealthy('config'),
+      () => this.search.isHealthy('search'),
+      () => this.ai.isHealthy('ai'),
+      () => this.payments.isHealthy('payments'),
     ]);
   }
 
@@ -107,5 +152,39 @@ export class HealthController {
   @ApiServiceUnavailableResponse({ description: 'Queue Redis unreachable.' })
   queuesHealth(): Promise<HealthCheckResult> {
     return this.health.check([() => this.queues.isHealthy('queues')]);
+  }
+
+  @Get('config')
+  @HealthCheck()
+  @ApiOperation({ summary: 'Configuration & secret health (presence/validity, never values).' })
+  @ApiOkResponse({ description: 'Config valid for this environment.' })
+  @ApiServiceUnavailableResponse({ description: 'A required secret is missing/invalid.' })
+  configHealthCheck(): Promise<HealthCheckResult> {
+    return this.health.check([() => this.configHealth.isHealthy('config')]);
+  }
+
+  @Get('search')
+  @HealthCheck()
+  @ApiOperation({ summary: 'Search (Postgres full-text path) functional.' })
+  @ApiOkResponse({ description: 'Search FTS reachable.' })
+  @ApiServiceUnavailableResponse({ description: 'Search FTS check failed.' })
+  searchHealth(): Promise<HealthCheckResult> {
+    return this.health.check([() => this.search.isHealthy('search')]);
+  }
+
+  @Get('ai')
+  @HealthCheck()
+  @ApiOperation({ summary: 'AI provider readiness (configured/inert — no live call).' })
+  @ApiOkResponse({ description: 'AI provider status reported.' })
+  aiHealth(): Promise<HealthCheckResult> {
+    return this.health.check([() => this.ai.isHealthy('ai')]);
+  }
+
+  @Get('payments')
+  @HealthCheck()
+  @ApiOperation({ summary: 'Payment provider readiness (configured/inert — no live call).' })
+  @ApiOkResponse({ description: 'Payment provider status reported.' })
+  paymentsHealth(): Promise<HealthCheckResult> {
+    return this.health.check([() => this.payments.isHealthy('payments')]);
   }
 }

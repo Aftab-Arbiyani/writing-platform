@@ -70,10 +70,21 @@ services:
         reservations: { cpus: '0.25', memory: 128m }
 
   backend:
+    # Prefer an IMMUTABLE, digest-or-sha tag so a redeploy can never drift:
+    #   BACKEND_IMAGE=ghcr.io/qalam/qalam-backend:sha-1a2b3c4   (CI-published)
+    # The build-identity metadata (version/sha/time) is baked into the image, so
+    # pull-based deploys carry it without needing the build block below.
     image: ${BACKEND_IMAGE:-ghcr.io/qalam/qalam-backend:latest}
     build:
       context: .
       dockerfile: infrastructure/docker/backend.Dockerfile
+      # Build-time provenance — set by CI; harmless empties on a bare build.
+      args:
+        BUILD_VERSION: ${BUILD_VERSION:-}
+        GIT_SHA: ${GIT_SHA:-}
+        BUILD_TIME: ${BUILD_TIME:-}
+        BUILD_NUMBER: ${BUILD_NUMBER:-}
+        RELEASE_CHANNEL: ${RELEASE_CHANNEL:-production}
     restart: unless-stopped
     # All app secrets (JWT/S3/SMTP/SENTRY/…) come from the env file — nothing
     # secret is inlined here. Zod validates them at boot (fail-fast).
@@ -85,6 +96,12 @@ services:
       # Compose service DNS overrides any host values in the env file.
       DATABASE_URL: postgresql://${POSTGRES_USER:-qalam}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-qalam}
       REDIS_URL: redis://redis:6379
+      # Hops of trusted proxy in front of the app (the TLS edge nginx = 1; add
+      # one per extra LB/CDN). Must match X-Forwarded-For depth at the edge.
+      TRUST_PROXY_HOPS: ${TRUST_PROXY_HOPS:-1}
+      # Per-deploy runtime identity (NOT baked — supplied at deploy time).
+      DEPLOYED_AT: ${DEPLOYED_AT:-}
+      INSTANCE_ID: ${INSTANCE_ID:-}
     ports:
       - '${BACKEND_PORT:-4000}:4000'
     depends_on:

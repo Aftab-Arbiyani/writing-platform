@@ -23,6 +23,8 @@ import { MetricsController } from './monitoring/metrics.controller';
 import { MetricsInterceptor } from './monitoring/metrics.interceptor';
 import { MetricsService } from './monitoring/metrics.service';
 import { QueueMonitorService } from './monitoring/queue-monitor.service';
+import { SystemController } from './monitoring/system.controller';
+import { VersionController } from './monitoring/version.controller';
 import { DeadLetterService } from './queue/dead-letter.service';
 import { QueueProducer } from './queue/queue-producer.service';
 import { QueueRegistry } from './queue/queue-registry.service';
@@ -127,7 +129,13 @@ const workers =
     AuthModule,
     MonetizationModule,
   ],
-  controllers: [AdminQueueController, AdminCacheController, MetricsController],
+  controllers: [
+    AdminQueueController,
+    AdminCacheController,
+    MetricsController,
+    VersionController,
+    SystemController,
+  ],
   providers: [
     QueueRegistry,
     QueueProducer,
