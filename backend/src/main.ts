@@ -17,6 +17,7 @@ import type { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
+import type { NextFunction, Request, Response } from 'express';
 import helmet from 'helmet';
 import { Logger } from 'nestjs-pino';
 
@@ -65,16 +66,59 @@ async function bootstrap(): Promise<void> {
   app.use(requestId.use.bind(requestId));
 
   // Security headers (CSP, HSTS, nosniff, …) — ADR §8 baseline, hardened for
-  // deployed tiers (P7.1): 1-year HSTS w/ preload, strict referrer policy,
-  // same-origin resource policy. TLS is terminated at the edge; HSTS only takes
-  // effect over HTTPS, so it is harmless in dev over http.
+  // deployed tiers (P7.1/P7.2): a JSON API needs NO script/style/img sources, so
+  // the CSP is locked to `default-src 'none'; frame-ancestors 'none'` (docs 13
+  // §5.4); 1-year HSTS w/ preload; strict referrer + same-origin resource policy;
+  // frameguard DENY (clickjacking). TLS terminates at the edge — HSTS only takes
+  // effect over HTTPS, harmless in dev over http.
   app.use(
     helmet({
+      contentSecurityPolicy: {
+        useDefaults: false,
+        directives: {
+          defaultSrc: ["'none'"],
+          frameAncestors: ["'none'"],
+          baseUri: ["'none'"],
+          objectSrc: ["'none'"],
+          formAction: ["'none'"],
+        },
+      },
       hsts: isProd ? { maxAge: 31_536_000, includeSubDomains: true, preload: true } : undefined,
       referrerPolicy: { policy: 'no-referrer' },
       crossOriginResourcePolicy: { policy: 'same-site' },
+      frameguard: { action: 'deny' },
     }),
   );
+
+  // Permissions-Policy (P7.2) — helmet does not set this. A JSON API needs none
+  // of these browser features; deny them so an embedded/proxied context cannot
+  // request them.
+  app.use((_req: Request, res: Response, next: NextFunction) => {
+    res.setHeader(
+      'Permissions-Policy',
+      'camera=(), microphone=(), geolocation=(), payment=(), usb=(), browsing-topics=()',
+    );
+    next();
+  });
+
+  // Request-size guard (P7.2 "Request Size Limits") — reject oversized JSON/form
+  // bodies by Content-Length BEFORE parsing. Multipart uploads are EXEMPT (multer
+  // enforces its own per-kind caps) and the raw-body webhook path is untouched,
+  // so this adds an explicit cap without disturbing parsing. Returns the standard
+  // error envelope.
+  const MAX_BODY_BYTES = 2 * 1024 * 1024; // 2 MiB
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    const contentType = String(req.headers['content-type'] ?? '');
+    const length = Number(req.headers['content-length'] ?? 0);
+    if (!contentType.includes('multipart/form-data') && length > MAX_BODY_BYTES) {
+      res.status(413).json({
+        success: false,
+        error: { code: 'PAYLOAD_TOO_LARGE', message: 'Request body exceeds the size limit.' },
+      });
+      return;
+    }
+    next();
+  });
 
   // Response compression. nginx also compresses in prod (docs 15); enabling it
   // here keeps dev + non-nginx deploys covered without harming the proxied path.
@@ -88,6 +132,15 @@ async function bootstrap(): Promise<void> {
   app.enableCors({
     origin: [config.appUrl, config.adminUrl],
     credentials: true,
+    // Pin methods + request headers explicitly (docs 13 §5.6) — never reflect.
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: [
+      'Authorization',
+      'Content-Type',
+      'X-Request-Id',
+      'X-Client',
+      'Idempotency-Key',
+    ],
     // Let browser clients read the correlation id (support tickets, tracing).
     exposedHeaders: [REQUEST_ID_HEADER],
     // Cache preflight for a day to cut OPTIONS chatter.

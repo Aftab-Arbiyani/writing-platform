@@ -1,0 +1,51 @@
+name: CodeQL
+
+# Static application security testing (SAST) for JS/TS — P7.2 supply-chain +
+# application-security hook. Runs on PRs, pushes to main, and a weekly schedule
+# so newly-disclosed query packs re-scan the frozen codebase. Findings surface
+# in the repo Security tab; wire branch protection to require it before GA.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    # Mondays 04:17 UTC — off-peak; catches new CodeQL queries against main.
+    - cron: '17 4 * * 1'
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: Analyze (javascript-typescript)
+    runs-on: ubuntu-latest
+    permissions:
+      # CodeQL needs to read the code and write results to the Security tab.
+      actions: read
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # SHA-pinned (P7.2 supply-chain standard for security-sensitive actions).
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@4e828ff8d448a8a6e532957b1811f387a63867e8 # v3.29.4
+        with:
+          languages: javascript-typescript
+          # `security-and-quality` adds maintainability queries on top of the
+          # default security suite.
+          queries: security-and-quality
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@4e828ff8d448a8a6e532957b1811f387a63867e8 # v3.29.4
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@4e828ff8d448a8a6e532957b1811f387a63867e8 # v3.29.4
+        with:
+          category: '/language:javascript-typescript'

@@ -82,6 +82,9 @@ export const router = createBrowserRouter([
                         path: ROUTES.infraHealth,
                         lazy: () => import('@/app/routes/infrastructure-health'),
                       },
+                      { path: ROUTES.security, lazy: () => import('@/app/routes/security') },
+                      { path: ROUTES.compliance, lazy: () => import('@/app/routes/compliance') },
+                      { path: ROUTES.privacy, lazy: () => import('@/app/routes/privacy') },
                     ],
                   },
 

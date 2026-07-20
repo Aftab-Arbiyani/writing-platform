@@ -13,6 +13,8 @@
  * shells out to this command via MIGRATE_CMD — so run migrations through that
  * wrapper in production, not this entrypoint directly.
  */
+/* eslint-disable no-console -- standalone CLI entrypoint: console is the only
+   output channel (it runs before/without the Nest logger). */
 import 'reflect-metadata';
 
 import dataSource from './data-source';

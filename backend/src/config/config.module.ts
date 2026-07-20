@@ -12,6 +12,7 @@ import { jwtConfig } from './jwt.config';
 import { mailConfig } from './mail.config';
 import { paymentsConfig } from './payments.config';
 import { redisConfig } from './redis.config';
+import { securityConfig } from './security.config';
 import { storageConfig } from './storage.config';
 
 /**
@@ -43,6 +44,7 @@ import { storageConfig } from './storage.config';
         aiConfig,
         paymentsConfig,
         deploymentConfig,
+        securityConfig,
       ],
     }),
   ],

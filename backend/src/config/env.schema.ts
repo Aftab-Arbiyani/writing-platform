@@ -75,6 +75,19 @@ export const envSchema = z.object({
   // ── Outbound mail (Mailpit dev; consumed by the Phase-1 emails queue) ──
   SMTP_URL: z.string().url().default('smtp://localhost:1025'),
 
+  // ── Security Platform (P7.2) ────────────────────────────────────────────
+  // Field-level encryption keys (rotation-ready). Format: "id:base64key,id2:..."
+  // where each key is 32 bytes base64. Empty = field encryption inert (dev).
+  // The active key encrypts; every listed key can decrypt (rotation overlap).
+  ENCRYPTION_KEYS: z.string().default(''),
+  ENCRYPTION_ACTIVE_KEY_ID: z.string().default(''),
+  /** Warn when the active encryption key is older than this (key-expiry monitoring). */
+  ENCRYPTION_KEY_MAX_AGE_DAYS: z.coerce.number().int().positive().default(180),
+  /** Enforce account lockout after repeated login failures (settings own thresholds). */
+  SECURITY_ACCOUNT_LOCKOUT_ENABLED: boolish.default('true'),
+  /** Reject a request whose Idempotency-Key replays a prior mutation (API security). */
+  SECURITY_IDEMPOTENCY_ENABLED: boolish.default('true'),
+
   // ── Observability (empty string = Sentry disabled) ─────────────────────
   SENTRY_DSN: z.string().default(''),
   SENTRY_RELEASE: z.string().default(''),

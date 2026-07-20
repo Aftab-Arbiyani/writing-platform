@@ -14,7 +14,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiProduces, ApiTags } from '@nestjs/swagger';
-import { PERMISSIONS, PieceStatus, UserStatus } from '@qalam/shared';
+import { PERMISSIONS, PieceStatus, Role, UserStatus } from '@qalam/shared';
 import type { Request, Response } from 'express';
 
 import { RateLimit } from '../../common/decorators/rate-limit.decorator';
@@ -33,7 +33,7 @@ import { ProfileService } from '../users/profile.service';
 import { RolesService } from '../users/roles.service';
 import { UsersService } from '../users/users.service';
 import { ADMIN_EXPORT_BATCH, ADMIN_RECENT_ACTIVITY_LIMIT } from './admin.constants';
-import { AdminSelfActionException } from './admin.exceptions';
+import { AdminSelfActionException, RoleAssignmentForbiddenException } from './admin.exceptions';
 import {
   EXPORT_COLUMNS,
   projectFields,
@@ -345,6 +345,12 @@ export class AdminUsersController {
       if (dto.role !== current) {
         if (admin.id === id) {
           throw new AdminSelfActionException('You cannot change your own role.');
+        }
+        // Privilege-escalation prevention (P7.2, docs 13 §4.1): only a
+        // super_admin may assign roles — an `admin` cannot mint another
+        // admin/super_admin. The `UserUpdate` capability is not enough here.
+        if (admin.role !== Role.SuperAdmin) {
+          throw new RoleAssignmentForbiddenException();
         }
         const result = await this.roles.setRole(id, dto.role, admin.id);
         changes.role = result;

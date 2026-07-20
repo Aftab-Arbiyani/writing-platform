@@ -23,6 +23,10 @@ export const ROUTES = {
   systemInfo: '/system',
   configHealth: '/system/config',
   infraHealth: '/system/infrastructure',
+  // Security / Compliance / Privacy (P7.2)
+  security: '/system/security',
+  compliance: '/system/compliance',
+  privacy: '/system/privacy',
   // Access
   users: '/users',
   moderators: '/moderators',

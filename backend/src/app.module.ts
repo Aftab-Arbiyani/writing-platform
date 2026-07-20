@@ -37,12 +37,15 @@ import { MonetizationModule } from './modules/monetization/monetization.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { PermissionsModule } from './modules/permissions/permissions.module';
 import { PiecesModule } from './modules/pieces/pieces.module';
+import { ComplianceModule } from './modules/compliance/compliance.module';
 import { PolicyModule } from './modules/policy/policy.module';
 import { PolicyIntegrationModule } from './modules/policy-integration/policy-integration.module';
+import { PrivacyModule } from './modules/privacy/privacy.module';
 import { PublishingModule } from './modules/publishing/publishing.module';
 import { RetrievalModule } from './modules/retrieval/retrieval.module';
 import { TrustModule } from './modules/trust/trust.module';
 import { SearchModule } from './modules/search/search.module';
+import { SecurityModule } from './modules/security/security.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { StoryIntelligenceModule } from './modules/story-intelligence/story-intelligence.module';
 import { TaxonomyModule } from './modules/taxonomy/taxonomy.module';
@@ -81,6 +84,20 @@ import { RedisModule } from './redis/redis.module';
     // mode. Additive tables; reuses the audit trail + Redis cache. Backs Phase-4
     // Epic A7 (admin settings UI).
     SettingsModule,
+    // Security & Compliance Platform (P7.2): the central point for security
+    // policy enforcement — reusable validation layer, field encryption + key
+    // management, threat detection + scoring, security-audit facade over the
+    // immutable trail, and the security-policy resolver. @Global; composes the
+    // audit + settings + Redis + metrics platforms without duplicating authz
+    // (Policy Engine), premium access (Entitlement), or rate limiting.
+    SecurityModule,
+    // Privacy + Compliance Platforms (P7.2): self-service consent, GDPR data
+    // export (Art. 15) + erasure (Art. 17) via self-registered contributor ports,
+    // a data-retention registry, and compliance reporting. Consent/DSR state is
+    // durable Redis; every event is immutable in audit_logs. Compose the Security
+    // + Audit platforms; no new tables, no duplication.
+    PrivacyModule,
+    ComplianceModule,
     // AI Platform (AF1 — Phase 2 AI foundation): provider abstraction, model +
     // prompt registries, context pipeline, token accounting, conversations,
     // configuration, safety hooks, completion orchestrator. Additive-only; reuses

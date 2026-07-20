@@ -4,6 +4,8 @@ import { QueryFailedError } from 'typeorm';
 
 import { TransactionRunner } from '../../common/database/transaction-runner';
 import { MailService } from '../../mail/mail.service';
+import { RateLimitedException } from '../../common/exceptions/rate-limited.exception';
+import { ThreatDetectionService } from '../security/threat-detection.service';
 import { UsersService } from '../users/users.service';
 import { User } from '../users/entities/user.entity';
 import {
@@ -54,6 +56,7 @@ export class AuthService {
     private readonly mail: MailService,
     private readonly events: AuthEventLogger,
     private readonly transactions: TransactionRunner,
+    private readonly threats: ThreatDetectionService,
   ) {}
 
   async register(
@@ -94,6 +97,16 @@ export class AuthService {
   }
 
   async login(input: { email: string; password: string }, ctx: TokenContext): Promise<AuthResult> {
+    // Account-lockout gate (P7.2): a source (ip+email) that exceeded the failure
+    // threshold is blocked before the password is even checked. Keyed by
+    // ip+email — not the bare account — so a third party cannot lock a victim
+    // out (docs 13 §8 "no victim DoS"), while still enforcing a lockout rule.
+    const loginCtx = { ip: ctx.ip, email: input.email, device: ctx.device };
+    const lock = await this.threats.lockoutState(loginCtx);
+    if (lock.locked) {
+      throw new RateLimitedException();
+    }
+
     const user = await this.users.findByEmail(input.email);
     const valid = await this.passwords.verifyConstantTime(
       user?.passwordHash ?? null,
@@ -102,6 +115,9 @@ export class AuthService {
 
     if (user === null || !valid) {
       this.events.loginFailure(ctx.ip);
+      // Count the failure + run threat detection (credential-stuffing/brute-force
+      // classification + lockout). Never throws into the login path.
+      await this.threats.recordLoginFailure({ ...loginCtx, userId: user?.id ?? null });
       throw new InvalidCredentialsException();
     }
     if (user.status === UserStatus.Suspended) {
@@ -115,6 +131,8 @@ export class AuthService {
     await this.users.recordLogin(user.id);
     const tokens = await this.tokens.issuePair(user.id, ctx);
     this.events.loginSuccess(user.id, ctx.ip);
+    // Clear failure state + flag a suspicious (new-device) login. Non-fatal.
+    await this.threats.recordLoginSuccess({ ...loginCtx, userId: user.id });
     return { user: toUserSummary(user), tokens };
   }
 

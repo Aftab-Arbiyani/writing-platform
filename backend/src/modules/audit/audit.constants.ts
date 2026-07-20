@@ -33,12 +33,23 @@ export const AUDIT_CATEGORY = {
   Status: 'status',
   Role: 'role',
   Security: 'security',
+  Privacy: 'privacy',
   Administrative: 'administrative',
 } as const;
 export type AuditCategory = (typeof AUDIT_CATEGORY)[keyof typeof AUDIT_CATEGORY];
 
-/** Derives the display category from an action code (unknown → administrative). */
+/**
+ * Derives the display category from an action code (unknown → administrative).
+ * P7.2 security/privacy dot-namespaces are bucketed by prefix so the Security
+ * Platform can add action codes without editing this map.
+ */
 export function auditCategoryOf(action: string): AuditCategory {
+  if (/^(auth|authz|security|threat)\./.test(action)) {
+    return AUDIT_CATEGORY.Security;
+  }
+  if (/^(privacy|compliance|data)\./.test(action)) {
+    return AUDIT_CATEGORY.Privacy;
+  }
   switch (action) {
     case AUDIT_ACTIONS.UserSuspend:
     case AUDIT_ACTIONS.UserUnsuspend:

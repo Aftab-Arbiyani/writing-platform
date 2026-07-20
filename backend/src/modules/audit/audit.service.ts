@@ -17,8 +17,9 @@ export interface AuditContext {
 
 /** Everything needed to persist one admin action. */
 export interface RecordAuditInput {
-  actorId: string;
-  actorRole: string;
+  /** The actor's user id; null for system-originated or anonymous security events. */
+  actorId: string | null;
+  actorRole: string | null;
   action: string;
   targetId: string | null;
   targetType?: string;

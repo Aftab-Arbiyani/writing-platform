@@ -17,6 +17,8 @@ export class MetricsService {
   private durationSumMs = 0;
   private durationCount = 0;
   private errorsTotal = 0;
+  /** Generic security counters (P7.2), keyed by "metricName{labels}". */
+  private readonly securityCounters = new Map<string, number>();
 
   constructor(private readonly monitor: QueueMonitorService) {}
 
@@ -29,6 +31,20 @@ export class MetricsService {
     if (statusCode >= 500) {
       this.errorsTotal += 1;
     }
+  }
+
+  /**
+   * Increment a security counter (P7.2) — auth failures, authz denials,
+   * rate-limit breaches, threat events, lockouts, replay blocks, secret
+   * validation failures. Surfaced through the SAME `/metrics` registry so the
+   * Security Platform adds no parallel monitoring infrastructure.
+   */
+  incrementSecurity(name: string, labels: Record<string, string> = {}, by = 1): void {
+    const labelStr = Object.entries(labels)
+      .map(([k, v]) => `${k}="${String(v).replace(/["\\\n]/g, '_')}"`)
+      .join(',');
+    const key = labelStr.length > 0 ? `${name}{${labelStr}}` : name;
+    this.securityCounters.set(key, (this.securityCounters.get(key) ?? 0) + by);
   }
 
   /** Render the full metrics snapshot in Prometheus text format. */
@@ -50,6 +66,14 @@ export class MetricsService {
     out.push('# TYPE http_request_duration_seconds summary');
     out.push(`http_request_duration_seconds_sum ${(this.durationSumMs / 1000).toFixed(3)}`);
     out.push(`http_request_duration_seconds_count ${this.durationCount}`);
+
+    if (this.securityCounters.size > 0) {
+      out.push('# HELP security_events_total Security Platform event counters (P7.2).');
+      out.push('# TYPE security_events_total counter');
+      for (const [key, value] of this.securityCounters) {
+        out.push(`${key} ${value}`);
+      }
+    }
 
     const mem = process.memoryUsage();
     out.push('# TYPE process_resident_memory_bytes gauge');

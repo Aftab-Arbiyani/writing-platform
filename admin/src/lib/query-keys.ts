@@ -73,4 +73,14 @@ export const qk = {
     cache: () => ['system', 'cache'] as const, // GET /admin/cache
     version: () => ['system', 'version'] as const, // GET /version (root probe)
   },
+  security: {
+    all: ['security'] as const, // Security / Threat dashboard (P7.2)
+    status: () => ['security', 'status'] as const, // GET /admin/security/status
+    keys: () => ['security', 'keys'] as const, // GET /admin/security/keys
+  },
+  compliance: {
+    all: ['compliance'] as const, // Compliance + Privacy dashboards (P7.2)
+    report: () => ['compliance', 'report'] as const, // GET /admin/compliance/report
+    retention: () => ['compliance', 'retention'] as const, // GET /admin/compliance/retention
+  },
 } as const;

@@ -86,6 +86,11 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # License audit (P7.2 supply chain) — inventory of production dependency
+      # licenses. Reported (non-blocking); a copyleft/unknown license surfaces
+      # here for the third-party-package review before it can ship.
+      - name: License audit (production deps)
+        run: pnpm licenses list --prod || true
 
   # Migration up/down validation against a real Postgres (docs 15 §5).
   migrations:
