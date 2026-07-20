@@ -113,6 +113,11 @@ export const infrastructureConfig = registerAs('infrastructure', () => ({
       priority: 8,
     }),
     [QUEUE.Ai]: policy(QUEUE.Ai, { attempts: 3, backoffMs: 5_000, priority: 9 }),
+    [QUEUE.Monetization]: policy(QUEUE.Monetization, {
+      attempts: 5, // webhooks retry harder — a missed billing effect must not be lost
+      backoffMs: 10_000,
+      priority: 3,
+    }),
   } satisfies Record<QueueName, QueuePolicy>,
 
   /** Cron patterns (standard 5-field). All overridable per docs 18 (configurable). */

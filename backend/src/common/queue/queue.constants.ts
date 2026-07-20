@@ -31,6 +31,8 @@ export const QUEUE = {
   Maintenance: 'maintenance',
   /** Phase-2 AI placeholder — registered for monitoring; intentionally no worker. */
   Ai: 'ai',
+  /** Monetization (AF5): async webhook processing + subscription lifecycle sweeps. */
+  Monetization: 'monetization',
 } as const;
 
 export type QueueName = (typeof QUEUE)[keyof typeof QUEUE];
@@ -76,6 +78,11 @@ export const JOB = {
   DailyCleanup: 'daily-cleanup',
   /** maintenance: weekly database maintenance (ANALYZE + retention). */
   WeeklyDbMaintenance: 'weekly-db-maintenance',
+
+  /** monetization: process one received provider webhook event (async, idempotent). */
+  MonetizationWebhook: 'monetization-webhook',
+  /** monetization: sweep subscriptions for trial-ending / grace-expiry / renewal-due. */
+  MonetizationLifecycleSweep: 'monetization-lifecycle-sweep',
 } as const;
 
 export type JobName = (typeof JOB)[keyof typeof JOB];

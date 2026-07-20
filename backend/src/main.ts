@@ -28,7 +28,9 @@ import { appConfig } from './config/app.config';
 
 async function bootstrap(): Promise<void> {
   // bufferLogs holds early log lines until the pino logger takes over below.
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  // rawBody captures the unparsed request buffer (req.rawBody) so payment webhook
+  // handlers can verify a provider's HMAC signature over the exact bytes (AF5).
+  const app = await NestFactory.create(AppModule, { bufferLogs: true, rawBody: true });
 
   // Structured JSON logging via nestjs-pino (request-scoped correlation ids).
   const logger = app.get(Logger);

@@ -17,6 +17,7 @@ const DEFAULT_CONCURRENCY: Record<QueueName, number> = {
   [QUEUE.Cache]: 3,
   [QUEUE.Maintenance]: 1,
   [QUEUE.Ai]: 1,
+  [QUEUE.Monetization]: 3, // I/O-bound webhook/lifecycle processing
 };
 
 /** Resolve a queue's worker concurrency (env override → default). */

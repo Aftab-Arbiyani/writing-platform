@@ -30,6 +30,9 @@ export interface JobPayloads {
 
   [JOB.DailyCleanup]: Record<string, never>;
   [JOB.WeeklyDbMaintenance]: Record<string, never>;
+
+  [JOB.MonetizationWebhook]: { webhookEventId: string };
+  [JOB.MonetizationLifecycleSweep]: Record<string, never>;
 }
 
 /**
@@ -51,6 +54,8 @@ export const JOB_QUEUE: Record<JobName, QueueName> = {
   [JOB.CacheOptimize]: QUEUE.Cache,
   [JOB.DailyCleanup]: QUEUE.Maintenance,
   [JOB.WeeklyDbMaintenance]: QUEUE.Maintenance,
+  [JOB.MonetizationWebhook]: QUEUE.Monetization,
+  [JOB.MonetizationLifecycleSweep]: QUEUE.Monetization,
 };
 
 /** Per-job retry/priority overrides layered over the queue default (docs 14 §5). */

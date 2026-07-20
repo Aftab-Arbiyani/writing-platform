@@ -52,6 +52,12 @@ export const RATE_LIMIT_TIERS = {
   // AI usage service), not a sliding window; this bounds request bursts.
   aiCompletion: { windowSeconds: 60, max: 20, keyBy: 'user' },
   search: { windowSeconds: 60, max: 30, keyBy: 'user-or-ip' },
+  // Monetization (AF5). Checkout/subscription mutations touch a payment provider and
+  // must not be hammered — tighter than the generic write tier, per authenticated user.
+  billing: { windowSeconds: 60, max: 15, keyBy: 'user' },
+  // Payment-provider webhooks are unauthenticated (no JWT); the provider signature is
+  // the real control. This bounds a flood by source IP without blocking legitimate bursts.
+  billingWebhook: { windowSeconds: 60, max: 120, keyBy: 'ip' },
   read: { windowSeconds: 60, max: 300, keyBy: 'user-or-ip' },
   // Baseline applied class-level to every controller so no endpoint is ever
   // unlimited (docs 05 §8 "default"). Endpoints that declare a specific tier

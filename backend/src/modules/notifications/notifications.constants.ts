@@ -39,4 +39,14 @@ export const TYPE_PREFERENCE: Record<NotificationType, PreferenceKey> = {
   [NType.Response]: 'response',
   [NType.System]: 'system',
   [NType.Featured]: 'system',
+  // Monetization (AF5) — billing/subscription lifecycle notifications ride the
+  // `system` preference key (no dedicated toggle column yet; add one if a separate
+  // "billing" preference category is ever wanted).
+  [NType.TrialEnding]: 'system',
+  [NType.SubscriptionRenewed]: 'system',
+  [NType.SubscriptionExpired]: 'system',
+  [NType.PaymentFailed]: 'system',
+  [NType.PaymentReceipt]: 'system',
+  [NType.QuotaExceeded]: 'system',
+  [NType.CreditsLow]: 'system',
 };

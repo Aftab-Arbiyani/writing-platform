@@ -32,6 +32,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { EngagementModule } from './modules/engagement/engagement.module';
 import { FeedModule } from './modules/feed/feed.module';
 import { ModerationModule } from './modules/moderation/moderation.module';
+import { MonetizationModule } from './modules/monetization/monetization.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { PermissionsModule } from './modules/permissions/permissions.module';
 import { PiecesModule } from './modules/pieces/pieces.module';
@@ -91,6 +92,13 @@ import { RedisModule } from './redis/redis.module';
     // AF3 (graph SSOT), SearchModule (FTS seam), FeedModule (trending/discovery), and
     // SettingsModule. Placed after all of those (its dependencies).
     RetrievalModule,
+    // Monetization Platform (AF5): entitlements (the single source of truth for premium
+    // access), subscriptions, billing behind a replaceable payment provider port, AI
+    // usage/credit metering, purchases, pricing, promotions. Additive-only; reuses the
+    // settings feature-flag gate, notifications/analytics/audit, the global CacheService,
+    // and BullMQ. @Global so it can provide the optional AI_USAGE_METER hook the AI
+    // orchestrator delegates to (no reverse dependency on AiModule).
+    MonetizationModule,
     // Async processing backbone (E11): queues, workers, scheduler, cache,
     // monitoring. @Global — imported last so the business modules it wraps are
     // already defined; it reaches them via their exported services only.

@@ -8,6 +8,7 @@ import { databaseConfig } from './database.config';
 import { validateEnv } from './env.schema';
 import { jwtConfig } from './jwt.config';
 import { mailConfig } from './mail.config';
+import { paymentsConfig } from './payments.config';
 import { redisConfig } from './redis.config';
 import { storageConfig } from './storage.config';
 
@@ -36,6 +37,7 @@ import { storageConfig } from './storage.config';
         mailConfig,
         storageConfig,
         aiConfig,
+        paymentsConfig,
       ],
     }),
   ],

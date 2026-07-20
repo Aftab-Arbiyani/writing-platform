@@ -231,6 +231,53 @@ export const ERROR_CODES = {
   /** The per-user saved-search cap was reached (409). */
   SAVED_SEARCH_LIMIT_EXCEEDED: 'SAVED_SEARCH_LIMIT_EXCEEDED',
 
+  // ── Monetization (AF5 — subscriptions, entitlements, billing, credits) ────
+  /** The monetization platform is globally disabled (`feature.payments.enabled` off). */
+  MONETIZATION_DISABLED: 'MONETIZATION_DISABLED',
+  /** No subscription for this user (or it belongs to another — privacy-preserving 404). */
+  SUBSCRIPTION_NOT_FOUND: 'SUBSCRIPTION_NOT_FOUND',
+  /** The user already has an active subscription (create attempted twice) (409). */
+  SUBSCRIPTION_ALREADY_ACTIVE: 'SUBSCRIPTION_ALREADY_ACTIVE',
+  /** Illegal lifecycle transition (e.g. reactivate an active sub, resume a non-paused one) (409). */
+  SUBSCRIPTION_INVALID_TRANSITION: 'SUBSCRIPTION_INVALID_TRANSITION',
+  /** Referenced a plan tier that is not in the pricing config (404). */
+  PLAN_NOT_FOUND: 'PLAN_NOT_FOUND',
+  /** The requested plan change is a no-op (same plan + interval) (409). */
+  PLAN_CHANGE_NOOP: 'PLAN_CHANGE_NOOP',
+  /** A trial was requested but the user is not trial-eligible (already used one) (409). */
+  TRIAL_NOT_ELIGIBLE: 'TRIAL_NOT_ELIGIBLE',
+  /** The caller lacks entitlement to a premium feature (402 — payment required). */
+  ENTITLEMENT_DENIED: 'ENTITLEMENT_DENIED',
+  /** No such entitlement override, or it belongs to another user (404). */
+  ENTITLEMENT_OVERRIDE_NOT_FOUND: 'ENTITLEMENT_OVERRIDE_NOT_FOUND',
+  /** A per-user AI usage/credit quota (daily/monthly/per-feature) was hit (429). */
+  QUOTA_EXCEEDED: 'QUOTA_EXCEEDED',
+  /** The user has insufficient AI credits for the request (402). */
+  INSUFFICIENT_CREDITS: 'INSUFFICIENT_CREDITS',
+  /** A payment attempt failed (card declined / provider rejected) (402). */
+  PAYMENT_FAILED: 'PAYMENT_FAILED',
+  /** No such payment / invoice for this user (404). */
+  PAYMENT_NOT_FOUND: 'PAYMENT_NOT_FOUND',
+  INVOICE_NOT_FOUND: 'INVOICE_NOT_FOUND',
+  /** The selected payment provider has no credentials / is not configured (503). */
+  PAYMENT_PROVIDER_NOT_CONFIGURED: 'PAYMENT_PROVIDER_NOT_CONFIGURED',
+  /** The upstream payment provider returned an error (502 — provider's fault). */
+  PAYMENT_PROVIDER_ERROR: 'PAYMENT_PROVIDER_ERROR',
+  /** A webhook failed signature verification / replay check — rejected (400). */
+  WEBHOOK_SIGNATURE_INVALID: 'WEBHOOK_SIGNATURE_INVALID',
+  /** Store receipt / purchase-token validation failed (400). */
+  RECEIPT_VALIDATION_FAILED: 'RECEIPT_VALIDATION_FAILED',
+  /** No such coupon, or it is not currently redeemable (404). */
+  COUPON_NOT_FOUND: 'COUPON_NOT_FOUND',
+  /** The coupon exists but is expired / used up / not applicable (409). */
+  COUPON_NOT_REDEEMABLE: 'COUPON_NOT_REDEEMABLE',
+  /** The caller already redeemed this coupon the maximum number of times (409). */
+  COUPON_ALREADY_REDEEMED: 'COUPON_ALREADY_REDEEMED',
+  /** Creating a coupon whose code already exists (409). */
+  COUPON_CODE_TAKEN: 'COUPON_CODE_TAKEN',
+  /** A restore/purchase-verification found nothing to restore (404). */
+  PURCHASE_NOT_FOUND: 'PURCHASE_NOT_FOUND',
+
   // ── Cross-cutting ───────────────────────────────────────────────────────
   RATE_LIMITED: 'RATE_LIMITED',
   VALIDATION_FAILED: 'VALIDATION_FAILED',

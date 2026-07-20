@@ -1,4 +1,11 @@
-import type { FollowStatus, ShareChannel } from '@qalam/shared';
+import type {
+  FollowStatus,
+  PlanTier,
+  QuotaWindow,
+  ShareChannel,
+  SubscriptionEventType,
+  SubscriptionStatus,
+} from '@qalam/shared';
 
 /**
  * Internal domain events (E9). A decoupling seam: feature modules EMIT these
@@ -27,6 +34,14 @@ export const DomainEventType = {
   ReadCompleted: 'read.completed',
   BookmarkAdded: 'bookmark.added',
   ShareCreated: 'share.created',
+  // Monetization (AF5) — additive; the notification + monetization-analytics listeners
+  // subscribe. Emitted AFTER the subscription/payment transaction commits.
+  SubscriptionChanged: 'subscription.changed',
+  SubscriptionTrialEnding: 'subscription.trial_ending',
+  PaymentSucceeded: 'payment.succeeded',
+  PaymentFailed: 'payment.failed',
+  CreditsLow: 'credits.low',
+  AiQuotaExceeded: 'ai.quota_exceeded',
 } as const;
 export type DomainEventType = (typeof DomainEventType)[keyof typeof DomainEventType];
 
@@ -117,6 +132,52 @@ export interface ShareCreatedEvent {
   channel: ShareChannel;
 }
 
+/** A subscription lifecycle transition (created/renewed/upgraded/…/expired). */
+export interface SubscriptionChangedEvent {
+  subscriptionId: string;
+  userId: string;
+  eventType: SubscriptionEventType;
+  tier: PlanTier;
+  status: SubscriptionStatus;
+}
+
+/** A trial is ending soon → nudge the user before it converts/lapses. */
+export interface SubscriptionTrialEndingEvent {
+  subscriptionId: string;
+  userId: string;
+  trialEnd: string;
+}
+
+/** A payment succeeded (renewal / one-time / credit purchase) → receipt notification. */
+export interface PaymentSucceededEvent {
+  userId: string;
+  paymentId: string;
+  amount: number;
+  currency: string;
+  invoiceId: string | null;
+}
+
+/** A payment failed (declined / renewal failure) → dunning notification. */
+export interface PaymentFailedEvent {
+  userId: string;
+  amount: number;
+  currency: string;
+  reason: string | null;
+}
+
+/** The user's AI credit balance dropped below the low-credit threshold. */
+export interface CreditsLowEvent {
+  userId: string;
+  balance: number;
+}
+
+/** A per-user AI usage/credit quota was hit (cost alert / upgrade nudge). */
+export interface AiQuotaExceededEvent {
+  userId: string;
+  window: QuotaWindow;
+  feature: string | null;
+}
+
 /** Maps each event name to its payload type (compile-time safety on emit/on). */
 export interface DomainEventMap {
   [DomainEventType.UserFollowed]: UserFollowedEvent;
@@ -130,4 +191,10 @@ export interface DomainEventMap {
   [DomainEventType.ReadCompleted]: ReadCompletedEvent;
   [DomainEventType.BookmarkAdded]: BookmarkAddedEvent;
   [DomainEventType.ShareCreated]: ShareCreatedEvent;
+  [DomainEventType.SubscriptionChanged]: SubscriptionChangedEvent;
+  [DomainEventType.SubscriptionTrialEnding]: SubscriptionTrialEndingEvent;
+  [DomainEventType.PaymentSucceeded]: PaymentSucceededEvent;
+  [DomainEventType.PaymentFailed]: PaymentFailedEvent;
+  [DomainEventType.CreditsLow]: CreditsLowEvent;
+  [DomainEventType.AiQuotaExceeded]: AiQuotaExceededEvent;
 }

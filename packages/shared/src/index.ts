@@ -8,6 +8,7 @@ export * from './analytics.js';
 export * from './enums.js';
 export * from './error-codes.js';
 export * from './limits.js';
+export * from './monetization.js';
 export * from './permissions.js';
 export * from './rate-limits.js';
 export * from './regex.js';

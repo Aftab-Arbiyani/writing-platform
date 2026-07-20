@@ -9,6 +9,7 @@ import { infrastructureConfig } from '../config/infrastructure.config';
 import { AnalyticsModule } from '../modules/analytics/analytics.module';
 import { AuthModule } from '../modules/auth/auth.module';
 import { FeedModule } from '../modules/feed/feed.module';
+import { MonetizationModule } from '../modules/monetization/monetization.module';
 import { NotificationsModule } from '../modules/notifications/notifications.module';
 import { PiecesModule } from '../modules/pieces/pieces.module';
 import { SearchModule } from '../modules/search/search.module';
@@ -30,6 +31,7 @@ import { AnalyticsRollupProcessor } from './worker/analytics-rollup.processor';
 import { CacheProcessor } from './worker/cache.processor';
 import { MaintenanceProcessor } from './worker/maintenance.processor';
 import { MediaProcessingProcessor } from './worker/media-processing.processor';
+import { MonetizationProcessor } from './worker/monetization.processor';
 import { NotificationsProcessor } from './worker/notifications.processor';
 import { ScheduledPublishProcessor } from './worker/scheduled-publish.processor';
 import { TrendingScoreProcessor } from './worker/trending-score.processor';
@@ -48,6 +50,10 @@ import {
   WeeklyDbMaintenanceHandler,
 } from './worker/handlers/maintenance.handlers';
 import { MediaOptimizeHandler } from './worker/handlers/media-processing.handlers';
+import {
+  MonetizationLifecycleSweepHandler,
+  MonetizationWebhookHandler,
+} from './worker/handlers/monetization.handlers';
 import { BroadcastHandler } from './worker/handlers/notifications.handlers';
 import { PublishDueHandler, PublishOneHandler } from './worker/handlers/scheduled-publish.handlers';
 import { TrendingRecomputeHandler } from './worker/handlers/trending-score.handlers';
@@ -77,6 +83,7 @@ const WORKER_PROCESSORS = [
   MediaProcessingProcessor,
   CacheProcessor,
   MaintenanceProcessor,
+  MonetizationProcessor,
 ];
 
 // The typed job handlers each processor dispatches to (the "job classes").
@@ -94,6 +101,8 @@ const JOB_HANDLERS = [
   CacheOptimizeHandler,
   DailyCleanupHandler,
   WeeklyDbMaintenanceHandler,
+  MonetizationWebhookHandler,
+  MonetizationLifecycleSweepHandler,
 ];
 
 // Processors + their handlers are only registered on worker nodes; an API-only
@@ -116,6 +125,7 @@ const workers =
     FeedModule,
     SearchModule,
     AuthModule,
+    MonetizationModule,
   ],
   controllers: [AdminQueueController, AdminCacheController, MetricsController],
   providers: [

@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
 import { AiFinishReason, AiMessageRole } from '@qalam/shared';
 import type {
@@ -28,6 +28,8 @@ import { SafetyService } from '../safety/safety.service';
 import { TokenCounterService } from '../tokens/token-counter.service';
 import { UsageService } from '../tokens/usage.service';
 import { ModelRegistryService } from '../registry/model-registry.service';
+import { AI_USAGE_METER } from '../../../common/metering/ai-usage-meter.port';
+import type { AiUsageMeter } from '../../../common/metering/ai-usage-meter.port';
 
 /** A caller's completion request (already validated by the DTO). */
 export interface CompletionInput {
@@ -97,6 +99,10 @@ export class AiCompletionService {
     private readonly usage: UsageService,
     private readonly tokens: TokenCounterService,
     private readonly conversations: ConversationService,
+    // AF5 metering seam — optional so the AI platform runs standalone (and in unit
+    // tests) with no monetization module. When present it enforces plan quota + credit
+    // balance and debits the credit ledger; the base token-cap check above always runs.
+    @Optional() @Inject(AI_USAGE_METER) private readonly meter?: AiUsageMeter,
   ) {}
 
   /** One-shot completion. */
@@ -205,6 +211,19 @@ export class AiCompletionService {
       throw new AiContextTooLargeException(estimatedTokens, modelMeta.contextWindow);
     }
 
+    // AF5: delegate the quota/credit decision to the monetization meter when present.
+    // The base per-user token cap above already ran; this adds plan-quota + credit
+    // enforcement without duplicating any token counting.
+    if (this.meter !== undefined) {
+      await this.meter.checkQuota({
+        userId: input.userId,
+        feature: input.feature,
+        provider: resolved.provider,
+        model: resolved.model,
+        estimatedTokens,
+      });
+    }
+
     return {
       resolved,
       modelMeta,
@@ -291,6 +310,22 @@ export class AiCompletionService {
       conversationId: input.conversationId ?? null,
       requestId: input.requestId ?? null,
     });
+
+    // AF5: mirror the consumption into the monetization Usage/Credit ledger (debit
+    // credits from the cost the AI platform already computed). The AI usage log above
+    // remains the raw provider-token record; this is the credit/quota source of truth.
+    if (this.meter !== undefined) {
+      await this.meter.recordConsumption({
+        userId: input.userId,
+        feature: input.feature,
+        provider: resolved.provider,
+        model: resolved.model,
+        usage,
+        costUsd,
+        conversationId: input.conversationId ?? null,
+        requestId: input.requestId ?? null,
+      });
+    }
   }
 
   /** Persist the user turn + assistant reply when this is a conversation. */

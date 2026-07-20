@@ -85,6 +85,27 @@ export const envSchema = z.object({
   LM_STUDIO_BASE_URL: z.string().default('http://localhost:1234/v1'),
   SELF_HOSTED_AI_API_KEY: z.string().default(''),
   SELF_HOSTED_AI_BASE_URL: z.string().default(''),
+
+  // ── Monetization / payments (AF5 — Phase 2). Provider secrets are blank by
+  //    default (blank = provider not configured → the billing subsystem stays
+  //    inert, matching the disabled feature.payments.enabled flag). Never a real
+  //    default value; the payment provider is replaceable via these keys alone. ─
+  STRIPE_SECRET_KEY: z.string().default(''),
+  STRIPE_WEBHOOK_SECRET: z.string().default(''),
+  STRIPE_API_BASE_URL: z.string().url().default('https://api.stripe.com/v1'),
+  STRIPE_SUCCESS_URL: z.string().default(''),
+  STRIPE_CANCEL_URL: z.string().default(''),
+  APPLE_SHARED_SECRET: z.string().default(''),
+  APPLE_BUNDLE_ID: z.string().default(''),
+  APPLE_USE_SANDBOX: z.string().default('true'),
+  APPLE_VERIFY_URL: z.string().url().default('https://buy.itunes.apple.com/verifyReceipt'),
+  APPLE_SANDBOX_VERIFY_URL: z
+    .string()
+    .url()
+    .default('https://sandbox.itunes.apple.com/verifyReceipt'),
+  GOOGLE_PLAY_SERVICE_ACCOUNT_KEY: z.string().default(''),
+  GOOGLE_PLAY_PACKAGE_NAME: z.string().default(''),
+  GOOGLE_PLAY_API_BASE_URL: z.string().url().default('https://androidpublisher.googleapis.com'),
 });
 
 export type Env = z.infer<typeof envSchema>;

@@ -19,6 +19,7 @@ export const SETTING_CATEGORIES = [
   'feature_flags',
   'appearance',
   'localization',
+  'monetization',
 ] as const;
 
 export type SettingCategory = (typeof SETTING_CATEGORIES)[number];

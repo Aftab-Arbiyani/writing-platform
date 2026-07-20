@@ -53,6 +53,11 @@ export const PERMISSIONS = {
   // `ai.manage` administers providers/models/prompts/org-defaults/usage.
   AiUse: 'ai.use',
   AiManage: 'ai.manage',
+  // monetization (AF5) — `billing.use` manages one's own subscription/purchases/
+  // credits; `billing.manage` administers plans/pricing/promotions/coupons/
+  // entitlement overrides/refunds and views revenue/usage/AI-cost analytics.
+  BillingUse: 'billing.use',
+  BillingManage: 'billing.manage',
 } as const;
 
 /** Union of every concrete permission code. */
@@ -231,6 +236,19 @@ export const PERMISSION_CATALOGUE: readonly PermissionDefinition[] = [
     module: 'ai',
     description: 'Administer AI providers, models, prompts, defaults, and usage.',
   },
+  {
+    code: PERMISSIONS.BillingUse,
+    name: 'Use billing',
+    module: 'billing',
+    description: 'Manage your own subscription, purchases, credits, and payment methods.',
+  },
+  {
+    code: PERMISSIONS.BillingManage,
+    name: 'Manage monetization',
+    module: 'billing',
+    description:
+      'Administer plans, pricing, promotions, coupons, entitlement overrides, refunds, and revenue/usage analytics.',
+  },
 ];
 
 /**
@@ -254,6 +272,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<Role, readonly string[]> = {
     'settings.*',
     'taxonomy.*',
     'ai.*',
+    'billing.*',
     'notification.manage',
     PERMISSIONS.AnalyticsView,
     PERMISSIONS.AdminDashboard,
@@ -278,6 +297,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<Role, readonly string[]> = {
     PERMISSIONS.BookmarkManage,
     PERMISSIONS.CollectionManage,
     PERMISSIONS.AiUse,
+    PERMISSIONS.BillingUse,
   ],
 };
 

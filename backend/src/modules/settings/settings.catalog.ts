@@ -493,6 +493,95 @@ export const SETTING_DEFINITIONS: readonly SettingDefinition[] = [
     description: 'AI Retrieval Platform config: sources, ranking weights, budgets (AF4).',
     validationRules: {},
   }),
+
+  // ── Monetization (AF5 — Monetization Platform) ───────────────────────────────
+  // Admin-tunable plan catalogue + cross-cutting billing config. Stored as JSON
+  // blobs; MonetizationConfigService merges each over compiled defaults defensively,
+  // so a missing/partial value never breaks billing. Mirrors compiledPlans() /
+  // DEFAULT_CONFIG. Configurable pricing (regional/currency/promo) lives here as data.
+  def({
+    key: 'monetization.plans',
+    category: 'monetization',
+    dataType: 'json',
+    defaultValue: {
+      free: {
+        tier: 'free',
+        name: 'Free',
+        description: 'Free plan',
+        features: ['ai_budget'],
+        limits: { aiDailyTokens: 20000, aiMonthlyTokens: 200000, aiMonthlyCredits: 0 },
+        monthlyCredits: 0,
+        prices: { none: { usd: 0 } },
+        trialDays: 0,
+      },
+      plus: {
+        tier: 'plus',
+        name: 'Plus',
+        description: 'Plus plan',
+        features: ['ai_budget', 'ai_writing', 'ai_discovery', 'premium_search'],
+        limits: { aiDailyTokens: 100000, aiMonthlyTokens: 2000000, aiMonthlyCredits: 5000 },
+        monthlyCredits: 5000,
+        prices: { monthly: { usd: 499 }, yearly: { usd: 4990 } },
+        trialDays: 14,
+      },
+      pro: {
+        tier: 'pro',
+        name: 'Pro',
+        description: 'Pro plan',
+        features: [
+          'ai_budget',
+          'ai_writing',
+          'ai_discovery',
+          'story_intelligence',
+          'premium_search',
+          'premium_recommendations',
+          'advanced_analytics',
+          'publishing_pro',
+        ],
+        limits: { aiDailyTokens: 500000, aiMonthlyTokens: 10000000, aiMonthlyCredits: 25000 },
+        monthlyCredits: 25000,
+        prices: { monthly: { usd: 1499 }, yearly: { usd: 14990 } },
+        trialDays: 14,
+      },
+      enterprise: {
+        tier: 'enterprise',
+        name: 'Enterprise',
+        description: 'Enterprise plan',
+        features: [
+          'ai_budget',
+          'ai_writing',
+          'ai_discovery',
+          'story_intelligence',
+          'premium_search',
+          'premium_recommendations',
+          'advanced_analytics',
+          'publishing_pro',
+        ],
+        limits: { aiDailyTokens: 0, aiMonthlyTokens: 0, aiMonthlyCredits: 100000 },
+        monthlyCredits: 100000,
+        prices: { monthly: { usd: 4999 }, yearly: { usd: 49990 } },
+        trialDays: 14,
+      },
+    },
+    description: 'Monetization plan catalogue: tiers, features, limits, prices, trials (AF5).',
+    validationRules: {},
+  }),
+  def({
+    key: 'monetization.config',
+    category: 'monetization',
+    dataType: 'json',
+    defaultValue: {
+      creditsPerUsd: 100,
+      trialDays: 14,
+      gracePeriodDays: 7,
+      lowCreditThreshold: 500,
+      taxRates: { default: 0, GB: 0.2, DE: 0.19, IN: 0.18, US: 0 },
+      currencyRates: { usd: 1, eur: 0.92, gbp: 0.79, inr: 83, pkr: 278 },
+      regionCurrency: { US: 'usd', GB: 'gbp', DE: 'eur', IN: 'inr', PK: 'pkr' },
+    },
+    description: 'Monetization config: credit rate, trial/grace, tax + currency tables (AF5).',
+    validationRules: {},
+  }),
 ];
 
 /** Fast key → definition lookup. */

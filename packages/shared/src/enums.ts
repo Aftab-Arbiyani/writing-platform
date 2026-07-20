@@ -90,6 +90,16 @@ export const NotificationType = {
   /** Future-ready (collections follow ships later) — reserved so the type is stable. */
   CollectionFollow: 'collection_follow',
   System: 'system',
+  // ── Monetization (AF5) — subscription/billing lifecycle notifications. Open
+  // catalogue, so these add without a migration; all map to the `system`
+  // preference key (see notifications.constants TYPE_PREFERENCE).
+  TrialEnding: 'trial_ending',
+  SubscriptionRenewed: 'subscription_renewed',
+  SubscriptionExpired: 'subscription_expired',
+  PaymentFailed: 'payment_failed',
+  PaymentReceipt: 'payment_receipt',
+  QuotaExceeded: 'quota_exceeded',
+  CreditsLow: 'credits_low',
 } as const;
 export type NotificationType = (typeof NotificationType)[keyof typeof NotificationType];
 
@@ -116,6 +126,9 @@ export const NotificationEntityType = {
   User: 'user',
   Collection: 'collection',
   System: 'system',
+  /** Monetization (AF5) — a subscription or invoice a notification links to. */
+  Subscription: 'subscription',
+  Invoice: 'invoice',
 } as const;
 export type NotificationEntityType =
   (typeof NotificationEntityType)[keyof typeof NotificationEntityType];
