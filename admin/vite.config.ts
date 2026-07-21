@@ -25,6 +25,8 @@ export default defineConfig({
     },
   },
   build: {
+    // Modern baseline (P7.3) — staff panel, evergreen browsers only.
+    target: 'es2022',
     // Sourcemaps for Sentry release-tagged uploads (docs/00 §9).
     sourcemap: true,
     // AntD is an intentionally large, long-cached vendor chunk (~300 kB gzip);

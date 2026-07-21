@@ -27,11 +27,33 @@ export class MetricsInterceptor implements NestInterceptor {
 
     return next.handle().pipe(
       tap({
-        next: () => this.metrics.record(method, response.statusCode, Date.now() - start),
+        next: () =>
+          this.metrics.record(method, response.statusCode, Date.now() - start, this.route(request)),
         error: (err: unknown) =>
-          this.metrics.record(method, this.statusFromError(err), Date.now() - start),
+          this.metrics.record(
+            method,
+            this.statusFromError(err),
+            Date.now() - start,
+            this.route(request),
+          ),
       }),
     );
+  }
+
+  /**
+   * The matched Express route template (e.g. `/pieces/:id`) — a low-cardinality
+   * operation label for per-operation latency (P7.3). Falls back to undefined
+   * for unmatched paths so raw ids never explode the label space.
+   */
+  private route(request: Request): string | undefined {
+    const path = (request as Request & { route?: { path?: unknown } }).route?.path;
+    if (typeof path === 'string') {
+      return path;
+    }
+    if (Array.isArray(path) && typeof path[0] === 'string') {
+      return path[0];
+    }
+    return undefined;
   }
 
   private statusFromError(err: unknown): number {

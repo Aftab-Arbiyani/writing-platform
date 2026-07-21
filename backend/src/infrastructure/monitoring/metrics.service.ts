@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 
+import { getPerformanceObserver } from '../../common/performance/performance-observer.port';
 import { QueueMonitorService } from './queue-monitor.service';
 
 /**
@@ -23,7 +24,7 @@ export class MetricsService {
   constructor(private readonly monitor: QueueMonitorService) {}
 
   /** Record one completed HTTP request (called from the interceptor). */
-  record(method: string, statusCode: number, durationMs: number): void {
+  record(method: string, statusCode: number, durationMs: number, route?: string): void {
     const key = `${method}|${statusCode}`;
     this.requestsTotal.set(key, (this.requestsTotal.get(key) ?? 0) + 1);
     this.durationSumMs += durationMs;
@@ -31,6 +32,15 @@ export class MetricsService {
     if (statusCode >= 500) {
       this.errorsTotal += 1;
     }
+    // Forward to the Performance Platform (P7.3) through the shared observer
+    // seam — one choke point, no parallel HTTP-metrics collection. No-op until
+    // the platform registers an observer; never throws.
+    getPerformanceObserver()?.observe({
+      operation: `${method} ${route ?? 'unmatched'}`,
+      kind: 'http',
+      durationMs,
+      ok: statusCode < 500,
+    });
   }
 
   /**
@@ -82,6 +92,13 @@ export class MetricsService {
     out.push(`nodejs_heap_used_bytes ${mem.heapUsed}`);
     out.push('# TYPE process_uptime_seconds gauge');
     out.push(`process_uptime_seconds ${Math.round(process.uptime())}`);
+
+    // Performance Platform signals (P7.3) — latency/throughput/cache/slow-query,
+    // rendered through this same registry so there is no parallel monitoring.
+    const perfLines = getPerformanceObserver()?.metricLines?.();
+    if (perfLines !== undefined && perfLines.length > 0) {
+      out.push(...perfLines);
+    }
 
     await this.appendQueueMetrics(out);
 

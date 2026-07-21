@@ -3,6 +3,7 @@ import { WorkerHost } from '@nestjs/bullmq';
 import { UnrecoverableError } from 'bullmq';
 import type { Job } from 'bullmq';
 
+import { getPerformanceObserver } from '../../common/performance/performance-observer.port';
 import type { JobContext, JobRunner } from '../../common/queue/job-handler';
 import type { QueueName } from '../../common/queue/queue.constants';
 
@@ -56,11 +57,25 @@ export abstract class BaseProcessor extends WorkerHost {
 
     try {
       const result = await runner.run(this.payload(job), ctx);
+      const durationMs = Date.now() - startedAt;
       this.logger.log(
-        `job.completed queue=${this.queueName} job=${job.name} jobId=${ctx.jobId} durationMs=${Date.now() - startedAt}`,
+        `job.completed queue=${this.queueName} job=${job.name} jobId=${ctx.jobId} durationMs=${durationMs}`,
       );
+      // Queue processing latency/throughput telemetry (P7.3) via the observer.
+      getPerformanceObserver()?.observe({
+        operation: `queue.${this.queueName}.${job.name}`,
+        kind: 'queue',
+        durationMs,
+        ok: true,
+      });
       return result;
     } catch (error) {
+      getPerformanceObserver()?.observe({
+        operation: `queue.${this.queueName}.${job.name}`,
+        kind: 'queue',
+        durationMs: Date.now() - startedAt,
+        ok: false,
+      });
       const err = error instanceof Error ? error : new Error(String(error));
       const maxAttempts = job.opts.attempts ?? 1;
       const isFinal = err instanceof UnrecoverableError || ctx.attempt >= maxAttempts;

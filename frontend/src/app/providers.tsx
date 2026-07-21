@@ -3,7 +3,7 @@ import { MotionProvider } from '@qalam/ui/motion';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { App as AntApp, ConfigProvider } from 'antd';
-import { useEffect, useRef, type PropsWithChildren, type ReactElement } from 'react';
+import { useEffect, useMemo, useRef, type PropsWithChildren, type ReactElement } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { HelmetProvider } from 'react-helmet-async';
 
@@ -26,6 +26,11 @@ import { useThemeStore } from '@/stores/theme.store';
  */
 export function AppProviders({ children }: PropsWithChildren): ReactElement {
   const resolved = useThemeStore((state) => state.resolved);
+  // Memoize the AntD theme object (P7.3): `getAntdTheme` builds a fresh token
+  // object each call; without this it changes identity on every render and
+  // re-renders the entire AntD tree. Now it only changes when the resolved mode
+  // flips (light↔dark).
+  const antdTheme = useMemo(() => getAntdTheme(resolved), [resolved]);
   // Ensures the boot refresh fires ONCE even under StrictMode's double-invoke (a second
   // /auth/refresh would rotate the token twice → reuse-detection). The ref persists across
   // StrictMode's setup→cleanup→setup on the same instance.
@@ -52,7 +57,7 @@ export function AppProviders({ children }: PropsWithChildren): ReactElement {
     <ErrorBoundary FallbackComponent={RootErrorFallback} onError={reportError}>
       <HelmetProvider>
         <QueryClientProvider client={queryClient}>
-          <ConfigProvider theme={getAntdTheme(resolved)} direction="ltr">
+          <ConfigProvider theme={antdTheme} direction="ltr">
             <AntApp>
               <MotionProvider>{children}</MotionProvider>
             </AntApp>

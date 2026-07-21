@@ -19,7 +19,9 @@
     "migration:create": "typeorm-ts-node-commonjs migration:create",
     "migration:run": "typeorm-ts-node-commonjs migration:run -d src/database/data-source.ts",
     "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/database/data-source.ts",
-    "seed": "ts-node -r tsconfig-paths/register src/database/seeds/run-seeds.ts"
+    "seed": "ts-node -r tsconfig-paths/register src/database/seeds/run-seeds.ts",
+    "perf:bench": "ts-node -r tsconfig-paths/register perf/run-benchmarks.ts",
+    "perf:regression": "ts-node -r tsconfig-paths/register perf/check-regression.ts"
   },
   "dependencies": {
     "@nestjs/bullmq": "^11.0.0",

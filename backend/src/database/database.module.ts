@@ -4,6 +4,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 
 import { databaseConfig } from '../config/database.config';
+import { performanceConfig } from '../config/performance.config';
+import { PerformanceQueryLogger } from './performance-query.logger';
 
 /**
  * PostgreSQL via TypeORM. `synchronize` is **false always** — including dev:
@@ -23,8 +25,11 @@ import { databaseConfig } from '../config/database.config';
 @Module({
   imports: [
     TypeOrmModule.forRootAsync({
-      inject: [databaseConfig.KEY],
-      useFactory: (db: ConfigType<typeof databaseConfig>) => {
+      inject: [databaseConfig.KEY, performanceConfig.KEY],
+      useFactory: (
+        db: ConfigType<typeof databaseConfig>,
+        perf: ConfigType<typeof performanceConfig>,
+      ) => {
         const extra = {
           max: db.pool.max,
           min: db.pool.min,
@@ -37,6 +42,11 @@ import { databaseConfig } from '../config/database.config';
           synchronize: false,
           namingStrategy: new SnakeNamingStrategy(),
           logging: db.logging,
+          // Slow-query detection (P7.3): TypeORM flags any query slower than the
+          // threshold; the custom logger forwards it to the Performance Platform
+          // through the shared observer. 0 disables capture.
+          maxQueryExecutionTime: perf.slowQueryMs > 0 ? perf.slowQueryMs : undefined,
+          logger: new PerformanceQueryLogger(db.logging),
           // Connection pool (Epic 12) — explicit + production-tunable (DB_POOL_*).
           extra,
         };

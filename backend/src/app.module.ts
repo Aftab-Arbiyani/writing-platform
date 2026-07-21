@@ -35,6 +35,7 @@ import { FeedModule } from './modules/feed/feed.module';
 import { ModerationModule } from './modules/moderation/moderation.module';
 import { MonetizationModule } from './modules/monetization/monetization.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { PerformanceModule } from './modules/performance/performance.module';
 import { PermissionsModule } from './modules/permissions/permissions.module';
 import { PiecesModule } from './modules/pieces/pieces.module';
 import { ComplianceModule } from './modules/compliance/compliance.module';
@@ -137,6 +138,13 @@ import { RedisModule } from './redis/redis.module';
     // monitoring. @Global — imported last so the business modules it wraps are
     // already defined; it reaches them via their exported services only.
     InfrastructureModule,
+    // Performance & Scalability Platform (P7.3): the central place for
+    // performance analysis, budgets, benchmarking, capacity planning, resource
+    // profiling, and verification. @Global; imported after the infrastructure
+    // backbone whose MetricsService/CacheService/QueueMonitor it composes.
+    // Business services carry no optimization logic — they emit samples through
+    // the single PERFORMANCE_OBSERVER seam and the platform owns the rest.
+    PerformanceModule,
   ],
 })
 export class AppModule {}

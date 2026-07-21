@@ -9,6 +9,7 @@ import { HealthCheck, HealthCheckService, TypeOrmHealthIndicator } from '@nestjs
 import type { HealthCheckResult } from '@nestjs/terminus';
 
 import { QueueHealthIndicator } from '../infrastructure/queue/queue-health.indicator';
+import { PerformanceHealthIndicator } from '../modules/performance/performance-health.indicator';
 import { Public } from '../modules/auth/decorators/public.decorator';
 import { AiHealthIndicator } from './indicators/ai.health-indicator';
 import { ConfigHealthIndicator } from './indicators/config.health-indicator';
@@ -46,6 +47,7 @@ export class HealthController {
     private readonly ai: AiHealthIndicator,
     private readonly payments: PaymentHealthIndicator,
     private readonly search: SearchHealthIndicator,
+    private readonly performance: PerformanceHealthIndicator,
   ) {}
 
   @Get()
@@ -113,6 +115,7 @@ export class HealthController {
       () => this.search.isHealthy('search'),
       () => this.ai.isHealthy('ai'),
       () => this.payments.isHealthy('payments'),
+      () => this.performance.isHealthy('performance'),
     ]);
   }
 
@@ -186,5 +189,18 @@ export class HealthController {
   @ApiOkResponse({ description: 'Payment provider status reported.' })
   paymentsHealth(): Promise<HealthCheckResult> {
     return this.health.check([() => this.payments.isHealthy('payments')]);
+  }
+
+  @Get('performance')
+  @HealthCheck()
+  @ApiOperation({
+    summary: 'Performance health (P7.3) — up while no server-measured budget is violated.',
+  })
+  @ApiOkResponse({ description: 'All measured performance budgets within target.' })
+  @ApiServiceUnavailableResponse({
+    description: 'A performance budget is violated (degradation signal; NOT a readiness failure).',
+  })
+  performanceHealth(): Promise<HealthCheckResult> {
+    return this.health.check([() => this.performance.isHealthy('performance')]);
   }
 }

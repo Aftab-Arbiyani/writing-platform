@@ -2,6 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 import type { Redis } from 'ioredis';
 
+import { getPerformanceObserver } from '../../common/performance/performance-observer.port';
 import { infrastructureConfig } from '../../config/infrastructure.config';
 import { RedisService } from '../../redis/redis.service';
 import { CACHE_LOCK_PREFIX } from './cache.constants';
@@ -45,11 +46,27 @@ export class CacheService {
   }
 
   async get<T>(key: string): Promise<T | null> {
+    const start = Date.now();
     try {
       const raw = await this.client().get(key);
+      // Cache hit-ratio + op-latency telemetry (P7.3) via the shared observer.
+      const observer = getPerformanceObserver();
+      observer?.recordCache(raw !== null);
+      observer?.observe({
+        operation: 'cache.get',
+        kind: 'cache',
+        durationMs: Date.now() - start,
+        ok: true,
+      });
       return raw === null ? null : (JSON.parse(raw) as T);
     } catch (error) {
       this.logger.warn(`cache get failed (${key}): ${(error as Error).message}`);
+      getPerformanceObserver()?.observe({
+        operation: 'cache.get',
+        kind: 'cache',
+        durationMs: Date.now() - start,
+        ok: false,
+      });
       return null;
     }
   }
