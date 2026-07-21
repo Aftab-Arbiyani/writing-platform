@@ -85,6 +85,36 @@ export const router = createBrowserRouter([
                       { path: ROUTES.security, lazy: () => import('@/app/routes/security') },
                       { path: ROUTES.compliance, lazy: () => import('@/app/routes/compliance') },
                       { path: ROUTES.privacy, lazy: () => import('@/app/routes/privacy') },
+
+                      // Operations console (P7.4).
+                      { path: ROUTES.operations, lazy: () => import('@/app/routes/operations') },
+                      {
+                        path: ROUTES.incidents,
+                        lazy: () => import('@/app/routes/operations-incidents'),
+                      },
+                      {
+                        path: ROUTES.alerts,
+                        lazy: () => import('@/app/routes/operations-alerts'),
+                      },
+                      {
+                        path: ROUTES.tracing,
+                        lazy: () => import('@/app/routes/operations-tracing'),
+                      },
+                      {
+                        path: ROUTES.metrics,
+                        lazy: () => import('@/app/routes/operations-metrics'),
+                      },
+                      { path: ROUTES.logs, lazy: () => import('@/app/routes/operations-logs') },
+                      {
+                        path: ROUTES.deployments,
+                        lazy: () => import('@/app/routes/operations-deployments'),
+                      },
+                      { path: ROUTES.cost, lazy: () => import('@/app/routes/operations-cost') },
+                      { path: ROUTES.slo, lazy: () => import('@/app/routes/operations-slo') },
+                      {
+                        path: ROUTES.serviceStatus,
+                        lazy: () => import('@/app/routes/operations-status'),
+                      },
                     ],
                   },
 

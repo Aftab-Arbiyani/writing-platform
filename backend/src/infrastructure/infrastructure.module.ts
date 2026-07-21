@@ -151,6 +151,6 @@ const workers =
     EventBridgeService,
     ...workers,
   ],
-  exports: [JOB_ENQUEUER, QueueRegistry, CacheService, MetricsService],
+  exports: [JOB_ENQUEUER, QueueRegistry, CacheService, MetricsService, QueueMonitorService],
 })
 export class InfrastructureModule {}

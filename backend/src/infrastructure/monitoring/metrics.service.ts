@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 
+import { getOperationsObserver } from '../../common/operations/operations-observer.port';
 import { getPerformanceObserver } from '../../common/performance/performance-observer.port';
 import { QueueMonitorService } from './queue-monitor.service';
 
@@ -98,6 +99,13 @@ export class MetricsService {
     const perfLines = getPerformanceObserver()?.metricLines?.();
     if (perfLines !== undefined && perfLines.length > 0) {
       out.push(...perfLines);
+    }
+
+    // Operations Platform signals (P7.4) — deployment/ops counters, through this
+    // SAME registry (no parallel monitoring; the ops platform reuses /metrics).
+    const opsLines = getOperationsObserver()?.metricLines?.();
+    if (opsLines !== undefined && opsLines.length > 0) {
+      out.push(...opsLines);
     }
 
     await this.appendQueueMetrics(out);

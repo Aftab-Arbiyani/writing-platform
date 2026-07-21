@@ -83,4 +83,25 @@ export const qk = {
     report: () => ['compliance', 'report'] as const, // GET /admin/compliance/report
     retention: () => ['compliance', 'retention'] as const, // GET /admin/compliance/retention
   },
+  operations: {
+    all: ['operations'] as const, // Operations console (P7.4); mutations invalidate the namespace
+    summary: () => ['operations', 'summary'] as const, // GET /admin/operations/summary
+    health: () => ['operations', 'health'] as const, // GET /admin/operations/health
+    governance: () => ['operations', 'governance'] as const, // GET /admin/operations/governance
+    observability: () => ['operations', 'observability'] as const, // GET /admin/operations/observability
+    metrics: () => ['operations', 'metrics'] as const, // GET /admin/operations/metrics
+    traces: () => ['operations', 'traces'] as const, // GET /admin/operations/traces
+    trace: (id: string) => ['operations', 'trace', id] as const, // GET /admin/operations/traces/:id
+    slo: () => ['operations', 'slo'] as const, // GET /admin/operations/slo
+    alerts: () => ['operations', 'alerts'] as const, // GET /admin/operations/alerts
+    cost: () => ['operations', 'cost'] as const, // GET /admin/operations/cost
+    reliability: () => ['operations', 'reliability'] as const, // GET /admin/operations/reliability
+    deployments: () => ['operations', 'deployments'] as const, // GET /admin/operations/deployments
+    incidents: () => ['operations', 'incidents'] as const, // GET /admin/operations/incidents
+    incident: (id: string) => ['operations', 'incident', id] as const, // GET …/incidents/:id
+    incidentPostmortem: (id: string) => ['operations', 'incident', id, 'postmortem'] as const, // GET …/incidents/:id/postmortem
+    rollouts: () => ['operations', 'rollouts'] as const, // GET /admin/operations/rollouts
+    runbooks: () => ['operations', 'runbooks'] as const, // GET /admin/operations/runbooks
+    maintenanceWindows: () => ['operations', 'maintenance-windows'] as const, // GET …/maintenance-windows
+  },
 } as const;

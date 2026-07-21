@@ -10,6 +10,7 @@ import type { HealthCheckResult } from '@nestjs/terminus';
 
 import { QueueHealthIndicator } from '../infrastructure/queue/queue-health.indicator';
 import { PerformanceHealthIndicator } from '../modules/performance/performance-health.indicator';
+import { OperationsHealthIndicator } from '../modules/operations/operations-health.indicator';
 import { Public } from '../modules/auth/decorators/public.decorator';
 import { AiHealthIndicator } from './indicators/ai.health-indicator';
 import { ConfigHealthIndicator } from './indicators/config.health-indicator';
@@ -48,6 +49,7 @@ export class HealthController {
     private readonly payments: PaymentHealthIndicator,
     private readonly search: SearchHealthIndicator,
     private readonly performance: PerformanceHealthIndicator,
+    private readonly operations: OperationsHealthIndicator,
   ) {}
 
   @Get()
@@ -116,6 +118,7 @@ export class HealthController {
       () => this.ai.isHealthy('ai'),
       () => this.payments.isHealthy('payments'),
       () => this.performance.isHealthy('performance'),
+      () => this.operations.isHealthy('operations'),
     ]);
   }
 
@@ -202,5 +205,19 @@ export class HealthController {
   })
   performanceHealth(): Promise<HealthCheckResult> {
     return this.health.check([() => this.performance.isHealthy('performance')]);
+  }
+
+  @Get('operations')
+  @HealthCheck()
+  @ApiOperation({
+    summary:
+      'Operational health (P7.4) — up unless operational health is unhealthy (informational).',
+  })
+  @ApiOkResponse({ description: 'Operational health OK / degraded.' })
+  @ApiServiceUnavailableResponse({
+    description: 'Operational health is unhealthy (degradation signal; NOT a readiness failure).',
+  })
+  operationsHealth(): Promise<HealthCheckResult> {
+    return this.health.check([() => this.operations.isHealthy('operations')]);
   }
 }

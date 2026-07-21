@@ -346,6 +346,16 @@ export const ERROR_CODES = {
   /** No such block/mute edge to remove (404). */
   BLOCK_NOT_FOUND: 'BLOCK_NOT_FOUND',
 
+  // ── Operations platform (P7.4 — incident management, alerting, rollout) ───
+  /** Referenced an incident id that does not exist / has been retired. */
+  OPERATIONS_INCIDENT_NOT_FOUND: 'OPERATIONS_INCIDENT_NOT_FOUND',
+  /** An incident status change that the lifecycle does not permit (409). */
+  OPERATIONS_INVALID_TRANSITION: 'OPERATIONS_INVALID_TRANSITION',
+  /** Referenced a feature-rollout key that has no backing flag (404). */
+  OPERATIONS_ROLLOUT_NOT_FOUND: 'OPERATIONS_ROLLOUT_NOT_FOUND',
+  /** A rollout percentage / parameter outside the allowed range (422). */
+  OPERATIONS_INVALID_ROLLOUT: 'OPERATIONS_INVALID_ROLLOUT',
+
   // ── Cross-cutting ───────────────────────────────────────────────────────
   RATE_LIMITED: 'RATE_LIMITED',
   VALIDATION_FAILED: 'VALIDATION_FAILED',

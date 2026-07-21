@@ -27,6 +27,17 @@ export const ROUTES = {
   security: '/system/security',
   compliance: '/system/compliance',
   privacy: '/system/privacy',
+  // Operations (P7.4)
+  operations: '/operations',
+  incidents: '/operations/incidents',
+  alerts: '/operations/alerts',
+  tracing: '/operations/tracing',
+  metrics: '/operations/metrics',
+  logs: '/operations/logs',
+  deployments: '/operations/deployments',
+  cost: '/operations/cost',
+  slo: '/operations/slo',
+  serviceStatus: '/operations/status',
   // Access
   users: '/users',
   moderators: '/moderators',

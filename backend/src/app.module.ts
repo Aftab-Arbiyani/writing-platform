@@ -35,6 +35,7 @@ import { FeedModule } from './modules/feed/feed.module';
 import { ModerationModule } from './modules/moderation/moderation.module';
 import { MonetizationModule } from './modules/monetization/monetization.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { OperationsModule } from './modules/operations/operations.module';
 import { PerformanceModule } from './modules/performance/performance.module';
 import { PermissionsModule } from './modules/permissions/permissions.module';
 import { PiecesModule } from './modules/pieces/pieces.module';
@@ -145,6 +146,16 @@ import { RedisModule } from './redis/redis.module';
     // Business services carry no optimization logic — they emit samples through
     // the single PERFORMANCE_OBSERVER seam and the platform owns the rest.
     PerformanceModule,
+    // Operations Platform (P7.4): the single source of truth for operating in
+    // production — observability (metrics/logs/traces), SLOs + error budgets,
+    // alerting, incident management, operational health, deployment + cost
+    // observability, feature rollout, reliability, runbooks, and governance.
+    // @Global; imported LAST so it composes the whole backbone it reads (the
+    // Performance Platform + Security counters + config/health/deployment +
+    // Settings feature flags + audit trail + shared /metrics/CacheService/queue).
+    // Business services carry no operational logic — they emit signals through
+    // the single OperationsObserver + Tracer seams and the platform owns the rest.
+    OperationsModule,
   ],
 })
 export class AppModule {}

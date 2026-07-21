@@ -10,6 +10,7 @@ import { deploymentConfig } from './deployment.config';
 import { validateEnv } from './env.schema';
 import { jwtConfig } from './jwt.config';
 import { mailConfig } from './mail.config';
+import { operationsConfig } from './operations.config';
 import { paymentsConfig } from './payments.config';
 import { performanceConfig } from './performance.config';
 import { redisConfig } from './redis.config';
@@ -47,6 +48,7 @@ import { storageConfig } from './storage.config';
         deploymentConfig,
         securityConfig,
         performanceConfig,
+        operationsConfig,
       ],
     }),
   ],
