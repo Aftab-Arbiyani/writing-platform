@@ -37,6 +37,23 @@ pnpm migration:revert                                   # roll back the most rec
 `synchronize: false` **always** (including dev). Never edit a merged migration —
 create a new one. Migrations run as a deploy step, never at app boot.
 
+## Seed
+
+Idempotent seed runner (`src/database/seeds/run-seeds.ts`), run **after** migrations:
+RBAC roles, PBAC permissions, taxonomy (languages/genres), and the **bootstrap
+super-admin**. Safe to re-run (insert-if-missing; never overwrites admin edits).
+
+```bash
+pnpm seed   # ts-node run-seeds.ts (boots the app context, so infra must be up)
+```
+
+The super-admin is created from `SUPER_ADMIN_EMAIL` / `SUPER_ADMIN_USERNAME` /
+`SUPER_ADMIN_PASSWORD` (argon2id-hashed, never logged). In **dev** these default to
+`admin@qalam.local` / `superadmin` / `ChangeMe!SuperAdmin1` (with a change-me warning);
+in **production** the step is skipped unless all three are set — no default-credential
+admin ever lands in prod. Re-running only ensures the role, never resets the password
+(docs 04 §9).
+
 ## Conventions
 
 - Module layout, boundaries, and patterns: `src/modules/README.md`, plus

@@ -144,7 +144,7 @@ Least-privilege `permissions:` per job; every added third-party action pinned to
 - **Migrations**: generated-only (`synchronize:false` forever). Prod runs the **compiled** `dist/database/migrate.js up|down|show`. `scripts/db/migrate.sh` wraps it with a **Postgres advisory lock** (no concurrent runners) and a **`schema_migration_audit`** row (who/when/sha/direction). CI proves reversibility (`up→down→up`); `migrate-verify.sh` mirrors it.
 - **Connection validation & pool**: explicit pool (`DB_POOL_*`); `/health/database` ping.
 - **Replication-ready**: `DATABASE_REPLICA_URL` flips TypeORM to master/replica routing with no code change.
-- **Seed**: idempotent `run-seeds.ts` (roles/permissions/taxonomy).
+- **Seed**: idempotent `run-seeds.ts` (roles/permissions/taxonomy) + the **bootstrap super-admin** (`super-admin.seed.ts`, env-gated `SUPER_ADMIN_*`; argon2id-hashed, production refuses default credentials — docs 04 §9). Run after migrations (`pnpm --filter backend seed`).
 - **Backup/restore/verify**: `scripts/db/{backup,restore,verify-backup}.sh` (pg_dump `-Fc` + sha256, checksum-verified restore, scratch-DB restore drill).
 
 ---

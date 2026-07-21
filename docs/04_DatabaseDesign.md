@@ -1012,7 +1012,17 @@ seeds never overwrite admin edits (insert-if-missing, not sync).
 `poetry`, `ghazal`, `nazm`, `short-story`, `flash-fiction`, `essay`, `memoir`, `letter`.
 
 **`roles`:** `user` (rank 0), `moderator` (50), `admin` (80), `super_admin` (100).
-A bootstrap super-admin is created from env-provided credentials on first deploy only.
+
+**Bootstrap super-admin.** The seed runner creates the first `super_admin` account
+(`super-admin.seed.ts`, run last so the roles above exist to grant). Credentials come
+from env — `SUPER_ADMIN_EMAIL`, `SUPER_ADMIN_USERNAME`, `SUPER_ADMIN_PASSWORD` — never
+hard-coded; the password is argon2id-hashed with the same policy as registration (via
+the auth `PasswordService`), the account is created pre-verified + active, and the
+`super_admin` role is granted in one transaction. It is **idempotent** (an existing email
+only has its role ensured — a rotated password is never reset) and **production-safe**: in
+`production` a missing env var skips the step with a warning (no default-credential admin
+ever lands in prod), while non-production falls back to documented dev defaults
+(`admin@qalam.local` / `superadmin`) with a change-me warning.
 
 ---
 

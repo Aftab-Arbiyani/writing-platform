@@ -52,7 +52,14 @@ cp backend/.env.example backend/.env
 cp frontend/.env.example frontend/.env
 cp admin/.env.example admin/.env
 
-# 4. Develop
+# 4. Database — migrate, then seed (roles, permissions, taxonomy, super-admin)
+pnpm --filter backend migration:run
+pnpm --filter backend seed
+# ↑ dev seed creates a super-admin: admin@qalam.local / superadmin
+#   (password: ChangeMe!SuperAdmin1 — override via SUPER_ADMIN_* env). In
+#   production set SUPER_ADMIN_EMAIL/USERNAME/PASSWORD or it is skipped.
+
+# 5. Develop
 pnpm dev            # api → :4000 (Swagger at /docs) · frontend → :5173 · admin → :5174
 ```
 

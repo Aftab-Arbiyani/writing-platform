@@ -39,8 +39,16 @@ export ENV_FILE=/opt/qalam/.env.production DATABASE_URL=…
 scripts/deploy/preflight.sh
 scripts/db/backup.sh                       # pre-deploy checkpoint (prod)
 scripts/deploy/deploy.sh                    # migrate + health-gated switch
+pnpm --filter backend seed                  # idempotent seed (after migrations)
 EXPECTED_VERSION=1.4.2 SMOKE_BASE_URL=https://api.example.com scripts/deploy/smoke.sh
 ```
+
+> **Seeds** (`run-seeds.ts`) are idempotent and run **after** migrations: RBAC roles,
+> PBAC permissions, taxonomy, and the **bootstrap super-admin**. The super-admin step is
+> env-gated — set `SUPER_ADMIN_EMAIL`, `SUPER_ADMIN_USERNAME`, `SUPER_ADMIN_PASSWORD` in
+> the env file **on the first production deploy** (in production it is skipped rather than
+> creating a default-credential account; the password is argon2id-hashed and never logged).
+> Re-running is safe — an existing super-admin only has its role ensured (docs 04 §9).
 
 **Rollback (deterministic):**
 

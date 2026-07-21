@@ -69,6 +69,9 @@ import { JwtStrategy } from './strategies/jwt.strategy';
   exports: [
     AuthService,
     AuthMaintenanceService,
+    // Exported so the bootstrap super-admin seed hashes with the SAME argon2
+    // policy as registration (no duplicated hashing config).
+    PasswordService,
     JwtAuthGuard,
     RolesGuard,
     OptionalAuthGuard,
