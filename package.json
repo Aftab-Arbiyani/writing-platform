@@ -12,6 +12,12 @@
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
     "test": "turbo test",
+    "e2e": "pnpm --filter e2e test",
+    "e2e:ui": "pnpm --filter e2e test:ui",
+    "e2e:report": "pnpm --filter e2e report",
+    "e2e:up": "e2e/scripts/stack-up.sh",
+    "e2e:down": "e2e/scripts/stack-down.sh",
+    "e2e:reset": "e2e/scripts/stack-up.sh --reset",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepare": "husky"

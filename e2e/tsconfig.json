@@ -1,0 +1,15 @@
+{
+  "extends": "@qalam/config/tsconfig/base.json",
+  "compilerOptions": {
+    // Playwright resolves specifiers without file extensions and runs TS
+    // directly, so use bundler-style resolution here (overrides the base's
+    // NodeNext, which would force `.js` suffixes on relative imports in specs).
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "types": ["node"],
+    "noEmit": true,
+    "allowJs": false
+  },
+  "include": ["**/*.ts", "playwright.config.ts"],
+  "exclude": ["node_modules", "test-results", "playwright-report", "blob-report"]
+}
