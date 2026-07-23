@@ -122,7 +122,7 @@ export function EditUserModal({ user, isSelf, open, onClose }: EditUserModalProp
           control={control}
           render={({ field }) => (
             <Field label="Role" error={errors.role?.message}>
-              <Select {...field} options={assignableRoles} disabled={isSelf} />
+              <Select {...field} aria-label="Role" options={assignableRoles} disabled={isSelf} />
             </Field>
           )}
         />

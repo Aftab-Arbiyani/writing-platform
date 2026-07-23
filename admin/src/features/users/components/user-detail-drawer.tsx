@@ -243,7 +243,9 @@ export function UserDetailDrawer({ user, onClose, onEdit }: UserDetailDrawerProp
         )
       }
     >
-      {body}
+      {/* Stable scoping hook for E2E (docs/e2e/05 §3) — the AntD Drawer title/Descriptions
+          render as plain text with no queryable accessible name. */}
+      <div data-testid="user-detail-drawer">{body}</div>
     </Drawer>
   );
 }

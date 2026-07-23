@@ -13,6 +13,10 @@ import { type APIRequestContext, expect } from '@playwright/test';
 const API_URL = process.env.E2E_API_URL ?? 'http://localhost:4000/api/v1';
 const ADMIN_EMAIL = process.env.E2E_ADMIN_EMAIL ?? 'admin@qalam.local';
 const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD ?? 'ChangeMe!SuperAdmin1';
+// The seeded, pre-verified writer (backend e2e-fixtures.seed.ts) — same identity
+// the frontend storageState logs in as. Used here to arrange pieces over REST.
+const WRITER_EMAIL = process.env.E2E_WRITER_EMAIL ?? 'writer@qalam.local';
+const WRITER_PASSWORD = process.env.E2E_WRITER_PASSWORD ?? 'ChangeMe!Writer1';
 
 export interface AuthUser {
   readonly id: string;
@@ -40,8 +44,16 @@ export interface AdminUserDetail {
   readonly [key: string]: unknown;
 }
 
+export interface PieceSummary {
+  readonly id: string;
+  readonly slug: string | null;
+  readonly title: string | null;
+  readonly status: 'draft' | 'scheduled' | 'published' | 'archived';
+}
+
 export class ApiHelper {
   private adminTokenCache: string | null = null;
+  private writerTokenCache: string | null = null;
 
   constructor(private readonly request: APIRequestContext) {}
 
@@ -121,5 +133,71 @@ export class ApiHelper {
       headers: await this.adminHeaders(),
     });
     return this.data<AdminUserDetail>(res);
+  }
+
+  /** Lazily obtain (and cache) the seeded writer's access token. */
+  private async writerToken(): Promise<string> {
+    if (this.writerTokenCache === null) {
+      const { accessToken } = await this.login(WRITER_EMAIL, WRITER_PASSWORD);
+      this.writerTokenCache = accessToken;
+    }
+    return this.writerTokenCache;
+  }
+
+  private async writerHeaders(): Promise<Record<string, string>> {
+    return { Authorization: `Bearer ${await this.writerToken()}` };
+  }
+
+  /**
+   * A minimal, non-empty TipTap doc so the piece has a word count > 0 and is
+   * publishable (mirrors the backend e2e seed's `tiptapDoc`). Content shape, not prose.
+   */
+  private tiptapDoc(text: string): Record<string, unknown> {
+    return { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text }] }] };
+  }
+
+  /**
+   * Create a DRAFT piece as the seeded writer (POST /pieces). `genreSlug` +
+   * `languageCode` default to seeded taxonomy so the draft is publishable as-is.
+   */
+  async createPiece(input: {
+    title: string;
+    genreSlug?: string;
+    languageCode?: string;
+    body?: string;
+  }): Promise<PieceSummary> {
+    const res = await this.request.post(this.url('/pieces'), {
+      headers: await this.writerHeaders(),
+      data: {
+        title: input.title,
+        genreSlug: input.genreSlug ?? 'short-story',
+        languageCode: input.languageCode ?? 'en',
+        content: this.tiptapDoc(input.body ?? `${input.title} — seeded by the E2E suite.`),
+      },
+    });
+    return this.data<PieceSummary>(res);
+  }
+
+  /** Publish a draft piece as the writer (POST /pieces/:id/publish). Returns the published piece. */
+  async publishPiece(id: string): Promise<PieceSummary> {
+    const res = await this.request.post(this.url(`/pieces/${id}/publish`), {
+      headers: await this.writerHeaders(),
+      data: {},
+    });
+    return this.data<PieceSummary>(res);
+  }
+
+  /**
+   * Arrange a published piece in one call (create draft → publish) — the fast path
+   * for seeding feed/discover content without driving the editor UI (docs/e2e/02 §4).
+   */
+  async createPublishedPiece(input: {
+    title: string;
+    genreSlug?: string;
+    languageCode?: string;
+    body?: string;
+  }): Promise<PieceSummary> {
+    const draft = await this.createPiece(input);
+    return this.publishPiece(draft.id);
   }
 }

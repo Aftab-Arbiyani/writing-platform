@@ -32,29 +32,29 @@ Legend: ✅ in-phase target · ⬚ later phase · — not applicable.
 
 ### 2.1 Frontend (reader/writer app, `:5173`)
 
-| Workflow                                       | P1  | P2  | P3  | P4  | Notes / feature dir                                     |
-| ---------------------------------------------- | --- | --- | --- | --- | ------------------------------------------------------- |
-| Login (valid) + logout                         | ✅  |     |     |     | `features/auth`                                         |
-| Login invalid → field error                    | ✅  |     |     |     |                                                         |
-| Register → verify email (Mailpit) → authed     | ✅  |     |     |     | Mailpit link ([04](./04_TestData.md))                   |
-| Forgot → reset password (Mailpit) → login      | ✅  |     |     |     |                                                         |
-| Guarded route redirect (`require-auth`)        | ✅  |     |     |     | `app/guards/require-auth`                               |
-| Guest-only redirect (`require-guest`)          | ✅  |     |     |     | `app/guards/require-guest`                              |
-| Write → save draft → publish → in feed         |     | ✅  |     |     | `features/writing` (TipTap, [05 §4](./05_Selectors.md)) |
-| Draft persistence (reload → draft still there) |     | ✅  |     |     | `features/writing`, drafts route                        |
-| Feed loads + paginates; open a piece           |     | ✅  |     |     | `features/feed`                                         |
-| Edit an existing piece → changes reflected     |     |     | ✅  |     | `features/writing`                                      |
-| Search → find seeded piece → open              |     |     | ✅  |     | `features/search`                                       |
-| Profile: view own + edit profile               |     |     | ✅  |     | `features/profile`, `me` route                          |
-| Follow another user (throwaway 2nd user)       |     |     | ✅  |     | `features/profile`, follow-requests                     |
-| Notifications: action → notification appears   |     |     | ✅  |     | `features/notifications` (in-app poll, `m8`)            |
-| Settings: change password (throwaway user)     |     |     | ✅  |     | `features/settings`, [04 §6](./04_TestData.md)          |
-| Silent token refresh survives navigation       |     |     | ✅  |     | [03 §7](./03_AuthStrategy.md)                           |
-| Analytics: own stats page renders real data    |     |     |     | ✅  | `features/analytics` (`m9` shapes)                      |
-| AI writing assistant: request → suggestion     |     |     |     | ✅  | `features/ai` (`af2`); may need `setTimeout`            |
-| Monetization: subscribe → entitlement granted  |     |     |     | ✅  | `af5`, inert payment port ([00 §6](./00_Overview.md))   |
-| Reading history / discover (For You)           |     |     |     | ✅  | `discover` route (`m3` contract)                        |
-| Error/empty/offline states                     |     |     |     | ✅  | `app/pages/offline`, `route-error`, `not-found`         |
+| Workflow                                       | P1  | P2  | P3  | P4  | Notes / feature dir                                                                           |
+| ---------------------------------------------- | --- | --- | --- | --- | --------------------------------------------------------------------------------------------- |
+| Login (valid) + logout                         | ✅  |     |     |     | `features/auth`                                                                               |
+| Login invalid → field error                    | ✅  |     |     |     |                                                                                               |
+| Register → verify email (Mailpit) → authed     | ✅  |     |     |     | Mailpit link ([04](./04_TestData.md))                                                         |
+| Forgot → reset password (Mailpit) → login      | ✅  |     |     |     |                                                                                               |
+| Guarded route redirect (`require-auth`)        | ✅  |     |     |     | `app/guards/require-auth`                                                                     |
+| Guest-only redirect (`require-guest`)          | ✅  |     |     |     | `app/guards/require-guest`                                                                    |
+| Write → save draft → publish → in feed         |     | ✅  |     |     | `features/writing` (TipTap, [05 §4](./05_Selectors.md))                                       |
+| Draft persistence (reload → draft still there) |     | ✅  |     |     | `features/writing`, drafts route                                                              |
+| Feed loads + paginates; open a piece           |     | ✅  |     |     | `features/feed` — reader view `/p/:slug` is a later epic; link asserted, render deferred (§4) |
+| Edit an existing piece → changes reflected     |     |     | ✅  |     | `features/writing`                                                                            |
+| Search → find seeded piece → open              |     |     | ✅  |     | `features/search`                                                                             |
+| Profile: view own + edit profile               |     |     | ✅  |     | `features/profile`, `me` route                                                                |
+| Follow another user (throwaway 2nd user)       |     |     | ✅  |     | `features/profile`, follow-requests                                                           |
+| Notifications: action → notification appears   |     |     | ✅  |     | `features/notifications` (in-app poll, `m8`)                                                  |
+| Settings: change password (throwaway user)     |     |     | ✅  |     | `features/settings`, [04 §6](./04_TestData.md)                                                |
+| Silent token refresh survives navigation       |     |     | ✅  |     | [03 §7](./03_AuthStrategy.md)                                                                 |
+| Analytics: own stats page renders real data    |     |     |     | ✅  | `features/analytics` (`m9` shapes)                                                            |
+| AI writing assistant: request → suggestion     |     |     |     | ✅  | `features/ai` (`af2`); may need `setTimeout`                                                  |
+| Monetization: subscribe → entitlement granted  |     |     |     | ✅  | `af5`, inert payment port ([00 §6](./00_Overview.md))                                         |
+| Reading history / discover (For You)           |     |     |     | ✅  | `discover` route (`m3` contract)                                                              |
+| Error/empty/offline states                     |     |     |     | ✅  | `app/pages/offline`, `route-error`, `not-found`                                               |
 
 ### 2.2 Admin (staff panel, `:5174`)
 
@@ -110,6 +110,50 @@ cannot log in on the frontend (**first cross-app assertion** — validates the s
 
 **Exit criteria:** all P2 rows pass on 3 engines; cross-app suspend assertion proven; 3 green CI runs;
 **E2E promoted to a blocking PR gate** now that core flows are stable ([07 §gate-policy](./07_CI.md)).
+
+**Implementation status (specs landed, static-verified — tsc + eslint + `playwright test --list` green):**
+
+- Frontend `writing.spec.ts` — publish flow (landed in P1); **draft persistence across reload** (autosave
+  creates the server draft `/write` → `/write/:id`, hard reload rehydrates title + body).
+- Frontend `feed.spec.ts` — **Latest feed loads, paginates on infinite scroll** (arranges 21 published
+  pieces via `api.createPublishedPiece` to force a 2nd page past the size-20 window), and a card **links**
+  to the canonical piece path. **Deferred:** the reader/piece page (`/p/:slug`) is a later frontend epic and
+  is not yet routed — the spec asserts the feed→reader link URL; the reader-page _render_ assertion lands
+  with that epic. The signed-in default tab is "Following" (empty for a fresh writer), so the spec drives
+  the public **Latest** tab.
+- Admin `users.spec.ts` — suspend cross-app (landed in P1); **search + view a user** (detail drawer);
+  **grant then revoke a role** via the Edit-user modal, asserting the persisted `role` through the `api`
+  fixture (`PATCH /admin/users/:id` under the hood, super-admin only).
+
+Two bounded, additive app-source changes support these (tracked in `e2e/pages/README.md`): `aria-label="Role"`
+on the admin Edit-user Role `Select` (an a11y fix, preferred over a testid per [05 §3.2](./05_Selectors.md))
+and `data-testid="user-detail-drawer"` scoping the admin user-detail drawer body.
+
+**LIVE-VALIDATED (2026-07-23): all 6 Phase-2 journeys pass on Chromium AND Firefox** (8/8 incl. both setup
+projects, per engine) against an isolated throwaway stack. **WebKit** still blocked only by missing host OS
+libs (works in CI via `--with-deps`). CI PR-gate promotion still pending.
+
+The live run surfaced — and this effort fixed — three real defects (exactly the payoff E2E exists for):
+
+1. **Frontend infinite scroll broke on cold load (app bug, fixed).** `useInfiniteScroll` attached its
+   `IntersectionObserver` in an effect keyed on mount, but every list renders a skeleton first and only
+   mounts the sentinel once data arrives — so the observer bound to an absent node and never re-attached.
+   The feed (and search / notifications / profile / drafts, which share the hook) never loaded page 2 on a
+   fresh visit. Fixed by switching the hook to a **callback ref** so it binds when the sentinel mounts.
+2. **`storageState` reuse is incompatible with the rotating-refresh + reuse-detection auth model.** The app
+   keeps its access token in memory and boot-refreshes from the `qalam_rt` cookie; that cookie is single-use,
+   so the first test consumed it and later tests reusing the static file hit the login screen. Fixed with a
+   **per-test fresh login** ([03 §fresh-login](./03_AuthStrategy.md), `e2e/fixtures/auth.ts`) — each test
+   mints its own token family in its own context. This is the standing pattern for authenticated specs.
+3. **`DataFactory` collided across tests + retries.** A per-instance counter reset each test, so every test's
+   first `email()` matched the previous test's (→ `AUTH_EMAIL_TAKEN`), and retries re-used the failed value.
+   Fixed with a process-wide monotonic sequence.
+
+Plus two AntD-selector lessons folded into the page objects: the admin Users search + row-action menus are
+fine by role/label, but the Edit-user **Role `Select` must be driven by keyboard** (focus → ArrowDown to open
+→ navigate by `aria-activedescendant` → Enter) — clicking the option is unreliable (rc-select renders the
+dropdown in a body portal that can sit outside the viewport, and a forced click on the overlaid combobox
+dismissed the modal in Firefox).
 
 ---
 

@@ -1,14 +1,19 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useRef } from 'react';
 
 /**
  * Infinite-scroll sentinel (docs/06 §4.2) — the one implementation reused by every timeline
- * (§10.3 rule 4). Attach the returned ref to an element at the end of the list; when it comes
- * within `rootMargin` of the viewport (default **800px** below, so the next page prefetches
- * before the reader reaches the bottom) and there is more to load, `onLoadMore` fires.
+ * (§10.3 rule 4). Attach the returned **callback ref** to an element at the end of the list;
+ * when it comes within `rootMargin` of the viewport (default **800px** below, so the next page
+ * prefetches before the reader reaches the bottom) and there is more to load, `onLoadMore` fires.
  *
- * Latest flags/callback are read from a ref so the observer is created once (not re-created on
- * every render). Degrades to a no-op where `IntersectionObserver` is absent (SSR/jsdom) — the
- * UI still offers no dead-ends because the list renders fully; tests drive fetchNextPage directly.
+ * A callback ref (not a ref object + effect) is deliberate: lists render a loading skeleton first
+ * and only mount the sentinel once data arrives, so an effect keyed on mount would observe a
+ * still-absent node and never re-attach. React invokes the callback ref exactly when the sentinel
+ * mounts (and again with `null` on unmount), so the observer always binds to the real node.
+ *
+ * Latest flags/callback are read from a ref so the observer is created once per sentinel node (not
+ * re-created on every render). Degrades to a no-op where `IntersectionObserver` is absent
+ * (SSR/jsdom) — the list still renders fully; tests drive fetchNextPage directly.
  */
 interface UseInfiniteScrollOptions {
   hasMore: boolean;
@@ -23,30 +28,31 @@ export function useInfiniteScroll<T extends HTMLElement = HTMLDivElement>({
   isLoading,
   onLoadMore,
   rootMargin = '0px 0px 800px 0px',
-}: UseInfiniteScrollOptions) {
-  const sentinelRef = useRef<T | null>(null);
+}: UseInfiniteScrollOptions): (node: T | null) => void {
   const stateRef = useRef({ hasMore, isLoading, onLoadMore });
   stateRef.current = { hasMore, isLoading, onLoadMore };
+  const observerRef = useRef<IntersectionObserver | null>(null);
 
-  useEffect(() => {
-    const node = sentinelRef.current;
-    if (!node || typeof IntersectionObserver === 'undefined') return;
+  return useCallback(
+    (node: T | null) => {
+      // Tear down any observer bound to a previous sentinel node before (re)binding.
+      observerRef.current?.disconnect();
+      observerRef.current = null;
+      if (!node || typeof IntersectionObserver === 'undefined') return;
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        const state = stateRef.current;
-        if (entry?.isIntersecting && state.hasMore && !state.isLoading) {
-          state.onLoadMore();
-        }
-      },
-      { rootMargin },
-    );
-    observer.observe(node);
-    return () => {
-      observer.disconnect();
-    };
-  }, [rootMargin]);
-
-  return sentinelRef;
+      const observer = new IntersectionObserver(
+        (entries) => {
+          const entry = entries[0];
+          const state = stateRef.current;
+          if (entry?.isIntersecting && state.hasMore && !state.isLoading) {
+            state.onLoadMore();
+          }
+        },
+        { rootMargin },
+      );
+      observer.observe(node);
+      observerRef.current = observer;
+    },
+    [rootMargin],
+  );
 }

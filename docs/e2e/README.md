@@ -27,6 +27,14 @@ Playwright _projects_ so they share fixtures, auth setup, and helpers.
 | 09  | [Data-Safety Guard Rails](./09_DataSafetyGuardrails.md) | **Binding** — soft-delete only, never hard-delete, no dropped DB/table/column           |
 | 10  | [UI Quality](./10_UIQuality.md)                         | Phase 5 — visual regression, responsive (mobile/tablet), accessibility (axe + keyboard) |
 
+## Progress
+
+- **Phase 1 (Smoke + Auth):** harness + auth specs landed on all three engines (see [06 §3](./06_PhasePlan.md)).
+- **Phase 2 (Core journeys):** **live-validated on Chromium + Firefox** (frontend draft-persistence + feed
+  load/paginate/open-link; admin view-user + grant/revoke role — see [06 §4](./06_PhasePlan.md)). The live run
+  found + fixed three real defects (cold-load infinite scroll, storageState-vs-rotating-refresh, DataFactory
+  collisions). WebKit pending host OS libs (CI-only); PR-gate promotion pending.
+
 ## The one-paragraph summary
 
 We test **real user workflows in real browsers against a real backend**. Every test starts from

@@ -10,17 +10,23 @@ import type { TestInfo } from '@playwright/test';
 const RUN_SEED = Date.now().toString(36);
 
 /**
+ * Process-wide monotonic sequence — shared across ALL DataFactory instances in a
+ * worker. A per-instance counter would reset to 0 for every test, so each test's
+ * first `email()` collided (→ AUTH_EMAIL_TAKEN 409) with the previous test's, and
+ * a retry re-used the failed attempt's value. A module-level counter is unique per
+ * value within the worker; RUN_SEED + workerIndex keep it unique across processes.
+ */
+let SEQUENCE = 0;
+
+/**
  * Unique-data factory (docs/e2e/04 §4). Every created record carries an `e2e`
  * marker so leftover rows are recognizable.
  */
 export class DataFactory {
-  private counter = 0;
-
   constructor(private readonly info: TestInfo) {}
 
   private uniq(): string {
-    const seq = this.counter++;
-    return `${RUN_SEED}-${this.info.workerIndex}-${this.info.parallelIndex}-${seq}`;
+    return `${RUN_SEED}-${this.info.workerIndex}-${SEQUENCE++}`;
   }
 
   /** A unique piece title, e.g. "E2E Piece 0-0-1-a1b2c3". */

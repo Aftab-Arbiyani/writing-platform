@@ -23,11 +23,38 @@ export class EditorPage {
   private get publishSheet(): Locator {
     return this.page.getByRole('dialog', { name: 'Ready to publish' });
   }
+  private get saveStatus(): Locator {
+    // The autosave indicator (save-status-indicator.tsx) — the editor's only
+    // `role="status"` region. Its text cycles "Saving…" → "Saved"/"Saved · HH:MM".
+    return this.page.getByRole('status');
+  }
 
   async goto(): Promise<void> {
     await this.page.goto('/write');
     // Generous first-render wait for the Vite dev cold-compile of this route (local only).
     await expect(this.titleInput).toBeVisible({ timeout: 30_000 });
+  }
+
+  /**
+   * Wait for autosave to persist. Autosave is server-side (2s debounce): the first
+   * save CREATEs the draft, so the URL swaps `/write` → `/write/:id` and the status
+   * settles to "Saved…". Waiting for both proves the draft exists on the server.
+   */
+  async waitForSaved(): Promise<void> {
+    await expect(this.saveStatus).toHaveText(/^Saved/, { timeout: 15_000 });
+    await this.page.waitForURL(/\/write\/[0-9a-f-]{8}-/i, { timeout: 15_000 });
+  }
+
+  /** Reload the current draft URL and wait for the editor to re-render. */
+  async reload(): Promise<void> {
+    await this.page.reload();
+    await expect(this.titleInput).toBeVisible({ timeout: 30_000 });
+  }
+
+  /** Assert the editor restored the given title + body (e.g. after a reload). */
+  async expectRestored({ title, body }: { title: string; body: string }): Promise<void> {
+    await expect(this.titleInput).toHaveValue(title);
+    await expect(this.body).toContainText(body);
   }
 
   async writePiece({ title, body }: { title: string; body: string }): Promise<void> {
