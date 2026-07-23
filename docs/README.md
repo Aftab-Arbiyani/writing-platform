@@ -59,6 +59,14 @@ where they predated the frozen API (feed tab→path, piece-by-`id`, no `/taxonom
 | 24  | [Backend Readiness Report](./24_BackendReadinessReport.md) | Epic 12 completion + deliverables                                     |
 | 25  | [**Backend Freeze v1**](./25_BackendFreeze.md)             | **frozen `v1` contract baseline + breaking-change policy**            |
 
+## Browser E2E (frontend + admin)
+
+Real full-stack browser end-to-end tests (Playwright, all three engines, phased) for the `frontend`
+and `admin` apps. Self-contained suite:
+
+- [`e2e/`](./e2e/README.md) — **start here**: architecture, conventions/rules, auth strategy, test-data
+  policy, selectors, the phased coverage matrix, CI (`web-e2e.yml`), and the runbook.
+
 ## Module-level docs
 
 - API reference (Swagger): `GET /docs` (non-production) → exported `openapi.json`.
