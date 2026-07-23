@@ -44,5 +44,11 @@ export function ReportRowActions({
     );
   }
 
-  return <ActionMenu items={items} ariaLabel={`Actions for report ${report.id.slice(0, 8)}`} />;
+  return (
+    <ActionMenu
+      items={items}
+      ariaLabel={`Actions for report ${report.id.slice(0, 8)}`}
+      testId={`report-actions-${report.id}`}
+    />
+  );
 }

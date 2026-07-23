@@ -1,5 +1,7 @@
 import { type Locator, type Page, expect } from '@playwright/test';
 
+import { selectAntdOption } from '../shared/antd';
+
 /**
  * Admin → Users management (docs/e2e app map). AntD table; per-row actions live
  * behind an icon button labelled "Actions for <username>"; destructive actions
@@ -94,31 +96,7 @@ export class UsersPage {
    * `aria-activedescendant` is the target option (the list wraps), then Enter to commit.
    */
   private async selectRole(dialog: Locator, roleLabel: string): Promise<void> {
-    const combobox = dialog.getByRole('combobox', { name: 'Role' });
-    // Open via keyboard, NOT a mouse click: the current value's selection-item span
-    // overlays the tiny search input, and a (forced) click there is flaky across engines
-    // (in Firefox it dismissed the modal). Focus + ArrowDown opens rc-select reliably.
-    await combobox.focus();
-    await combobox.press('ArrowDown');
-    await expect(combobox).toHaveAttribute('aria-expanded', 'true');
-
-    const targetId = await this.page
-      .getByRole('option', { name: roleLabel, exact: true })
-      .getAttribute('id');
-    expect(targetId, `role option "${roleLabel}" not found`).not.toBeNull();
-
-    // Walk the list with ArrowDown (it wraps) until the active option is the target, then
-    // commit with Enter — avoids clicking a portal option that can render outside the viewport.
-    await expect(async () => {
-      const active = await combobox.getAttribute('aria-activedescendant');
-      if (active !== targetId) {
-        await combobox.press('ArrowDown');
-        throw new Error(`active option ${active ?? 'none'} ≠ target ${targetId ?? ''}`);
-      }
-    }).toPass({ timeout: 5_000 });
-
-    await combobox.press('Enter');
-    await expect(combobox).toHaveAttribute('aria-expanded', 'false');
+    await selectAntdOption(this.page, dialog.getByRole('combobox', { name: 'Role' }), roleLabel);
   }
 
   /** Assert the role tag shown in a user's table row (UI reflection of the change). */

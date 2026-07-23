@@ -57,6 +57,21 @@ export class EditorPage {
     await expect(this.body).toContainText(body);
   }
 
+  /** Wait for an existing piece to finish hydrating into the editor (title populated). */
+  async waitForEditorReady(): Promise<void> {
+    await expect(this.titleInput).toBeVisible({ timeout: 30_000 });
+    await expect(this.titleInput).not.toHaveValue('');
+  }
+
+  /** Replace the whole title (autosave persists it via PATCH /pieces/:id). */
+  async replaceTitle(title: string): Promise<void> {
+    await this.titleInput.fill(title);
+  }
+
+  async expectTitleValue(title: string): Promise<void> {
+    await expect(this.titleInput).toHaveValue(title);
+  }
+
   async writePiece({ title, body }: { title: string; body: string }): Promise<void> {
     await this.titleInput.fill(title);
     // contenteditable: real key events so ProseMirror registers the input.

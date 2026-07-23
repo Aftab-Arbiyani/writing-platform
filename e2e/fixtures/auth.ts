@@ -34,6 +34,15 @@ export type AuthRole = keyof typeof CREDENTIALS;
  */
 export async function freshLogin(page: Page, role: AuthRole): Promise<void> {
   const { email, password } = CREDENTIALS[role];
+  await freshLoginAs(page, email, password);
+}
+
+/**
+ * Authenticate `page`'s context as an arbitrary account (e.g. a throwaway user for a
+ * destructive flow like change-password, which revokes the actor's other sessions — so
+ * it must never run as the shared writer). Same mechanism as `freshLogin`.
+ */
+export async function freshLoginAs(page: Page, email: string, password: string): Promise<void> {
   const res = await page.request.post(`${API_URL}/auth/login`, { data: { email, password } });
-  expect(res.ok(), `fresh ${role} login failed (${res.status()})`).toBeTruthy();
+  expect(res.ok(), `fresh login as ${email} failed (${res.status()})`).toBeTruthy();
 }

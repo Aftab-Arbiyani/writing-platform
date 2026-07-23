@@ -200,4 +200,86 @@ export class ApiHelper {
     const draft = await this.createPiece(input);
     return this.publishPiece(draft.id);
   }
+
+  /** Log in and return just the access token (for arranging actions as an arbitrary user). */
+  async loginToken(email: string, password: string): Promise<string> {
+    return (await this.login(email, password)).accessToken;
+  }
+
+  /** The seeded writer's user id (e.g. the followee target for a notification arrange). */
+  async writerId(): Promise<string> {
+    return (await this.login(WRITER_EMAIL, WRITER_PASSWORD)).user.id;
+  }
+
+  /** Follow a user as the bearer of `token` (POST /users/:id/follow, no body). */
+  async follow(targetUserId: string, token: string): Promise<{ status: string }> {
+    const res = await this.request.post(this.url(`/users/${targetUserId}/follow`), {
+      headers: { Authorization: `Bearer ${token}` },
+      data: {},
+    });
+    return this.data<{ status: string }>(res);
+  }
+
+  /** File a report against an entity as the bearer of `token` (POST /reports). Returns the report. */
+  async report(
+    input: {
+      entityType: 'piece' | 'comment' | 'user' | 'response';
+      entityId: string;
+      reason?: string;
+      description?: string;
+    },
+    token: string,
+  ): Promise<{ id: string; status: string }> {
+    const res = await this.request.post(this.url('/reports'), {
+      headers: { Authorization: `Bearer ${token}` },
+      data: {
+        entityType: input.entityType,
+        entityId: input.entityId,
+        reason: input.reason ?? 'spam',
+        ...(input.description !== undefined ? { description: input.description } : {}),
+      },
+    });
+    return this.data<{ id: string; status: string }>(res);
+  }
+
+  /** Read a report's admin detail (assert resolution status side effects). */
+  async getReport(id: string): Promise<{ id: string; status: string; resolution?: string | null }> {
+    const res = await this.request.get(this.url(`/admin/reports/${id}`), {
+      headers: await this.adminHeaders(),
+    });
+    return this.data(res);
+  }
+
+  /** Mint a moderator: create a verified user, promote to moderator (super-admin), return creds. */
+  async createModerator(input: {
+    email: string;
+    username: string;
+    password: string;
+  }): Promise<ThrowawayUser> {
+    const user = await this.createVerifiedUser(input);
+    const res = await this.request.patch(this.url(`/admin/users/${user.id}`), {
+      headers: await this.adminHeaders(),
+      data: { role: 'moderator' },
+    });
+    await this.data(res);
+    return user;
+  }
+
+  /** Read admin audit-log entries (admin+). Assert an admin action was recorded. */
+  async getAuditLogs(params: {
+    action?: string;
+    targetId?: string;
+    limit?: number;
+  }): Promise<
+    Array<{ action: string; targetId: string | null; actorRole: string; [k: string]: unknown }>
+  > {
+    const qs = new URLSearchParams();
+    if (params.action !== undefined) qs.set('action', params.action);
+    if (params.targetId !== undefined) qs.set('targetId', params.targetId);
+    qs.set('limit', String(params.limit ?? 20));
+    const res = await this.request.get(this.url(`/admin/audit-logs?${qs.toString()}`), {
+      headers: await this.adminHeaders(),
+    });
+    return this.data(res);
+  }
 }

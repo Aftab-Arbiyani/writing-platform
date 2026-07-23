@@ -168,6 +168,23 @@ audit-log entry; RBAC boundary (needs a moderator-only fixture + storageState).
 
 **Exit criteria:** all P3 rows on 3 engines; moderation cross-app assertions proven; 3 green CI runs.
 
+**Implementation status — LIVE-VALIDATED on Chromium + Firefox (2026-07-23).** All 11 Phase-3 journeys pass
+(frontend: edit piece, search→link, profile view/edit, follow, notifications, change-password, silent-refresh;
+admin: moderation queue + cross-app takedown, dismiss, audit-log entry, RBAC boundary). WebKit pending host OS
+libs (CI-only); CI PR-gate promotion pending.
+
+- **Moderation cross-app** is proven: a takedown (`Remove content`) resolved in the admin UI removes the piece
+  from the reader Latest feed (asserted in a fresh frontend context). The report queue has no title column, so
+  a bounded `data-testid="report-actions-<id>"` (full id) was added — the button's aria-label is only an 8-char
+  UUIDv7 prefix and collides across close-in-time reports.
+- **RBAC boundary:** a minted moderator (re-logged so the JWT claim updates) reaches the dashboard but the
+  super-admin-only `/roles` screen renders the 403 page in place (no redirect) and the nav item is hidden.
+- New selector lessons folded in: the AntD **Decision** select (like the Role select) is keyboard-driven, and
+  `selectAntdOption` now presses ArrowDown until the target **renders** (rc-select virtualizes long lists) and
+  is the active descendant before Enter — the earlier "fetch target id upfront" approach only worked for short
+  (≤ a few option) lists. Cross-cutting fixes (`freshLogin` per test, `DataFactory` process-wide sequence, the
+  `useInfiniteScroll` callback-ref) carried over from Phase 2 and covered the new specs unchanged.
+
 ---
 
 ## 6. Phase 4 — The rest

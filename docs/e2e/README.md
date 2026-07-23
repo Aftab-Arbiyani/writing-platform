@@ -34,6 +34,9 @@ Playwright _projects_ so they share fixtures, auth setup, and helpers.
   load/paginate/open-link; admin view-user + grant/revoke role — see [06 §4](./06_PhasePlan.md)). The live run
   found + fixed three real defects (cold-load infinite scroll, storageState-vs-rotating-refresh, DataFactory
   collisions). WebKit pending host OS libs (CI-only); PR-gate promotion pending.
+- **Phase 3 (Depth):** **live-validated on Chromium + Firefox** — edit piece, search, profile view/edit,
+  follow, notifications, change-password, silent-refresh; admin moderation (+ cross-app takedown), audit log,
+  RBAC boundary (see [06 §5](./06_PhasePlan.md)). WebKit pending host OS libs (CI-only); PR-gate promotion pending.
 
 ## The one-paragraph summary
 

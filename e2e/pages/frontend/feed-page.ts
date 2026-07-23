@@ -65,4 +65,14 @@ export class FeedPage {
   async openPiece(title: string): Promise<void> {
     await this.pieceLink(title).click();
   }
+
+  /** Assert a piece with the given title is present in the (newest-first) Latest feed. */
+  async expectPieceVisible(title: string): Promise<void> {
+    await expect(this.pieceLink(title)).toBeVisible();
+  }
+
+  /** Assert a piece with the given title is absent from the Latest feed (e.g. after takedown). */
+  async expectPieceNotVisible(title: string): Promise<void> {
+    await expect(this.pieceLink(title)).toHaveCount(0);
+  }
 }

@@ -20,9 +20,16 @@ export interface ActionMenuItem {
 export interface ActionMenuProps {
   items: ActionMenuItem[];
   ariaLabel?: string;
+  /** Stable, unique test hook for the trigger (e.g. a full entity id) where the
+   *  aria-label is only a short prefix and can collide across rows. */
+  testId?: string;
 }
 
-export function ActionMenu({ items, ariaLabel = 'Actions' }: ActionMenuProps): ReactElement {
+export function ActionMenu({
+  items,
+  ariaLabel = 'Actions',
+  testId,
+}: ActionMenuProps): ReactElement {
   const menuItems: MenuProps['items'] = items.map((item) => ({
     key: item.key,
     label: item.label,
@@ -37,7 +44,13 @@ export function ActionMenu({ items, ariaLabel = 'Actions' }: ActionMenuProps): R
 
   return (
     <Dropdown menu={{ items: menuItems, onClick }} trigger={['click']} placement="bottomRight">
-      <QButton variant="ghost" size="sm" icon={MoreHorizontal} aria-label={ariaLabel} />
+      <QButton
+        variant="ghost"
+        size="sm"
+        icon={MoreHorizontal}
+        aria-label={ariaLabel}
+        data-testid={testId}
+      />
     </Dropdown>
   );
 }

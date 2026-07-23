@@ -98,6 +98,7 @@ export function DecisionDialog({ report, onClose }: DecisionDialogProps): ReactE
         <label className="flex flex-col gap-1 text-sm text-ink">
           Decision
           <Select
+            aria-label="Decision"
             value={resolution}
             options={options}
             onChange={(value: ReportResolution) => setResolution(value)}
