@@ -1,10 +1,12 @@
 # E2E 06 — Phase Plan & Coverage Matrix
 
 > **Status:** Binding roadmap. This is the _what to build, in what order_ for the E2E suite — the analog
-> of `docs/18_DevelopmentRoadmap.md` for browser tests. Coverage grows in four phases; **every spec runs
-> on all three engines (Chromium, Firefox, WebKit) from Phase 1**. Each phase has explicit **exit
-> criteria** that must be met before the next begins. Workflows map to the real frontend features
-> (`frontend/src/features/*`) and admin screens.
+> of `docs/18_DevelopmentRoadmap.md` for browser tests. Coverage grows in five phases; **every spec runs
+> on all three engines (Chromium, Firefox, WebKit) from Phase 1**. Phases 1–4 cover **functional**
+> behaviour; the final **Phase 5** covers **UI quality** — visual regression, responsive, and
+> accessibility (the "works but looks/reads wrong" defects functional tests are blind to). Each phase
+> has explicit **exit criteria** that must be met before the next begins. Workflows map to the real
+> frontend features (`frontend/src/features/*`) and admin screens.
 
 ---
 
@@ -18,6 +20,9 @@
   Phase 2 flaky.
 - **Every phase = all three browsers.** No engine is deferred. (CI cost management via sharding is in
   [07_CI](./07_CI.md).)
+- **Functional first, appearance last.** UI-quality checks (visual/responsive/a11y — Phase 5) come
+  _after_ the functional suite is complete and stable. **Why:** visual baselines taken against a
+  still-churning UI are pure churn; they only pay off once behaviour is locked.
 
 ---
 
@@ -129,12 +134,54 @@ audit-log entry; RBAC boundary (needs a moderator-only fixture + storageState).
 discover/For-You; error/empty/offline states.
 **Admin:** all four dashboards render (KPIs + chart presence, canvas caveat).
 
-**Exit criteria:** all P4 rows on 3 engines; 3 green CI runs; full matrix (§2) complete; suite documented
-as the release-gate reference in `docs/22_ReleaseChecklist.md`.
+**Exit criteria:** all P4 rows on 3 engines; 3 green CI runs; the full **functional** matrix (§2) complete.
 
 ---
 
-## 7. Cross-app assertions — a first-class capability
+## 7. Phase 5 — UI Quality (visual, responsive, accessibility)
+
+**Goal:** catch the defect class functional E2E is blind to. A test that finds a button by role passes
+even if that button is invisible behind another element, off-screen on mobile, or unreadable to a screen
+reader. Phase 5 closes that gap across three dimensions. Full method + policy live in
+[10_UIQuality](./10_UIQuality.md); this is the roadmap slice.
+
+### 7.1 The three dimensions
+
+| Dimension             | What it catches                                                                | How                                                                                                                             |
+| --------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| **Visual regression** | Layout breakage, spacing, colour, overlap, theme glitches, a chart drawn wrong | Playwright `toHaveScreenshot()` baselines per key page/component, per engine, with masks for dynamic regions                    |
+| **Responsive**        | Overflow, wrapping, unreachable nav/menus at small widths                      | Extra **viewport projects** (mobile + tablet) re-running a curated subset; assert no horizontal scroll + key controls reachable |
+| **Accessibility**     | Contrast, missing/!wrong ARIA, keyboard traps, unlabeled controls              | `@axe-core/playwright` scan asserting zero critical/serious violations + keyboard-only walkthrough of auth + publish            |
+
+### 7.2 Scope — curated, not every workflow
+
+Visual/a11y checks target **high-value pages**, not the whole functional matrix (a screenshot per test
+would be unmaintainable):
+
+- **Frontend:** login, register, feed, editor (+ publish drawer), a piece page, profile, settings, an
+  error/empty state.
+- **Admin:** login, dashboard, users table (+ edit modal), moderation queue, one analytics dashboard.
+
+### 7.3 Deliverables
+
+- `10_UIQuality.md` — baseline/masking policy, viewport matrix, a11y ruleset, flake controls.
+- Viewport projects (`*-mobile`, `*-tablet`) in `playwright.config.ts` for the curated subset.
+- `@axe-core/playwright` dev dependency + an `a11y` helper fixture.
+- `tests/**/*.visual.spec.ts` + `*.a11y.spec.ts`, tagged `@phase5`; committed screenshot baselines.
+- CI: baselines generated on a **pinned runner OS / Docker image** so cross-OS rendering doesn't churn.
+
+**Exit criteria:** visual baselines established and green on 3 engines; the responsive subset green at
+mobile + tablet; **zero critical/serious** axe violations on the listed pages; keyboard-only auth +
+publish pass; 3 green CI runs; the full suite (functional §2 + UI-quality) documented as the release-gate
+reference in `docs/22_ReleaseChecklist.md`.
+
+> **Cost/caveats (why this is last):** screenshots render slightly differently across OS/GPU, so baselines
+> must be produced in one controlled environment (Docker/pinned CI image), never on mixed dev machines;
+> and baselines only stop churning once the UI behaviour is frozen — hence after Phases 1–4.
+
+---
+
+## 8. Cross-app assertions — a first-class capability
 
 Because both apps share one backend, several of the highest-value E2E assertions span apps: an admin
 action in the admin app changing what a user sees in the frontend app. Playwright supports multiple
@@ -161,9 +208,9 @@ backend state change, and the frontend read path all agree. These land in Phase 
 
 ---
 
-## 8. Tracking
+## 9. Tracking
 
-Each phase is a tracked milestone. A phase's specs are tagged (`@phase1` … `@phase4`) so CI can run a
+Each phase is a tracked milestone. A phase's specs are tagged (`@phase1` … `@phase5`) so CI can run a
 single phase (`--grep @phase2`) during rollout and the full suite once all phases land. Progress against
 this matrix is recorded in the phase's completion note (see how the mobile/backend epics logged
 reports), and a one-line status kept in [README](./README.md) once we begin implementing.

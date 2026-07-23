@@ -13,26 +13,29 @@ Playwright _projects_ so they share fixtures, auth setup, and helpers.
 
 ## Read in this order
 
-| #   | Doc                                                     | What                                                                          |
-| --- | ------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| 00  | [Overview](./00_Overview.md)                            | Goals, non-goals, testing philosophy, the test pyramid, scope in/out          |
-| 01  | [Architecture](./01_Architecture.md)                    | The `e2e/` package, Playwright projects, stack topology, `playwright.config`  |
-| 02  | [Conventions](./02_Conventions.md)                      | **Binding rules** — page objects, naming, fixtures, assertions, anti-patterns |
-| 03  | [Auth Strategy](./03_AuthStrategy.md)                   | `storageState` setup projects, roles, fresh-auth specs, session restore       |
-| 04  | [Test Data](./04_TestData.md)                           | The e2e-fixtures seed, unique-data factory, isolation, cleanup                |
-| 05  | [Selectors](./05_Selectors.md)                          | Selector priority, `data-testid` policy, AntD + TipTap specifics              |
-| 06  | [Phase Plan](./06_PhasePlan.md)                         | **The roadmap** — phased coverage matrix per app, exit criteria per phase     |
-| 07  | [CI](./07_CI.md)                                        | `web-e2e.yml`, browser matrix, sharding, artifacts, failure diagnostics       |
-| 08  | [Runbook](./08_Runbook.md)                              | Local commands, trace viewer, debugging, troubleshooting, flake policy        |
-| 09  | [Data-Safety Guard Rails](./09_DataSafetyGuardrails.md) | **Binding** — soft-delete only, never hard-delete, no dropped DB/table/column |
+| #   | Doc                                                     | What                                                                                    |
+| --- | ------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| 00  | [Overview](./00_Overview.md)                            | Goals, non-goals, testing philosophy, the test pyramid, scope in/out                    |
+| 01  | [Architecture](./01_Architecture.md)                    | The `e2e/` package, Playwright projects, stack topology, `playwright.config`            |
+| 02  | [Conventions](./02_Conventions.md)                      | **Binding rules** — page objects, naming, fixtures, assertions, anti-patterns           |
+| 03  | [Auth Strategy](./03_AuthStrategy.md)                   | `storageState` setup projects, roles, fresh-auth specs, session restore                 |
+| 04  | [Test Data](./04_TestData.md)                           | The e2e-fixtures seed, unique-data factory, isolation, cleanup                          |
+| 05  | [Selectors](./05_Selectors.md)                          | Selector priority, `data-testid` policy, AntD + TipTap specifics                        |
+| 06  | [Phase Plan](./06_PhasePlan.md)                         | **The roadmap** — phased coverage matrix per app, exit criteria per phase               |
+| 07  | [CI](./07_CI.md)                                        | `web-e2e.yml`, browser matrix, sharding, artifacts, failure diagnostics                 |
+| 08  | [Runbook](./08_Runbook.md)                              | Local commands, trace viewer, debugging, troubleshooting, flake policy                  |
+| 09  | [Data-Safety Guard Rails](./09_DataSafetyGuardrails.md) | **Binding** — soft-delete only, never hard-delete, no dropped DB/table/column           |
+| 10  | [UI Quality](./10_UIQuality.md)                         | Phase 5 — visual regression, responsive (mobile/tablet), accessibility (axe + keyboard) |
 
 ## The one-paragraph summary
 
 We test **real user workflows in real browsers against a real backend**. Every test starts from
 a known seeded state, logs in via a saved session (`storageState`) rather than repeating UI logins,
 drives the app through page objects with role/label/test-id selectors, and asserts on user-visible
-outcomes. Coverage grows **phase by phase** (smoke → core → depth → rest), and every spec runs on
-**all three browser engines** from Phase 1. Failures produce a clickable trace, screenshot, and video.
+outcomes. Coverage grows **phase by phase** (smoke → core → depth → rest → **UI quality**), and every
+spec runs on **all three browser engines** from Phase 1. Phases 1–4 are functional; the final **Phase 5**
+adds visual regression, responsive, and accessibility. Failures produce a clickable trace, screenshot,
+and video.
 
 ## The three cross-cutting invariants
 

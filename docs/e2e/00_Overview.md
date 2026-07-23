@@ -52,7 +52,6 @@ If a behavior can be fully proven by a Vitest component test or a backend E2E te
 ## 3. Non-goals
 
 - **Not a replacement** for unit/component/backend-E2E tests. It sits on top of them.
-- **Not visual-regression testing** (pixel diffing). Considered a later add-on, out of scope now.
 - **Not load/performance testing** — that is `docs/43_PerformanceScalabilityPlatform.md` (k6/bench).
 - **Not a coverage-percentage target.** E2E value is measured in _workflows covered_, not lines.
 - **Not testing third-party UIs** (Stripe Checkout, Google OAuth consent). We stop at our boundary
@@ -116,13 +115,22 @@ Both are covered as separate Playwright _projects_ in one `e2e/` package ([01_Ar
 
 Chromium, Firefox, and WebKit run **every** spec from Phase 1 onward. This is the explicit
 "in-depth, all three browsers" decision. Rationale and the CI cost trade-off are in
-[07_CI](./07_CI.md). Mobile viewport projects (Mobile Chrome/Safari emulation) are an optional
-Phase-4 add-on, not part of the baseline three.
+[07_CI](./07_CI.md). Mobile/tablet **viewport** projects arrive in Phase 5 (responsive testing —
+[10_UIQuality](./10_UIQuality.md)), separate from the three-engine baseline.
 
 ### 5.3 Workflow coverage
 
 The full per-phase, per-app coverage matrix is [06_PhasePlan](./06_PhasePlan.md). Summary:
-Phase 1 smoke+auth → Phase 2 core journeys → Phase 3 depth → Phase 4 the rest.
+Phase 1 smoke+auth → Phase 2 core journeys → Phase 3 depth → Phase 4 the rest →
+**Phase 5 UI quality** (visual regression, responsive, accessibility — the final phase).
+
+### 5.4 UI quality is in scope (Phase 5)
+
+Beyond _does it work_, the suite also checks _does it look and read right_: **visual regression**
+(layout/appearance), **responsive** (mobile/tablet viewports), and **accessibility** (axe + keyboard).
+These are the last phase — see [10_UIQuality](./10_UIQuality.md) — because visual baselines are only
+stable once functional behaviour is locked. Still out of scope: pixel-perfect design sign-off (that's a
+human/design review) and third-party UIs (§6).
 
 ---
 
