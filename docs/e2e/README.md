@@ -37,6 +37,11 @@ Playwright _projects_ so they share fixtures, auth setup, and helpers.
 - **Phase 3 (Depth):** **live-validated on Chromium + Firefox** — edit piece, search, profile view/edit,
   follow, notifications, change-password, silent-refresh; admin moderation (+ cross-app takedown), audit log,
   RBAC boundary (see [06 §5](./06_PhasePlan.md)). WebKit pending host OS libs (CI-only); PR-gate promotion pending.
+- **Phase 4 (The rest):** **live-validated on Chromium + Firefox** (20/20 green) — frontend analytics stats,
+  discover/For-You, and resilience (not-found, offline shell, live offline banner); admin Analytics /
+  Operations / Security / System dashboards render real data (see [06 §6](./06_PhasePlan.md)). **AI-assistant
+  and monetization rows deferred** — no client UI shipped yet. The full **functional** matrix is otherwise
+  complete; Phase 5 (UI quality) is next. WebKit pending host OS libs (CI-only); PR-gate promotion pending.
 
 ## The one-paragraph summary
 

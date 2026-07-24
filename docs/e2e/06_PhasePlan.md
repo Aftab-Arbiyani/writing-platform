@@ -28,7 +28,7 @@
 
 ## 2. Coverage matrix — the whole map
 
-Legend: ✅ in-phase target · ⬚ later phase · — not applicable.
+Legend: ✅ in-phase target · ⏸ targeted but deferred (client UI not yet shipped) · ⬚ later phase · — not applicable.
 
 ### 2.1 Frontend (reader/writer app, `:5173`)
 
@@ -51,8 +51,8 @@ Legend: ✅ in-phase target · ⬚ later phase · — not applicable.
 | Settings: change password (throwaway user)     |     |     | ✅  |     | `features/settings`, [04 §6](./04_TestData.md)                                                |
 | Silent token refresh survives navigation       |     |     | ✅  |     | [03 §7](./03_AuthStrategy.md)                                                                 |
 | Analytics: own stats page renders real data    |     |     |     | ✅  | `features/analytics` (`m9` shapes)                                                            |
-| AI writing assistant: request → suggestion     |     |     |     | ✅  | `features/ai` (`af2`); may need `setTimeout`                                                  |
-| Monetization: subscribe → entitlement granted  |     |     |     | ✅  | `af5`, inert payment port ([00 §6](./00_Overview.md))                                         |
+| AI writing assistant: request → suggestion     |     |     |     | ⏸   | `features/ai` (`af2`) — **deferred: hooks/store only, no UI/route** (§6)                      |
+| Monetization: subscribe → entitlement granted  |     |     |     | ⏸   | `af5` — **deferred: no client subscribe UI/route shipped** (§6)                               |
 | Reading history / discover (For You)           |     |     |     | ✅  | `discover` route (`m3` contract)                                                              |
 | Error/empty/offline states                     |     |     |     | ✅  | `app/pages/offline`, `route-error`, `not-found`                                               |
 
@@ -196,6 +196,65 @@ discover/For-You; error/empty/offline states.
 **Admin:** all four dashboards render (KPIs + chart presence, canvas caveat).
 
 **Exit criteria:** all P4 rows on 3 engines; 3 green CI runs; the full **functional** matrix (§2) complete.
+
+**Implementation status — LIVE-VALIDATED on Chromium + Firefox (2026-07-24).** All landed P4 journeys
+pass (18 spec runs + 2 setup projects across the two engines, 20/20 green). WebKit pending host OS
+libs (CI-only, as in P1–P3); CI PR-gate promotion still pending.
+
+Landed specs:
+
+- Frontend `analytics.spec.ts` — the writer stats dashboard (`/me/stats`, `features/analytics`, `m9`)
+  renders real `/analytics/dashboard` aggregates. The page object accepts **either** real-data
+  state — the overview KPI cards **or** the "no published pieces" empty state — and rejects only the
+  load-error panel (lifetime-only aggregates, on-demand snapshots → data presence is non-deterministic,
+  render success is not).
+- Frontend `discover.spec.ts` — the discovery / "For You" surface (`/discover`, `m3`) renders its real
+  section reads (`/discover/*`, `/feed/trending`). Featured/trending are engagement-driven, so a cold
+  stack legitimately shows the page's own "Nothing to discover yet." empty state; both a rendered
+  section and the empty state pass, only the load-error panel fails.
+- Frontend `resilience.spec.ts` — three states: (a) an unrouted path renders the **not-found** page
+  (the router catch-all → `NotFound`, also the 404 branch of the `RouteErrorBoundary`) with its "Back
+  to the feed" exit; (b) the **`/offline`** destination renders the offline shell; (c) the live
+  **offline banner** appears when the browser context goes offline (`context.setOffline(true)` → the
+  app store's window `offline` listener flips `isOnline`) and clears on reconnect.
+- Admin `dashboards.spec.ts` — the four read-only consoles each render real backend reads: **Analytics**
+  (A8, `/analytics`), **Operations** (P7.4, `/operations`), **Security** (P7.2, `/system/security`),
+  **System information** (P7.1, `/system`). Data-driven (one `ADMIN_DASHBOARDS` descriptor per console);
+  each asserts the `<h1>` + a KPI tile that mounts only once its query resolves + the **absence** of the
+  section error panel, so a failed read cannot masquerade as a rendered dashboard. Charts are canvas
+  (ECharts), so tile presence — not chart pixels — is the assertion ([05 §6](./05_Selectors.md)).
+
+**Deferred (no client UI shipped — asserted when the epic lands, per the reader-page precedent §2.1):**
+
+- **AI writing-assistant suggestion** (row `af2`) — the frontend has the AI hooks/store/api layer
+  (`features/ai`) but **no component consumes it and no route is registered**; the writer-facing
+  assistant UI is deferred (mobile + backend enablers shipped; frontend/admin deferred). No UI → no
+  E2E surface yet.
+- **Monetization subscribe→entitlement** (row `af5`) — there is **no monetization/subscribe/billing
+  feature or route** in the frontend; the client is deferred (backend + mobile shipped). The inert
+  payment port lives backend-side and is exercised by backend tests, not the browser suite.
+
+Both rows re-enter the matrix as `✅` the moment their client epics ship; until then they are tracked
+here and in the [README](./README.md) status, not silently dropped.
+
+**Live-run notes / findings (the payoff E2E exists for):**
+
+1. **`/offline` serves the static PWA fallback, not the React route (expectation corrected).** The built
+   app resolves `/offline` to `public/offline.html` (the service-worker offline shell) rather than the
+   SPA `Offline` component, so its copy differs ("You’re offline" as an `<h1>`, curly apostrophe, no
+   period). The page object now matches the offline shell by role + a case-insensitive substring,
+   tolerant of whichever surface the runtime serves.
+2. **The E2E backend must run with `RATE_LIMIT_ENABLED=false`.** The suite mints a fresh login per test
+   ([03 §fresh-login](./03_AuthStrategy.md)); the `authLogin` tier is **5/min AND 20/hour per ip+email**
+   (`packages/shared/src/rate-limits.ts`), so a full-suite run on a shared seeded account exhausts the
+   hourly bucket and later logins 429. The documented load-test escape hatch (`RATE_LIMIT_ENABLED=false`,
+   the guard's early-out) is the correct posture for the E2E stack — the rate-limiter's own behaviour is
+   covered by backend tests, not the browser suite. This should be baked into the e2e backend env
+   ([08_Runbook](./08_Runbook.md)).
+3. **Watch-mode is watcher-hungry on a shared host.** `nest start --watch` + `vite dev` exhaust the
+   system `fs.inotify.max_user_watches` when other projects hold watchers, crashing the servers
+   (ENOSPC). Local live-validation ran the backend built (`node dist/main.js`) and the two apps via
+   `preview` (CI mode) — no file watchers — which is also what CI serves.
 
 ---
 
