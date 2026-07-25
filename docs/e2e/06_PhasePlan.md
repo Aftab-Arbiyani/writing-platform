@@ -299,6 +299,32 @@ reference in `docs/22_ReleaseChecklist.md`.
 > must be produced in one controlled environment (Docker/pinned CI image), never on mixed dev machines;
 > and baselines only stop churning once the UI behaviour is frozen — hence after Phases 1–4.
 
+**Implementation status — LANDED, live-validated in the pinned Playwright image (2026-07-25).** The full
+`@phase5` suite is **green on all three engines** (83 tests incl. both setup projects, run inside
+`mcr.microsoft.com/playwright:v1.61.1-noble` — the first WebKit-inclusive live validation in this effort).
+Breakdown:
+
+- **Accessibility (`@a11y`):** axe (WCAG 2.0/2.1 A + AA) scans of the curated pages (frontend: login,
+  register, feed, editor, profile, settings, not-found; admin: login, dashboard, users, moderation,
+  analytics) + a **keyboard-only walkthrough** of auth (login) and publish (the drawer is operable and
+  submits by keyboard alone). Gate = zero **critical/serious** except a documented **known-debt register**
+  ([10 §4.2], `fixtures/a11y.ts` `KNOWN_A11Y_FINDINGS`): platform-wide `color-contrast` (a muted-text
+  design token ≈ 3.51:1, needs a design-token pass) and two AntD-Table internals (`label`,
+  `aria-hidden-focus`). One real bug was **fixed in the app** — the TipTap editor's contenteditable had
+  `aria-label` with no role (`aria-prohibited-attr`); it now carries `role="textbox"` + `aria-multiline`.
+- **Responsive (`@responsive`):** mobile (Pixel 7) + tablet viewport projects. Admin holds the **strict
+  zero-horizontal-scroll** gate; the reader shell has **characterized known debt** — its content wrapper
+  resolves ~24–40px wider than the viewport below `lg` (asserted within a bound so a regression still
+  fails, and logged each run). Login + core-journey (admin users) run green at small widths; primary nav
+  is asserted reachable at both widths.
+- **Visual (`@visual`):** `toHaveScreenshot` baselines for the curated pages — static corridors full-page,
+  data-heavy pages with dynamic regions **masked** so only chrome is guarded. **27 per-engine baselines**
+  (9 × chromium/firefox/webkit) were produced in the pinned image and committed under
+  `tests/**/*-snapshots/`; CI verifies them in that **same image** via a container job (`web-e2e.yml`
+  `web-e2e-visual`), with a `workflow_dispatch` input to regenerate + review in-PR ([10 §2.2, §5]).
+
+CI gate promotion (all of Phases 1–5) still pending per [07](./07_CI.md).
+
 ---
 
 ## 8. Cross-app assertions — a first-class capability

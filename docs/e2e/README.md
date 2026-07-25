@@ -41,7 +41,14 @@ Playwright _projects_ so they share fixtures, auth setup, and helpers.
   discover/For-You, and resilience (not-found, offline shell, live offline banner); admin Analytics /
   Operations / Security / System dashboards render real data (see [06 §6](./06_PhasePlan.md)). **AI-assistant
   and monetization rows deferred** — no client UI shipped yet. The full **functional** matrix is otherwise
-  complete; Phase 5 (UI quality) is next. WebKit pending host OS libs (CI-only); PR-gate promotion pending.
+  complete. WebKit pending host OS libs (CI-only); PR-gate promotion pending.
+- **Phase 5 (UI quality):** **LANDED — live-validated on all three engines** (Chromium, Firefox **and
+  WebKit**, 83 tests) inside the pinned Playwright image. Accessibility (axe WCAG A/AA + keyboard-only
+  auth/publish), responsive (mobile + tablet), and visual regression (27 committed per-engine baselines,
+  masked dynamic regions). Two documented debt registers (design-token `color-contrast`, AntD-table
+  internals; reader-shell horizontal overflow) and one in-app a11y fix (TipTap `role="textbox"`); see
+  [06 §7](./06_PhasePlan.md) + [10 §8](./10_UIQuality.md). Full functional + UI-quality matrix now
+  complete; PR-gate promotion pending.
 
 ## The one-paragraph summary
 

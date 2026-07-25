@@ -4,8 +4,20 @@ name: Web E2E
 # real backend + Postgres/Redis/MinIO/Mailpit. Mirrors e2e.yml's infra wiring.
 # Non-blocking for now (workflow_dispatch + merge to main); becomes a required PR
 # gate at Phase 2 exit (docs/e2e/07 §6).
+#
+# Two jobs (docs/e2e/06 §7, 10 §5):
+#   • web-e2e         — functional (P1–P4) + @a11y + @responsive, per engine, sharded.
+#   • web-e2e-visual  — @phase5 @visual only, executed INSIDE the pinned Playwright
+#                       Docker image so screenshot rendering is reproducible and matches
+#                       the committed baselines ([10 §2.2, §5]). The runner OS is pinned
+#                       to ubuntu-24.04 (same noble base as the image) for the rest.
 on:
   workflow_dispatch:
+    inputs:
+      update_visual_baselines:
+        description: 'Regenerate visual baselines (--update-snapshots) and upload them as an artifact to commit'
+        type: boolean
+        default: false
   push:
     branches: [main]
 
@@ -13,9 +25,14 @@ concurrency:
   group: web-e2e-${{ github.ref }}
   cancel-in-progress: true
 
+# Pinned Playwright Docker image — MUST match the e2e package's @playwright/test version so
+# the browser builds (and thus visual rendering) are identical to what produced the baselines.
+env:
+  PLAYWRIGHT_IMAGE: mcr.microsoft.com/playwright:v1.61.1-noble
+
 jobs:
   web-e2e:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -54,7 +71,8 @@ jobs:
       ADMIN_URL: http://localhost:5174
       # Scheduler off (cron would fire mid-suite); workers stay on.
       SCHEDULER_ENABLED: 'false'
-      # Rate limiter off — the suite registers many throwaway users from one IP.
+      # Rate limiter off — the suite registers many throwaway users + logs in fresh per test
+      # from one IP (docs/e2e/03 fresh-login), which the auth throttle would 429.
       RATE_LIMIT_ENABLED: 'false'
       CI: 'true'
       E2E_API_URL: http://localhost:4000/api/v1
@@ -110,17 +128,160 @@ jobs:
       - name: Install Playwright browser (${{ matrix.browser }})
         run: pnpm --filter e2e exec playwright install --with-deps ${{ matrix.browser }}
 
+      # Functional (P1–P4) + @a11y on all engines; @responsive (chromium-only viewport
+      # projects) on the chromium leg. @visual is EXCLUDED here — it runs in the pinned
+      # container job below so rendering matches the committed baselines.
       - name: Run E2E (${{ matrix.browser }} shard ${{ matrix.shard }})
-        run: >-
-          pnpm --filter e2e exec playwright test
-          --project=frontend-${{ matrix.browser }} --project=admin-${{ matrix.browser }}
-          --shard=${{ matrix.shard }}/2
+        run: |
+          PROJECTS="--project=frontend-${{ matrix.browser }} --project=admin-${{ matrix.browser }}"
+          if [ "${{ matrix.browser }}" = "chromium" ]; then
+            PROJECTS="$PROJECTS --project=frontend-mobile --project=frontend-tablet --project=admin-mobile --project=admin-tablet"
+          fi
+          pnpm --filter e2e exec playwright test $PROJECTS --grep-invert @visual --shard=${{ matrix.shard }}/2
 
       - name: Upload report + traces
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report-${{ matrix.browser }}-shard${{ matrix.shard }}
+          path: |
+            e2e/playwright-report/
+            e2e/test-results/
+          retention-days: 14
+
+  # Visual regression — runs the @visual specs INSIDE the pinned Playwright image so the
+  # screenshots render byte-for-byte like the committed baselines (docs/e2e/10 §2.2, §5).
+  # Infra + apps + backend are brought up on the runner (host); the app preview servers run
+  # on the host and the container attaches via `--network host` (E2E_REUSE_SERVER=1) — exactly
+  # the flow used to author the baselines locally.
+  web-e2e-visual:
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: qalam
+          POSTGRES_PASSWORD: qalam
+          POSTGRES_DB: qalam
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U qalam"
+          --health-interval 10s --health-timeout 5s --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s --health-timeout 5s --health-retries 5
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://qalam:qalam@localhost:5432/qalam
+      REDIS_URL: redis://localhost:6379
+      JWT_ACCESS_SECRET: ci-access-secret-not-a-real-secret-000000
+      JWT_REFRESH_SECRET: ci-refresh-secret-not-a-real-secret-00000
+      S3_ENDPOINT: http://localhost:9000
+      S3_REGION: us-east-1
+      S3_BUCKET: qalam-media
+      S3_ACCESS_KEY: minioadmin
+      S3_SECRET_KEY: minioadmin
+      SMTP_URL: smtp://localhost:1025
+      APP_URL: http://localhost:5173
+      ADMIN_URL: http://localhost:5174
+      SCHEDULER_ENABLED: 'false'
+      RATE_LIMIT_ENABLED: 'false'
+      CI: 'true'
+      E2E_API_URL: http://localhost:4000/api/v1
+      E2E_MAILPIT_URL: http://localhost:8025
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Start MinIO + create bucket
+        run: |
+          docker run -d --name minio -p 9000:9000 \
+            -e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=minioadmin \
+            minio/minio server /data
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:9000/minio/health/ready && break || sleep 2
+          done
+          aws --endpoint-url http://localhost:9000 s3 mb s3://qalam-media || true
+        env:
+          AWS_ACCESS_KEY_ID: minioadmin
+          AWS_SECRET_ACCESS_KEY: minioadmin
+          AWS_DEFAULT_REGION: us-east-1
+
+      - name: Start Mailpit
+        run: docker run -d --name mailpit -p 1025:1025 -p 8025:8025 axllent/mailpit
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared packages + both apps
+        run: |
+          pnpm --filter "@qalam/*" build
+          pnpm --filter frontend build
+          pnpm --filter admin build
+
+      - name: Build + start backend, migrate, seed
+        run: |
+          pnpm --filter backend build
+          node backend/dist/main.js &
+          e2e/scripts/wait-health.sh http://localhost:4000/health 120
+          pnpm --filter backend migration:run
+          pnpm --filter backend seed
+          pnpm --filter backend seed:e2e
+
+      - name: Start app preview servers (host)
+        run: |
+          pnpm --filter frontend preview --port 5173 --strictPort &
+          pnpm --filter admin preview --port 5174 --strictPort &
+          e2e/scripts/wait-health.sh http://localhost:5173 120
+          e2e/scripts/wait-health.sh http://localhost:5174 120
+
+      - name: Pull pinned Playwright image
+        run: docker pull "$PLAYWRIGHT_IMAGE"
+
+      # Verify (default) or regenerate (workflow_dispatch input) the committed baselines. On
+      # regeneration the updated PNGs are uploaded as an artifact for review + commit in the PR
+      # ([10 §2.2] — baselines are reviewed, never blind-accepted).
+      - name: Run @visual in the pinned image
+        run: |
+          UPDATE=""
+          if [ "${{ inputs.update_visual_baselines }}" = "true" ]; then UPDATE="--update-snapshots"; fi
+          docker run --rm --network host --user "$(id -u):$(id -g)" -e HOME=/tmp \
+            -e CI=1 -e E2E_REUSE_SERVER=1 \
+            -e E2E_API_URL=http://localhost:4000/api/v1 \
+            -e E2E_BASE_URL_FRONTEND=http://localhost:5173 \
+            -e E2E_BASE_URL_ADMIN=http://localhost:5174 \
+            -v "$GITHUB_WORKSPACE":/work -w /work/e2e \
+            "$PLAYWRIGHT_IMAGE" \
+            npx playwright test --grep @visual \
+              --project=frontend-chromium --project=frontend-firefox --project=frontend-webkit \
+              --project=admin-chromium --project=admin-firefox --project=admin-webkit \
+              $UPDATE --workers=2
+
+      - name: Upload updated baselines (on regenerate)
+        if: ${{ inputs.update_visual_baselines == true && !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: updated-visual-baselines
+          path: e2e/tests/**/*-snapshots/**/*.png
+          retention-days: 14
+
+      - name: Upload report + diffs
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-visual
           path: |
             e2e/playwright-report/
             e2e/test-results/

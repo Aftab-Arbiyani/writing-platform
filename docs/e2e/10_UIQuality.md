@@ -157,3 +157,41 @@ test('feed has no critical/serious a11y violations @phase5 @a11y', async ({ page
 | _(none for responsive)_ | `devices[...]` viewports are built in       |
 
 Minimal footprint — one dev dependency. Everything else reuses the existing harness.
+
+---
+
+## 8. Landing state & known-debt registers (2026-07-25)
+
+Phase 5 is **landed and green on all three engines** in the pinned image. Two registers hold the
+pre-existing UI debt this phase surfaced — each entry is downgraded from a hard gate to a **tracked,
+logged** finding (the sanctioned alternative to a silent skip, §4.2). New defects outside a register
+still fail.
+
+### 8.1 Accessibility debt (`fixtures/a11y.ts` → `KNOWN_A11Y_FINDINGS`)
+
+| Rule                | Scope         | Why deferred (exit = re-arm the rule)                                                                                                            |
+| ------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `color-contrast`    | platform-wide | Muted-text token (`#8f887a` on white ≈ 3.51:1) below AA 4.5:1. A `@qalam/ui` design-token change needing sign-off; also churns visual baselines. |
+| `label`             | admin tables  | AntD Table's row-selection checkboxes render unlabeled (library internal).                                                                       |
+| `aria-hidden-focus` | admin tables  | AntD Table's hidden measure-row carries focusable cells (library internal).                                                                      |
+
+Fixed in-app during this phase (not deferred): the TipTap editor contenteditable now has
+`role="textbox"` + `aria-multiline` (cleared `aria-prohibited-attr`).
+
+### 8.2 Responsive debt
+
+The reader shell's content wrapper resolves ~24–40px wider than the viewport below `lg` (the `body`/
+wrapper exceeds 100vw; the UA body margin is also unreset) — every reader page scrolls sideways by that
+much. **Characterized**, not excluded: `tests/frontend/responsive/responsive.spec.ts` asserts the overflow
+stays within a bound (so a regression that widens it fails) and logs the value each run. Admin has no such
+overflow and keeps the strict zero-scroll gate. Exit = fix the shell wrapper (a layout pass that also owns
+the visual baselines).
+
+### 8.3 Visual baseline provenance & workflow
+
+Baselines are produced and verified **only** in `mcr.microsoft.com/playwright:v1.61.1-noble` (pinned to the
+e2e `@playwright/test` version). Committed under `tests/**/*-snapshots/` (27 files = 9 pages × 3 engines).
+CI verifies them in that same image (`web-e2e.yml` → `web-e2e-visual`, `docker run --network host` against
+host preview servers). To update: run the `web-e2e` workflow with `update_visual_baselines: true`, download
+the `updated-visual-baselines` artifact, and commit it in the PR so the diff is reviewed. Never regenerate
+baselines on a dev machine's native browsers.
