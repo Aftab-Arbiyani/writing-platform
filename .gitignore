@@ -20,6 +20,12 @@ coverage/
 .DS_Store
 logs/
 
+# Claude Code hook scratch state. The changed-files tracker writes one of these wherever a
+# hook happens to fire, so it appears at many depths (repo root, e2e/, frontend/src/, …) —
+# hence the any-depth pattern. The rest of .claude/ (hooks, settings, README) stays tracked;
+# personal overrides are handled by .claude/.gitignore.
+**/.claude/state/
+
 # Playwright E2E (saved sessions + run artifacts + local stack state)
 e2e/.auth/
 e2e/test-results/
