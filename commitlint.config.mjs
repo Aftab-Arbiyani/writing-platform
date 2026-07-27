@@ -42,6 +42,9 @@ export default {
         'docs',
         'deps',
         'release',
+        // the browser E2E suite (docs/e2e, e2e/) — its own lane, since a change there
+        // touches neither app nor backend
+        'e2e',
       ],
     ],
   },
