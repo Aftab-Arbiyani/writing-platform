@@ -323,7 +323,12 @@ Breakdown:
   `tests/**/*-snapshots/`; CI verifies them in that **same image** via a container job (`web-e2e.yml`
   `web-e2e-visual`), with a `workflow_dispatch` input to regenerate + review in-PR ([10 §2.2, §5]).
 
-CI gate promotion (all of Phases 1–5) still pending per [07](./07_CI.md).
+**Still open after Phase 5 (2026-07-27):** the release-gate write-up now exists
+([docs/22 — Browser E2E](../22_ReleaseChecklist.md)), and two defects that made the workflow
+un-runnable are fixed (unreachable `main`-only trigger; backend started before migrations, which
+kills bootstrap via `SettingsService.onModuleInit`) — see [07 §6.1](./07_CI.md). What remains is
+purely execution: **three consecutive green CI runs** have never happened for any phase, so the
+suite is still advisory rather than a required PR gate.
 
 ---
 

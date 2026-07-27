@@ -49,6 +49,11 @@ Playwright _projects_ so they share fixtures, auth setup, and helpers.
   internals; reader-shell horizontal overflow) and one in-app a11y fix (TipTap `role="textbox"`); see
   [06 §7](./06_PhasePlan.md) + [10 §8](./10_UIQuality.md). Full functional + UI-quality matrix now
   complete; PR-gate promotion pending.
+- **CI gate (open):** the suite has been validated locally only — `web-e2e.yml` had **never run**,
+  because its `push: [main]` trigger could not match this repo's `develop` work and the backend was
+  started before its migrations (fatal at bootstrap). Both are fixed; the remaining step is three
+  green runs, then flipping on `pull_request` — see [07 §6.1](./07_CI.md). The release-gate
+  checklist itself is written up in [docs/22](../22_ReleaseChecklist.md).
 
 ## The one-paragraph summary
 

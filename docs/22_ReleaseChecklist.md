@@ -14,6 +14,41 @@ anything user-visible changes. See `19_DeploymentGuide.md` for commands and
 - [ ] If the change is DB-touching: reviewed with `/migration-check`; it is
       **expand→migrate→contract** backward-compatible (old app works on new schema).
 
+## Browser E2E — the frontend/admin release gate
+
+The browser suite (`web-e2e.yml`, Playwright) is the **release-gate reference for the two web
+apps**: it drives the real frontend (`:5173`) and admin (`:5174`) against a real backend, so it
+is the only check that proves the shipped bundles, the API contract, and the read paths still
+agree. Governing docs: [`docs/e2e/`](./e2e/README.md) — coverage matrix in
+[06 §2](./e2e/06_PhasePlan.md), UI-quality policy in [10](./e2e/10_UIQuality.md), gate policy in
+[07 §6](./e2e/07_CI.md).
+
+- [ ] `web-e2e` job green — **functional (P1–P4) + `@a11y` + `@responsive`** on
+      **chromium, firefox, and webkit** (sharded ×2). Covers auth, publish, feed, edit, search,
+      profile, follow, notifications, settings, silent refresh, analytics, discover, resilience;
+      admin users/roles/suspend, moderation (+ cross-app takedown), audit log, RBAC, and all four
+      dashboards.
+- [ ] `web-e2e-visual` job green — the **27 committed screenshot baselines** verified inside the
+      pinned `mcr.microsoft.com/playwright:v1.61.1-noble` image. A diff here is a **blocking**
+      finding: either a real regression, or an intended change whose baselines must be
+      regenerated via the workflow's `update_visual_baselines` dispatch input and **reviewed in
+      the PR** ([10 §8.3](./e2e/10_UIQuality.md)) — never blind-accepted, never regenerated on a
+      dev machine.
+- [ ] **Zero critical/serious axe violations** outside the known-debt register
+      (`e2e/fixtures/a11y.ts` → `KNOWN_A11Y_FINDINGS`). A new rule firing fails the run; adding an
+      entry to the register requires the same sign-off as any other deferred defect.
+- [ ] No new quarantined, skipped, or `test.fixme`'d specs versus the previous release.
+- [ ] Known UI debt unchanged (not worsened): platform-wide `color-contrast` token, AntD-table
+      internals, and the reader-shell **~24–40px sub-`lg` horizontal overflow** (asserted within a
+      bound — a widening regression fails the run). See [10 §8](./e2e/10_UIQuality.md).
+- [ ] If a **deferred coverage row** shipped this release (AI assistant `af2`, monetization `af5`,
+      or the reader page `/p/:slug`), its E2E row is now implemented — not still ⏸ in
+      [06 §2](./e2e/06_PhasePlan.md).
+
+> The suite requires `RATE_LIMIT_ENABLED=false` on the E2E backend (fresh login per test would
+> otherwise exhaust the `authLogin` 20/hour bucket) — that flag is E2E-only and must never reach a
+> deployed tier; the rate limiter's own behaviour is covered by backend tests.
+
 ## Database migration validation
 
 - [ ] New migrations have both `up()` and `down()` (CI enforces).

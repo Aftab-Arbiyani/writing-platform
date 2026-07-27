@@ -19,7 +19,13 @@ on:
         type: boolean
         default: false
   push:
-    branches: [main]
+    # `develop` is where this repo's work actually lands (`main` currently holds only the
+    # README), so a main-only trigger meant this workflow could never fire — the phase exit
+    # criterion "3 green CI runs" was unreachable. Note `workflow_dispatch` is also invisible
+    # in the UI until this file exists on the default branch; `push` uses the pushed commit's
+    # copy, so the develop trigger works today. Remove `develop` if/when the repo returns to
+    # the trunk-based model documented in docs/17.
+    branches: [main, develop]
 
 concurrency:
   group: web-e2e-${{ github.ref }}
@@ -116,14 +122,18 @@ jobs:
           pnpm --filter frontend build
           pnpm --filter admin build
 
-      - name: Build + start backend, migrate, seed
+      # Migrate + seed BEFORE booting the app. SettingsService.onModuleInit calls
+      # syncDefinitions() (settings + feature-flag definitions) against the DB at
+      # bootstrap, so an unmigrated schema kills the process on start and the health
+      # wait then burns its full timeout before failing the job.
+      - name: Build backend, migrate, seed, start
         run: |
           pnpm --filter backend build
-          node backend/dist/main.js &
-          e2e/scripts/wait-health.sh http://localhost:4000/health 120
           pnpm --filter backend migration:run
           pnpm --filter backend seed
           pnpm --filter backend seed:e2e
+          node backend/dist/main.js &
+          e2e/scripts/wait-health.sh http://localhost:4000/health 120
 
       - name: Install Playwright browser (${{ matrix.browser }})
         run: pnpm --filter e2e exec playwright install --with-deps ${{ matrix.browser }}
@@ -231,14 +241,18 @@ jobs:
           pnpm --filter frontend build
           pnpm --filter admin build
 
-      - name: Build + start backend, migrate, seed
+      # Migrate + seed BEFORE booting the app. SettingsService.onModuleInit calls
+      # syncDefinitions() (settings + feature-flag definitions) against the DB at
+      # bootstrap, so an unmigrated schema kills the process on start and the health
+      # wait then burns its full timeout before failing the job.
+      - name: Build backend, migrate, seed, start
         run: |
           pnpm --filter backend build
-          node backend/dist/main.js &
-          e2e/scripts/wait-health.sh http://localhost:4000/health 120
           pnpm --filter backend migration:run
           pnpm --filter backend seed
           pnpm --filter backend seed:e2e
+          node backend/dist/main.js &
+          e2e/scripts/wait-health.sh http://localhost:4000/health 120
 
       - name: Start app preview servers (host)
         run: |
