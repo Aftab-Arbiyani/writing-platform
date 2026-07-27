@@ -25,6 +25,15 @@ export class PiecesRepository {
     return this.repo(manager).findOne({ where: { id } });
   }
 
+  /**
+   * Non-deleted piece by slug — the web reader's lookup key (docs 45 §3). Slugs are unique
+   * across live *and* soft-deleted rows (docs 04 §1.5), so this is a stable identity; a
+   * soft-deleted piece is simply not found, exactly as `findById` behaves.
+   */
+  findBySlug(slug: string, manager?: EntityManager): Promise<Piece | null> {
+    return this.repo(manager).findOne({ where: { slug } });
+  }
+
   /** Piece by id **including soft-deleted rows** (moderator restore, A5 appeals). */
   findByIdWithDeleted(id: string, manager?: EntityManager): Promise<Piece | null> {
     return this.repo(manager).findOne({ where: { id }, withDeleted: true });

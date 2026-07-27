@@ -59,6 +59,12 @@ where they predated the frozen API (feed tab→path, piece-by-`id`, no `/taxonom
 | 24  | [Backend Readiness Report](./24_BackendReadinessReport.md) | Epic 12 completion + deliverables                                     |
 | 25  | [**Backend Freeze v1**](./25_BackendFreeze.md)             | **frozen `v1` contract baseline + breaking-change policy**            |
 
+## Web clients — the remaining build-out
+
+| #   | Doc                                            | What                                                                                                          |
+| --- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| 45  | [Web Client Roadmap](./45_WebClientRoadmap.md) | **The W-track** — ordered plan to close the frontend/admin gap left by AF1–AF6 shipping backend + mobile only |
+
 ## Browser E2E (frontend + admin)
 
 Real full-stack browser end-to-end tests (Playwright, all three engines, phased) for the `frontend`

@@ -91,6 +91,25 @@ export class PiecesController {
     return { success: true as const, data: page.items, meta: { pagination: page.meta } };
   }
 
+  /*
+   * Declared BEFORE `pieces/:id` for readability only — the two cannot collide, since this route
+   * has three path segments and that one has two.
+   *
+   * Additive to the frozen v1 contract (docs 25 §Amendments, docs 45 §3): the web reader addresses
+   * pieces by slug (`/p/:slug`, already emitted by feed cards, search results and notification deep
+   * links), but `pieces/:id` is UUID-only. Same visibility rules, same DTO, same 404 — only the
+   * lookup key differs.
+   */
+  @Get('pieces/by-slug/:slug')
+  @Public()
+  @UseGuards(OptionalAuthGuard)
+  @ApiOperation({ summary: 'Read a published piece by slug (owner sees any status).' })
+  @ApiOkResponse({ type: PieceResponseDto })
+  getBySlug(@Param('slug') slug: string, @Req() req: Request): Promise<PieceResponseDto> {
+    const viewer = (req as Request & { user?: AuthenticatedUser }).user;
+    return this.pieces.getBySlug(slug, viewer?.id ?? null);
+  }
+
   @Get('pieces/:id')
   @Public()
   @UseGuards(OptionalAuthGuard)

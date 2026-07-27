@@ -133,6 +133,21 @@ export class PiecesService {
     return this.buildResponse(piece);
   }
 
+  /**
+   * Read a piece by its slug — the web reader's entry point (docs 45 §3). Identical visibility
+   * rules to {@link getById}; only the lookup key differs. A slug exists only from first
+   * publish/schedule onward, so an unpublished draft is simply not addressable this way, which
+   * matches the reader surface's needs.
+   */
+  async getBySlug(slug: string, viewerId: string | null): Promise<PieceResponseDto> {
+    const piece = await this.pieces.findBySlug(slug);
+    if (piece === null) {
+      throw new PieceNotFoundException();
+    }
+    await this.assertReadable(piece, viewerId);
+    return this.buildResponse(piece);
+  }
+
   /** Owner preview — renders the piece as a reader would see it, at any status. */
   async preview(id: string, ownerId: string): Promise<PieceResponseDto> {
     return this.buildResponse(await this.loadOwned(id, ownerId));
