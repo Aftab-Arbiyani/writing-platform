@@ -53,9 +53,9 @@ tables, not assumed.
 
 **One item, and it was a mistake of scope, recorded rather than quietly kept.**
 
-| #   | Area                          | Web has                                                                           | Mobile has | Resolution                                              |
-| --- | ----------------------------- | --------------------------------------------------------------------------------- | ---------- | ------------------------------------------------------- |
-| W-1 | **Reader → "More like this"** | Up to 4 pieces sharing the piece's first tag, via `GET /search/pieces?tag=…` (W1) | nothing    | **Port to mobile, or drop from web.** Not yet assigned. |
+| #   | Area                          | Web has                                                                           | Mobile has | Resolution                                                                                         |
+| --- | ----------------------------- | --------------------------------------------------------------------------------- | ---------- | -------------------------------------------------------------------------------------------------- |
+| W-1 | **Reader → "More like this"** | Up to 4 pieces sharing the piece's first tag, via `GET /search/pieces?tag=…` (W1) | nothing    | ✅ **Decided 2026-07-27: port to mobile.** Scheduled as the **next task**, ahead of W3 — see §3.1. |
 
 **How it happened, so it does not happen again.** [45 §4.1](./45_WebClientRoadmap.md) lists
 "Author card + related pieces — mobile's `reader_author_card`". Mobile's author card contains the
@@ -66,6 +66,26 @@ contained it.
 **The lesson for every future epic:** when a roadmap bullet says "port mobile's X", **open X and
 confirm it contains what the bullet claims** before building. If it does not, the bullet is a new
 feature request, not a port — and it goes back to the roadmap for a decision instead of being built.
+
+### 3.1 Resolution — port to mobile, first, before anything else
+
+**Decided 2026-07-27.** Parity is restored by adding the section to mobile rather than removing it
+from web. It is the **next task in the queue**, ahead of W3 and every other W-track row.
+
+Scope, so it stays a port and not a redesign:
+
+- A "More like this" section under the reader, matching what web ships: up to **4** pieces sharing
+  the piece's **first tag**, with the current piece filtered out, rendered under the author card.
+- Same data path — `GET /search/pieces?q=<tag name>&tag=<tag slug>&sort=trending`. **No backend
+  change**; the AF4 recommender still needs `ai.use` and stays out of reach for this surface.
+- Non-critical, exactly as on web: **no tags → no section**, and a failed load renders nothing
+  rather than an error. It must never cost the reader the piece they came for.
+- Reference: `frontend/src/features/reading/{hooks/use-related-pieces.ts,components/related-pieces.tsx}`
+  and `api/reading.api.ts#related`. Mobile lands it in `lib/features/reading/` following that
+  feature's existing repository → controller → widget layering.
+
+When it lands: delete this row from §3, note the port in the mobile epic's report, and re-date the
+sweep at the top of this document.
 
 ---
 
