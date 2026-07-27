@@ -42,6 +42,15 @@ it is what makes each landing reviewable.
 5. **E2E**: flip the ⏸ row in [e2e/06 §2](./e2e/06_PhasePlan.md) to ✅, add the spec, regenerate
    baselines **in the pinned image, light _and_ dark** ([e2e/10 §3.3, §8.3](./e2e/10_UIQuality.md)).
 6. **Readiness report** + a single epic commit.
+7. **Parity check** against [48 — Platform Parity Register](./48_PlatformParityRegister.md): confirm
+   the epic delivered **only** what its row named, that the platform being ported from actually
+   contains every part that was built, and that any remaining difference is recorded. Web and mobile
+   ship the same features; a divergence is acceptable only when the register owns it.
+
+> **Nothing is built that is not on this list.** Each epic ports the surface its row names from the
+> platform that already has it. Extra scope — however small and however tempting — is an unplanned
+> web/mobile divergence that a later epic has to reconcile; it already happened once and is recorded
+> in [48 §3](./48_PlatformParityRegister.md).
 
 > **Dark mode is not optional in step 5.** It shipped once with no coverage and was materially broken
 > ([e2e/10 §8.4](./e2e/10_UIQuality.md)). Every new surface is scanned in both themes, and computed
