@@ -17,13 +17,13 @@ additive read endpoint, justified in §3.
 
 Measured, not assumed (routes read from `frontend/src/lib/routes.ts` and `admin/src/lib/routes.ts`).
 
-| Surface       | State                                                                                                                                                                                                                                                              |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Backend**   | ✅ Complete through P7.4 + AF1–AF6.                                                                                                                                                                                                                                |
-| **Mobile**    | ✅ Complete: M1–M10, AF1–AF6, P7.1–P7.4. The most feature-complete surface, and the **reference implementation** for every W-track epic.                                                                                                                           |
-| **Frontend**  | Features: `auth, feed, writing, profile, search, settings, notifications, analytics, ai, reading`. **`ai` is headless** (api + stores + hooks + types, no components, no route, zero importers). `reading` ✅ shipped (W1). **No monetization. No collaboration.** |
-| **Admin**     | 31 route modules — users, moderation, analytics, audit, security, privacy, system, ten operations consoles, AI settings. **Nothing for AF3, AF4, AF5, or AF6.**                                                                                                    |
-| **Marketing** | Built (`qalam-web`); blocked only on config — Firebase values, domain, socials.                                                                                                                                                                                    |
+| Surface       | State                                                                                                                                                                                                                                        |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Backend**   | ✅ Complete through P7.4 + AF1–AF6.                                                                                                                                                                                                          |
+| **Mobile**    | ✅ Complete: M1–M10, AF1–AF6, P7.1–P7.4. The most feature-complete surface, and the **reference implementation** for every W-track epic.                                                                                                     |
+| **Frontend**  | Features: `auth, feed, writing, profile, search, settings, notifications, analytics, ai, reading`. `reading` ✅ shipped (W1); `ai` ✅ has its first surface (W2 — in-editor assistant + Craft Coach). **No monetization. No collaboration.** |
+| **Admin**     | 31 route modules — users, moderation, analytics, audit, security, privacy, system, ten operations consoles, AI settings. **Nothing for AF3, AF4, AF5, or AF6.**                                                                              |
+| **Marketing** | Built (`qalam-web`); blocked only on config — Firebase values, domain, socials.                                                                                                                                                              |
 
 ---
 
@@ -78,7 +78,7 @@ soft-deleted rows ([04 §1.5](./04_DatabaseDesign.md)), so it is a safe identity
 | ------ | ---------------------------------------------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
 | **B1** | By-slug read endpoint + freeze amendment ✅ **done** | S    | Hard prerequisite for W1                                                                                                                    | W1                     |
 | **W1** | **Reader page** `/p/:slug` ✅ **done**               | M    | The product hole. Backend contract and mobile's full `reading` feature both exist to port from — [report](./46_WebReaderReadinessReport.md) | E2E reader row; W3, W4 |
-| **W2** | **AI writing assistant UI** (AF2)                    | S–M  | The data layer is already built — best value-to-effort ratio on the list                                                                    | E2E `af2` row          |
+| **W2** | **AI writing assistant UI** (AF2) ✅ **done**        | S–M  | The data layer is already built — best value-to-effort ratio on the list — [report](./47_WebAiAssistantReadinessReport.md)                  | E2E `af2` row          |
 | **W3** | Collaboration / publishing / trust (AF6)             | L    | Touches both the editor and the reader, so it needs W1 and W2 to exist first                                                                | —                      |
 | **W4** | Monetization (AF5)                                   | M    | Gating needs something to gate: premium pieces (W1) and metered AI (W2)                                                                     | E2E `af5` row          |
 | **W5** | AF4 retrieval-backed discovery / search              | M    | An upgrade of the existing M3/M6 `/discover` + `/search` surfaces rather than a new one                                                     | —                      |
@@ -116,6 +116,14 @@ Only components and a route are missing. Wire the existing `use-ai-completion` /
 into the editor as a side panel: streaming output, suggestion accept/reject, and the Craft Coach
 surface. Mobile's `features/ai` is the reference. Must be built with W4's metering in mind — every AI
 request meters through the `AI_USAGE_METER` hook, so the UI needs a quota-exhausted state from day one.
+
+> ✅ **Shipped 2026-07-27.** All of it, plus a11y/visual coverage in both themes. The editor and the
+> AI feature meet at an app-level `AiEditorTarget` seam (mobile's pattern) rather than importing each
+> other, so the AI never mutates the document — it hands text to the editor, which applies it through
+> its own commands. **One gap is explicitly open:** the E2E stack configures no AI provider and the
+> flags are dark-launched, so a _generated suggestion_ is not asserted end to end; closing it needs an
+> inert AI port in the stack, tracked in [e2e/06 §6](./e2e/06_PhasePlan.md). Full accounting in
+> [47](./47_WebAiAssistantReadinessReport.md).
 
 ---
 

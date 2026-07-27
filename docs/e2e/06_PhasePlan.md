@@ -32,30 +32,30 @@ Legend: ✅ in-phase target · ⏸ targeted but deferred (client UI not yet ship
 
 ### 2.1 Frontend (reader/writer app, `:5173`)
 
-| Workflow                                       | P1  | P2  | P3  | P4  | Notes / feature dir                                                                         |
-| ---------------------------------------------- | --- | --- | --- | --- | ------------------------------------------------------------------------------------------- |
-| Login (valid) + logout                         | ✅  |     |     |     | `features/auth`                                                                             |
-| Login invalid → field error                    | ✅  |     |     |     |                                                                                             |
-| Register → verify email (Mailpit) → authed     | ✅  |     |     |     | Mailpit link ([04](./04_TestData.md))                                                       |
-| Forgot → reset password (Mailpit) → login      | ✅  |     |     |     |                                                                                             |
-| Guarded route redirect (`require-auth`)        | ✅  |     |     |     | `app/guards/require-auth`                                                                   |
-| Guest-only redirect (`require-guest`)          | ✅  |     |     |     | `app/guards/require-guest`                                                                  |
-| Write → save draft → publish → in feed         |     | ✅  |     |     | `features/writing` (TipTap, [05 §4](./05_Selectors.md))                                     |
-| Draft persistence (reload → draft still there) |     | ✅  |     |     | `features/writing`, drafts route                                                            |
-| Feed loads + paginates; open a piece           |     | ✅  |     |     | `features/feed` — link **and** render asserted since `/p/:slug` shipped (W1); §4 discharged |
-| Reading view `/p/:slug` (cold load by slug)    |     | ✅  |     |     | `features/reading` — W1 ([45 §4.1](../45_WebClientRoadmap.md)); typography, engagement, 404 |
-| Edit an existing piece → changes reflected     |     |     | ✅  |     | `features/writing`                                                                          |
-| Search → find seeded piece → open              |     |     | ✅  |     | `features/search`                                                                           |
-| Profile: view own + edit profile               |     |     | ✅  |     | `features/profile`, `me` route                                                              |
-| Follow another user (throwaway 2nd user)       |     |     | ✅  |     | `features/profile`, follow-requests                                                         |
-| Notifications: action → notification appears   |     |     | ✅  |     | `features/notifications` (in-app poll, `m8`)                                                |
-| Settings: change password (throwaway user)     |     |     | ✅  |     | `features/settings`, [04 §6](./04_TestData.md)                                              |
-| Silent token refresh survives navigation       |     |     | ✅  |     | [03 §7](./03_AuthStrategy.md)                                                               |
-| Analytics: own stats page renders real data    |     |     |     | ✅  | `features/analytics` (`m9` shapes)                                                          |
-| AI writing assistant: request → suggestion     |     |     |     | ⏸   | `features/ai` (`af2`) — **deferred: hooks/store only, no UI/route** (§6)                    |
-| Monetization: subscribe → entitlement granted  |     |     |     | ⏸   | `af5` — **deferred: no client subscribe UI/route shipped** (§6)                             |
-| Reading history / discover (For You)           |     |     |     | ✅  | `discover` route (`m3` contract)                                                            |
-| Error/empty/offline states                     |     |     |     | ✅  | `app/pages/offline`, `route-error`, `not-found`                                             |
+| Workflow                                       | P1  | P2  | P3  | P4  | Notes / feature dir                                                                                              |
+| ---------------------------------------------- | --- | --- | --- | --- | ---------------------------------------------------------------------------------------------------------------- |
+| Login (valid) + logout                         | ✅  |     |     |     | `features/auth`                                                                                                  |
+| Login invalid → field error                    | ✅  |     |     |     |                                                                                                                  |
+| Register → verify email (Mailpit) → authed     | ✅  |     |     |     | Mailpit link ([04](./04_TestData.md))                                                                            |
+| Forgot → reset password (Mailpit) → login      | ✅  |     |     |     |                                                                                                                  |
+| Guarded route redirect (`require-auth`)        | ✅  |     |     |     | `app/guards/require-auth`                                                                                        |
+| Guest-only redirect (`require-guest`)          | ✅  |     |     |     | `app/guards/require-guest`                                                                                       |
+| Write → save draft → publish → in feed         |     | ✅  |     |     | `features/writing` (TipTap, [05 §4](./05_Selectors.md))                                                          |
+| Draft persistence (reload → draft still there) |     | ✅  |     |     | `features/writing`, drafts route                                                                                 |
+| Feed loads + paginates; open a piece           |     | ✅  |     |     | `features/feed` — link **and** render asserted since `/p/:slug` shipped (W1); §4 discharged                      |
+| Reading view `/p/:slug` (cold load by slug)    |     | ✅  |     |     | `features/reading` — W1 ([45 §4.1](../45_WebClientRoadmap.md)); typography, engagement, 404                      |
+| Edit an existing piece → changes reflected     |     |     | ✅  |     | `features/writing`                                                                                               |
+| Search → find seeded piece → open              |     |     | ✅  |     | `features/search`                                                                                                |
+| Profile: view own + edit profile               |     |     | ✅  |     | `features/profile`, `me` route                                                                                   |
+| Follow another user (throwaway 2nd user)       |     |     | ✅  |     | `features/profile`, follow-requests                                                                              |
+| Notifications: action → notification appears   |     |     | ✅  |     | `features/notifications` (in-app poll, `m8`)                                                                     |
+| Settings: change password (throwaway user)     |     |     | ✅  |     | `features/settings`, [04 §6](./04_TestData.md)                                                                   |
+| Silent token refresh survives navigation       |     |     | ✅  |     | [03 §7](./03_AuthStrategy.md)                                                                                    |
+| Analytics: own stats page renders real data    |     |     |     | ✅  | `features/analytics` (`m9` shapes)                                                                               |
+| AI writing assistant: panel + gating           |     |     |     | ✅  | `features/ai` (`af2`) — W2 shipped the UI; the model-backed _suggestion_ half needs a provider in the stack (§6) |
+| Monetization: subscribe → entitlement granted  |     |     |     | ⏸   | `af5` — **deferred: no client subscribe UI/route shipped** (§6)                                                  |
+| Reading history / discover (For You)           |     |     |     | ✅  | `discover` route (`m3` contract)                                                                                 |
+| Error/empty/offline states                     |     |     |     | ✅  | `app/pages/offline`, `route-error`, `not-found`                                                                  |
 
 ### 2.2 Admin (staff panel, `:5174`)
 
@@ -228,10 +228,17 @@ Landed specs:
 
 **Deferred (no client UI shipped — asserted when the epic lands, per the reader-page precedent §2.1):**
 
-- **AI writing-assistant suggestion** (row `af2`) — the frontend has the AI hooks/store/api layer
-  (`features/ai`) but **no component consumes it and no route is registered**; the writer-facing
-  assistant UI is deferred (mobile + backend enablers shipped; frontend/admin deferred). No UI → no
-  E2E surface yet.
+- **AI writing-assistant suggestion** (row `af2`) — ~~no component consumes the AI layer and no
+  route is registered~~ **the UI shipped in W2** ([45 §4.2](../45_WebClientRoadmap.md)):
+  `assistant.spec.ts` drives the real panel over the real editor, and it is covered by the a11y and
+  visual dimensions in both themes. **What is still not asserted is a generated suggestion**, and
+  the reason is environmental rather than a client gap: the AI feature flags are dark-launched (AF1
+  seeds them disabled) and the E2E stack configures **no AI provider**, so nothing can generate one.
+  Stubbing `/ai/completions` is ruled out by the no-mocks invariant ([README §invariants]), and the
+  third-party allowance ([00 §6]) covers running against an inert **port** — which payments have and
+  AI does not. Closing it needs an OpenAI-compatible stub service in the E2E stack plus seeded
+  provider/model rows; that is a stack item, tracked here, and it also unblocks the AF3/AF4 client
+  epics that will need the same thing.
 - **Monetization subscribe→entitlement** (row `af5`) — there is **no monetization/subscribe/billing
   feature or route** in the frontend; the client is deferred (backend + mobile shipped). The inert
   payment port lives backend-side and is exercised by backend tests, not the browser suite.

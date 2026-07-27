@@ -1,5 +1,6 @@
 import { freshLogin } from '../../fixtures/auth';
 import { test, expect } from '../../fixtures/test';
+import { AssistantPanel } from '../../pages/frontend/assistant-panel';
 import { ReaderPage } from '../../pages/frontend/reader-page';
 import { LoginPage } from '../../pages/shared/login-page';
 
@@ -48,6 +49,15 @@ test.describe('@phase5 @visual frontend (authenticated)', () => {
       // The autosave indicator shows a wall-clock time ("Saved · HH:MM") — volatile.
       mask: [page.getByRole('status')],
     });
+  });
+
+  test('the AI assistant panel matches its visual baseline', async ({ page }) => {
+    // W2/AF2. Viewport, not fullPage: the drawer is fixed to the viewport and the editor behind
+    // it is empty here, so a full-page shot would add nothing but height.
+    await page.goto('/write');
+    await expect(page.getByLabel('Title')).toBeVisible({ timeout: 30_000 });
+    await new AssistantPanel(page).open();
+    await expect(page).toHaveScreenshot('frontend-ai-panel.png');
   });
 
   test('the settings profile page matches its visual baseline', async ({ page }) => {

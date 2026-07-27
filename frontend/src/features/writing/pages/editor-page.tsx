@@ -1,16 +1,18 @@
 import { QButton, QErrorState, QSelect, QSpinner } from '@qalam/ui';
 import { EditorContent, useEditor } from '@tiptap/react';
-import { ArrowLeft, Eye, MoreHorizontal, Send } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react';
+import { ArrowLeft, Eye, MoreHorizontal, Send, Sparkles } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState, type ReactElement, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router';
 
 import { usePageTitle } from '@/hooks/use-page-title';
 import { getErrorMessage } from '@/lib/errors';
 import { ROUTES } from '@/lib/routes';
+import { useAiEditorTarget } from '@/stores/ai-editor-target.store';
 
 import { EditorMetrics } from '../editor/editor-metrics';
 import { EditorToolbar } from '../editor/editor-toolbar';
 import { buildEditorExtensions } from '../editor/tiptap-extensions';
+import { useRegisterAiEditorTarget } from '../editor/use-ai-editor-target';
 import { useDraftAutosave, type DraftSnapshot } from '../hooks/use-draft-autosave';
 import { usePiece } from '../hooks/use-piece';
 import { usePreviewPiece } from '../hooks/use-piece-mutations';
@@ -28,8 +30,13 @@ const EMPTY_DOC: TipTapDoc = { type: 'doc', content: [] };
  * language are local state. Every change schedules a debounced autosave (create-then-PATCH). A
  * brand-new `/write` becomes `/write/:id` after the first save. Preview + Publish flush first,
  * then hit the server-canonical endpoints. TipTap is lazy-loaded (this route is a lazy chunk).
+ *
+ * `assistant` is a SLOT (W2, docs/45 §4.2): the AI panel is passed in by the app-level route
+ * rather than imported here, because a feature may never import another feature (docs/26 §4).
+ * This page owns the layout and the toggle; it knows nothing about what fills the slot, and the
+ * editor works unchanged when nothing does.
  */
-export function EditorPage(): ReactElement {
+export function EditorPage({ assistant }: { assistant?: ReactNode } = {}): ReactElement {
   usePageTitle('Write');
   const params = useParams();
   const draftId = params.draftId;
@@ -40,6 +47,8 @@ export function EditorPage(): ReactElement {
   const preview = usePreviewPiece();
   const setPublishOpen = useEditorUiStore((s) => s.setPublishOpen);
   const publishOpen = useEditorUiStore((s) => s.publishOpen);
+  const assistantOpen = useAiEditorTarget((s) => s.open);
+  const setAssistantOpen = useAiEditorTarget((s) => s.setOpen);
 
   const [title, setTitle] = useState('');
   const [languageCode, setLanguageCode] = useState('');
@@ -133,6 +142,9 @@ export function EditorPage(): ReactElement {
     [],
   );
 
+  // Publish this editor to the AI panel (W2). Purely outbound: no AI code is imported here.
+  useRegisterAiEditorTarget({ editor, title, languageCode });
+
   const direction = languages.data?.find((l) => l.code === languageCode)?.direction ?? 'ltr';
   const isRtl = direction === 'rtl';
 
@@ -170,7 +182,9 @@ export function EditorPage(): ReactElement {
           Drafts
         </QButton>
         <SaveStatusIndicator />
-        <div className="flex items-center gap-2">
+        {/* Wraps: the action group gained the AI toggle (W2) and no longer fits one line at the
+            narrowest viewport, where an unwrapped row pushed the page 16px sideways. */}
+        <div className="flex flex-wrap items-center justify-end gap-2">
           <div className="w-32">
             <QSelect
               aria-label="Language"
@@ -197,6 +211,18 @@ export function EditorPage(): ReactElement {
               setShowMetrics((v) => !v);
             }}
           />
+          {assistant ? (
+            <QButton
+              variant="ghost"
+              size="sm"
+              icon={Sparkles}
+              aria-label="AI assistant"
+              aria-pressed={assistantOpen}
+              onClick={() => {
+                setAssistantOpen(!assistantOpen);
+              }}
+            />
+          ) : null}
           <QButton
             variant="secondary"
             size="sm"
@@ -287,6 +313,10 @@ export function EditorPage(): ReactElement {
           }}
         />
       ) : null}
+
+      {/* The AI panel, injected by the route. It renders its own drawer, so it sits at the end
+          of the tree rather than inside the writing column. */}
+      {assistant}
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { freshLogin } from '../../fixtures/auth';
 import { test, expect } from '../../fixtures/test';
 import { EditorPage } from '../../pages/frontend/editor-page';
 import { FeedPage } from '../../pages/frontend/feed-page';
+import { AssistantPanel } from '../../pages/frontend/assistant-panel';
 import { ProfilePage } from '../../pages/frontend/profile-page';
 import { ReaderPage } from '../../pages/frontend/reader-page';
 import { ResiliencePage } from '../../pages/frontend/resilience-page';
@@ -51,6 +52,16 @@ test.describe('@phase5 @a11y frontend accessibility (authenticated)', () => {
     const editor = new EditorPage(page);
     await editor.goto();
     await expectNoSeriousA11yViolations(page, { label: 'frontend /write' });
+  });
+
+  test('the AI assistant panel has no critical/serious a11y violations', async ({ page }) => {
+    // A drawer full of radio groups, tabs and a live region (W2, docs/45 §4.2) — the densest
+    // interactive surface in the editor, and the one axe is most likely to have something to say
+    // about. Scanned open, over the editor it overlays.
+    const editor = new EditorPage(page);
+    await editor.goto();
+    await new AssistantPanel(page).open();
+    await expectNoSeriousA11yViolations(page, { label: 'frontend /write + AI panel' });
   });
 
   test('the profile has no critical/serious a11y violations', async ({ page }) => {
