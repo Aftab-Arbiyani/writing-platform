@@ -29,12 +29,35 @@
 @import '@fontsource/lora/600.css';
 
 @layer base {
+  /*
+   * The two preflight rules we cannot do without (docs/e2e/10 §8.2).
+   *
+   * Skipping preflight (above) also skips its `box-sizing: border-box` reset, so every
+   * element fell back to the CSS default `content-box`. Each `w-full` + `px-*` container
+   * therefore resolved to `100% + padding` and overflowed its parent by exactly its
+   * padding — 32px at `px-4`, 48px at `sm:px-6` — which is what made every reader page
+   * scroll sideways below `lg` (24px mobile / 40px tablet once the 8px body margin is
+   * accounted for). AntD's own cssinjs styles already assume border-box, so this aligns
+   * the two systems rather than fighting them; it is not the base-element reset the ADR
+   * conflict rule warns about. The admin app was never affected because it is composed
+   * from AntD layout primitives (which set their own box-sizing) and already zeroes the
+   * body margin.
+   */
+  *,
+  ::before,
+  ::after {
+    box-sizing: border-box;
+  }
+
   html {
     background: var(--q-bg-canvas);
     color: var(--q-text-primary);
   }
 
   body {
+    /* UA default is 8px; admin already zeroes it. Left unreset, it insets the whole app
+       and adds its 8px to the overflow measured above. */
+    margin: 0;
     font-family:
       'Inter Variable',
       'Inter',

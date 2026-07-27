@@ -25,20 +25,20 @@ const FALLBACKS: Record<'light' | 'dark', ChartTheme> = {
   light: {
     text: '#24211b',
     textSecondary: '#6b655a',
-    textMuted: '#8f887a',
+    textMuted: '#726c61',
     line: '#e7e1d6',
     accent: '#9e4b28',
     surface: '#ffffff',
-    palette: ['#9e4b28', '#3b6ea8', '#3e7c4f', '#a97a1f', '#b3382e', '#8f887a'],
+    palette: ['#9e4b28', '#3b6ea8', '#3e7c4f', '#8d651a', '#b3382e', '#726c61'],
   },
   dark: {
     text: '#ece6da',
     textSecondary: '#a69f90',
-    textMuted: '#7a7367',
+    textMuted: '#8f897f',
     line: '#2e2a24',
     accent: '#d07349',
     surface: '#1c1917',
-    palette: ['#d07349', '#7ca6d6', '#6baa7c', '#c99a4c', '#d06a5f', '#7a7367'],
+    palette: ['#d07349', '#7ca6d6', '#6baa7c', '#c99a4c', '#d06a5f', '#8f897f'],
   },
 };
 
@@ -67,7 +67,7 @@ export function resolveChartTheme(resolved: 'light' | 'dark'): ChartTheme {
       accent,
       cssVar('--q-info', fb.palette[1] ?? '#3b6ea8'),
       cssVar('--q-success', fb.palette[2] ?? '#3e7c4f'),
-      cssVar('--q-warning', fb.palette[3] ?? '#a97a1f'),
+      cssVar('--q-warning', fb.palette[3] ?? '#8d651a'),
       cssVar('--q-danger', fb.palette[4] ?? '#b3382e'),
       cssVar('--q-text-muted', fb.textMuted),
     ],

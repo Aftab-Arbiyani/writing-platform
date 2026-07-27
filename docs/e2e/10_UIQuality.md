@@ -160,32 +160,53 @@ Minimal footprint — one dev dependency. Everything else reuses the existing ha
 
 ---
 
-## 8. Landing state & known-debt registers (2026-07-25)
+## 8. Landing state & debt burn-down (2026-07-27)
 
-Phase 5 is **landed and green on all three engines** in the pinned image. Two registers hold the
-pre-existing UI debt this phase surfaced — each entry is downgraded from a hard gate to a **tracked,
-logged** finding (the sanctioned alternative to a silent skip, §4.2). New defects outside a register
-still fail.
+Phase 5 is **landed and green on all three engines** in the pinned image. The two registers this
+phase opened are now **empty** — every entry was traced to a real, fixable app defect rather than
+the library limitation each was first filed as. The suite therefore runs with **no downgraded
+rules**: zero critical/serious axe violations, and the strict zero-horizontal-scroll gate on
+**both** apps.
 
-### 8.1 Accessibility debt (`fixtures/a11y.ts` → `KNOWN_A11Y_FINDINGS`)
+### 8.1 Accessibility debt — burned down (`KNOWN_A11Y_FINDINGS` is now empty)
 
-| Rule                | Scope         | Why deferred (exit = re-arm the rule)                                                                                                            |
-| ------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `color-contrast`    | platform-wide | Muted-text token (`#8f887a` on white ≈ 3.51:1) below AA 4.5:1. A `@qalam/ui` design-token change needing sign-off; also churns visual baselines. |
-| `label`             | admin tables  | AntD Table's row-selection checkboxes render unlabeled (library internal).                                                                       |
-| `aria-hidden-focus` | admin tables  | AntD Table's hidden measure-row carries focusable cells (library internal).                                                                      |
+| Rule                | Was filed as                           | What it actually was                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `color-contrast`    | "design-token change needing sign-off" | Three separate causes, all fixed: (1) `--q-text-muted` `#8f887a` → **`#726c61`** (3.52 → 5.21:1 surface, 4.87:1 canvas, 4.51:1 raised); (2) AntD's _derived_ muted colours — `colorTextDescription` (Input counter at 2.72:1) and `colorTextPlaceholder` — now pinned to that token, plus Menu `groupTitleColor` (2.77:1) and `itemSelectedBg` (accent at 4.22:1); (3) `--q-warning` `#a97a1f` → **`#8d651a`**, because it renders as 12px status text in the moderation queue (3.82:1) and so must clear the text bar, not the 3:1 non-text one. |
+| `label`             | "AntD Table internal"                  | Our composition: AntD labels the header "select all" box and leaves the row boxes to the caller. `DataTable` now supplies an `aria-label` per row via `getCheckboxProps` (`selectionLabel` prop to override with something human).                                                                                                                                                                                                                                                                                                                |
+| `aria-hidden-focus` | "AntD Table internal"                  | AntD copies the selection column's header into its zero-height `aria-hidden` measure row, so a **second, focusable** "Select all" checkbox lives in an aria-hidden subtree. `admin/src/styles/global.css` takes the duplicates out of the tab order with `visibility: hidden`, which preserves the layout box the measure row needs.                                                                                                                                                                                                              |
 
-Fixed in-app during this phase (not deferred): the TipTap editor contenteditable now has
-`role="textbox"` + `aria-multiline` (cleared `aria-prohibited-attr`).
+Also fixed during this pass, and worth keeping: **axe was sampling mid-animation.** It reads
+_computed_ colours, so a card caught fading in at 0.93 opacity reported `#7c776c` instead of its
+real `#726c61` and failed by 0.08. `expectNoSeriousA11yViolations` now emulates reduced motion
+(the app's `MotionProvider` then skips its JS-driven transitions) and injects a stylesheet that
+collapses CSS transitions to their end state — deterministic, no sleeps.
 
-### 8.2 Responsive debt
+Dark mode was corrected in the same pass (`--q-text-muted` `#7a7367` → `#8f897f`, 5.04:1 on
+surface) though the suite scans light mode only. Two tokens still sit just under AA **on the
+`raised` background specifically** — `accentHover` (4.08:1) and `success` (4.33:1) — which no
+scanned page currently exercises as small text; left alone rather than churned speculatively.
 
-The reader shell's content wrapper resolves ~24–40px wider than the viewport below `lg` (the `body`/
-wrapper exceeds 100vw; the UA body margin is also unreset) — every reader page scrolls sideways by that
-much. **Characterized**, not excluded: `tests/frontend/responsive/responsive.spec.ts` asserts the overflow
-stays within a bound (so a regression that widens it fails) and logs the value each run. Admin has no such
-overflow and keeps the strict zero-scroll gate. Exit = fix the shell wrapper (a layout pass that also owns
-the visual baselines).
+### 8.2 Responsive debt — burned down (frontend now on the strict gate)
+
+The reader shell's ~24px (mobile) / ~40px (tablet) overflow was **not** a stray wide element. The
+frontend deliberately skips Tailwind's preflight (AntD owns the base reset, docs/00 §6) — which
+also skipped preflight's `box-sizing: border-box`, leaving every element at the CSS default
+`content-box`. So each `mx-auto w-full … px-4` page container resolved to `100% + 32px` (or `+48px`
+at `sm:px-6`) and overflowed its parent by exactly its padding; the unreset UA `body` margin added
+its 8px on top. That arithmetic reproduces both figures exactly, which is why every reader page
+overflowed by the same amount.
+
+`frontend/src/styles/global.css` now sets both rules in its `base` layer. This is not the
+base-element reset the ADR conflict rule warns about — AntD's own cssinjs styles already assume
+border-box, so it aligns the two systems. Admin was never affected: it is composed from AntD layout
+primitives and already zeroed its body margin. Measured after the fix: **0px** of horizontal
+overflow on `/feed`, `/write`, `/me` and `/settings/profile` at both viewports, so
+`tests/frontend/responsive/responsive.spec.ts` now holds the same strict zero-scroll gate as admin.
+
+> Still open, same family, deliberately not fixed here: skipping preflight also skips its list
+> reset, so `<ul>`-based navs (e.g. settings) render UA bullet markers. Cosmetic, no gate, and it
+> would churn baselines again — worth folding into a future design pass.
 
 ### 8.3 Visual baseline provenance & workflow
 

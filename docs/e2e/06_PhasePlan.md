@@ -308,15 +308,17 @@ Breakdown:
   register, feed, editor, profile, settings, not-found; admin: login, dashboard, users, moderation,
   analytics) + a **keyboard-only walkthrough** of auth (login) and publish (the drawer is operable and
   submits by keyboard alone). Gate = zero **critical/serious** except a documented **known-debt register**
-  ([10 §4.2], `fixtures/a11y.ts` `KNOWN_A11Y_FINDINGS`): platform-wide `color-contrast` (a muted-text
-  design token ≈ 3.51:1, needs a design-token pass) and two AntD-Table internals (`label`,
-  `aria-hidden-focus`). One real bug was **fixed in the app** — the TipTap editor's contenteditable had
-  `aria-label` with no role (`aria-prohibited-attr`); it now carries `role="textbox"` + `aria-multiline`.
-- **Responsive (`@responsive`):** mobile (Pixel 7) + tablet viewport projects. Admin holds the **strict
-  zero-horizontal-scroll** gate; the reader shell has **characterized known debt** — its content wrapper
-  resolves ~24–40px wider than the viewport below `lg` (asserted within a bound so a regression still
-  fails, and logged each run). Login + core-journey (admin users) run green at small widths; primary nav
-  is asserted reachable at both widths.
+  ([10 §4.2], `fixtures/a11y.ts` `KNOWN_A11Y_FINDINGS`). **As of 2026-07-27 that register is empty**
+  — all three entries (`color-contrast`, `label`, `aria-hidden-focus`) were traced to real app defects
+  and fixed, so the gate now runs with no downgraded rules ([10 §8.1](./10_UIQuality.md)). Two bugs were
+  fixed in the app during the phase itself: the TipTap contenteditable's `aria-label` with no role
+  (`aria-prohibited-attr`, now `role="textbox"` + `aria-multiline`), and axe sampling mid-animation.
+- **Responsive (`@responsive`):** mobile (Pixel 7) + tablet viewport projects. **Both apps now hold the
+  strict zero-horizontal-scroll gate.** The reader shell's ~24–40px sub-`lg` overflow, first landed as
+  characterized debt, was root-caused (the frontend skipped preflight and with it `box-sizing:
+border-box`, so every `w-full` + `px-*` container overflowed by exactly its padding) and fixed — every
+  reader page now measures 0px ([10 §8.2](./10_UIQuality.md)). Login + core-journey (admin users) run
+  green at small widths; primary nav is asserted reachable at both widths.
 - **Visual (`@visual`):** `toHaveScreenshot` baselines for the curated pages — static corridors full-page,
   data-heavy pages with dynamic regions **masked** so only chrome is guarded. **27 per-engine baselines**
   (9 × chromium/firefox/webkit) were produced in the pinned image and committed under

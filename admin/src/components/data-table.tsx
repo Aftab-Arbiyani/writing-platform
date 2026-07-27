@@ -1,6 +1,6 @@
 import { QErrorState } from '@qalam/ui';
-import { Table, type TableColumnsType, type TableProps } from 'antd';
-import type { Key, ReactElement } from 'react';
+import { Table, type CheckboxProps, type TableColumnsType, type TableProps } from 'antd';
+import type { AriaAttributes, Key, ReactElement } from 'react';
 
 import { EmptyState } from '@/components/empty-state';
 import { Pagination } from '@/components/pagination';
@@ -33,6 +33,10 @@ export interface DataTableProps<T> {
   onLimitChange?: (limit: number) => void;
   // Row selection for bulk actions.
   selection?: BulkSelection;
+  // Accessible name for a row's selection checkbox. AntD labels the header "select all" box but
+  // leaves the per-row ones bare (axe `label`, critical). Defaults to the row key, which is
+  // unambiguous but opaque — pass something human ("Select @alice") where the row has a name.
+  selectionLabel?: (record: T) => string;
   // Density (docs/07 §7.5) — maps to AntD Table `size`; default 'middle'.
   density?: 'small' | 'middle' | 'large';
   // Server-side sort capture: fired when the operator clicks a `sorter` column
@@ -60,6 +64,7 @@ export function DataTable<T extends object>({
   onPageChange,
   onLimitChange,
   selection,
+  selectionLabel,
   density = 'middle',
   onSortChange,
   virtual = false,
@@ -76,10 +81,21 @@ export function DataTable<T extends object>({
     );
   }
 
+  const resolveRowKey = (record: T): string =>
+    typeof rowKey === 'function' ? rowKey(record) : String(record[rowKey]);
+
+  // AntD's `CheckboxProps` does not declare aria-* even though rc-checkbox forwards unknown props
+  // straight to the underlying <input> — which is exactly how the box gets its accessible name.
+  // Widening the return type (rather than casting) keeps the call site type-checked.
+  const selectionCheckboxProps = (record: T): Partial<CheckboxProps> & AriaAttributes => ({
+    'aria-label': selectionLabel?.(record) ?? `Select row ${resolveRowKey(record)}`,
+  });
+
   const rowSelection: TableProps<T>['rowSelection'] = selection
     ? {
         selectedRowKeys: selection.selectedIds,
         onChange: (keys: Key[]) => selection.selectAll(keys.map(String)),
+        getCheckboxProps: selectionCheckboxProps,
       }
     : undefined;
 

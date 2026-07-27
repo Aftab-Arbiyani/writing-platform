@@ -2,33 +2,26 @@ import { freshLogin } from '../../../fixtures/auth';
 import { test, expect } from '../../../fixtures/test';
 import { AppNav } from '../../../pages/frontend/app-nav';
 import { LoginPage } from '../../../pages/shared/login-page';
-import { horizontalOverflowPx, isNarrowerThan } from '../../../pages/shared/viewport';
+import { expectNoHorizontalScroll, isNarrowerThan } from '../../../pages/shared/viewport';
 
 /**
  * Frontend responsive (docs/e2e/06 Phase 5, [10 §3]). Runs ONLY in the mobile + tablet viewport
  * projects (frontend-mobile, frontend-tablet — see playwright.config `testMatch: /responsive\//`).
  *
- * KNOWN RESPONSIVE DEBT ([10 §3, tracked]): below `lg`, the reader shell's content wrapper resolves
- * ~24px (mobile) / ~40px (tablet) wider than the viewport, so every reader page scrolls sideways by
- * that much — a shell/global-CSS layout bug (the `body`/wrapper is a touch wider than 100vw; the UA
- * body margin is also unreset). Deferred, NOT an E2E fix: it is a shell-layout change that also owns
- * the Phase-5 visual baselines, so it belongs to a focused layout pass. Rather than silently exclude
- * it, the overflow is **characterized** below — asserted within a known bound so a regression that
- * widens it still fails, and logged each run so the debt stays visible. (Admin has no such overflow
- * and keeps the strict zero-scroll gate — see the admin responsive spec.)
+ * This spec used to characterize a tracked ~24px (mobile) / ~40px (tablet) overflow within a bound
+ * rather than gate on zero. That debt is FIXED (docs/e2e/10 §8.2): the frontend skips Tailwind's
+ * preflight, which also skipped its `box-sizing: border-box` reset, so every `w-full` + `px-*`
+ * container resolved to `100% + padding` and overflowed its parent by exactly its padding; the UA
+ * body margin was unreset on top. Both are now set in frontend/src/styles/global.css, every reader
+ * page measures 0px of overflow, and this spec holds the same strict zero-scroll gate as admin.
  */
-const READER_SHELL_OVERFLOW_MAX_PX = 60;
 
 test.describe('@phase5 @responsive frontend (authenticated)', () => {
   test.beforeEach(async ({ page }) => {
     await freshLogin(page, 'writer');
   });
 
-  test('reader pages stay within the known horizontal-overflow bound', async ({
-    page,
-    api,
-    data,
-  }) => {
+  test('reader pages do not scroll horizontally', async ({ page, api, data }) => {
     // Seed a piece so the feed renders real content (a wide card would be an additional culprit).
     await api.createPublishedPiece({ title: data.pieceTitle() });
 
@@ -62,13 +55,7 @@ test.describe('@phase5 @responsive frontend (authenticated)', () => {
     for (const { path, ready } of pages) {
       await page.goto(path);
       await ready();
-      const overflow = await horizontalOverflowPx(page);
-      // Keep the tracked shell-debt value visible each run.
-      console.warn(`[responsive] frontend ${path} horizontal overflow = ${overflow}px`);
-      expect(
-        overflow,
-        `${path} overflow (${overflow}px) exceeded the known shell-debt bound (${READER_SHELL_OVERFLOW_MAX_PX}px) — the layout regressed further`,
-      ).toBeLessThanOrEqual(READER_SHELL_OVERFLOW_MAX_PX);
+      await expectNoHorizontalScroll(page, `frontend ${path}`);
     }
   });
 

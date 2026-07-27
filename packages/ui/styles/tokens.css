@@ -13,12 +13,18 @@
   --q-bg-raised: #f3eee5;
   --q-text-primary: #24211b; /* ink */
   --q-text-secondary: #6b655a;
-  --q-text-muted: #8f887a;
+  /* Darkened from #8f887a (3.52:1 on surface, 3.29:1 on canvas — below WCAG AA 4.5:1 and the
+     platform-wide `color-contrast` finding in docs/e2e/10 §8.1). Hue preserved; now 5.21:1 on
+     surface, 4.87:1 on canvas, 4.51:1 on raised. Note this narrows the gap to
+     --q-text-secondary (5.40:1 on canvas) — the ramp is worth re-spacing in a design pass. */
+  --q-text-muted: #726c61;
   --q-border: #e7e1d6;
   --q-accent: #9e4b28; /* terracotta ink */
   --q-accent-hover: #b45a32;
   --q-success: #3e7c4f;
-  --q-warning: #a97a1f;
+  /* Darkened from #a97a1f (3.82:1 on surface) — it renders as 12px status text in the moderation
+     queue, so it must clear AA as text, not just the 3:1 non-text bar. Now 5.24:1 / 4.90:1 / 4.53:1. */
+  --q-warning: #8d651a;
   --q-danger: #b3382e;
   --q-info: #3b6ea8;
 
@@ -99,7 +105,9 @@
   --q-bg-raised: #26221e;
   --q-text-primary: #ece6da;
   --q-text-secondary: #a69f90;
-  --q-text-muted: #7a7367;
+  /* Lightened from #7a7367 (3.73:1 on surface, 3.37:1 on raised) for the same AA reason as the
+     light token; now 5.04:1 surface, 5.43:1 canvas, 4.55:1 raised. */
+  --q-text-muted: #8f897f;
   --q-border: #2e2a24;
   --q-accent: #d07349;
   --q-accent-hover: #dd8a63;

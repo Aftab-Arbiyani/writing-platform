@@ -34,13 +34,13 @@ agree. Governing docs: [`docs/e2e/`](./e2e/README.md) — coverage matrix in
       regenerated via the workflow's `update_visual_baselines` dispatch input and **reviewed in
       the PR** ([10 §8.3](./e2e/10_UIQuality.md)) — never blind-accepted, never regenerated on a
       dev machine.
-- [ ] **Zero critical/serious axe violations** outside the known-debt register
-      (`e2e/fixtures/a11y.ts` → `KNOWN_A11Y_FINDINGS`). A new rule firing fails the run; adding an
-      entry to the register requires the same sign-off as any other deferred defect.
+- [ ] **Zero critical/serious axe violations.** The known-debt register
+      (`e2e/fixtures/a11y.ts` → `KNOWN_A11Y_FINDINGS`) is **empty** and should stay that way —
+      every original entry was burned down ([10 §8.1](./e2e/10_UIQuality.md)). Adding an entry
+      downgrades a real user-facing defect and needs the same sign-off as any other deferral.
+- [ ] **Zero horizontal scroll** at mobile + tablet on both apps — no bounded-overflow exemptions
+      ([10 §8.2](./e2e/10_UIQuality.md)).
 - [ ] No new quarantined, skipped, or `test.fixme`'d specs versus the previous release.
-- [ ] Known UI debt unchanged (not worsened): platform-wide `color-contrast` token, AntD-table
-      internals, and the reader-shell **~24–40px sub-`lg` horizontal overflow** (asserted within a
-      bound — a widening regression fails the run). See [10 §8](./e2e/10_UIQuality.md).
 - [ ] If a **deferred coverage row** shipped this release (AI assistant `af2`, monetization `af5`,
       or the reader page `/p/:slug`), its E2E row is now implemented — not still ⏸ in
       [06 §2](./e2e/06_PhasePlan.md).

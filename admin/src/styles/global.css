@@ -39,3 +39,20 @@
     font-family: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
   }
 }
+
+/*
+ * Corrections to AntD's own DOM that cannot be expressed through its theme tokens
+ * (docs/e2e/10 §8.1).
+ */
+@layer antd {
+  /*
+   * AntD Table renders a zero-height `aria-hidden` measure row to size its columns, and copies
+   * the selection column's header into it — so a *second*, focusable "Select all" checkbox sits
+   * inside an aria-hidden subtree (axe `aria-hidden-focus`, serious). `visibility: hidden` takes
+   * the duplicates out of the tab order and the a11y tree while preserving their layout boxes,
+   * which is all the measure row actually needs.
+   */
+  .ant-table-measure-row :is(a, button, input, select, textarea, [tabindex]) {
+    visibility: hidden;
+  }
+}

@@ -45,9 +45,13 @@ Playwright _projects_ so they share fixtures, auth setup, and helpers.
 - **Phase 5 (UI quality):** **LANDED — live-validated on all three engines** (Chromium, Firefox **and
   WebKit**, 83 tests) inside the pinned Playwright image. Accessibility (axe WCAG A/AA + keyboard-only
   auth/publish), responsive (mobile + tablet), and visual regression (27 committed per-engine baselines,
-  masked dynamic regions). Two documented debt registers (design-token `color-contrast`, AntD-table
-  internals; reader-shell horizontal overflow) and one in-app a11y fix (TipTap `role="textbox"`); see
-  [06 §7](./06_PhasePlan.md) + [10 §8](./10_UIQuality.md). Full functional + UI-quality matrix now
+  masked dynamic regions). **Both debt registers are now empty (2026-07-27):** `color-contrast`,
+  `label`, `aria-hidden-focus` and the reader-shell horizontal overflow were each root-caused to a
+  real app defect and fixed — the design tokens and AntD's derived muted colours now clear AA, the
+  admin tables are labelled, and the frontend's missing `box-sizing: border-box` (a casualty of
+  skipping Tailwind preflight) is restored, taking every reader page to 0px overflow. The suite
+  gates with **no downgraded rules** and both apps hold the strict zero-scroll bar; see
+  [06 §7](./06_PhasePlan.md) + [10 §8](./10_UIQuality.md). Full functional + UI-quality matrix
   complete; PR-gate promotion pending.
 - **CI gate (open):** the suite has been validated locally only — `web-e2e.yml` had **never run**,
   because its `push: [main]` trigger could not match this repo's `develop` work and the backend was

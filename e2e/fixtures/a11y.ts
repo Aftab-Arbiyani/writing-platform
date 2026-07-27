@@ -32,25 +32,16 @@ export interface KnownA11yFinding {
   readonly reason: string;
 }
 export const KNOWN_A11Y_FINDINGS: readonly KnownA11yFinding[] = [
-  {
-    rule: 'color-contrast',
-    reason:
-      'Design-system debt: the muted-text token (#8f887a on #ffffff ≈ 3.51:1) is below WCAG AA 4.5:1, ' +
-      'platform-wide. Fixing means darkening a @qalam/ui token — a design decision needing sign-off, and ' +
-      'it would churn the Phase-5 visual baselines. Tracked for the design-token pass; not an E2E fix.',
-  },
-  {
-    rule: 'label',
-    reason:
-      "AntD Table internals: the row-selection column's checkboxes are library-rendered without a label. " +
-      'Not our composition; a proper fix belongs upstream or in a shared table wrapper (admin tables).',
-  },
-  {
-    rule: 'aria-hidden-focus',
-    reason:
-      'AntD Table internals: the hidden measure-row (aria-hidden) carries focusable cells. Library-internal, ' +
-      'same admin-table root cause as `label`.',
-  },
+  // EMPTY BY DESIGN — every entry has been burned down (docs/e2e/10 §8.1):
+  //   • `color-contrast`  → --q-text-muted darkened to #726c61 (5.21:1 surface / 4.87:1 canvas /
+  //     4.51:1 raised) and AntD's Menu group-title + selected-item colours pinned in
+  //     packages/ui/src/theme/antd-theme.ts (their derived defaults were 2.77:1 and 4.22:1).
+  //   • `label`           → DataTable now supplies an aria-label per row-selection checkbox.
+  //   • `aria-hidden-focus` → the duplicate checkbox AntD renders inside its aria-hidden measure
+  //     row is taken out of the tab order in admin/src/styles/global.css.
+  // Adding an entry here downgrades a real, user-facing defect: prefer fixing the app. If one is
+  // genuinely un-fixable, it needs the same sign-off as any other deferred defect
+  // (docs/22 — Browser E2E).
 ];
 const KNOWN_RULES = new Set(KNOWN_A11Y_FINDINGS.map((f) => f.rule));
 
@@ -96,6 +87,21 @@ export async function expectNoSeriousA11yViolations(
   page: Page,
   options: AxeScanOptions = {},
 ): Promise<void> {
+  // Settle animations before sampling. axe reads *computed* colours, so an element caught
+  // mid-fade reports its blended colour, not its real one — a card fading in at 0.93 opacity
+  // turned a compliant #726c61 into #7c776c and failed `color-contrast` by 0.08. Reduced motion
+  // makes the app's MotionProvider skip its JS-driven transitions; the stylesheet collapses any
+  // pure-CSS transition to its end state. Both are deterministic — no sleeps.
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.addStyleTag({
+    content: `*, *::before, *::after {
+      animation-duration: 0s !important;
+      animation-delay: 0s !important;
+      transition-duration: 0s !important;
+      transition-delay: 0s !important;
+    }`,
+  });
+
   let builder = new AxeBuilder({ page }).withTags([...WCAG_AA_TAGS]);
   for (const selector of options.exclude ?? []) {
     builder = builder.exclude(selector);

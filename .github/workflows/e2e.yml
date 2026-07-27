@@ -6,7 +6,11 @@ name: E2E
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    # `develop` carries this repo's work (`main` holds only the README), so a main-only
+    # trigger meant this workflow never fired — same defect as web-e2e.yml. Note
+    # `workflow_dispatch` cannot substitute: GitHub only surfaces the dispatch button for
+    # workflows present on the default branch, and main carries no workflow files.
+    branches: [main, develop]
 
 concurrency:
   group: e2e-${{ github.ref }}
