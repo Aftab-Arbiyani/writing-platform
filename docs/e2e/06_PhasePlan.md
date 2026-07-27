@@ -319,6 +319,10 @@ Breakdown:
 border-box`, so every `w-full` + `px-*` container overflowed by exactly its padding) and fixed — every
   reader page now measures 0px ([10 §8.2](./10_UIQuality.md)). Login + core-journey (admin users) run
   green at small widths; primary nav is asserted reachable at both widths.
+- **Dark mode (added 2026-07-27):** two `*-dark` projects re-run the a11y + visual specs under
+  `colorScheme: 'dark'` ([10 §3.3](./10_UIQuality.md)). Dark had shipped with **no coverage at all**
+  and was materially broken — light UA button faces on the dark canvas at 1.08:1, and the whole
+  accent ramp under AA. All fixed; dark is now gated like light ([10 §8.4](./10_UIQuality.md)).
 - **Visual (`@visual`):** `toHaveScreenshot` baselines for the curated pages — static corridors full-page,
   data-heavy pages with dynamic regions **masked** so only chrome is guarded. **27 per-engine baselines**
   (9 × chromium/firefox/webkit) were produced in the pinned image and committed under

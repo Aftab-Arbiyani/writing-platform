@@ -52,6 +52,25 @@
   html {
     background: var(--q-bg-canvas);
     color: var(--q-text-primary);
+    /* Tell the UA which palette to draw native widgets (scrollbars, form controls, the default
+       button face) in. Without this the browser paints them light over a dark app — the admin
+       app already declared it; the frontend never did. */
+    color-scheme: light;
+  }
+
+  :root[data-theme='dark'] {
+    color-scheme: dark;
+  }
+
+  /*
+   * The other preflight rule we cannot do without. Un-preflighted `<button>` keeps the UA's
+   * `ButtonFace` background, which rendered the feed's tab pills as light-grey chips on the dark
+   * canvas (1.08:1 against their own label). This lives in `base`, so AntD's own unlayered button
+   * styles still win — the layer does the discriminating for us, and only unstyled buttons reset.
+   */
+  button {
+    background-color: transparent;
+    background-image: none;
   }
 
   body {

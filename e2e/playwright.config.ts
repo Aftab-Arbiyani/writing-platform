@@ -27,6 +27,11 @@ const ADMIN_STATE = '.auth/admin.json';
 // engine projects, so Playwright namespaces one baseline per engine (docs/e2e/10 §2.2).
 const RESPONSIVE_ONLY = /responsive\//;
 
+// The UI-quality specs (a11y + visual) are the ones worth re-running in dark mode: they are the
+// only ones that assert on *appearance*, which is what a theme changes. Functional specs would
+// just retest the same behaviour through differently-coloured pixels (docs/e2e/10 §3.3).
+const UI_QUALITY_ONLY = /(a11y|visual)\.spec\.ts$/;
+
 // Tablet width on Chromium (iPad-class viewport). The docs' example names iPad Mini, but that
 // device is WebKit — pinning tablet to Chromium keeps the responsive subset locally runnable
 // (WebKit needs host OS libs, CI-only), while still exercising the tablet breakpoint.
@@ -167,6 +172,37 @@ export default defineConfig({
       testDir: './tests/admin',
       testMatch: RESPONSIVE_ONLY,
       use: { ...CHROMIUM_TABLET, baseURL: ADMIN_URL, storageState: ADMIN_STATE },
+      dependencies: ['setup-admin'],
+    },
+
+    // 5) Dark-mode projects (docs/e2e/10 §3.3). Both apps resolve their default `system` theme
+    //    from `prefers-color-scheme`, so `colorScheme: 'dark'` is all it takes to stamp
+    //    `data-theme="dark"` on <html> before first paint. Chromium-only and UI-quality-only:
+    //    a theme changes appearance, not behaviour, and three engines × two themes buys little
+    //    over one engine × two themes. Playwright namespaces snapshots by project, so these get
+    //    their own baselines (`*-frontend-dark-linux.png`) with no collision.
+    {
+      name: 'frontend-dark',
+      testDir: './tests/frontend',
+      testMatch: UI_QUALITY_ONLY,
+      use: {
+        ...devices['Desktop Chrome'],
+        colorScheme: 'dark',
+        baseURL: FRONTEND_URL,
+        storageState: FRONTEND_STATE,
+      },
+      dependencies: ['setup-frontend'],
+    },
+    {
+      name: 'admin-dark',
+      testDir: './tests/admin',
+      testMatch: UI_QUALITY_ONLY,
+      use: {
+        ...devices['Desktop Chrome'],
+        colorScheme: 'dark',
+        baseURL: ADMIN_URL,
+        storageState: ADMIN_STATE,
+      },
       dependencies: ['setup-admin'],
     },
   ],

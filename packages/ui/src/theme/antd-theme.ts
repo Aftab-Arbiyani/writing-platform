@@ -19,6 +19,7 @@ const palette = {
     border: '#e7e1d6',
     accent: '#9e4b28',
     accentHover: '#b45a32',
+    textOnSolid: '#ffffff',
     success: '#3e7c4f',
     warning: '#8d651a',
     danger: '#b3382e',
@@ -32,11 +33,14 @@ const palette = {
     textSecondary: '#a69f90',
     textMuted: '#8f897f',
     border: '#2e2a24',
-    accent: '#d07349',
-    accentHover: '#dd8a63',
+    accent: '#e08a5f',
+    accentHover: '#eaa47d',
+    // Dark mode's accent is light, so a solid accent fill needs DARK text, not white
+    // (white on the rendered fill is 3.45:1; the ink is 5.45:1).
+    textOnSolid: '#131110',
     success: '#6baa7c',
     warning: '#c99a4c',
-    danger: '#d06a5f',
+    danger: '#dc7b70',
     info: '#7ca6d6',
   },
 } satisfies Record<ThemeMode, Record<string, string>>;
@@ -83,6 +87,8 @@ export function getAntdTheme(mode: ThemeMode): ThemeConfig {
        */
       colorTextDescription: c.textMuted,
       colorTextPlaceholder: c.textMuted,
+      // Label colour on solid accent fills (primary Button, solid Tag) — see palette note.
+      colorTextLightSolid: c.textOnSolid,
       colorBorder: c.border,
       colorBorderSecondary: c.border,
       borderRadius: 6, // --q-radius-sm: controls

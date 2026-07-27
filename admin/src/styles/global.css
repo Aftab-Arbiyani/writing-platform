@@ -31,6 +31,16 @@
     color-scheme: dark;
   }
 
+  /*
+   * Preflight is skipped here too, so unstyled `<button>` keeps the UA `ButtonFace` background —
+   * a mid-grey (#6b6b6b) under `color-scheme: dark`, which put muted text at 1.53:1 on it.
+   * In `base`, so AntD's unlayered button styles are unaffected.
+   */
+  button {
+    background-color: transparent;
+    background-image: none;
+  }
+
   body {
     margin: 0;
     min-block-size: 100dvh;

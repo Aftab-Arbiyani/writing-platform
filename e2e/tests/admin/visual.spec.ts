@@ -28,9 +28,10 @@ test.describe('@phase5 @visual admin (authenticated)', () => {
   test('the users console chrome matches its visual baseline', async ({ page }) => {
     await new UsersPage(page).goto();
     await expect(page).toHaveScreenshot('admin-users.png', {
-      fullPage: true,
-      // The user rows are seeded, paginated data — mask the table so the baseline guards the
-      // header + search toolbar + nav chrome.
+      // Viewport, NOT fullPage — the masked table still contributes its HEIGHT, which tracks the
+      // row count, and the suite mints throwaway users as it runs. A full-page baseline would
+      // size-mismatch against a fresh CI database. Header + search toolbar + nav chrome are all
+      // above the fold.
       mask: [page.getByRole('table')],
     });
   });
@@ -41,9 +42,9 @@ test.describe('@phase5 @visual admin (authenticated)', () => {
       timeout: 30_000,
     });
     await expect(page).toHaveScreenshot('admin-analytics.png', {
-      fullPage: true,
-      // Live aggregates + canvas charts are volatile — mask the section tabpanel; the baseline
-      // guards the page header, filter bar, and section tabs.
+      // Viewport, NOT fullPage — same height-stability reason as the users console; the masked
+      // tabpanel grows with whatever the aggregates return. The baseline guards the page header,
+      // filter bar, and section tabs, all above the fold.
       mask: [page.getByRole('tabpanel')],
     });
   });

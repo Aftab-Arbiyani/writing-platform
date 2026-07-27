@@ -91,6 +91,23 @@ same curated page set as visual, plus the one core journey per app.
 
 ---
 
+### 3.3 Dark mode
+
+Both apps default to a `system` theme that resolves from `prefers-color-scheme`, so Playwright's
+`colorScheme: 'dark'` is enough to stamp `data-theme="dark"` on `<html>` before first paint — no UI
+toggling, no storage seeding. Two projects (`frontend-dark`, `admin-dark`) re-run the **UI-quality
+specs only** (`testMatch: /(a11y|visual)\.spec\.ts$/`): a theme changes appearance, not behaviour,
+so re-running functional journeys through differently-coloured pixels buys nothing. Chromium-only —
+one engine × two themes is a better use of CI minutes than three engines × one.
+
+Playwright namespaces snapshots by project, so dark baselines land beside the light ones as
+`*-frontend-dark-linux.png` with no collision: **36 baselines total** (27 light, 9 dark).
+
+> **Why this exists.** Dark mode shipped with _no_ coverage of any kind, and it was materially
+> broken — see [§8.4](#84-dark-mode-debt--burned-down). Contrast computed against the documented
+> dark tokens looked fine on paper; the rendered page was not, because the real backgrounds often
+> were not those tokens. Rendering is the only check that catches that.
+
 ## 4. Accessibility
 
 ### 4.1 Mechanism
@@ -216,3 +233,28 @@ CI verifies them in that same image (`web-e2e.yml` → `web-e2e-visual`, `docker
 host preview servers). To update: run the `web-e2e` workflow with `update_visual_baselines: true`, download
 the `updated-visual-baselines` artifact, and commit it in the PR so the diff is reviewed. Never regenerate
 baselines on a dev machine's native browsers.
+
+### 8.4 Dark-mode debt — burned down (2026-07-27)
+
+Dark mode had never been rendered by any test. Scanning it found failures in two families:
+
+| Finding                                                                               | Was                 | Cause & fix                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ------------------------------------------------------------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Feed tab pills as light-grey chips on the dark canvas; admin panels behind muted text | **1.08:1** / 1.53:1 | **The missing preflight again** — un-preflighted `<button>` keeps the UA `ButtonFace` background. The frontend also never declared `color-scheme`, so the UA painted its widgets from the _light_ palette over a dark page (`#efefef`); admin, which does declare it, got the dark one (`#6b6b6b`). Fixed with preflight's `button { background-color: transparent }` in each app's `base` layer — where AntD's unlayered button styles still win, so only unstyled buttons reset — plus `color-scheme` per theme on the frontend. |
+| Accent links, headings and the primary button                                         | 4.06–4.37:1         | AntD composites `colorLink`/`colorPrimary` at ~85% alpha over the surface, so the `#d07349` token _rendered_ as `#b46541`. The dark accent is now `#e08a5f` (renders `#c17854`, 5.07:1 surface / 5.38:1 canvas) and hover `#eaa47d`.                                                                                                                                                                                                                                                                                               |
+| White label on the primary button                                                     | 4.30:1              | A dark theme's accent fill is _light_, so its label must be dark: `colorTextLightSolid` is now the near-black ink in dark mode (5.45:1, versus 3.45:1 for white).                                                                                                                                                                                                                                                                                                                                                                  |
+| Danger badge text on its own tint                                                     | 4.23:1              | `--q-danger` `#d06a5f` → `#dc7b70` (5.09:1 on the tint, 5.92:1 on surface).                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+
+**The lesson worth keeping:** per-token arithmetic against the _documented_ background is not
+verification. Every one of these passed that check and still failed in a browser — the pills because
+the background came from the UA rather than a token, the accent because AntD re-composited it.
+
+### 8.5 Baseline height stability (found while adding dark coverage)
+
+Three baselines were full-page shots of **data-length-dependent** pages: the feed (4650px tall, and
+its own spec publishes a new piece every run), the admin users console (row count), and admin
+analytics. Masking hides a region's _content_ but not its _height_, so each baseline silently
+encoded how much data happened to exist — and would have size-mismatched against a fresh CI
+database and failed before comparing a pixel. All three now capture the **viewport** instead; the
+chrome they exist to guard is above the fold. Verified stable across three consecutive runs that
+each add data. Static pages keep `fullPage`.

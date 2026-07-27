@@ -109,11 +109,16 @@
      light token; now 5.04:1 surface, 5.43:1 canvas, 4.55:1 raised. */
   --q-text-muted: #8f897f;
   --q-border: #2e2a24;
-  --q-accent: #d07349;
-  --q-accent-hover: #dd8a63;
+  /* Lightened from #d07349 / #dd8a63. AntD composites its link + primary colours at ~85% alpha
+     over the surface, so the rendered accent was #b46541 — 4.06:1 on surface, under AA. The seed
+     now renders #c17854 (5.07:1 surface, 5.38:1 canvas). A lighter accent is also the correct
+     direction for a dark theme. */
+  --q-accent: #e08a5f;
+  --q-accent-hover: #eaa47d;
   --q-success: #6baa7c;
   --q-warning: #c99a4c;
-  --q-danger: #d06a5f;
+  /* Lightened from #d06a5f: as 12px badge text on the danger/12 tint (#322320) it was 4.23:1. */
+  --q-danger: #dc7b70;
   --q-info: #7ca6d6;
 
   --q-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.35);

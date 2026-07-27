@@ -28,7 +28,7 @@ agree. Governing docs: [`docs/e2e/`](./e2e/README.md) — coverage matrix in
       profile, follow, notifications, settings, silent refresh, analytics, discover, resilience;
       admin users/roles/suspend, moderation (+ cross-app takedown), audit log, RBAC, and all four
       dashboards.
-- [ ] `web-e2e-visual` job green — the **27 committed screenshot baselines** verified inside the
+- [ ] `web-e2e-visual` job green — the **36 committed screenshot baselines** (27 light + 9 dark) verified inside the
       pinned `mcr.microsoft.com/playwright:v1.61.1-noble` image. A diff here is a **blocking**
       finding: either a real regression, or an intended change whose baselines must be
       regenerated via the workflow's `update_visual_baselines` dispatch input and **reviewed in
@@ -40,6 +40,10 @@ agree. Governing docs: [`docs/e2e/`](./e2e/README.md) — coverage matrix in
       downgrades a real user-facing defect and needs the same sign-off as any other deferral.
 - [ ] **Zero horizontal scroll** at mobile + tablet on both apps — no bounded-overflow exemptions
       ([10 §8.2](./e2e/10_UIQuality.md)).
+- [ ] **Dark mode green** — the `frontend-dark` / `admin-dark` projects pass their a11y scans and
+      their 9 visual baselines ([10 §3.3](./e2e/10_UIQuality.md)). Any token change must be checked
+      in _both_ themes; computed ratios against the documented tokens are not sufficient evidence
+      ([10 §8.4](./e2e/10_UIQuality.md)).
 - [ ] No new quarantined, skipped, or `test.fixme`'d specs versus the previous release.
 - [ ] If a **deferred coverage row** shipped this release (AI assistant `af2`, monetization `af5`,
       or the reader page `/p/:slug`), its E2E row is now implemented — not still ⏸ in

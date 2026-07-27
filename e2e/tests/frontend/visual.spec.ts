@@ -65,9 +65,11 @@ test.describe('@phase5 @visual frontend (authenticated)', () => {
     const list = page.getByRole('region', { name: 'Latest feed' });
     await expect(list).toBeVisible({ timeout: 30_000 });
     await expect(page).toHaveScreenshot('frontend-feed.png', {
-      fullPage: true,
-      // The piece list is seeded, ordered, and timestamped data — mask it; this baseline guards
-      // the surrounding chrome (top bar, tabs, filter bar, rail), not the cards ([10 §2.2]).
+      // Viewport, NOT fullPage: masking hides the cards' content but not their height, so a
+      // full-page shot encodes how many pieces happen to exist — and this spec publishes one
+      // more on every run. The baseline would then differ in *size* from a fresh CI database and
+      // fail before comparing a single pixel. The chrome this guards (top bar, tabs, filter bar,
+      // rail) is all above the fold ([10 §2.2]).
       mask: [list],
     });
   });

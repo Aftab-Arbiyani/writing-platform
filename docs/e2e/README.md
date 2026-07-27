@@ -53,11 +53,22 @@ Playwright _projects_ so they share fixtures, auth setup, and helpers.
   gates with **no downgraded rules** and both apps hold the strict zero-scroll bar; see
   [06 §7](./06_PhasePlan.md) + [10 §8](./10_UIQuality.md). Full functional + UI-quality matrix
   complete; PR-gate promotion pending.
+- **Dark mode (added 2026-07-27):** dark had **no coverage of any kind** and was materially broken —
+  the feed's tab pills rendered as light-grey chips at 1.08:1, and the accent/links/primary button all
+  sat under AA. Two `*-dark` projects now re-run the a11y + visual specs with `colorScheme: 'dark'`
+  (36 baselines total: 27 light, 9 dark), and every defect they found is fixed — see
+  [10 §3.3 + §8.4](./10_UIQuality.md). Same root cause as the responsive bug in two of the cases:
+  the skipped Tailwind preflight.
 - **CI gate (open):** the suite has been validated locally only — `web-e2e.yml` had **never run**,
   because its `push: [main]` trigger could not match this repo's `develop` work and the backend was
   started before its migrations (fatal at bootstrap). Both are fixed; the remaining step is three
   green runs, then flipping on `pull_request` — see [07 §6.1](./07_CI.md). The release-gate
   checklist itself is written up in [docs/22](../22_ReleaseChecklist.md).
+- **Known failure blocking a green run:** `tests/admin/users.spec.ts` "grants then revokes a role"
+  fails on **WebKit only**, reproducibly at `--workers=1` — the Edit-user modal never opens after the
+  row menu's "Edit user". Firefox and Chromium are green. This surfaced the first time the functional
+  suite was ever run on WebKit (the host lacked its OS libs, so only `@visual` had run in the pinned
+  image); it is a pre-existing gap, not a regression. Must be fixed before the gate can go blocking.
 
 ## The one-paragraph summary
 

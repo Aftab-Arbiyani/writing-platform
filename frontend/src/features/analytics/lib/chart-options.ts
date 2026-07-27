@@ -36,9 +36,9 @@ const FALLBACKS: Record<'light' | 'dark', ChartTheme> = {
     textSecondary: '#a69f90',
     textMuted: '#8f897f',
     line: '#2e2a24',
-    accent: '#d07349',
+    accent: '#e08a5f',
     surface: '#1c1917',
-    palette: ['#d07349', '#7ca6d6', '#6baa7c', '#c99a4c', '#d06a5f', '#8f897f'],
+    palette: ['#e08a5f', '#7ca6d6', '#6baa7c', '#c99a4c', '#dc7b70', '#8f897f'],
   },
 };
 
