@@ -41,9 +41,9 @@ export type RoutePath = (typeof ROUTES)[keyof typeof ROUTES];
 
 /**
  * Reading-view path for a piece (docs/06 §3.1 — the whole card links here). The reading view
- * itself is a later epic; feed cards link to it now so the destination exists in markup. Slug
- * is preferred; a null slug (rare) falls back to the id (docs/11 §10.4 — no slug→piece cold
- * load yet, but navigation from a list carries the identifier).
+ * is live as of W1 (docs/45 §4.1) and cold-loads by slug through `GET /pieces/by-slug/:slug`.
+ * Slug is preferred; a null slug (an unpublished piece, which only its author can open) falls
+ * back to the id, which the same page resolves.
  */
 export function piecePath(idOrSlug: string): string {
   return `/p/${encodeURIComponent(idOrSlug)}`;

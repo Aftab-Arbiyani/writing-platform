@@ -7,8 +7,8 @@ additive read endpoint, justified in §3.
 
 > **The shape of the problem.** Every AF epic shipped **backend + mobile** and deferred **frontend +
 > admin**. The backend is complete through P7.4; mobile is complete through M10 + AF1–AF6. The web
-> reader/writer app is missing whole surfaces — most starkly, **it can publish a piece but cannot
-> read one**. This doc is the ordered plan to close that, and it is the analog of
+> reader/writer app is missing whole surfaces — most starkly, it could publish a piece but not
+> **read** one (closed by W1 on 2026-07-27). This doc is the ordered plan to close the rest, and it is the analog of
 > [`18_DevelopmentRoadmap.md`](./18_DevelopmentRoadmap.md) for the web clients.
 
 ---
@@ -17,13 +17,13 @@ additive read endpoint, justified in §3.
 
 Measured, not assumed (routes read from `frontend/src/lib/routes.ts` and `admin/src/lib/routes.ts`).
 
-| Surface       | State                                                                                                                                                                                                                                          |
-| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Backend**   | ✅ Complete through P7.4 + AF1–AF6.                                                                                                                                                                                                            |
-| **Mobile**    | ✅ Complete: M1–M10, AF1–AF6, P7.1–P7.4. The most feature-complete surface, and the **reference implementation** for every W-track epic.                                                                                                       |
-| **Frontend**  | Features: `auth, feed, writing, profile, search, settings, notifications, analytics, ai`. **`ai` is headless** (api + stores + hooks + types, no components, no route, zero importers). **No reader page. No monetization. No collaboration.** |
-| **Admin**     | 31 route modules — users, moderation, analytics, audit, security, privacy, system, ten operations consoles, AI settings. **Nothing for AF3, AF4, AF5, or AF6.**                                                                                |
-| **Marketing** | Built (`qalam-web`); blocked only on config — Firebase values, domain, socials.                                                                                                                                                                |
+| Surface       | State                                                                                                                                                                                                                                                              |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Backend**   | ✅ Complete through P7.4 + AF1–AF6.                                                                                                                                                                                                                                |
+| **Mobile**    | ✅ Complete: M1–M10, AF1–AF6, P7.1–P7.4. The most feature-complete surface, and the **reference implementation** for every W-track epic.                                                                                                                           |
+| **Frontend**  | Features: `auth, feed, writing, profile, search, settings, notifications, analytics, ai, reading`. **`ai` is headless** (api + stores + hooks + types, no components, no route, zero importers). `reading` ✅ shipped (W1). **No monetization. No collaboration.** |
+| **Admin**     | 31 route modules — users, moderation, analytics, audit, security, privacy, system, ten operations consoles, AI settings. **Nothing for AF3, AF4, AF5, or AF6.**                                                                                                    |
+| **Marketing** | Built (`qalam-web`); blocked only on config — Firebase values, domain, socials.                                                                                                                                                                                    |
 
 ---
 
@@ -74,15 +74,15 @@ soft-deleted rows ([04 §1.5](./04_DatabaseDesign.md)), so it is a safe identity
 
 ## 4. Track W — the web app (sequential)
 
-| #      | Epic                                     | Size | Rationale                                                                                                                         | Unblocks               |
-| ------ | ---------------------------------------- | ---- | --------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
-| **B1** | By-slug read endpoint + freeze amendment | S    | Hard prerequisite for W1                                                                                                          | W1                     |
-| **W1** | **Reader page** `/p/:slug`               | M    | The product hole. Backend contract and mobile's full `reading` feature both exist to port from                                    | E2E reader row; W3, W4 |
-| **W2** | **AI writing assistant UI** (AF2)        | S–M  | The data layer is already built — best value-to-effort ratio on the list                                                          | E2E `af2` row          |
-| **W3** | Collaboration / publishing / trust (AF6) | L    | Touches both the editor and the reader, so it needs W1 and W2 to exist first                                                      | —                      |
-| **W4** | Monetization (AF5)                       | M    | Gating needs something to gate: premium pieces (W1) and metered AI (W2)                                                           | E2E `af5` row          |
-| **W5** | AF4 retrieval-backed discovery / search  | M    | An upgrade of the existing M3/M6 `/discover` + `/search` surfaces rather than a new one                                           | —                      |
-| **W6** | AF3 story-intelligence client            | L    | **Held.** No client exists on any platform and there is no product definition — it needs a shape before it is an engineering task | —                      |
+| #      | Epic                                                 | Size | Rationale                                                                                                                                   | Unblocks               |
+| ------ | ---------------------------------------------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| **B1** | By-slug read endpoint + freeze amendment ✅ **done** | S    | Hard prerequisite for W1                                                                                                                    | W1                     |
+| **W1** | **Reader page** `/p/:slug` ✅ **done**               | M    | The product hole. Backend contract and mobile's full `reading` feature both exist to port from — [report](./46_WebReaderReadinessReport.md) | E2E reader row; W3, W4 |
+| **W2** | **AI writing assistant UI** (AF2)                    | S–M  | The data layer is already built — best value-to-effort ratio on the list                                                                    | E2E `af2` row          |
+| **W3** | Collaboration / publishing / trust (AF6)             | L    | Touches both the editor and the reader, so it needs W1 and W2 to exist first                                                                | —                      |
+| **W4** | Monetization (AF5)                                   | M    | Gating needs something to gate: premium pieces (W1) and metered AI (W2)                                                                     | E2E `af5` row          |
+| **W5** | AF4 retrieval-backed discovery / search              | M    | An upgrade of the existing M3/M6 `/discover` + `/search` surfaces rather than a new one                                                     | —                      |
+| **W6** | AF3 story-intelligence client                        | L    | **Held.** No client exists on any platform and there is no product definition — it needs a shape before it is an engineering task           | —                      |
 
 ### 4.1 W1 — Reader page (detail)
 
@@ -102,6 +102,13 @@ Ported from mobile's `lib/features/reading/`, which already solves every hard pa
 **E2E impact:** flips the reader row, adds `reader.spec.ts`, and upgrades the feed/search specs from
 link-URL assertions to real render assertions — the deferral recorded in
 [e2e/06 §4](./e2e/06_PhasePlan.md) is discharged here.
+
+> ✅ **Shipped 2026-07-27.** All of the above landed, plus the a11y/visual/responsive coverage in
+> both themes. Two boundaries were drawn deliberately: clap/respond stay read-only counts (the
+> engagement epic owns them), and "more like this" is a tag search rather than the AF4 recommender,
+> which requires auth + `ai.use` and so cannot serve a signed-out reader — W5 upgrades it. Full
+> accounting, including the shared-code move-down the author card forced, in
+> [46](./46_WebReaderReadinessReport.md).
 
 ### 4.2 W2 — AI writing assistant UI (detail)
 

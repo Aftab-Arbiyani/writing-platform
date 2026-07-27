@@ -5,10 +5,11 @@ import { renderWithProviders } from '@/test/render';
 import { useAuthStore } from '@/stores/auth.store';
 import type { ProfileResponse } from '@/types/profile';
 
-import { useFollow } from '../hooks/use-follow';
+import { useFollow } from '@/hooks/use-follow';
+
 import { FollowButton } from './follow-button';
 
-vi.mock('../hooks/use-follow', () => ({ useFollow: vi.fn() }));
+vi.mock('@/hooks/use-follow', () => ({ useFollow: vi.fn() }));
 
 const followMutate = vi.fn();
 const unfollowMutate = vi.fn();

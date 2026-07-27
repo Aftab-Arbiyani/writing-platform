@@ -1,9 +1,10 @@
 import { expectNoSeriousA11yViolations } from '../../fixtures/a11y';
 import { freshLogin } from '../../fixtures/auth';
-import { test } from '../../fixtures/test';
+import { test, expect } from '../../fixtures/test';
 import { EditorPage } from '../../pages/frontend/editor-page';
 import { FeedPage } from '../../pages/frontend/feed-page';
 import { ProfilePage } from '../../pages/frontend/profile-page';
+import { ReaderPage } from '../../pages/frontend/reader-page';
 import { ResiliencePage } from '../../pages/frontend/resilience-page';
 import { EditProfilePage } from '../../pages/frontend/settings-page';
 import { LoginPage } from '../../pages/shared/login-page';
@@ -62,6 +63,19 @@ test.describe('@phase5 @a11y frontend accessibility (authenticated)', () => {
     const settings = new EditProfilePage(page);
     await settings.goto();
     await expectNoSeriousA11yViolations(page, { label: 'frontend /settings/profile' });
+  });
+
+  test('the reader has no critical/serious a11y violations', async ({ page, api, data }) => {
+    // The reading view (W1, docs/45 §4.1) is the product's highest-traffic surface and the one
+    // most dependent on typography and contrast — exactly what axe catches and selectors don't.
+    const title = data.pieceTitle();
+    const piece = await api.createPublishedPiece({ title });
+    const reader = new ReaderPage(page);
+    await reader.gotoSlug(piece.slug as string);
+    await reader.expectRendered(title);
+    // Scan with the engagement bar present, not just the article.
+    await expect(reader.engagement).toBeVisible({ timeout: 30_000 });
+    await expectNoSeriousA11yViolations(page, { label: 'frontend /p/:slug' });
   });
 
   test('the not-found page has no critical/serious a11y violations', async ({ page, data }) => {

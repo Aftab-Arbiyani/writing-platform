@@ -1,10 +1,9 @@
 import { FollowStatus } from '@qalam/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
+import { del, post } from '@/lib/api-client';
 import { qk } from '@/lib/query-keys';
-import type { ProfileResponse } from '@/types/profile';
-
-import { followsApi } from '../api/follows.api';
+import type { FollowActionResult, ProfileResponse } from '@/types/profile';
 
 /**
  * Optimistic follow / unfollow for a profile keyed by `username` (docs/12 §2.4–§2.5). The button
@@ -14,6 +13,11 @@ import { followsApi } from '../api/follows.api';
  *
  * Follow/unfollow target the **user UUID** (`profile.id`); the cache entry is keyed by username —
  * the two are not interchangeable (docs/11 §10.3), so both are passed in.
+ *
+ * App-level, not in a feature (docs/26 §4): the profile header and the reading view's author card
+ * (W1, docs/45 §4.1) both follow, and a feature may never import another feature. The remaining
+ * follow-graph endpoints (requests, followers/following lists) stay in `features/profile` — they
+ * have exactly one consumer.
  */
 function patchRelation(
   client: ReturnType<typeof useQueryClient>,
@@ -35,7 +39,8 @@ export function useFollow(username: string) {
   };
 
   const follow = useMutation({
-    mutationFn: (userId: string) => followsApi.follow(userId),
+    /** Follow → `accepted` (public target) or `pending` (private → request). */
+    mutationFn: (userId: string) => post<FollowActionResult>(`/users/${userId}/follow`),
     onMutate: async () => {
       await client.cancelQueries({ queryKey: key });
       // Optimistic: private target → a pending request; public → an immediate follow (+1 follower).
@@ -68,7 +73,8 @@ export function useFollow(username: string) {
   });
 
   const unfollow = useMutation({
-    mutationFn: (userId: string) => followsApi.unfollow(userId),
+    /** Unfollow OR cancel a pending request — idempotent (204). */
+    mutationFn: (userId: string) => del(`/users/${userId}/follow`),
     onMutate: async () => {
       await client.cancelQueries({ queryKey: key });
       // Covers both "unfollow accepted" (−1 follower) and "cancel pending request".

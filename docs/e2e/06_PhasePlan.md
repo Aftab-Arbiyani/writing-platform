@@ -32,29 +32,30 @@ Legend: ✅ in-phase target · ⏸ targeted but deferred (client UI not yet ship
 
 ### 2.1 Frontend (reader/writer app, `:5173`)
 
-| Workflow                                       | P1  | P2  | P3  | P4  | Notes / feature dir                                                                           |
-| ---------------------------------------------- | --- | --- | --- | --- | --------------------------------------------------------------------------------------------- |
-| Login (valid) + logout                         | ✅  |     |     |     | `features/auth`                                                                               |
-| Login invalid → field error                    | ✅  |     |     |     |                                                                                               |
-| Register → verify email (Mailpit) → authed     | ✅  |     |     |     | Mailpit link ([04](./04_TestData.md))                                                         |
-| Forgot → reset password (Mailpit) → login      | ✅  |     |     |     |                                                                                               |
-| Guarded route redirect (`require-auth`)        | ✅  |     |     |     | `app/guards/require-auth`                                                                     |
-| Guest-only redirect (`require-guest`)          | ✅  |     |     |     | `app/guards/require-guest`                                                                    |
-| Write → save draft → publish → in feed         |     | ✅  |     |     | `features/writing` (TipTap, [05 §4](./05_Selectors.md))                                       |
-| Draft persistence (reload → draft still there) |     | ✅  |     |     | `features/writing`, drafts route                                                              |
-| Feed loads + paginates; open a piece           |     | ✅  |     |     | `features/feed` — reader view `/p/:slug` is a later epic; link asserted, render deferred (§4) |
-| Edit an existing piece → changes reflected     |     |     | ✅  |     | `features/writing`                                                                            |
-| Search → find seeded piece → open              |     |     | ✅  |     | `features/search`                                                                             |
-| Profile: view own + edit profile               |     |     | ✅  |     | `features/profile`, `me` route                                                                |
-| Follow another user (throwaway 2nd user)       |     |     | ✅  |     | `features/profile`, follow-requests                                                           |
-| Notifications: action → notification appears   |     |     | ✅  |     | `features/notifications` (in-app poll, `m8`)                                                  |
-| Settings: change password (throwaway user)     |     |     | ✅  |     | `features/settings`, [04 §6](./04_TestData.md)                                                |
-| Silent token refresh survives navigation       |     |     | ✅  |     | [03 §7](./03_AuthStrategy.md)                                                                 |
-| Analytics: own stats page renders real data    |     |     |     | ✅  | `features/analytics` (`m9` shapes)                                                            |
-| AI writing assistant: request → suggestion     |     |     |     | ⏸   | `features/ai` (`af2`) — **deferred: hooks/store only, no UI/route** (§6)                      |
-| Monetization: subscribe → entitlement granted  |     |     |     | ⏸   | `af5` — **deferred: no client subscribe UI/route shipped** (§6)                               |
-| Reading history / discover (For You)           |     |     |     | ✅  | `discover` route (`m3` contract)                                                              |
-| Error/empty/offline states                     |     |     |     | ✅  | `app/pages/offline`, `route-error`, `not-found`                                               |
+| Workflow                                       | P1  | P2  | P3  | P4  | Notes / feature dir                                                                         |
+| ---------------------------------------------- | --- | --- | --- | --- | ------------------------------------------------------------------------------------------- |
+| Login (valid) + logout                         | ✅  |     |     |     | `features/auth`                                                                             |
+| Login invalid → field error                    | ✅  |     |     |     |                                                                                             |
+| Register → verify email (Mailpit) → authed     | ✅  |     |     |     | Mailpit link ([04](./04_TestData.md))                                                       |
+| Forgot → reset password (Mailpit) → login      | ✅  |     |     |     |                                                                                             |
+| Guarded route redirect (`require-auth`)        | ✅  |     |     |     | `app/guards/require-auth`                                                                   |
+| Guest-only redirect (`require-guest`)          | ✅  |     |     |     | `app/guards/require-guest`                                                                  |
+| Write → save draft → publish → in feed         |     | ✅  |     |     | `features/writing` (TipTap, [05 §4](./05_Selectors.md))                                     |
+| Draft persistence (reload → draft still there) |     | ✅  |     |     | `features/writing`, drafts route                                                            |
+| Feed loads + paginates; open a piece           |     | ✅  |     |     | `features/feed` — link **and** render asserted since `/p/:slug` shipped (W1); §4 discharged |
+| Reading view `/p/:slug` (cold load by slug)    |     | ✅  |     |     | `features/reading` — W1 ([45 §4.1](../45_WebClientRoadmap.md)); typography, engagement, 404 |
+| Edit an existing piece → changes reflected     |     |     | ✅  |     | `features/writing`                                                                          |
+| Search → find seeded piece → open              |     |     | ✅  |     | `features/search`                                                                           |
+| Profile: view own + edit profile               |     |     | ✅  |     | `features/profile`, `me` route                                                              |
+| Follow another user (throwaway 2nd user)       |     |     | ✅  |     | `features/profile`, follow-requests                                                         |
+| Notifications: action → notification appears   |     |     | ✅  |     | `features/notifications` (in-app poll, `m8`)                                                |
+| Settings: change password (throwaway user)     |     |     | ✅  |     | `features/settings`, [04 §6](./04_TestData.md)                                              |
+| Silent token refresh survives navigation       |     |     | ✅  |     | [03 §7](./03_AuthStrategy.md)                                                               |
+| Analytics: own stats page renders real data    |     |     |     | ✅  | `features/analytics` (`m9` shapes)                                                          |
+| AI writing assistant: request → suggestion     |     |     |     | ⏸   | `features/ai` (`af2`) — **deferred: hooks/store only, no UI/route** (§6)                    |
+| Monetization: subscribe → entitlement granted  |     |     |     | ⏸   | `af5` — **deferred: no client subscribe UI/route shipped** (§6)                             |
+| Reading history / discover (For You)           |     |     |     | ✅  | `discover` route (`m3` contract)                                                            |
+| Error/empty/offline states                     |     |     |     | ✅  | `app/pages/offline`, `route-error`, `not-found`                                             |
 
 ### 2.2 Admin (staff panel, `:5174`)
 
@@ -116,11 +117,12 @@ cannot log in on the frontend (**first cross-app assertion** — validates the s
 - Frontend `writing.spec.ts` — publish flow (landed in P1); **draft persistence across reload** (autosave
   creates the server draft `/write` → `/write/:id`, hard reload rehydrates title + body).
 - Frontend `feed.spec.ts` — **Latest feed loads, paginates on infinite scroll** (arranges 21 published
-  pieces via `api.createPublishedPiece` to force a 2nd page past the size-20 window), and a card **links**
-  to the canonical piece path. **Deferred:** the reader/piece page (`/p/:slug`) is a later frontend epic and
-  is not yet routed — the spec asserts the feed→reader link URL; the reader-page _render_ assertion lands
-  with that epic. The signed-in default tab is "Following" (empty for a fresh writer), so the spec drives
-  the public **Latest** tab.
+  pieces via `api.createPublishedPiece` to force a 2nd page past the size-20 window), and a card opens the
+  piece. ~~**Deferred:** the reader/piece page (`/p/:slug`) is a later frontend epic…~~ **Discharged by W1**
+  ([45 §4.1](../45_WebClientRoadmap.md)): `/p/:slug` ships, so both this spec and `search.spec.ts` now
+  assert the piece actually **renders** at the destination rather than only that the link points there,
+  and `reader.spec.ts` covers the surface directly. The signed-in default tab is "Following" (empty for a
+  fresh writer), so the spec drives the public **Latest** tab.
 - Admin `users.spec.ts` — suspend cross-app (landed in P1); **search + view a user** (detail drawer);
   **grant then revoke a role** via the Edit-user modal, asserting the persisted `role` through the `api`
   fixture (`PATCH /admin/users/:id` under the hood, super-admin only).

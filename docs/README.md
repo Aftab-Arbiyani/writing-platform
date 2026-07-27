@@ -61,9 +61,10 @@ where they predated the frozen API (feed tab→path, piece-by-`id`, no `/taxonom
 
 ## Web clients — the remaining build-out
 
-| #   | Doc                                            | What                                                                                                          |
-| --- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| 45  | [Web Client Roadmap](./45_WebClientRoadmap.md) | **The W-track** — ordered plan to close the frontend/admin gap left by AF1–AF6 shipping backend + mobile only |
+| #   | Doc                                                            | What                                                                                                          |
+| --- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| 45  | [Web Client Roadmap](./45_WebClientRoadmap.md)                 | **The W-track** — ordered plan to close the frontend/admin gap left by AF1–AF6 shipping backend + mobile only |
+| 46  | [W1 Reader Readiness Report](./46_WebReaderReadinessReport.md) | The reading view `/p/:slug` — what shipped, how it was verified, and the E2E debt it discharged               |
 
 ## Browser E2E (frontend + admin)
 

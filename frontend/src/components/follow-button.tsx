@@ -3,12 +3,11 @@ import { Check, Clock, UserPlus } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { useNavigate } from 'react-router';
 
+import { useFollow } from '@/hooks/use-follow';
 import { getErrorMessage } from '@/lib/errors';
 import { profilePath, ROUTES } from '@/lib/routes';
 import { useAuthStore } from '@/stores/auth.store';
 import type { ProfileResponse } from '@/types/profile';
-
-import { useFollow } from '../hooks/use-follow';
 
 /**
  * Follow / Following / Requested toggle (docs/06 §3.5, §4.1; docs/07 §7.1). Optimistic via
@@ -16,6 +15,9 @@ import { useFollow } from '../hooks/use-follow';
  * follow state (docs/07 §9). A private target's Follow sends a request → "Requested" (which can
  * be cancelled). An anonymous viewer is routed to sign-in (following needs a session). Never
  * rendered for the viewer's own profile.
+ *
+ * App-wide composite (docs/26 §10): the profile header and the reading view's author card
+ * (W1, docs/45 §4.1) both render it, and a feature may never import another feature.
  */
 export function FollowButton({
   profile,

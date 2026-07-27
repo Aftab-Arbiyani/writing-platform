@@ -22,10 +22,18 @@ test.describe('@phase5 @responsive frontend (authenticated)', () => {
   });
 
   test('reader pages do not scroll horizontally', async ({ page, api, data }) => {
-    // Seed a piece so the feed renders real content (a wide card would be an additional culprit).
-    await api.createPublishedPiece({ title: data.pieceTitle() });
+    // Seed a piece so the feed renders real content (a wide card would be an additional culprit)
+    // and so the reading view itself has something to render.
+    const piece = await api.createPublishedPiece({ title: data.pieceTitle() });
 
     const pages: ReadonlyArray<{ path: string; ready: () => Promise<void> }> = [
+      {
+        // The reading view (W1, docs/45 §4.1): a fixed-max-width column inside a full-bleed
+        // cover, which is exactly the shape that overflowed before the box-sizing fix.
+        path: `/p/${piece.slug as string}`,
+        ready: async () =>
+          void (await expect(page.locator('.qalam-prose')).toBeVisible({ timeout: 30_000 })),
+      },
       {
         path: '/feed?tab=latest',
         ready: async () =>

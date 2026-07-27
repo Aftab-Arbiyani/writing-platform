@@ -26,6 +26,9 @@ const router = createBrowserRouter([
       { path: 'feed', lazy: () => import('@/app/routes/feed') },
       { path: 'search', lazy: () => import('@/app/routes/search') },
       { path: 'discover', lazy: () => import('@/app/routes/discover') },
+      // The reading view (W1, docs/45 §4.1). Public with optional auth — the server decides what
+      // this viewer may see. Static, so it out-ranks the bare `:handle` route registered last.
+      { path: 'p/:slug', lazy: () => import('@/app/routes/piece') },
       // Error surfaces (also reachable directly / via deep links):
       { path: '401', element: <Unauthorized /> },
       { path: '403', element: <Forbidden /> },

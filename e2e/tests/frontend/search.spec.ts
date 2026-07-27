@@ -1,12 +1,13 @@
 import { freshLogin } from '../../fixtures/auth';
 import { test, expect } from '../../fixtures/test';
+import { ReaderPage } from '../../pages/frontend/reader-page';
 import { SearchPalette } from '../../pages/frontend/search-palette';
 
 /**
  * Frontend search (docs/e2e/06 Phase 3, `features/search`). Arranges a uniquely-titled
- * published piece, finds it through the command palette, and asserts the suggestion
- * links to the canonical piece path. The reader view (`/p/:slug`) is a later frontend
- * epic, so we assert the navigation target, not a rendered reader page (as in feed).
+ * published piece, finds it through the command palette, and follows the suggestion all the
+ * way to the rendered reader view — the same deferral the feed spec discharges, now that
+ * `/p/:slug` ships (W1, docs/45 §4.1; docs/e2e/06 §4).
  */
 test.describe('@phase3 frontend search', () => {
   test.beforeEach(async ({ page }) => {
@@ -31,7 +32,8 @@ test.describe('@phase3 frontend search', () => {
     await search.expectPieceOption(title);
     await search.openOption(title);
 
-    // Links to the canonical piece path (reader render deferred to the reader epic).
+    // Navigates to the canonical piece path AND renders the piece there.
     await expect(page).toHaveURL(/\/p\//);
+    await new ReaderPage(page).expectRendered(title);
   });
 });

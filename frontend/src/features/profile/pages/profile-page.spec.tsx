@@ -6,10 +6,10 @@ import { renderWithProviders } from '@/test/render';
 import type { ProfileResponse } from '@/types/profile';
 
 import { useMyProfilePieces } from '../hooks/use-profile-pieces';
-import { useProfile } from '../hooks/use-profile';
+import { useProfile } from '@/hooks/use-profile';
 import { ProfilePage } from './profile-page';
 
-vi.mock('../hooks/use-profile', () => ({ useProfile: vi.fn() }));
+vi.mock('@/hooks/use-profile', () => ({ useProfile: vi.fn() }));
 vi.mock('../hooks/use-profile-pieces', () => ({ useMyProfilePieces: vi.fn() }));
 
 type ProfileQuery = ReturnType<typeof useProfile>;

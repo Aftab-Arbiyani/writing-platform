@@ -117,6 +117,14 @@ export const qk = {
   pieces: {
     all: ['pieces'] as const,
     detail: (id: string) => ['pieces', 'detail', id] as const, // GET /pieces/:id
+    // The reading view's own key (W1, docs/45 §4.1). Slug-keyed rather than id-keyed because
+    // that is what the URL carries and what `GET /pieces/by-slug/:slug` is addressed by — a
+    // reader arriving cold has no id. Kept under the same `pieces` prefix so a piece mutation
+    // invalidates both views at once.
+    bySlug: (slug: string) => ['pieces', 'by-slug', slug] as const, // GET /pieces/by-slug/:slug
+    engagement: (id: string) => ['pieces', 'engagement', id] as const, // GET /pieces/:id/engagement
+    // "More like this" under the reader — a tag-filtered piece search (see reading.api).
+    related: (id: string, tag: string) => ['pieces', 'related', id, tag] as const,
   },
 
   // The author's own pieces/drafts (writer dashboard). Infinite lists per status.

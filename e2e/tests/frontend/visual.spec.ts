@@ -1,5 +1,6 @@
 import { freshLogin } from '../../fixtures/auth';
 import { test, expect } from '../../fixtures/test';
+import { ReaderPage } from '../../pages/frontend/reader-page';
 import { LoginPage } from '../../pages/shared/login-page';
 
 /**
@@ -56,6 +57,24 @@ test.describe('@phase5 @visual frontend (authenticated)', () => {
       fullPage: true,
       // Avatar/cover imagery is account data, not layout.
       mask: [page.locator('img')],
+    });
+  });
+
+  test('the reader matches its visual baseline', async ({ page, api, data }) => {
+    // The reading view (W1, docs/45 §4.1). Snapshotted whole: unlike the feed, its height is
+    // determined by ONE piece of fixed, spec-arranged content, so the shot is stable across runs.
+    const title = data.pieceTitle();
+    const piece = await api.createPublishedPiece({ title });
+    const reader = new ReaderPage(page);
+    await reader.gotoSlug(piece.slug as string);
+    await reader.expectRendered(title);
+    // Wait for the second wave so the bar is in the shot rather than racing it.
+    await expect(reader.engagement).toBeVisible({ timeout: 30_000 });
+    await expect(page).toHaveScreenshot('frontend-reader.png', {
+      fullPage: true,
+      // The title carries a per-run unique token, and engagement counts move as other specs
+      // publish and react — both are content, not layout.
+      mask: [page.getByRole('heading', { level: 1 }), reader.engagement],
     });
   });
 

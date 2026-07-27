@@ -16,6 +16,7 @@
   "dependencies": {
     "@fontsource-variable/inter": "^5.0.0",
     "@fontsource/lora": "^5.0.0",
+    "@fontsource/noto-nastaliq-urdu": "^5.3.0",
     "@hookform/resolvers": "^3.0.0",
     "@qalam/api-types": "workspace:*",
     "@qalam/shared": "workspace:*",

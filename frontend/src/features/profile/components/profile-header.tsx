@@ -3,11 +3,11 @@ import { FileText, MapPin, Pencil } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { Link } from 'react-router';
 
+import { FollowButton } from '@/components/follow-button';
 import { mediaUrl } from '@/lib/media';
 import { ROUTES } from '@/lib/routes';
 import type { ProfileResponse } from '@/types/profile';
 
-import { FollowButton } from './follow-button';
 import { ProfileStats } from './profile-stats';
 
 /**

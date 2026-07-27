@@ -4,15 +4,15 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import type { ReactElement, ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { del, post } from '@/lib/api-client';
 import { qk } from '@/lib/query-keys';
 import type { ProfileResponse } from '@/types/profile';
 
-import { followsApi } from '../api/follows.api';
 import { useFollow } from './use-follow';
 
-vi.mock('../api/follows.api', () => ({
-  followsApi: { follow: vi.fn(), unfollow: vi.fn() },
-}));
+// The hook is app-level and calls the fetch wrapper directly (the `use-me` precedent), so the
+// wrapper is what gets mocked — the assertions below pin the exact follow-graph paths.
+vi.mock('@/lib/api-client', () => ({ post: vi.fn(), del: vi.fn() }));
 
 function profile(over: Partial<ProfileResponse> = {}): ProfileResponse {
   return {
@@ -54,7 +54,7 @@ describe('useFollow (optimistic)', () => {
   });
 
   it('optimistically follows a public writer (+1 follower, isFollowing)', async () => {
-    vi.mocked(followsApi.follow).mockResolvedValue({ status: FollowStatus.Accepted });
+    vi.mocked(post).mockResolvedValue({ status: FollowStatus.Accepted });
     const { result, read } = setup(profile());
 
     await act(async () => {
@@ -65,11 +65,11 @@ describe('useFollow (optimistic)', () => {
       expect(read()?.viewerRelation.isFollowing).toBe(true);
     });
     expect(read()?.counts.followers).toBe(2);
-    expect(followsApi.follow).toHaveBeenCalledWith('u1');
+    expect(post).toHaveBeenCalledWith('/users/u1/follow');
   });
 
   it('sends a pending request for a private writer (no follower bump)', async () => {
-    vi.mocked(followsApi.follow).mockResolvedValue({ status: FollowStatus.Pending });
+    vi.mocked(post).mockResolvedValue({ status: FollowStatus.Pending });
     const { result, read } = setup(profile({ isPrivate: true }));
 
     await act(async () => {
@@ -84,7 +84,7 @@ describe('useFollow (optimistic)', () => {
   });
 
   it('rolls back when the follow fails', async () => {
-    vi.mocked(followsApi.follow).mockRejectedValue(new Error('nope'));
+    vi.mocked(post).mockRejectedValue(new Error('nope'));
     const { result, read } = setup(profile());
 
     await act(async () => {
@@ -99,7 +99,7 @@ describe('useFollow (optimistic)', () => {
   });
 
   it('unfollows an accepted follow (−1 follower)', async () => {
-    vi.mocked(followsApi.unfollow).mockResolvedValue(undefined);
+    vi.mocked(del).mockResolvedValue(undefined);
     const { result, read } = setup(
       profile({
         viewerRelation: { isSelf: false, isFollowing: true, hasPendingRequest: false },
@@ -115,5 +115,6 @@ describe('useFollow (optimistic)', () => {
       expect(read()?.viewerRelation.isFollowing).toBe(false);
     });
     expect(read()?.counts.followers).toBe(4);
+    expect(del).toHaveBeenCalledWith('/users/u1/follow');
   });
 });

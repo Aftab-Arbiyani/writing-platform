@@ -7,6 +7,8 @@ export const STORAGE_KEYS = {
   theme: 'qalam-theme',
   /** Device-local recent searches (mirrors the server list for authed users; sole list for guests). */
   recentSearches: 'qalam-recent-searches',
+  /** Reader typography (text size / line spacing / column width) — device-scoped, never synced. */
+  readerPreferences: 'qalam-reader',
 } as const;
 
 /** Cursor pagination sizes (docs/05 §5). */

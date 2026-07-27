@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router';
 
 import { Seo } from '@/components/seo';
 import { usePageTitle } from '@/hooks/use-page-title';
+import { useProfile } from '@/hooks/use-profile';
 import { getErrorMessage, getRequestId, isApiError } from '@/lib/errors';
 import { mediaUrl } from '@/lib/media';
 import { profilePath } from '@/lib/routes';
@@ -18,7 +19,6 @@ import { ProfileHeader } from '../components/profile-header';
 import { ProfilePiecesList } from '../components/profile-pieces-list';
 import { ProfileTabs } from '../components/profile-tabs';
 import { PrivateNotebook } from '../components/private-notebook';
-import { useProfile } from '../hooks/use-profile';
 import type { ProfileTab } from '../types/profile.types';
 
 /**
