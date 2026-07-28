@@ -138,11 +138,24 @@ inbox accept → membership appears. Both themes.
 | Comments    | `/write/:storyId/comments`    | `GET/POST /stories/:id/comments` · `POST /comments/:id/replies` · `POST /comments/:id/resolve` · `PATCH·DELETE /comments/:id` |
 | Suggestions | `/write/:storyId/suggestions` | `GET/POST /stories/:id/suggestions` · `POST /suggestions/:id/accept` · `…/reject` · `…/withdraw`                              |
 
-General **and** inline comments (`kind`, `anchor {from,to,quote}`), threads via `parentId`, resolve,
-`@mention` display. Suggestions carry `originalText`/`suggestedText`; **`SUGGESTION_CONFLICT` on accept
-is a first-class UI state** (the live text no longer contains the anchored original), not a generic error.
-Editor contact via the app-level seam (§4). **E2E:** comment thread + resolve; suggestion accept; conflict
-state. Both themes.
+General **and** inline comments (`kind`, `anchor {from,to,quote}`), threads, resolve, `@mention`
+display. Suggestions carry an `anchor` plus `originalText`/`suggestedText`; **`SUGGESTION_CONFLICT` on
+accept is a first-class UI state** (the live text no longer contains the anchored original), not a
+generic error. Editor contact via the app-level seam (§4). **E2E:** comment thread + resolve;
+suggestion accept; conflict state. Both themes.
+
+> ⚠️ **W3b builds from the DTOs — mobile is only a partial reference here.** The pre-W3b audit
+> ([48 §3.2](./48_PlatformParityRegister.md)) found mobile's `addSuggestion` sends no `anchor` (which is
+> required) plus two properties the DTO rejects, so it could only ever 400 — and it is unreachable
+> anyway, since the suggestions screen has no create affordance (**M-2**). Mobile's comment and
+> suggestion entities also parse six keys the wire never sends, never call the thread endpoint
+> (`GET /comments/:id/thread`), and never parse the suggestion `anchor` (**M-3**).
+>
+> Concretely, for W3b: threads come from `GET /comments/:id/thread` returning
+> `CommentThreadDto {comment, replies}` — **not** a `replies` array on `CommentDto`; replies post to
+> `POST /comments/:id/replies` with `{body, mentions?}`, **never** `parentId` on the create endpoint;
+> both list endpoints are **cursor-paginated**; and author identity is `authorId` only, so display names
+> resolve the same way W3a's `CollaboratorIdentity` does.
 
 ### W3c — Publishing + trust
 

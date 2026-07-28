@@ -52,10 +52,18 @@ tables, not assumed.
 
 ## 3. Divergences where mobile is behind
 
-**None open.** `M-1` (mobile's broken story invite) was **closed on 2026-07-28** — both clients now
-resolve a handle to an id and send `{inviteeId, role}`. Mobile's fix and the three further defects
-found with it are recorded in `qalam-mobile/docs/50` ("Invite by handle"); the analysis that follows
-stays because it is the clearest example of why §6 step 2 exists.
+`M-1` (mobile's broken story invite) was **closed on 2026-07-28** — both clients now resolve a handle
+to an id and send `{inviteeId, role}`. Mobile's fix and the three further defects found with it are in
+`qalam-mobile/docs/50` ("Invite by handle"); the analysis in §3.1 stays because it is the clearest
+example of why §6 step 2 exists.
+
+**Two new rows opened the same day**, found by the pre-W3b reference audit that M-1 taught us to run
+(§3.2). Both are mobile defects of the same kind — a client written against an imagined contract:
+
+| #   | Area                                     | Contract reality                                                                                                        | Mobile does                                                                                                                                                                                     | Resolution                                                       |
+| --- | ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| M-2 | **Create a suggestion (AF6)**            | `CreateSuggestionDto` = `{anchor:{from,to}, originalText, suggestedText}`; `anchor` **required**                        | Sends `{originalText, suggestedText, blockId?, rationale?}` — **no anchor**, plus two unknown properties                                                                                        | ⏳ **Open, unowned.** W3b must build from the contract, not port |
+| M-3 | **Comment threads + suggestion display** | `CommentDto` has ids only, no `replies`; threads come from `GET /comments/:id/thread`. `SuggestionDto` carries `anchor` | Entities parse `authorName`, `authorAvatarKey`, `replies`, `blockId`, `rationale`, `resolvedBy` — **none of which the wire sends**; the thread endpoint is never called; `anchor` is not parsed | ⏳ **Open, unowned.** Same fix shape as M-1's entity cleanup     |
 
 ### 3.1 M-1 — mobile's story invite could not work against the frozen contract (fixed)
 
@@ -85,6 +93,47 @@ them displayed nothing. All fixed — details in `qalam-mobile/docs/50`.
 
 **The lesson, sharpened:** §6 step 2 must compare the reference's **request and response shapes to the
 DTOs**, not just confirm a screen exists. A screen-list check would have passed every one of these.
+
+### 3.2 M-2 / M-3 — the pre-W3b reference audit (2026-07-28)
+
+Run **before** starting W3b, precisely because M-1 showed a screen list proves nothing. Mobile's
+comment and suggestion surfaces were compared field-by-field against `CreateCommentDto`,
+`CreateReplyDto`, `CreateSuggestionDto`, `CommentDto`, `SuggestionDto` and `CommentThreadDto`.
+
+**Broken (would 400 on every call) — `addSuggestion`:**
+
+- Omits the **required** `anchor` (`{from, to}`), so nested validation fails.
+- Sends `blockId` and `rationale`, neither of which exists in `CreateSuggestionDto` → rejected as
+  unknown properties under `forbidNonWhitelisted`.
+- It is currently **unreachable**: mobile's suggestions screen has no create affordance, only
+  accept / reject / withdraw. So mobile can act on suggestions it has no way to produce.
+
+**Phantom response fields (parse to null forever, and the UI displays some of them):**
+
+| Entity                 | Reads keys the wire never sends                                    | Missing from the entity                     |
+| ---------------------- | ------------------------------------------------------------------ | ------------------------------------------- |
+| `EditSuggestion`       | `blockId`, `rationale`/`note`, `authorName`/`author`, `resolvedBy` | **`anchor`** — so the text range is unknown |
+| `CollaborationComment` | `authorName`/`author`, `authorAvatarKey`, `replies`                | `resolvedById`, `updatedAt`                 |
+
+`SuggestionDto` names the field `resolvedById`, not `resolvedBy`; the suggestions screen renders
+`suggestion.rationale`, which can never arrive.
+
+**Threads are unreachable.** `CommentDto` carries no `replies` array — a thread is fetched from
+`GET /comments/:id/thread` (`CommentThreadDto {comment, replies}`), and **mobile never calls it** (no
+path, no method). The nested-reply parsing in `CollaborationComment` is dead code.
+
+**Latent, not yet firing:** `addComment` sends `parentId`, which `CreateCommentDto` does not allow.
+The only caller passes none, so the key is omitted — but any future reply-via-addComment wiring 400s.
+Replies have their own endpoint (`POST /comments/:id/replies`, `CreateReplyDto {body, mentions?}`),
+which mobile does call correctly.
+
+**Also functional, not a validation error:** story comments and suggestions are **cursor-paginated**
+(`CommentListQueryDto`, envelope `meta.pagination`), but mobile reads them with a plain list call and
+no cursor — so only the first page is ever shown, silently.
+
+**Consequence for W3b:** the comments half is a partial reference (correct create + reply, broken
+entities, no threads); the suggestions half is **not a reference at all**. W3b builds both from the
+DTOs, exactly as W3a did for invite.
 
 ---
 
