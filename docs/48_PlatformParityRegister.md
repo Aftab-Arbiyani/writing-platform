@@ -230,7 +230,7 @@ does in passing.
 
 ## 5. The unassigned gaps — a real hole in the plan
 
-Items **3 (partly), 4, 5, 6, 7, 8** are not owned by any W-track row. The W-track was written to
+Items **3 (partly), 4, 5, 6, 7, 8** — plus **P-1 / P-2** in §5.1 — are not owned by any W-track row. The W-track was written to
 close the AF1–AF6 client gap, and these fall outside those AF epics. (**W-1 is no longer in this
 list** — it was closed by the 2026-07-28 port, §3.1.)
 
@@ -240,6 +240,23 @@ list** — it was closed by the 2026-07-28 port, §3.1.)
 - **Clap / report** — deliberately scoped out of W1, with no row that picks them up.
 - **Reader analytics, onboarding, privacy prefs, AI conversations + prompt library + usage** — all
   mobile-shipped, none in the W-track.
+
+### 5.1 Both-platform product gaps in inline review (opened 2026-07-28, after W3b)
+
+Not divergences — **neither client does these**, so they need a roadmap decision rather than a port.
+Recorded here because W3b drew them as boundaries, and a boundary that lives only in a commit message
+is how the debt in this document accumulated in the first place.
+
+| #   | Gap                                 | Where both clients stand                                                                                                                                                                         | Shape of the work                                                                                                                                                                                                                                                             |
+| --- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| P-1 | **Applying an accepted suggestion** | `POST /suggestions/:id/accept` records the decision and **does not touch the prose**. Web says so on the accepted card; **mobile toasts "Suggestion accepted." and changes nothing** — silently. | Editor integration: hand the anchored replacement to the editor, which applies it through its own commands (app-level seam, [49 §4](./49_WebCollaborationEpicDesign.md)). Alternatively a backend change so accept rewrites the piece — a product decision, not a client one. |
+| P-2 | **Composing @mentions**             | `mentions` on the wire are resolved user **ids**. Neither composer sends any, so a typed `@handle` is plain text and nobody is notified.                                                         | Handle→id resolution per mention inside the composer — the same lookup the invite dialog uses, applied inline.                                                                                                                                                                |
+
+**P-1 is correctness-shaped, not a nicety.** A writer who accepts a suggestion reasonably expects the
+wording to change; on mobile they are told it was accepted and nothing happens. Whatever the roadmap
+decides, mobile's toast should stop implying an edit occurred.
+
+---
 
 **This needs a roadmap decision, not more building.** The honest options are (a) add a `W7 —
 engagement & parity backfill` row covering items 4, 5, 6, 8, plus a `W8` for the remaining
