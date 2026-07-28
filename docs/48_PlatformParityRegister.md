@@ -258,11 +258,10 @@ decides, mobile's toast should stop implying an edit occurred.
 
 ---
 
-**This needs a roadmap decision, not more building.** The honest options are (a) add a `W7 —
-engagement & parity backfill` row covering items 4, 5, 6, 8, plus a `W8` for the remaining
-AI surfaces, or (b) explicitly accept them as mobile-only and record that here. Until one of those
-happens they are **tracked, unowned gaps** — which is better than being invisible, and worse than
-being planned.
+**Decided 2026-07-28 — option (a).** These are now owned by roadmap rows: **W7** (engagement & parity
+backfill, including P-2), **W8** (the remaining AI surfaces), and **D1** (the product decision behind
+P-1). See [45 §4.4](./45_WebClientRoadmap.md). They sit last in the order deliberately: each is a gap
+on one client while the other already ships it, so nothing is blocked on them.
 
 ---
 

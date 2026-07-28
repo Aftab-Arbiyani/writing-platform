@@ -83,15 +83,18 @@ soft-deleted rows ([04 §1.5](./04_DatabaseDesign.md)), so it is a safe identity
 
 ## 4. Track W — the web app (sequential)
 
-| #      | Epic                                                                                                  | Size | Rationale                                                                                                                                   | Unblocks               |
-| ------ | ----------------------------------------------------------------------------------------------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
-| **B1** | By-slug read endpoint + freeze amendment ✅ **done**                                                  | S    | Hard prerequisite for W1                                                                                                                    | W1                     |
-| **W1** | **Reader page** `/p/:slug` ✅ **done**                                                                | M    | The product hole. Backend contract and mobile's full `reading` feature both exist to port from — [report](./46_WebReaderReadinessReport.md) | E2E reader row; W3, W4 |
-| **W2** | **AI writing assistant UI** (AF2) ✅ **done**                                                         | S–M  | The data layer is already built — best value-to-effort ratio on the list — [report](./47_WebAiAssistantReadinessReport.md)                  | E2E `af2` row          |
-| **W3** | Collaboration / publishing / trust (AF6) — **3 slices, [design](./49_WebCollaborationEpicDesign.md)** | L    | Touches both the editor and the reader, so it needs W1 and W2 to exist first                                                                | —                      |
-| **W4** | Monetization (AF5)                                                                                    | M    | Gating needs something to gate: premium pieces (W1) and metered AI (W2)                                                                     | E2E `af5` row          |
-| **W5** | AF4 retrieval-backed discovery / search                                                               | M    | An upgrade of the existing M3/M6 `/discover` + `/search` surfaces rather than a new one                                                     | —                      |
-| **W6** | AF3 story-intelligence client                                                                         | L    | **Held.** No client exists on any platform and there is no product definition — it needs a shape before it is an engineering task           | —                      |
+| #      | Epic                                                                                                  | Size | Rationale                                                                                                                                                                                                  | Unblocks               |
+| ------ | ----------------------------------------------------------------------------------------------------- | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| **B1** | By-slug read endpoint + freeze amendment ✅ **done**                                                  | S    | Hard prerequisite for W1                                                                                                                                                                                   | W1                     |
+| **W1** | **Reader page** `/p/:slug` ✅ **done**                                                                | M    | The product hole. Backend contract and mobile's full `reading` feature both exist to port from — [report](./46_WebReaderReadinessReport.md)                                                                | E2E reader row; W3, W4 |
+| **W2** | **AI writing assistant UI** (AF2) ✅ **done**                                                         | S–M  | The data layer is already built — best value-to-effort ratio on the list — [report](./47_WebAiAssistantReadinessReport.md)                                                                                 | E2E `af2` row          |
+| **W3** | Collaboration / publishing / trust (AF6) — **3 slices, [design](./49_WebCollaborationEpicDesign.md)** | L    | Touches both the editor and the reader, so it needs W1 and W2 to exist first                                                                                                                               | —                      |
+| **W4** | Monetization (AF5)                                                                                    | M    | Gating needs something to gate: premium pieces (W1) and metered AI (W2)                                                                                                                                    | E2E `af5` row          |
+| **W5** | AF4 retrieval-backed discovery / search                                                               | M    | An upgrade of the existing M3/M6 `/discover` + `/search` surfaces rather than a new one                                                                                                                    | —                      |
+| **W6** | AF3 story-intelligence client                                                                         | L    | **Held.** No client exists on any platform and there is no product definition — it needs a shape before it is an engineering task                                                                          | —                      |
+| **W7** | Engagement & parity backfill (**both clients**)                                                       | M–L  | Closes the unowned gaps [48 §5](./48_PlatformParityRegister.md) has been flagging: conversation layer on web, collections, clap/report, reader analytics, privacy prefs, and **P-2** (composing @mentions) | —                      |
+| **W8** | Remaining AI surfaces (**both clients**)                                                              | M    | AI conversations, prompt library, AI usage — mobile-shipped, no W row owned them                                                                                                                           | —                      |
+| **D1** | **Decision:** what does accepting a suggestion mean?                                                  | S    | **P-1**, [48 §5.1](./48_PlatformParityRegister.md) — correctness-shaped; a product call, not an engineering one                                                                                            | the client half of P-1 |
 
 ### 4.1 W1 — Reader page (detail)
 
@@ -163,6 +166,46 @@ mobile's default-off `QALAM_ENABLE_COLLABORATION`; E2E runs with it enabled. The
 > builds the contract-correct flow instead of porting a broken one; the mobile defect is logged as
 > **M-1** in [48 §3.1](./48_PlatformParityRegister.md). The W-1 lesson generalizes: check the
 > reference's actual request shape against the DTO, not just its screen list.
+
+---
+
+### 4.4 W7 / W8 / D1 — closing the unowned gaps (detail)
+
+[48 §5](./48_PlatformParityRegister.md) has listed these as _tracked but unowned_ since the register
+was written, with the explicit note that they need "a roadmap decision, not more building". These rows
+are that decision. They are **last** on purpose: every one of them is a gap on _one_ client with the
+other already shipped, so nothing is blocked on them — unlike W3–W6, which closed a total absence.
+
+**W7 — engagement & parity backfill.** Mostly mobile → web, one item on both:
+
+| Item                                               | Direction    | Notes                                                                        |
+| -------------------------------------------------- | ------------ | ---------------------------------------------------------------------------- |
+| Conversation layer (piece comments + responses)    | mobile → web | Distinct from AF6 collaboration comments, which are a story's private review |
+| Collections (list + detail)                        | mobile → web | 48 §2 item 4                                                                 |
+| Clap (1..50 accumulating) + report                 | mobile → web | Scoped out of W1 deliberately; no row picked them up                         |
+| Reader analytics (the reader's own stats)          | mobile → web | 48 §2 item 6                                                                 |
+| Privacy prefs (bookmarks / reading-history counts) | mobile → web | Small — 48 §2 item 8                                                         |
+| Onboarding first-run flow                          | mobile → web | Needs a product shape for web before it is an engineering task               |
+| **P-2** composing @mentions                        | **both**     | `mentions` are resolved user **ids**; neither composer sends any today       |
+
+**W8 — remaining AI surfaces.** AI conversations, the prompt library, and AI usage: mobile has all
+three, web has none, and W5/W6 cover discovery/search/ask and the story explorer respectively. Same
+open stack caveat as `af2` — no AI provider in the E2E stack ([e2e/06 §6](./e2e/06_PhasePlan.md)).
+
+**D1 — the accept-a-suggestion decision.** Not an epic; a question that must be answered before its
+work can be scoped:
+
+> When a reviewer's suggestion is accepted, does the **server** rewrite the piece, or does the
+> **client** apply the replacement through the editor?
+
+Server-side is one change and behaves identically on both clients; client-side is two integrations and
+keeps the editor the only writer of prose. Until it is answered, both clients record the decision
+without changing the text — and **mobile's "Suggestion accepted." toast implies an edit that did not
+happen**, which is worth correcting whichever way D1 lands.
+
+**Before each of these rows starts:** run the reference audit ([48 §6](./48_PlatformParityRegister.md)
+step 2) against the shipping platform's request/response shapes. Three AF6 surfaces have been audited
+so far and **all three were broken** (M-1, M-2, M-3); a screen list is not evidence.
 
 ---
 
