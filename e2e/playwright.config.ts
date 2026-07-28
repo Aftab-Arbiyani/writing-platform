@@ -216,7 +216,13 @@ export default defineConfig({
       url: FRONTEND_URL,
       reuseExistingServer: REUSE_SERVER,
       timeout: 120_000,
-      env: { VITE_API_URL: API_URL },
+      env: {
+        VITE_API_URL: API_URL,
+        // AF6/W3 collaboration ships dark (docs/49 §2.2) — default `false` in `config/env.ts`, so
+        // without this the suite would only ever see the "Collaboration is off" state. The server's
+        // own master flag fails open, so enabling it here exercises the real surface.
+        VITE_ENABLE_COLLABORATION: 'true',
+      },
     },
     {
       command: CI

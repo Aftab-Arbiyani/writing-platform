@@ -41,6 +41,16 @@ const router = createBrowserRouter([
           { path: 'me', lazy: () => import('@/app/routes/me') },
           { path: 'me/drafts', lazy: () => import('@/app/routes/drafts') },
           { path: 'me/follow-requests', lazy: () => import('@/app/routes/follow-requests') },
+          // Collaboration inbox (AF6 W3a, docs/49) — story invitations addressed to the viewer.
+          { path: 'me/invitations', lazy: () => import('@/app/routes/invitations') },
+          // A story's collaborator roster. Its PATH sits under /write (it is a writing-side
+          // surface), but it is declared here, inside the chrome'd tree, on purpose: it is a
+          // management page that needs the top bar and navigation, not the distraction-free
+          // editor shell below.
+          {
+            path: 'write/:storyId/collaborators',
+            lazy: () => import('@/app/routes/collaborators'),
+          },
           { path: 'me/stats', lazy: () => import('@/app/routes/stats') },
           { path: 'me/stats/pieces/:id', lazy: () => import('@/app/routes/piece-stats') },
           { path: 'notifications', lazy: () => import('@/app/routes/notifications') },

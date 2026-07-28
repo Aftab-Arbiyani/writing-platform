@@ -4,6 +4,8 @@ import { test, expect } from '../../fixtures/test';
 import { EditorPage } from '../../pages/frontend/editor-page';
 import { FeedPage } from '../../pages/frontend/feed-page';
 import { AssistantPanel } from '../../pages/frontend/assistant-panel';
+import { CollaboratorsPage } from '../../pages/frontend/collaborators-page';
+import { InvitationsPage } from '../../pages/frontend/invitations-page';
 import { ProfilePage } from '../../pages/frontend/profile-page';
 import { ReaderPage } from '../../pages/frontend/reader-page';
 import { ResiliencePage } from '../../pages/frontend/resilience-page';
@@ -87,6 +89,32 @@ test.describe('@phase5 @a11y frontend accessibility (authenticated)', () => {
     // Scan with the engagement bar present, not just the article.
     await expect(reader.engagement).toBeVisible({ timeout: 30_000 });
     await expectNoSeriousA11yViolations(page, { label: 'frontend /p/:slug' });
+  });
+
+  test('the collaborators page has no critical/serious a11y violations', async ({
+    page,
+    api,
+    data,
+  }) => {
+    // AF6/W3a (docs/49). Worth scanning because the roster is dense with controls whose names must
+    // disambiguate one row from another — a per-row select labelled only "Role" would pass a
+    // selector test that scopes by row, and still leave a screen reader unable to tell them apart.
+    const story = await api.createPiece({ title: data.pieceTitle() });
+    const collaborators = new CollaboratorsPage(page);
+    await collaborators.goto(story.id);
+    await collaborators.expectResolved();
+    await expectNoSeriousA11yViolations(page, {
+      label: 'frontend /write/:storyId/collaborators',
+    });
+  });
+
+  test('the invitations inbox has no critical/serious a11y violations', async ({ page }) => {
+    // Runs as the shared writer, who normally has no invitations — the empty state is the surface
+    // most viewers see, so it is the one that must be clean.
+    const inbox = new InvitationsPage(page);
+    await inbox.goto();
+    await inbox.expectResolved();
+    await expectNoSeriousA11yViolations(page, { label: 'frontend /me/invitations' });
   });
 
   test('the not-found page has no critical/serious a11y violations', async ({ page, data }) => {

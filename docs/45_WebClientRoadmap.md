@@ -83,15 +83,15 @@ soft-deleted rows ([04 §1.5](./04_DatabaseDesign.md)), so it is a safe identity
 
 ## 4. Track W — the web app (sequential)
 
-| #      | Epic                                                 | Size | Rationale                                                                                                                                   | Unblocks               |
-| ------ | ---------------------------------------------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
-| **B1** | By-slug read endpoint + freeze amendment ✅ **done** | S    | Hard prerequisite for W1                                                                                                                    | W1                     |
-| **W1** | **Reader page** `/p/:slug` ✅ **done**               | M    | The product hole. Backend contract and mobile's full `reading` feature both exist to port from — [report](./46_WebReaderReadinessReport.md) | E2E reader row; W3, W4 |
-| **W2** | **AI writing assistant UI** (AF2) ✅ **done**        | S–M  | The data layer is already built — best value-to-effort ratio on the list — [report](./47_WebAiAssistantReadinessReport.md)                  | E2E `af2` row          |
-| **W3** | Collaboration / publishing / trust (AF6)             | L    | Touches both the editor and the reader, so it needs W1 and W2 to exist first                                                                | —                      |
-| **W4** | Monetization (AF5)                                   | M    | Gating needs something to gate: premium pieces (W1) and metered AI (W2)                                                                     | E2E `af5` row          |
-| **W5** | AF4 retrieval-backed discovery / search              | M    | An upgrade of the existing M3/M6 `/discover` + `/search` surfaces rather than a new one                                                     | —                      |
-| **W6** | AF3 story-intelligence client                        | L    | **Held.** No client exists on any platform and there is no product definition — it needs a shape before it is an engineering task           | —                      |
+| #      | Epic                                                                                                  | Size | Rationale                                                                                                                                   | Unblocks               |
+| ------ | ----------------------------------------------------------------------------------------------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| **B1** | By-slug read endpoint + freeze amendment ✅ **done**                                                  | S    | Hard prerequisite for W1                                                                                                                    | W1                     |
+| **W1** | **Reader page** `/p/:slug` ✅ **done**                                                                | M    | The product hole. Backend contract and mobile's full `reading` feature both exist to port from — [report](./46_WebReaderReadinessReport.md) | E2E reader row; W3, W4 |
+| **W2** | **AI writing assistant UI** (AF2) ✅ **done**                                                         | S–M  | The data layer is already built — best value-to-effort ratio on the list — [report](./47_WebAiAssistantReadinessReport.md)                  | E2E `af2` row          |
+| **W3** | Collaboration / publishing / trust (AF6) — **3 slices, [design](./49_WebCollaborationEpicDesign.md)** | L    | Touches both the editor and the reader, so it needs W1 and W2 to exist first                                                                | —                      |
+| **W4** | Monetization (AF5)                                                                                    | M    | Gating needs something to gate: premium pieces (W1) and metered AI (W2)                                                                     | E2E `af5` row          |
+| **W5** | AF4 retrieval-backed discovery / search                                                               | M    | An upgrade of the existing M3/M6 `/discover` + `/search` surfaces rather than a new one                                                     | —                      |
+| **W6** | AF3 story-intelligence client                                                                         | L    | **Held.** No client exists on any platform and there is no product definition — it needs a shape before it is an engineering task           | —                      |
 
 ### 4.1 W1 — Reader page (detail)
 
@@ -103,7 +103,11 @@ Ported from mobile's `lib/features/reading/`, which already solves every hard pa
   so what a writer sees is what a reader gets. Only the whitelisted node/mark set the server accepts.
 - **Reader preferences** — font size / theme, mirroring mobile's `reader_preferences_controller`.
 - **Engagement** — like / bookmark / share bar (mobile's `engagement_controller`).
-- **Author card + related pieces** — mobile's `reader_author_card`.
+- **Author card + related pieces** — mobile's `reader_author_card` (author card only) plus a "More
+  like this" section. ⚠️ Read [48 §3](./48_PlatformParityRegister.md): at the time this bullet was
+  written the named mobile widget contained **no** related pieces, so the section was an unplanned
+  web-first divergence (`W-1`), closed on 2026-07-28 by porting it to mobile. The lesson stands for
+  every remaining row — open the named reference and confirm it contains what the bullet claims.
 - **RTL** — Urdu/Nastaliq flows from the element `dir`, with the `--q-leading-nastaliq` leading token.
   This is a day-one requirement, not a follow-up ([07 §Typography](./07_DesignSystem.md)).
 - **SEO/meta** — the reason the slug URL exists at all; a piece page needs real title/description tags.
@@ -133,6 +137,32 @@ request meters through the `AI_USAGE_METER` hook, so the UI needs a quota-exhaus
 > flags are dark-launched, so a _generated suggestion_ is not asserted end to end; closing it needs an
 > inert AI port in the stack, tracked in [e2e/06 §6](./e2e/06_PhasePlan.md). Full accounting in
 > [47](./47_WebAiAssistantReadinessReport.md).
+
+### 4.3 W3 — Collaboration / publishing / trust (detail)
+
+Size **L**, so it lands in **three independently-green slices** rather than one commit. Full design,
+including the verified reference audit and the two deliberate departures from mobile, is
+[49](./49_WebCollaborationEpicDesign.md). Ported from mobile's `lib/features/collaboration/`
+(6 screens + `CapabilityGate`/`PresenceBar`/`RoleBadge`), which was opened and checked
+surface-by-surface first.
+
+| #       | Slice                           | Surfaces                                                                                                          | Status                                                                                                                                                                         |
+| ------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **W3a** | Collaboration core (membership) | collaborators page, invite dialog, story invitations, invitations inbox + the three shared components             | 🟢 unit + **E2E green** (6/6 functional, a11y light **and** dark); only the visual baseline is outstanding — CI must mint it ([49 §6b–6d](./49_WebCollaborationEpicDesign.md)) |
+| **W3b** | Inline review                   | comments (general + inline anchors, threads, resolve, @mentions), suggestions (accept/reject/withdraw + conflict) | ⬚ next                                                                                                                                                                         |
+| **W3c** | Publishing + trust              | review→approve→publish, snapshots + revert, publication history, restricted-state walls, blocks/mutes             | ⬚ after W3b                                                                                                                                                                    |
+
+**No backend enabler** — every surface maps to an existing AF6 route (flow step 2's default).
+
+**Availability:** dark-launched behind `VITE_ENABLE_COLLABORATION` (default `false`), mirroring
+mobile's default-off `QALAM_ENABLE_COLLABORATION`; E2E runs with it enabled. The server's
+`feature.collaboration.enabled` **fails open**, so unlike W2's AI gap there is no untestable surface here.
+
+> ⚠️ **One reference was found broken, not missing.** Mobile's invite sends `{role, email}` where the
+> contract requires `{inviteeId, role}` under `forbidNonWhitelisted`, so every mobile invite 400s. W3a
+> builds the contract-correct flow instead of porting a broken one; the mobile defect is logged as
+> **M-1** in [48 §3.1](./48_PlatformParityRegister.md). The W-1 lesson generalizes: check the
+> reference's actual request shape against the DTO, not just its screen list.
 
 ---
 

@@ -1,6 +1,7 @@
 import { freshLogin } from '../../fixtures/auth';
 import { test, expect } from '../../fixtures/test';
 import { AssistantPanel } from '../../pages/frontend/assistant-panel';
+import { CollaboratorsPage } from '../../pages/frontend/collaborators-page';
 import { ReaderPage } from '../../pages/frontend/reader-page';
 import { LoginPage } from '../../pages/shared/login-page';
 
@@ -85,6 +86,22 @@ test.describe('@phase5 @visual frontend (authenticated)', () => {
       // The title carries a per-run unique token, and engagement counts move as other specs
       // publish and react — both are content, not layout.
       mask: [page.getByRole('heading', { level: 1 }), reader.engagement],
+    });
+  });
+
+  test('the collaborators page matches its visual baseline', async ({ page, api, data }) => {
+    // AF6/W3a (docs/49). Snapshotted so the roster's role badges, presence dots, and gated controls
+    // are pinned in BOTH themes — the badge/dot colours are the parts most likely to be unreadable
+    // in dark, which is the failure mode [10 §8.4] was written about.
+    const story = await api.createPiece({ title: data.pieceTitle() });
+    const collaborators = new CollaboratorsPage(page);
+    await collaborators.goto(story.id);
+    await collaborators.expectResolved();
+    await expect(page).toHaveScreenshot('frontend-collaborators.png', {
+      fullPage: true,
+      // The owner row renders a truncated user id (no by-id profile lookup exists — docs/49 §5),
+      // and that id differs per environment.
+      mask: [page.getByRole('listitem')],
     });
   });
 

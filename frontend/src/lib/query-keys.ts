@@ -149,6 +149,26 @@ export const qk = {
     conversation: (id: string) => ['ai', 'conversation', id] as const, // GET /ai/conversations/:id
   },
 
+  // Collaboration / publishing / trust (AF6, W3 — docs/49). A "story" IS a piece
+  // (`storyId === pieceId`), but these keys stay under their own `stories` namespace: they are
+  // collaboration facts about a piece, not the piece itself, so invalidating one never dumps the
+  // cached content. `capabilities` is the Policy Engine decision map every affordance reflects.
+  stories: {
+    all: ['stories'] as const,
+    /** Prefix matcher for one story's collaboration data — a membership change targets this. */
+    detail: (id: string) => ['stories', id] as const,
+    capabilities: (id: string) => ['stories', id, 'capabilities'] as const, // GET …/capabilities
+    members: (id: string) => ['stories', id, 'members'] as const, // GET …/members
+    invitations: (id: string) => ['stories', id, 'invitations'] as const, // GET …/invitations
+    presence: (id: string) => ['stories', id, 'presence'] as const, // GET …/presence
+  },
+
+  // The viewer's own collaboration inbox — outside `stories` because it spans every story.
+  invitations: {
+    all: ['invitations'] as const,
+    mine: () => ['invitations', 'mine'] as const, // GET /me/invitations
+  },
+
   // Taxonomy catalogues — NO /taxonomy endpoints exist (§2.1.1); sourced from search (browse).
   taxonomy: {
     genres: () => ['taxonomy', 'genres'] as const, // → GET /search/genres (q omitted)

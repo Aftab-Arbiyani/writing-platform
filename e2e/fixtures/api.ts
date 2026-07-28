@@ -211,6 +211,36 @@ export class ApiHelper {
     return (await this.login(WRITER_EMAIL, WRITER_PASSWORD)).user.id;
   }
 
+  // ── Collaboration (AF6 / W3a, docs/49) ────────────────────────────────────────────────────
+
+  /**
+   * Invite a user to a story as the seeded writer (POST /stories/:id/invitations).
+   *
+   * Takes `inviteeId` — a **user id**, never an email or handle. The endpoint requires exactly
+   * `{ inviteeId, role }` under `forbidNonWhitelisted`, which is the assumption mobile got wrong
+   * (defect M-1, docs/48 §3.1). Arranging state through the same shape the UI sends means this
+   * fixture would break alongside the UI if the contract ever moved.
+   */
+  async inviteToStory(
+    storyId: string,
+    inviteeId: string,
+    role: 'co_author' | 'editor' | 'reviewer' | 'beta_reader' = 'editor',
+  ): Promise<{ id: string; storyId: string; status: string }> {
+    const res = await this.request.post(this.url(`/stories/${storyId}/invitations`), {
+      headers: await this.writerHeaders(),
+      data: { inviteeId, role },
+    });
+    return this.data<{ id: string; storyId: string; status: string }>(res);
+  }
+
+  /** A story's collaborators as the seeded writer (GET /stories/:id/members). */
+  async storyMembers(storyId: string): Promise<{ userId: string; role: string }[]> {
+    const res = await this.request.get(this.url(`/stories/${storyId}/members`), {
+      headers: await this.writerHeaders(),
+    });
+    return this.data<{ userId: string; role: string }[]>(res);
+  }
+
   /** Follow a user as the bearer of `token` (POST /users/:id/follow, no body). */
   async follow(targetUserId: string, token: string): Promise<{ status: string }> {
     const res = await this.request.post(this.url(`/users/${targetUserId}/follow`), {

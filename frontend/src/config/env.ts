@@ -24,6 +24,11 @@ const envSchema = z.object({
   VITE_ENABLE_SW: z.enum(['true', 'false']).default('false'),
   // Empty string (the .env.example default) means "Sentry disabled".
   VITE_SENTRY_DSN: optionalUrl,
+  // Collaboration / publishing / trust (AF6, W3). Dark-launched OFF, mirroring mobile's
+  // default-off QALAM_ENABLE_COLLABORATION so neither client is reachable ahead of the other
+  // (docs/49 §2.2). A CLIENT KILL SWITCH ONLY — authorization is always the server's decision
+  // via the Policy Engine capability map. E2E runs with it 'true'.
+  VITE_ENABLE_COLLABORATION: z.enum(['true', 'false']).default('false'),
 });
 
 export type Env = z.infer<typeof envSchema>;
