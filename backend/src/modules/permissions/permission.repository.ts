@@ -41,6 +41,20 @@ export class PermissionRepository {
     return this.rolePermissions.count();
   }
 
+  /**
+   * The distinct permission codes that are granted to at least one role.
+   *
+   * Used by the seed to tell a **newly introduced** permission (no grant rows anywhere — a later
+   * epic added it) from one an operator has already curated. See `PermissionsService.seed`.
+   */
+  async grantedPermissionCodes(): Promise<string[]> {
+    const rows = await this.rolePermissions
+      .createQueryBuilder('rp')
+      .select('DISTINCT rp.permission_code', 'code')
+      .getRawMany<{ code: string }>();
+    return rows.map((row) => row.code);
+  }
+
   countUserPermissions(): Promise<number> {
     return this.userPermissions.count();
   }
