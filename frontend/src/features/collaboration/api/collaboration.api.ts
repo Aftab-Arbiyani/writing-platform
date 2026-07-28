@@ -1,8 +1,19 @@
-import type { PresenceState, StoryRole } from '@qalam/shared';
+import type {
+  CommentKind,
+  CommentStatus,
+  PresenceState,
+  StoryRole,
+  SuggestionStatus,
+} from '@qalam/shared';
 
-import { del, get, patch, post } from '@/lib/api-client';
+import { del, get, getPage, patch, post, type CursorPage } from '@/lib/api-client';
+import { buildQueryString } from '@/lib/http';
 
 import type {
+  CollaborationComment,
+  CommentAnchor,
+  CommentThread,
+  EditSuggestion,
   StoryCapabilities,
   StoryInvitation,
   StoryMember,
@@ -106,4 +117,107 @@ export const collaborationApi = {
   /** POST /stories/:id/presence — heartbeat. Best-effort; a lost beat only ages the roster. */
   heartbeat: (storyId: string, state: PresenceState): Promise<void> =>
     post(`${story(storyId)}/presence`, { state }),
+
+  // ── Comments (W3b) ───────────────────────────────────────────────────────────────────────
+
+  /**
+   * GET /stories/:id/comments — **root** comments, cursor-paginated with an optional
+   * open/resolved filter. Replies are NOT included: `CommentDto` has no `replies` array, so a
+   * thread is its own fetch (see `thread`). Mobile assumed otherwise and never loaded any replies
+   * (defect M-3, docs/48 §3.2).
+   */
+  comments: (
+    storyId: string,
+    params: { cursor?: string; status?: CommentStatus } = {},
+    signal?: AbortSignal,
+  ): Promise<CursorPage<CollaborationComment>> =>
+    getPage<CollaborationComment>(
+      `${story(storyId)}/comments${buildQueryString({ cursor: params.cursor, status: params.status })}`,
+      { signal },
+    ),
+
+  /** GET /comments/:id/thread — the root comment plus its replies. */
+  thread: (commentId: string, signal?: AbortSignal): Promise<CommentThread> =>
+    get<CommentThread>(`/comments/${encodeURIComponent(commentId)}/thread`, { signal }),
+
+  /**
+   * POST /stories/:id/comments — a general or inline comment.
+   *
+   * `mentions` are **user ids**, not handles (`@IsUUID('all', {each: true})`), so a composer must
+   * resolve a typed handle first — the same lesson as the invite (M-1). `parentId` is deliberately
+   * absent: the create DTO rejects it, and a reply has its own endpoint.
+   */
+  addComment: (
+    storyId: string,
+    input: { body: string; kind?: CommentKind; anchor?: CommentAnchor; mentions?: string[] },
+  ): Promise<CollaborationComment> =>
+    post<CollaborationComment>(`${story(storyId)}/comments`, {
+      body: input.body,
+      ...(input.kind ? { kind: input.kind } : {}),
+      ...(input.anchor ? { anchor: input.anchor } : {}),
+      ...(input.mentions?.length ? { mentions: input.mentions } : {}),
+    }),
+
+  /** POST /comments/:id/replies — `{body, mentions?}` only. */
+  reply: (
+    commentId: string,
+    input: { body: string; mentions?: string[] },
+  ): Promise<CollaborationComment> =>
+    post<CollaborationComment>(`/comments/${encodeURIComponent(commentId)}/replies`, {
+      body: input.body,
+      ...(input.mentions?.length ? { mentions: input.mentions } : {}),
+    }),
+
+  /** POST /comments/:id/resolve — closes the thread. */
+  resolveComment: (commentId: string): Promise<CollaborationComment> =>
+    post<CollaborationComment>(`/comments/${encodeURIComponent(commentId)}/resolve`),
+
+  /**
+   * DELETE /comments/:id — soft-delete. There is **no** edit endpoint: the contract exposes no
+   * `PATCH /comments/:id`, so a comment is deleted and rewritten rather than edited.
+   */
+  deleteComment: (commentId: string): Promise<void> =>
+    del(`/comments/${encodeURIComponent(commentId)}`),
+
+  // ── Suggestions (W3b) ────────────────────────────────────────────────────────────────────
+
+  /** GET /stories/:id/suggestions — cursor-paginated, optional status filter. */
+  suggestions: (
+    storyId: string,
+    params: { cursor?: string; status?: SuggestionStatus } = {},
+    signal?: AbortSignal,
+  ): Promise<CursorPage<EditSuggestion>> =>
+    getPage<EditSuggestion>(
+      `${story(storyId)}/suggestions${buildQueryString({ cursor: params.cursor, status: params.status })}`,
+      { signal },
+    ),
+
+  /**
+   * POST /stories/:id/suggestions — `{anchor, originalText, suggestedText}`.
+   *
+   * `anchor` is **required**. Mobile omitted it and sent `blockId`/`rationale` instead, which the
+   * DTO rejects, so its create could only ever 400 (defect M-2, docs/48 §3.2).
+   */
+  addSuggestion: (
+    storyId: string,
+    input: { anchor: { from: number; to: number }; originalText: string; suggestedText: string },
+  ): Promise<EditSuggestion> => post<EditSuggestion>(`${story(storyId)}/suggestions`, input),
+
+  /**
+   * POST /suggestions/:id/accept — records the decision.
+   *
+   * It does **not** rewrite the prose: the service checks the anchored `originalText` is still
+   * present (else `SUGGESTION_CONFLICT`) and marks the suggestion accepted. Applying the
+   * replacement is the writer's step, in the editor.
+   */
+  acceptSuggestion: (suggestionId: string): Promise<EditSuggestion> =>
+    post<EditSuggestion>(`/suggestions/${encodeURIComponent(suggestionId)}/accept`),
+
+  /** POST /suggestions/:id/reject — resolver declines it. */
+  rejectSuggestion: (suggestionId: string): Promise<EditSuggestion> =>
+    post<EditSuggestion>(`/suggestions/${encodeURIComponent(suggestionId)}/reject`),
+
+  /** POST /suggestions/:id/withdraw — the author takes it back. */
+  withdrawSuggestion: (suggestionId: string): Promise<EditSuggestion> =>
+    post<EditSuggestion>(`/suggestions/${encodeURIComponent(suggestionId)}/withdraw`),
 };

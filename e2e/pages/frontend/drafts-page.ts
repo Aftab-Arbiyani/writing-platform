@@ -10,8 +10,14 @@ type DraftStatus = 'draft' | 'published' | 'scheduled' | 'archived';
 export class DraftsPage {
   constructor(private readonly page: Page) {}
 
+  /**
+   * A status tab. `exact` matters: accessible-name matching is by SUBSTRING, and every published
+   * row carries a "View published piece" button — so `name: 'Published'` alone resolves to the tab
+   * PLUS one button per row, and strict mode fails once the database has more than a piece or two
+   * ([05 §2](../../../docs/e2e/05_Selectors.md)). It passed only while the list was short.
+   */
   private tab(name: string): Locator {
-    return this.page.getByRole('button', { name });
+    return this.page.getByRole('button', { name, exact: true });
   }
   private row(title: string): Locator {
     return this.page.getByRole('listitem').filter({ hasText: title });

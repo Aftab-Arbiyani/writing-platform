@@ -6,6 +6,8 @@ import { FeedPage } from '../../pages/frontend/feed-page';
 import { AssistantPanel } from '../../pages/frontend/assistant-panel';
 import { CollaboratorsPage } from '../../pages/frontend/collaborators-page';
 import { InvitationsPage } from '../../pages/frontend/invitations-page';
+import { StoryCommentsPage } from '../../pages/frontend/story-comments-page';
+import { StorySuggestionsPage } from '../../pages/frontend/story-suggestions-page';
 import { ProfilePage } from '../../pages/frontend/profile-page';
 import { ReaderPage } from '../../pages/frontend/reader-page';
 import { ResiliencePage } from '../../pages/frontend/resilience-page';
@@ -115,6 +117,30 @@ test.describe('@phase5 @a11y frontend accessibility (authenticated)', () => {
     await inbox.goto();
     await inbox.expectResolved();
     await expectNoSeriousA11yViolations(page, { label: 'frontend /me/invitations' });
+  });
+
+  test('the comments page has no critical/serious a11y violations', async ({ page, api, data }) => {
+    // W3b. The thread controls are toggles (`aria-expanded`) and the filter bar is a pressed-state
+    // group — both are states axe checks and a functional spec cannot see.
+    const story = await api.createPiece({ title: data.pieceTitle() });
+    const comments = new StoryCommentsPage(page);
+    await comments.goto(story.id);
+    await comments.addComment(`A11y comment ${data.username()}`);
+    await expectNoSeriousA11yViolations(page, { label: 'frontend /write/:storyId/comments' });
+  });
+
+  test('the suggestions page has no critical/serious a11y violations', async ({
+    page,
+    api,
+    data,
+  }) => {
+    // W3b, scanned with the composer OPEN: it carries the only numeric input in the feature, and a
+    // number field without a real label is exactly what axe is for.
+    const story = await api.createPiece({ title: data.pieceTitle(), body: 'The lantern burned.' });
+    const suggestions = new StorySuggestionsPage(page);
+    await suggestions.goto(story.id);
+    await suggestions.propose({ original: 'lantern', suggested: 'oil lamp', from: 4 });
+    await expectNoSeriousA11yViolations(page, { label: 'frontend /write/:storyId/suggestions' });
   });
 
   test('the not-found page has no critical/serious a11y violations', async ({ page, data }) => {

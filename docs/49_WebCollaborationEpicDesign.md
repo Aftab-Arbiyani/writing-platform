@@ -1,6 +1,6 @@
 # 49 — W3 Design: Collaboration, Publishing & Trust on the web
 
-**Status:** 🚧 In progress · **Epic:** W3 ([45 §4.3](./45_WebClientRoadmap.md)) · **Size:** L, landing in three slices
+**Status:** 🚧 In progress — W3a + W3b landed, W3c next · **Epic:** W3 ([45 §4.3](./45_WebClientRoadmap.md)) · **Size:** L, landing in three slices
 **Backend platform:** ✅ complete — [38](./38_CollaborationTrustPlatformArchitecture.md) (AF6)
 **Reference client:** `qalam-mobile/lib/features/collaboration/` — report `qalam-mobile/docs/50`
 
@@ -262,6 +262,48 @@ pnpm e2e --project=frontend-chromium --project=frontend-dark --grep "@a11y|@visu
 
 Deliberately **not** done to compensate: no baselines committed from this host, and the phase-plan row
 is marked ✅ for _coverage authored_, which must be verified by that first green run before W3b starts.
+
+---
+
+## 6f. W3b status (2026-07-28) — shipped, and what it corrected
+
+**Unit + E2E green.** 6 new unit tests (20 in the feature), **5/5 functional E2E**, a11y clean in
+**light and dark**, full frontend suite 358 passing, tsc/eslint clean, build within budget.
+
+Built from the DTOs, as §5's warning required. Four contract facts that a port would have got wrong:
+
+1. **Threads are a separate resource.** `GET /comments/:id/thread` → `CommentThreadDto`; `CommentDto`
+   has no `replies`. Threads load on expand, so a forty-comment list makes one request, not forty.
+2. **No comment edit exists.** There is no `PATCH /comments/:id` — this document previously claimed
+   one. A comment is deleted, not edited.
+3. **A suggestion needs its `anchor`.** Required on create. Since this route has no live editor
+   selection, the composer asks for the offset explicitly and derives `to` from the replaced text —
+   rather than inventing an anchor, which is precisely how M-2 happened.
+4. **Accepting a suggestion does not rewrite the prose.** The server verifies the anchored
+   `originalText` still exists (else `SUGGESTION_CONFLICT`) and records the decision. The accepted
+   card says so in as many words; a silent no-op would be the worst reading of "Accepted".
+
+Both list endpoints are cursor-paginated and status-filterable, and the E2E asserts the filter is
+applied **server-side** rather than in the client.
+
+**Two selector defects fixed on the way**, both the same trap — accessible-name matching is by
+substring, so `getByRole('button', {name: 'Accept'})` also matches an "Accepted" filter button:
+mine, in the new suggestions page object, and a **pre-existing** one in `pages/frontend/drafts-page.ts`
+(`name: 'Published'` matched the tab plus every row's "View published piece" button). The latter passed
+only while the seeded list was short; it broke once repeated runs filled the database, and is now
+`exact`.
+
+**Boundaries drawn deliberately**, so they are not mistaken for oversights:
+
+- **Mentions are displayed, not composed.** The row names "@mention display". The wire takes
+  `mentions` as resolved user **ids**, so composing them needs handle→id resolution per mention —
+  a surface of its own. A typed `@handle` stays plain text rather than silently failing to notify.
+- **No editor integration.** Applying an accepted suggestion to the document belongs to the editor
+  and its own commands, through the app-level seam (§4). W3b ships the review surfaces; wiring them
+  into the editor's selection is a larger change than this row names.
+
+**Same one gate open as W3a:** no visual baseline is committed for either page — CI mints those (§6d).
+Playwright wrote host actuals on the full-suite run; both were deleted, not committed.
 
 ---
 

@@ -51,6 +51,15 @@ const router = createBrowserRouter([
             path: 'write/:storyId/collaborators',
             lazy: () => import('@/app/routes/collaborators'),
           },
+          // W3b — the inline-review surfaces, chrome'd for the same reason as the roster above.
+          {
+            path: 'write/:storyId/comments',
+            lazy: () => import('@/app/routes/story-comments'),
+          },
+          {
+            path: 'write/:storyId/suggestions',
+            lazy: () => import('@/app/routes/story-suggestions'),
+          },
           { path: 'me/stats', lazy: () => import('@/app/routes/stats') },
           { path: 'me/stats/pieces/:id', lazy: () => import('@/app/routes/piece-stats') },
           { path: 'notifications', lazy: () => import('@/app/routes/notifications') },

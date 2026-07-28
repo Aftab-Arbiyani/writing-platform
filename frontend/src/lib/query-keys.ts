@@ -1,5 +1,6 @@
 import type {
   AnalyticsPeriod,
+  CommentStatus,
   DiscoverPieceKind,
   FeedSort,
   NotificationStatus,
@@ -7,6 +8,7 @@ import type {
   PieceStatus,
   SearchSort,
   SearchType,
+  SuggestionStatus,
   TrendType,
   WriterKind,
 } from '@qalam/shared';
@@ -161,6 +163,18 @@ export const qk = {
     members: (id: string) => ['stories', id, 'members'] as const, // GET …/members
     invitations: (id: string) => ['stories', id, 'invitations'] as const, // GET …/invitations
     presence: (id: string) => ['stories', id, 'presence'] as const, // GET …/presence
+    // W3b. Root comments and suggestions are cursor-paginated and filterable by status, so the
+    // status participates in the key — two filters are two caches, not one that fights itself.
+    comments: (id: string, status?: CommentStatus) =>
+      ['stories', id, 'comments', status ?? 'all'] as const, // GET …/comments
+    suggestions: (id: string, status?: SuggestionStatus) =>
+      ['stories', id, 'suggestions', status ?? 'all'] as const, // GET …/suggestions
+  },
+
+  // A comment thread — its own resource (`GET /comments/:id/thread`), not a field on the comment.
+  comments: {
+    all: ['comments'] as const,
+    thread: (commentId: string) => ['comments', commentId, 'thread'] as const,
   },
 
   // The viewer's own collaboration inbox — outside `stories` because it spans every story.

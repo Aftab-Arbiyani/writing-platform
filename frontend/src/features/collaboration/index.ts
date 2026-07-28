@@ -10,6 +10,8 @@
  */
 export { CollaboratorsPage } from './pages/collaborators-page';
 export { InvitationsInboxPage } from './pages/invitations-inbox-page';
+export { CommentsPage } from './pages/comments-page';
+export { SuggestionsPage } from './pages/suggestions-page';
 
 export { CapabilityGate } from './components/capability-gate';
 export { RoleBadge } from './components/role-badge';
@@ -24,9 +26,19 @@ export {
   useResolveHandle,
 } from './hooks/use-invitations';
 export { useStoryPresence, usePresenceHeartbeat } from './hooks/use-presence';
+export { useStoryComments, useCommentThread, useCommentActions } from './hooks/use-comments';
+export {
+  useStorySuggestions,
+  useSuggestionActions,
+  isSuggestionConflict,
+} from './hooks/use-suggestions';
 export { isCollaborationEnabled } from './lib/collaboration-enabled';
 
 export type {
+  CollaborationComment,
+  CommentAnchor,
+  CommentThread as CommentThreadData,
+  EditSuggestion,
   StoryCapabilities,
   StoryCapability,
   StoryInvitation,

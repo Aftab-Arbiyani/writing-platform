@@ -1,10 +1,13 @@
 import type {
+  CommentKind,
+  CommentStatus,
   InvitationStatus,
   PolicyActionCode,
   PolicyEffect,
   PolicyObligation,
   PresenceState,
   StoryRole,
+  SuggestionStatus,
 } from '@qalam/shared';
 
 /**
@@ -65,4 +68,56 @@ export interface StoryCapability {
 export interface StoryCapabilities {
   storyId: string;
   capabilities: StoryCapability[];
+}
+
+// ── Comments & suggestions (W3b) ───────────────────────────────────────────────────────────────
+
+/** A text-range anchor. `quote` is a display aid the server echoes back for comments. */
+export interface CommentAnchor {
+  from: number;
+  to: number;
+  quote?: string;
+}
+
+/**
+ * A collaboration comment or reply — one-to-one with `CommentDto`.
+ *
+ * Note what is **not** here, because mobile's equivalent invented all of it (defect M-3,
+ * docs/48 §3.2): no `authorName`, no `authorAvatarKey`, and **no `replies` array**. Author identity
+ * is `authorId` only, and a thread is a separate fetch (`GET /comments/:id/thread`).
+ */
+export interface CollaborationComment {
+  id: string;
+  storyId: string;
+  authorId: string;
+  parentId: string | null;
+  kind: CommentKind;
+  anchor: CommentAnchor | null;
+  body: string;
+  status: CommentStatus;
+  resolvedById: string | null;
+  /** Mentioned **user ids** — the wire deals in ids, never handles. */
+  mentions: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** `CommentThreadDto` — a root comment plus its replies, from `GET /comments/:id/thread`. */
+export interface CommentThread {
+  comment: CollaborationComment;
+  replies: CollaborationComment[];
+}
+
+/** A proposed edit — one-to-one with `SuggestionDto`. `anchor` is required on the wire. */
+export interface EditSuggestion {
+  id: string;
+  storyId: string;
+  authorId: string;
+  anchor: { from: number; to: number };
+  originalText: string;
+  suggestedText: string;
+  status: SuggestionStatus;
+  resolvedById: string | null;
+  resolvedAt: string | null;
+  createdAt: string;
 }
