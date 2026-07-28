@@ -41,6 +41,10 @@ pnpm --filter backend seed
 echo "→ Seeding E2E fixtures (writer + sample pieces)…"
 pnpm --filter backend seed:e2e
 
+# The suite mints a fresh login per test, which exhausts the auth tier's hourly
+# bucket and 429s (docs/e2e/06 §6); `web-e2e.yml` sets this and local runs must too.
+export RATE_LIMIT_ENABLED=false
+
 # Start the backend on the host (dev mode → NODE_ENV!=production so dev seeds and
 # non-secure cookies work), unless it is already answering health checks.
 if curl -sf -o /dev/null "${HEALTH_URL}"; then
