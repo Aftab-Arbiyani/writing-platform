@@ -55,6 +55,32 @@ const MESSAGES: Record<string, string> = {
   [ERROR_CODES.MEDIA_TYPE_UNSUPPORTED]: 'Use a JPEG, PNG, or WebP image.',
   [ERROR_CODES.MEDIA_TOO_LARGE]: 'That image is too large.',
 
+  // Monetization (AF5, W4). Only the codes a *user-facing* client can actually receive — the
+  // admin-only coupon/override/webhook codes belong to the admin app, not here.
+  //
+  // Two of these are states rather than failures, and their copy says so: MONETIZATION_DISABLED is
+  // the platform being dark (the default), and PAYMENT_PROVIDER_NOT_CONFIGURED is a deployment
+  // without payment credentials. Neither is the reader's fault and neither is worth an alarm.
+  [ERROR_CODES.MONETIZATION_DISABLED]: 'Plans and payments aren’t available yet.',
+  [ERROR_CODES.PAYMENT_PROVIDER_NOT_CONFIGURED]:
+    'Payments aren’t set up on this instance yet, so a plan can’t be purchased here.',
+  [ERROR_CODES.PAYMENT_PROVIDER_ERROR]:
+    'The payment provider had a problem. Nothing was charged — please try again.',
+  [ERROR_CODES.PAYMENT_FAILED]: 'That payment didn’t go through. Please try another method.',
+  [ERROR_CODES.SUBSCRIPTION_NOT_FOUND]: 'You don’t have a subscription yet.',
+  [ERROR_CODES.SUBSCRIPTION_ALREADY_ACTIVE]: 'You already have an active subscription.',
+  [ERROR_CODES.SUBSCRIPTION_INVALID_TRANSITION]: 'That change isn’t possible right now.',
+  [ERROR_CODES.PLAN_NOT_FOUND]: 'We couldn’t find that plan.',
+  [ERROR_CODES.PLAN_CHANGE_NOOP]: 'You’re already on that plan.',
+  [ERROR_CODES.TRIAL_NOT_ELIGIBLE]: 'You’ve already used your free trial.',
+  [ERROR_CODES.ENTITLEMENT_DENIED]: 'That feature needs a paid plan.',
+  [ERROR_CODES.QUOTA_EXCEEDED]: 'You’ve used your allowance for now. It resets next period.',
+  [ERROR_CODES.INSUFFICIENT_CREDITS]: 'You’re out of AI credits.',
+  [ERROR_CODES.RECEIPT_VALIDATION_FAILED]: 'We couldn’t verify that purchase.',
+  [ERROR_CODES.PURCHASE_NOT_FOUND]: 'There was nothing to restore.',
+  [ERROR_CODES.INVOICE_NOT_FOUND]: 'We couldn’t find that invoice.',
+  [ERROR_CODES.PAYMENT_NOT_FOUND]: 'We couldn’t find that payment.',
+
   // Cross-cutting
   [ERROR_CODES.RATE_LIMITED]: "You're going a little fast — try again in a moment.",
   [ERROR_CODES.VALIDATION_FAILED]: 'Please check the highlighted fields.',

@@ -1,7 +1,8 @@
 # 48 — Platform Parity Register (web ↔ mobile)
 
-**Status:** 🔒 Binding · **Owner:** every client epic · **Last swept:** 2026-07-29 (after W3a on web +
-the W-1 related-pieces port and the M-1 invite fix on mobile; **W3c-1 and W3c-4 closed** — §3.4)
+**Status:** 🔒 Binding · **Owner:** every client epic · **Last swept:** 2026-07-29 (after **W4** on web —
+row 2 of §2 closed, five contract findings in §3.6, two mobile follow-ups in §3.7; earlier the same day
+after W3a + the W-1 port and the M-1 fix on mobile, **W3c-1 and W3c-4 closed** — §3.4)
 
 > **The rule.** **Web and mobile ship the same features.** Neither platform is allowed to drift
 > ahead of the other with product surface that the other has no plan for. A divergence is only
@@ -36,17 +37,17 @@ epic now has to reconcile.
 Measured from `lib/features/**/presentation/screens` and `frontend/src/features/**/pages` plus route
 tables, not assumed.
 
-| #   | Area                  | Mobile has                                                                                                               | Web has                                     | Closed by                                                                                                                 |
-| --- | --------------------- | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| 1   | **Collaboration**     | 6 screens: collaborators, comments, invitations inbox, publishing workflow, restricted state, suggestions                | nothing                                     | **W3**                                                                                                                    |
-| 2   | **Monetization**      | 5 screens: plans, subscription, billing history, credit dashboard, usage dashboard                                       | nothing                                     | **W4**                                                                                                                    |
-| 3   | **AI breadth**        | 8 screens: conversation, conversations list, discovery, usage, ask-book, prompt library, semantic search, story explorer | in-editor assistant + Craft Coach only (W2) | **W5** (discovery/search/ask), **W6** (story explorer); conversations + prompt library + AI usage **unassigned — see §5** |
-| 4   | **Social depth**      | collections, collection detail, comments, responses (+ followers, follow requests)                                       | follow requests; followers via a dialog     | **unassigned — see §5**                                                                                                   |
-| 5   | **Reader actions**    | clap (1..50 accumulating) and report, on the reader action bar                                                           | like, bookmark, copy-link share             | **unassigned — see §5**                                                                                                   |
-| 6   | **Reading analytics** | `reading_analytics_screen` — the _reader's_ own stats                                                                    | writer + per-piece analytics only           | **unassigned — see §5**                                                                                                   |
-| 7   | **Onboarding**        | `onboarding_screen` — first-run flow                                                                                     | nothing                                     | **unassigned — see §5**                                                                                                   |
-| 8   | **Privacy prefs**     | dedicated privacy screen: private account, **show bookmarks count**, **show reading-history count**                      | private-notebook toggle inside edit-profile | **unassigned — small, see §5**                                                                                            |
-| 9   | **Offline behaviour** | engagement + follow taken offline are queued and reconciled by a unified `SyncEngine`                                    | no offline write queue                      | **see §4** (partly platform-inherent)                                                                                     |
+| #   | Area                  | Mobile has                                                                                                               | Web has                                                                             | Closed by                                                                                                                 |
+| --- | --------------------- | ------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **Collaboration**     | 6 screens: collaborators, comments, invitations inbox, publishing workflow, restricted state, suggestions                | nothing                                                                             | **W3**                                                                                                                    |
+| 2   | ~~**Monetization**~~  | 5 screens: plans, subscription, billing history, credit dashboard, usage dashboard                                       | ✅ **all five** (W4) — plus a coupon field and two history tabs mobile lacks (§3.7) | **W4 ✅ closed 2026-07-29** — [report](./50_WebMonetizationReadinessReport.md)                                            |
+| 3   | **AI breadth**        | 8 screens: conversation, conversations list, discovery, usage, ask-book, prompt library, semantic search, story explorer | in-editor assistant + Craft Coach only (W2)                                         | **W5** (discovery/search/ask), **W6** (story explorer); conversations + prompt library + AI usage **unassigned — see §5** |
+| 4   | **Social depth**      | collections, collection detail, comments, responses (+ followers, follow requests)                                       | follow requests; followers via a dialog                                             | **unassigned — see §5**                                                                                                   |
+| 5   | **Reader actions**    | clap (1..50 accumulating) and report, on the reader action bar                                                           | like, bookmark, copy-link share                                                     | **unassigned — see §5**                                                                                                   |
+| 6   | **Reading analytics** | `reading_analytics_screen` — the _reader's_ own stats                                                                    | writer + per-piece analytics only                                                   | **unassigned — see §5**                                                                                                   |
+| 7   | **Onboarding**        | `onboarding_screen` — first-run flow                                                                                     | nothing                                                                             | **unassigned — see §5**                                                                                                   |
+| 8   | **Privacy prefs**     | dedicated privacy screen: private account, **show bookmarks count**, **show reading-history count**                      | private-notebook toggle inside edit-profile                                         | **unassigned — small, see §5**                                                                                            |
+| 9   | **Offline behaviour** | engagement + follow taken offline are queued and reconciled by a unified `SyncEngine`                                    | no offline write queue                                                              | **see §4** (partly platform-inherent)                                                                                     |
 
 ---
 
@@ -619,6 +620,148 @@ Three occurrences is a process gap, not bad luck. Worth one of: `--ignore-snapsh
 script, `ci: true` in the Playwright config so missing snapshots fail instead of being written, or a
 pre-commit hook rejecting untracked files under `*-snapshots/`. Recorded rather than fixed — it is a
 harness change, outside a tokens-and-baselines pass.
+
+---
+
+## 3.6 Found while building W4 — AF5 contract findings (2026-07-29)
+
+Five findings from porting mobile's `features/monetization` to web. **None is a client defect and none
+was worked around beyond what is noted** — recorded per the scope lock, not fixed.
+
+Context first, because it is the good news: `qalam-mobile/docs/56` audited all twenty AF5 endpoints and
+found mobile's field mapping clean, and re-verifying each shape live against the running backend while
+writing the web layer **confirmed that**. Every finding below is in the contract or its published types,
+not in either client's reading of them.
+
+**The W3c-1 check the row asked for comes back clean.** All twenty routes are coarse-gated on
+`@Permissions(PERMISSIONS.BillingUse)`, which `Role.User` holds, and **none of them asserts an
+entitlement** — the entitlement decisions these routes return are data, not gates. So there is no AF5
+route where the guard and the Entitlement Service can disagree. Verified live on a **pre-existing**
+database (4h-old container, per the row's instruction): every read answers 200 for the seeded writer, so
+the `billing.use` seed-grant defect fixed in `de61316` is confirmed closed in practice, not just in code.
+
+### W4-1 · **medium** · `subscription/history` 404s where its three sibling ledgers answer an empty page
+
+`GET /monetization/subscription/history` is one of four cursor-paginated owner-scoped ledgers on this
+controller. The other three (`/invoices`, `/payments`, `/purchases`) answer `data: []` for a viewer with
+nothing to show. This one answers **404 `SUBSCRIPTION_NOT_FOUND`**, because `SubscriptionService.listHistory`
+loads the subscription first and throws if there is none.
+
+```
+GET /monetization/invoices              → 200 {"data":[],"meta":{"pagination":…}}
+GET /monetization/subscription/history  → 404 SUBSCRIPTION_NOT_FOUND      ← same viewer
+```
+
+Every free reader hits it, since having no subscription is the majority state. Mobile never saw this: it
+has no subscription-history UI at all (its repository exposes `history()` and no screen calls it).
+
+**Mitigated client-side, deliberately narrowly.** `useSubscriptionHistory` maps that one code to an empty
+page so the "Plan changes" tab reads "No plan changes yet" instead of showing an error panel; every other
+failure still errors. A client should not be where one of four sibling endpoints gets its shape corrected,
+so the asymmetry is recorded rather than absorbed silently.
+
+### W4-2 · **medium** · `@qalam/api-types` declares the wrong shape for `purchases/restore`
+
+| Source                                          | Shape                                        |
+| ----------------------------------------------- | -------------------------------------------- |
+| `packages/api-types` `RestorePurchasesResponse` | `{ restored, subscription, creditsGranted }` |
+| `monetization.controller.ts#restore` (actual)   | `{ restored, providerRef, expiresAt }`       |
+
+Two of three fields are wrong in each direction. A client typed against the package would compile against
+a response that never arrives — `subscription` and `creditsGranted` are always `undefined`, and the real
+`expiresAt` is invisible to the type system. Mobile happens to read the _correct_ fields (`restored`,
+`expiresAt`), so it was written from the controller rather than the package.
+
+W4 declares its own `RestorePurchasesResult` from the controller and says why in a comment. The package is
+handwritten pending `openapi.json`, which is exactly how this drifts.
+
+### W4-3 · see [§5.2](#52-the-monetization-catalogue-sells-eight-features-and-the-backend-enforces-one-opened-2026-07-29-during-w4)
+
+The "eight sold, one enforced" hole was already opened during W4 scoping and is documented there. Two notes
+from the implementation, confirming its predictions held:
+
+- **Gating followed §5.2 exactly**: `PremiumGate` is used only for `ai_budget`, and the other seven get a
+  non-blocking `PremiumBadge`. Its consequence 2 (the two distinct `ai_budget` denials) is what
+  `availabilityFromErrorCode`'s new `upgrade` state closes.
+- **Independently re-confirmed live**: `PolicyEngineService.isEntitled()` still has zero callers, and
+  granting an `ai_writing` override flips the snapshot to `allowed: true` while changing no route's
+  behaviour — the decision is computed and then unused.
+
+### W4-4 · **high** · there is no inert payment port, so `subscribe` cannot succeed anywhere without third-party keys
+
+[`docs/e2e/06 §6`](./e2e/06_PhasePlan.md) parked the `af5` row partly on the premise that "the third-party
+allowance covers running against an inert **port**". **That premise does not hold.** Every adapter is
+key-gated and refuses rather than no-ops:
+
+| Provider          | `isConfigured()` tests            | Without keys                      |
+| ----------------- | --------------------------------- | --------------------------------- |
+| `stripe`          | `config.stripe.secretKey`         | `PAYMENT_PROVIDER_NOT_CONFIGURED` |
+| `apple_app_store` | `config.apple.sharedSecret`       | `PAYMENT_PROVIDER_NOT_CONFIGURED` |
+| `google_play`     | `config.google.serviceAccountKey` | `PAYMENT_PROVIDER_NOT_CONFIGURED` |
+| `manual`          | — **no adapter exists**           | `PAYMENT_PROVIDER_NOT_CONFIGURED` |
+
+`PaymentProvider.Manual` is in the shared vocabulary (and documented as covering "admin/comp grants") with
+**no implementation**, so it is not the escape hatch its presence suggests. Verified live with the payments
+flag raised: all four refuse.
+
+**Consequence for the `af5` row.** "Subscribe → entitlement granted" cannot be asserted through a payment
+in any environment without real credentials. W4's E2E splits it and fakes neither half: the subscribe leg
+drives the real button to the real endpoint and asserts the honest refusal, and the entitlement leg proves
+grant → snapshot → gate through an **admin entitlement override** — the same Entitlement Service, the same
+snapshot the client gates on. Closing the payment leg needs a Stripe test key in the E2E stack; that is a
+**stack item**, tracked in `06 §6`, not a client gap.
+
+### W4-5 · **medium** · `@qalam/api-types` declares a `couponCode` on `ChangePlanRequest` that the DTO rejects
+
+`ChangePlanRequest` in `packages/api-types` carries `couponCode?: string`. The backend's `ChangePlanDto` has
+no such property, and the app runs `ValidationPipe({ whitelist: true, forbidNonWhitelisted: true })`
+(`main.ts:169`) — so sending it does not get politely dropped, it **400s the entire plan change**.
+
+This is the same trap as **M-1** (§3.1), one package-level type away: a client trusts a published type,
+sends a field the DTO forbids, and the whole write fails. W4 hides the promo field from existing
+subscribers rather than sending it, and says why at the call site.
+
+Whether a coupon _should_ apply to a plan change is a product question. Today it cannot, and the type says
+it can.
+
+---
+
+## 3.7 Mobile follow-ups opened by W4 (2026-07-29)
+
+Under the parity rule these are rows mobile now needs. Both are **mobile is behind**, and neither is a
+regression — they are gaps W4 surfaced by building the same surface properly.
+
+### M5-1 · **medium** · mobile's `PremiumGate` has zero call sites, and its own doc comment says otherwise
+
+`lib/features/monetization/presentation/widgets/premium_gate.dart` opens with:
+
+> "Every premium affordance elsewhere wraps its content in [PremiumGate] (or checks the entitlement
+> snapshot); there is no scattered inline plan check."
+
+**No file imports it.** `PremiumGate`, `FeatureLockCard` and `PremiumBadge` are all unreferenced outside
+their own file, and no mobile screen checks the entitlement snapshot either. So mobile computes entitlements
+correctly, caches them, and gates nothing — and the comment reads as a description of working code, which is
+worse than no comment, because it is the thing a reader would check instead of grepping.
+
+The web side is wired: `PremiumGate` guards the credit balance on `ai_budget` (the one enforced feature),
+`PremiumBadge` marks the viewer's tier, and the AI assistant grew the `upgrade` state that
+`ENTITLEMENT_DENIED` deserves. **Mobile needs the equivalent wiring as its own row** — the components exist,
+so this is placement, not construction:
+
+1. `credit_dashboard_screen` — gate the balance on `ai_budget`, as web does.
+2. The AI surfaces — map `ENTITLEMENT_DENIED` / `INSUFFICIENT_CREDITS` to an upgrade state distinct from the
+   quota state. Mobile currently surfaces both as a generic `Failure` message.
+3. Fix or delete the doc comment's claim.
+
+### M5-2 · **low** · mobile can never redeem a coupon
+
+`MonetizationRepository.validateCoupon` exists, is implemented through to the data source, and **is called by
+nothing**. `plans_screen` passes no `couponCode` to `subscribe()`, and there is no field to type one into. So
+a mobile subscriber cannot use a promotion, and the whole `PromotionType` catalogue is unreachable from the
+app.
+
+Web built the field from the DTO (there was nothing to port) and validates through the real endpoint before
+checkout. Mobile needs the same field on `plans_screen`. Small, and worth doing with M5-1.
 
 ---
 

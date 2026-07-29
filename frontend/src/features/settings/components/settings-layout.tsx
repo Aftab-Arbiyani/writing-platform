@@ -1,5 +1,5 @@
 import { cn } from '@qalam/ui';
-import { Bell, Palette, ShieldCheck, ShieldOff, UserRound } from 'lucide-react';
+import { Bell, CreditCard, Palette, ShieldCheck, ShieldOff, UserRound } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { NavLink, Outlet } from 'react-router';
@@ -7,7 +7,22 @@ import { NavLink, Outlet } from 'react-router';
 import { env } from '@/config/env';
 import { ROUTES } from '@/lib/routes';
 
-const SECTIONS: readonly { to: string; label: string; icon: LucideIcon }[] = [
+interface Section {
+  to: string;
+  label: string;
+  icon: LucideIcon;
+  /**
+   * Whether the link matches its path exactly.
+   *
+   * Every section is a leaf and so matches exactly — except Billing, which is a hub with four child
+   * routes (`/settings/billing/plans`, `…/usage`, `…/credits`, `…/history`). With `end`, opening one
+   * of those would leave the whole section nav with nothing marked current, which loses the
+   * `aria-current="page"` the nav relies on to say where the reader is.
+   */
+  end?: boolean;
+}
+
+const SECTIONS: readonly Section[] = [
   { to: ROUTES.settingsProfile, label: 'Profile', icon: UserRound },
   { to: ROUTES.settingsAccount, label: 'Account', icon: ShieldCheck },
   { to: ROUTES.settingsNotifications, label: 'Notifications', icon: Bell },
@@ -22,11 +37,29 @@ const SECTIONS: readonly { to: string; label: string; icon: LucideIcon }[] = [
  * features may not import features (docs/26 §4), and one string comparison is a smaller price than
  * that edge. Both read the same variable, so they cannot disagree.
  */
-const SAFETY_SECTION = {
+const SAFETY_SECTION: Section = {
   to: ROUTES.settingsBlocks,
   label: 'Safety',
   icon: ShieldOff,
-} as const;
+};
+
+/**
+ * Billing (plan, AI usage, credits, receipts) is an AF5 W4 section, so it appears only while
+ * monetization is on — otherwise the tab would lead to a "Plans aren't available yet" panel.
+ *
+ * Read from `env` for the same reason as Safety above: features may not import features (docs/26 §4),
+ * and one string comparison is a smaller price than that edge. It and monetization's own
+ * `isMonetizationEnabled()` read the same variable, so they cannot disagree.
+ *
+ * Only the hub is listed. Its four sub-pages are reached from the hub, keeping this nav
+ * one-entry-per-section — which is also why this entry alone sets `end: false`.
+ */
+const BILLING_SECTION: Section = {
+  to: ROUTES.settingsBilling,
+  label: 'Billing',
+  icon: CreditCard,
+  end: false,
+};
 
 /**
  * Settings shell (docs/06 §3.8, docs/11 §3): a 240px leading section-nav + content column at
@@ -35,8 +68,11 @@ const SAFETY_SECTION = {
  * renders through `<Outlet/>`.
  */
 export function SettingsLayout(): ReactElement {
-  const sections =
-    env.VITE_ENABLE_COLLABORATION === 'true' ? [...SECTIONS, SAFETY_SECTION] : SECTIONS;
+  const sections: readonly Section[] = [
+    ...SECTIONS,
+    ...(env.VITE_ENABLE_COLLABORATION === 'true' ? [SAFETY_SECTION] : []),
+    ...(env.VITE_ENABLE_MONETIZATION === 'true' ? [BILLING_SECTION] : []),
+  ];
 
   return (
     <div className="mx-auto w-full max-w-[960px] px-4 py-6 sm:px-6">
@@ -44,11 +80,11 @@ export function SettingsLayout(): ReactElement {
       <div className="flex flex-col gap-6 lg:flex-row">
         <nav aria-label="Settings sections" className="lg:w-[240px] lg:shrink-0">
           <ul className="flex gap-1 overflow-x-auto border-b border-line pb-2 lg:flex-col lg:gap-0.5 lg:border-b-0 lg:pb-0">
-            {sections.map(({ to, label, icon: Icon }) => (
+            {sections.map(({ to, label, icon: Icon, end = true }) => (
               <li key={to}>
                 <NavLink
                   to={to}
-                  end
+                  end={end}
                   className={({ isActive }) =>
                     cn(
                       'flex min-h-11 items-center gap-2 whitespace-nowrap rounded-md px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-accent',

@@ -1,6 +1,9 @@
 import { freshLogin, freshLoginAs } from '../../fixtures/auth';
 import { test, expect } from '../../fixtures/test';
 import { AssistantPanel } from '../../pages/frontend/assistant-panel';
+import { BillingPage } from '../../pages/frontend/billing-page';
+import { UsagePage } from '../../pages/frontend/billing-detail-pages';
+import { PlansPage } from '../../pages/frontend/plans-page';
 import { CollaboratorsPage } from '../../pages/frontend/collaborators-page';
 import { ReaderPage } from '../../pages/frontend/reader-page';
 import { SettingsBlocksPage } from '../../pages/frontend/settings-blocks-page';
@@ -193,6 +196,46 @@ test.describe('@phase5 @visual frontend (authenticated)', () => {
     await suggestions.expectResolved();
     await suggestions.propose({ original: 'lantern', suggested: 'oil lamp', from: 4 });
     await expect(page).toHaveScreenshot('frontend-suggestions.png', {
+      fullPage: true,
+      mask: [page.getByRole('listitem')],
+    });
+  });
+
+  test('the plan comparison matches its visual baseline', async ({ page }) => {
+    // AF5/W4. The feature's most colour-dependent surface: the "Current plan" accent tag, the ✓ marks in
+    // `text-success`, the selected state of the interval radiogroup, and one primary button per card.
+    // Every one of those is a tinted token, which is the class [10 §8.4] exists for — and dark mode is
+    // where the tint maths differs most, which the `frontend-dark` project covers from this same spec.
+    //
+    // Prices come from the pricing config rather than test data, so the content is stable across runs
+    // and nothing needs masking.
+    const plans = new PlansPage(page);
+    await plans.goto();
+    await plans.expectResolved();
+    await expect(page).toHaveScreenshot('frontend-billing-plans.png', { fullPage: true });
+  });
+
+  test('the billing hub matches its visual baseline', async ({ page }) => {
+    // Snapshotted in the FREE state, which is what the seeded writer is in and what most viewers see.
+    // Its four hub cards are the only two-line link rows in the app, so their spacing and hover
+    // treatment are worth pinning.
+    const billing = new BillingPage(page);
+    await billing.goto();
+    await billing.expectResolved();
+    await expect(page).toHaveScreenshot('frontend-billing.png', { fullPage: true });
+  });
+
+  test('the AI usage dashboard matches its visual baseline', async ({ page }) => {
+    // AF5/W4. The allowance bars are the feature's only progress indicators and they change fill colour
+    // on exhaustion (`bg-accent` → `bg-danger`), so this baseline is where that pair is reviewed in both
+    // themes.
+    //
+    // The numbers are the seeded writer's real usage and DO move as the AI specs run, so the window
+    // cards are masked — their layout is the subject, not their counts.
+    const usage = new UsagePage(page);
+    await usage.goto();
+    await usage.expectResolved();
+    await expect(page).toHaveScreenshot('frontend-billing-usage.png', {
       fullPage: true,
       mask: [page.getByRole('listitem')],
     });

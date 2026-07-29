@@ -222,6 +222,13 @@ export default defineConfig({
         // without this the suite would only ever see the "Collaboration is off" state. The server's
         // own master flag fails open, so enabling it here exercises the real surface.
         VITE_ENABLE_COLLABORATION: 'true',
+        // AF5/W4 monetization ships dark for the same reason (docs/45 §4) — without this the billing
+        // surfaces would all render "Plans aren't available yet" and the `af5` row would prove nothing.
+        //
+        // This is only the CLIENT switch. The platform's own `feature.payments.enabled` flag is
+        // server-side and pre-seeded OFF, and the monetization spec toggles it per test through the
+        // admin API, restoring it afterwards — so the two are deliberately not conflated here.
+        VITE_ENABLE_MONETIZATION: 'true',
       },
     },
     {

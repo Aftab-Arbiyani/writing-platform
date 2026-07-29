@@ -407,6 +407,85 @@ export class ApiHelper {
     return user;
   }
 
+  // ── Monetization (AF5 / W4) ──────────────────────────────────────────────────
+
+  /**
+   * Set the `feature.payments.enabled` master flag (AF5).
+   *
+   * Pre-seeded **disabled**, so every mutating monetization route answers `MONETIZATION_DISABLED`
+   * until this is raised. Resolves the flag by KEY rather than a hard-coded id, because the id is
+   * generated per database and this suite runs against seeded and long-lived stacks alike.
+   *
+   * Returns the previous value so a spec can restore it — the flag is global, and leaving it up would
+   * change the starting state every later spec observes.
+   */
+  async setPaymentsEnabled(enabled: boolean): Promise<boolean> {
+    const headers = await this.adminHeaders();
+    const listRes = await this.request.get(this.url('/admin/feature-flags'), { headers });
+    const flags =
+      await this.data<
+        Array<{ id: string; key: string; enabled: boolean; rolloutPercentage: number }>
+      >(listRes);
+    const flag = flags.find((f) => f.key === 'feature.payments.enabled');
+    expect(flag, 'feature.payments.enabled is not seeded').toBeTruthy();
+    const previous = flag?.enabled === true && flag.rolloutPercentage > 0;
+    const res = await this.request.patch(this.url(`/admin/feature-flags/${flag?.id ?? ''}`), {
+      headers,
+      // Rollout matters as much as the boolean: `evaluateFeatureFlag` treats 0% as off even when
+      // `enabled` is true, so setting only the flag would leave the platform dark.
+      data: { enabled, rolloutPercentage: enabled ? 100 : 0 },
+    });
+    await this.data(res);
+    return previous;
+  }
+
+  /**
+   * Grant an entitlement override (`POST /admin/monetization/overrides`).
+   *
+   * **This is how the af5 row proves "entitlement granted" end to end.** The payment path cannot: every
+   * provider adapter is key-gated and there is no inert or manual adapter, so a checkout on a stack
+   * without third-party credentials is refused rather than no-op'd (docs/48 §3.6, W4-4). An override
+   * exercises the same Entitlement Service through the same snapshot the client gates on, and it
+   * invalidates the server's decision cache on write — so the client sees the change immediately.
+   */
+  async grantEntitlementOverride(input: {
+    userId: string;
+    feature: string;
+    effect?: 'allow' | 'deny' | 'limited';
+    reason?: string;
+  }): Promise<{ id: string; feature: string; effect: string }> {
+    const res = await this.request.post(this.url('/admin/monetization/overrides'), {
+      headers: await this.adminHeaders(),
+      data: {
+        userId: input.userId,
+        feature: input.feature,
+        effect: input.effect ?? 'allow',
+        source: 'admin',
+        reason: input.reason ?? 'e2e entitlement grant',
+      },
+    });
+    return this.data<{ id: string; feature: string; effect: string }>(res);
+  }
+
+  /** Revoke an entitlement override (204) — teardown for the grant above. */
+  async revokeEntitlementOverride(id: string): Promise<void> {
+    const res = await this.request.delete(this.url(`/admin/monetization/overrides/${id}`), {
+      headers: await this.adminHeaders(),
+    });
+    expect(res.ok(), `revoke override ${id} → ${res.status()}`).toBeTruthy();
+  }
+
+  /** The viewer's own entitlement snapshot — asserts the server side of a gate. */
+  async entitlements(token: string): Promise<{
+    tier: string;
+    features: Array<{ feature: string; allowed: boolean; reason: string }>;
+  }> {
+    const res = await this.request.get(this.url('/monetization/entitlements'), {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return this.data(res);
+  }
+
   /** Read admin audit-log entries (admin+). Assert an admin action was recorded. */
   async getAuditLogs(params: {
     action?: string;

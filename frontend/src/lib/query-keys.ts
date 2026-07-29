@@ -196,6 +196,29 @@ export const qk = {
     blocks: () => ['trust', 'blocks'] as const, // GET /me/blocks
   },
 
+  // Monetization (AF5, W4 — docs/45 §4). Plans are catalogue data (long-lived); the entitlement
+  // SNAPSHOT is the one key premium gating reads, and it is the invalidation target of every
+  // subscription action. The four history lists are cursor-paginated and infinite.
+  //
+  // `entitlements()` is deliberately a single flat key rather than one per feature: the server
+  // answers the whole snapshot in one read, so per-feature keys would issue N requests for data
+  // one already returned. `entitlement(feature)` exists for the single-feature route, which the
+  // app uses only where a decision is needed without the snapshot in scope.
+  monetization: {
+    all: ['monetization'] as const,
+    plans: (region?: string) => ['monetization', 'plans', region ?? 'default'] as const, // GET /monetization/plans
+    entitlements: () => ['monetization', 'entitlements'] as const, // GET /monetization/entitlements
+    entitlement: (feature: string) => ['monetization', 'entitlements', feature] as const, // GET …/entitlements/:feature
+    subscription: () => ['monetization', 'subscription'] as const, // GET /monetization/subscription
+    subscriptionHistory: () => ['monetization', 'subscription', 'history'] as const, // GET …/subscription/history
+    usage: () => ['monetization', 'usage'] as const, // GET /monetization/usage
+    credits: () => ['monetization', 'credits'] as const, // GET /monetization/credits
+    creditTransactions: () => ['monetization', 'credits', 'transactions'] as const, // GET …/credits/transactions
+    invoices: () => ['monetization', 'invoices'] as const, // GET /monetization/invoices
+    payments: () => ['monetization', 'payments'] as const, // GET /monetization/payments
+    purchases: () => ['monetization', 'purchases'] as const, // GET /monetization/purchases
+  },
+
   // Taxonomy catalogues — NO /taxonomy endpoints exist (§2.1.1); sourced from search (browse).
   taxonomy: {
     genres: () => ['taxonomy', 'genres'] as const, // → GET /search/genres (q omitted)

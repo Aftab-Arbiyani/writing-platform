@@ -7,6 +7,9 @@ import { test, expect } from '../../fixtures/test';
 import { EditorPage } from '../../pages/frontend/editor-page';
 import { FeedPage } from '../../pages/frontend/feed-page';
 import { AssistantPanel } from '../../pages/frontend/assistant-panel';
+import { BillingPage } from '../../pages/frontend/billing-page';
+import { BillingHistoryPage, UsagePage } from '../../pages/frontend/billing-detail-pages';
+import { PlansPage } from '../../pages/frontend/plans-page';
 import { CollaboratorsPage } from '../../pages/frontend/collaborators-page';
 import { InvitationsPage } from '../../pages/frontend/invitations-page';
 import { SettingsBlocksPage } from '../../pages/frontend/settings-blocks-page';
@@ -188,6 +191,48 @@ test.describe('@phase5 @a11y frontend accessibility (authenticated)', () => {
     await blocks.goto();
     await blocks.expectResolved();
     await expectNoSeriousA11yViolations(page, { label: 'frontend /settings/blocks' });
+  });
+
+  test('the plan comparison has no critical/serious a11y violations', async ({ page }) => {
+    // AF5/W4. The densest custom-widget surface in the feature: the interval control is a hand-rolled
+    // `radiogroup` (AntD has no segmented control in this kit) and each plan card ends in a button whose
+    // name has to disambiguate it from its neighbours. Both are exactly what axe checks and a selector
+    // test scoped by card cannot see.
+    const plans = new PlansPage(page);
+    await plans.goto();
+    await plans.expectResolved();
+    await expectNoSeriousA11yViolations(page, { label: 'frontend /settings/billing/plans' });
+  });
+
+  test('the billing hub has no critical/serious a11y violations', async ({ page }) => {
+    // Scanned as the seeded writer, who is on the free tier — the state most viewers see, and the one
+    // that must therefore be clean. Its card links wrap a two-line label, which is the pattern most
+    // likely to produce an unreadable accessible name.
+    const billing = new BillingPage(page);
+    await billing.goto();
+    await billing.expectResolved();
+    await expectNoSeriousA11yViolations(page, { label: 'frontend /settings/billing' });
+  });
+
+  test('the AI usage dashboard has no critical/serious a11y violations', async ({ page }) => {
+    // AF5/W4. Carries the feature's only `progressbar`s and its only `<dl>` stat grids — a bar without
+    // `aria-valuenow`/`aria-valuetext` conveys its quantity by width alone, which is invisible to a
+    // screen reader and passes every role-based selector.
+    const usage = new UsagePage(page);
+    await usage.goto();
+    await usage.expectResolved();
+    await expectNoSeriousA11yViolations(page, { label: 'frontend /settings/billing/usage' });
+  });
+
+  test('billing history has no critical/serious a11y violations', async ({ page }) => {
+    // AF5/W4. Hand-rolled `tablist`/`tab`/`tabpanel` wiring (`aria-controls` + `aria-selected`) rather
+    // than AntD's Tabs, so the relationships are ours to get right — and a mismatched `aria-controls` is
+    // precisely an axe finding rather than a functional one. Scanned on the tab whose ledger rows carry
+    // status tags, so the tinted tag colours are measured against this page's background too.
+    const history = new BillingHistoryPage(page);
+    await history.goto();
+    await history.expectResolved();
+    await expectNoSeriousA11yViolations(page, { label: 'frontend /settings/billing/history' });
   });
 
   test('the not-found page has no critical/serious a11y violations', async ({ page, data }) => {

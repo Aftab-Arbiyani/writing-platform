@@ -29,6 +29,12 @@ const envSchema = z.object({
   // (docs/49 §2.2). A CLIENT KILL SWITCH ONLY — authorization is always the server's decision
   // via the Policy Engine capability map. E2E runs with it 'true'.
   VITE_ENABLE_COLLABORATION: z.enum(['true', 'false']).default('false'),
+  // Monetization / subscriptions / AI credits (AF5, W4). Dark-launched OFF, mirroring mobile's
+  // default-off QALAM_ENABLE_MONETIZATION so neither client is reachable ahead of the other.
+  // A CLIENT KILL SWITCH ONLY — every premium decision is the server's, via the Entitlement
+  // Service, and the platform has its own `feature.payments.enabled` master flag underneath this
+  // one. E2E runs with it 'true'.
+  VITE_ENABLE_MONETIZATION: z.enum(['true', 'false']).default('false'),
 });
 
 export type Env = z.infer<typeof envSchema>;

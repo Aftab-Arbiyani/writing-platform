@@ -82,6 +82,22 @@ const router = createBrowserRouter([
               // W3c — blocks/mutes + account standing. A settings section rather than its own
               // top-level route: it is account-scoped, like every other tab here.
               { path: 'blocks', lazy: () => import('@/app/routes/settings/blocks') },
+              // W4 — monetization. `billing` is the hub and the only one in the section nav; the
+              // other four are reached from it (docs/45 §4). Registered unconditionally: the
+              // `VITE_ENABLE_MONETIZATION` kill switch decides whether the nav OFFERS them, and each
+              // page renders its own "not available yet" state when the flag is down — so a
+              // bookmarked URL explains itself instead of 404ing, which is how `blocks` behaves too.
+              { path: 'billing', lazy: () => import('@/app/routes/settings/billing') },
+              { path: 'billing/plans', lazy: () => import('@/app/routes/settings/billing-plans') },
+              { path: 'billing/usage', lazy: () => import('@/app/routes/settings/billing-usage') },
+              {
+                path: 'billing/credits',
+                lazy: () => import('@/app/routes/settings/billing-credits'),
+              },
+              {
+                path: 'billing/history',
+                lazy: () => import('@/app/routes/settings/billing-history'),
+              },
             ],
           },
         ],

@@ -2,7 +2,11 @@ import { AiFeature } from '@qalam/shared';
 import type { AiFeaturesResponse, AiUsageResponse } from '@qalam/api-types';
 import { describe, expect, it } from 'vitest';
 
-import { availabilityFromErrorCode, resolveAvailability } from './ai-availability';
+import {
+  AVAILABILITY_COPY,
+  availabilityFromErrorCode,
+  resolveAvailability,
+} from './ai-availability';
 
 function features(over: Partial<AiFeaturesResponse> = {}): AiFeaturesResponse {
   return {
@@ -115,8 +119,46 @@ describe('availabilityFromErrorCode', () => {
     expect(availabilityFromErrorCode('AI_FEATURE_DISABLED')).toBe('feature-off');
   });
 
+  /**
+   * W4/AF5. Both codes are raised by the monetization meter on the way INTO a generation
+   * (`AiUsageMeterService.checkQuota` asserts the `ai_budget` entitlement — the only premium feature
+   * any server route actually enforces), and both were unmapped before W4.
+   *
+   * Unmapped means null, which resolves to the pre-flight answer — "available" — so a writer refused
+   * for either reason saw a generic failure over a panel still inviting them to try again.
+   */
+  it('maps the monetization refusals to the upgrade state', () => {
+    expect(availabilityFromErrorCode('ENTITLEMENT_DENIED')).toBe('upgrade');
+    expect(availabilityFromErrorCode('INSUFFICIENT_CREDITS')).toBe('upgrade');
+  });
+
+  it('keeps upgrade distinct from quota, because the remedies differ', () => {
+    // An allowance resets on its own and waiting is enough; a denied entitlement never resets and only
+    // a plan changes it. Collapsing the two would tell someone to wait for something that never comes.
+    expect(availabilityFromErrorCode('ENTITLEMENT_DENIED')).not.toBe(
+      availabilityFromErrorCode('QUOTA_EXCEEDED'),
+    );
+  });
+
   it('returns null for unrelated failures, leaving the pre-flight state in charge', () => {
     expect(availabilityFromErrorCode('AI_STREAM_ERROR')).toBeNull();
     expect(availabilityFromErrorCode(null)).toBeNull();
+  });
+});
+
+describe('AVAILABILITY_COPY', () => {
+  it('has copy for every blocked state, so no state renders an undefined notice', () => {
+    // The notice component indexes this map by state. A new state without an entry would render
+    // `undefined.title` — which is why this asserts the whole set rather than one addition.
+    for (const state of ['off', 'feature-off', 'quota', 'upgrade'] as const) {
+      expect(AVAILABILITY_COPY[state].title).toBeTruthy();
+      expect(AVAILABILITY_COPY[state].description).toBeTruthy();
+    }
+  });
+
+  it('reassures that writing is unaffected in both metering states', () => {
+    // A writer hitting a wall mid-draft needs to know their words are safe before anything else.
+    expect(AVAILABILITY_COPY.quota.description).toMatch(/writing is unaffected/i);
+    expect(AVAILABILITY_COPY.upgrade.description).toMatch(/writing is unaffected/i);
   });
 });

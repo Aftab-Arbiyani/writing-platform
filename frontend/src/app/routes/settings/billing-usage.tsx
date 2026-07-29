@@ -1,0 +1,8 @@
+import type { ReactElement } from 'react';
+
+import { UsagePage } from '@/features/monetization';
+
+/** Lazy route module (docs/11 §9) — `/settings/billing/usage` (AF5 W4, authenticated). */
+export function Component(): ReactElement {
+  return <UsagePage />;
+}
