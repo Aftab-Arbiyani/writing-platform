@@ -40,12 +40,13 @@ test.describe('@phase4 frontend publishing — review, publish, versions', () =>
   });
 
   test('review → approve → publish, end to end', async ({ page, api, data }) => {
-    // TWO actors, because the contract requires two: approving is coarse-gated on the platform
-    // permission `publishing.approve`, which only moderator/admin hold. The author requests and
-    // publishes through the UI; the approval is arranged as the admin.
-    //
-    // That split is not a convenience — see the defect test below. The capability map tells the
-    // OWNER they may approve, and the endpoint then refuses them.
+    // ONE actor, all of it through the UI. This test used to arrange the approval as the admin,
+    // because `review/approve` was coarse-gated on the platform permission `publishing.approve`
+    // that only moderator/admin hold — while the capability map told the OWNER they could approve.
+    // That was defect **W3c-1**, and it is fixed: the route now carries `collaboration.use` like
+    // the rest of the review workflow, and the reviewer decision belongs to the Policy Engine,
+    // which allows the owner through its ownership rule. The map and the endpoint agree, so the
+    // author drives the whole workflow — which is what the button was always offering.
     await freshLogin(page, 'writer');
     const story = await api.createPiece({ title: data.pieceTitle() });
 
@@ -55,9 +56,7 @@ test.describe('@phase4 frontend publishing — review, publish, versions', () =>
 
     await publishing.requestReview();
 
-    await api.approveReview(story.id);
-    await page.reload();
-    await publishing.expectReviewState('Approved');
+    await publishing.approveReview();
 
     await publishing.publish();
     await publishing.expectToast(/Story published/i);
@@ -65,24 +64,24 @@ test.describe('@phase4 frontend publishing — review, publish, versions', () =>
     // History is append-only and server-written — the proof the transitions actually landed rather
     // than the UI having moved on its own.
     await publishing.expectHistoryEntry('Submitted for review');
+    // The approval is now the AUTHOR's own event in the history, not an admin's (W3c-1).
+    await publishing.expectHistoryEntry('Review approved');
     await publishing.expectHistoryEntry('Published');
   });
 
-  test('DEFECT W3c-1: the owner is offered Approve, and the endpoint 403s it', async ({
+  test('W3c-1: the owner approves their own review — no dead button', async ({
     page,
     api,
     data,
   }) => {
-    // Found by running this suite. The Policy Engine's `review.approve` decision allows the story
-    // OWNER (the ownership rule), so `GET …/capabilities` answers `allowed: true` and every client
-    // that reflects the map — which is what both clients are built to do — renders the button. The
-    // endpoint is then coarse-gated on `@Permissions(PERMISSIONS.PublishingApprove)`, a platform
-    // permission the owner does not hold, so the click always 403s `AUTH_PERMISSION_DENIED`.
+    // The regression test for W3c-1, replacing the one that documented the 403 as expected.
     //
-    // The client is behaving correctly; the two gates disagree. Recorded as **W3c-1** in
-    // docs/48 §3.4 and deliberately NOT worked around here — a client-side role check would be the
-    // one thing docs/49 §3 forbids. This test documents the live behaviour and will FAIL the day the
-    // backend reconciles the gates, which is the prompt to delete it.
+    // The shape of that defect was two authorization gates disagreeing: the Policy Engine (the SSOT
+    // AF6 made authoritative) allowed the owner, and a coarser `@Permissions` gate in front of it
+    // refused them — so both clients rendered a button that could only ever fail. What this asserts
+    // is the agreement: the map offers Approve, and the click MOVES THE STATE rather than raising a
+    // permission toast. A client-side role check would have been the wrong fix (docs/49 §3 forbids
+    // re-deriving authorization), which is why the repair was the route's.
     await freshLogin(page, 'writer');
     const story = await api.createPiece({ title: data.pieceTitle() });
 
@@ -91,9 +90,9 @@ test.describe('@phase4 frontend publishing — review, publish, versions', () =>
     await publishing.requestReview();
 
     await publishing.approve();
-    await publishing.expectToast(/didn’t work|permission/i);
-    // The state does not move, because the server never accepted it.
-    await publishing.expectReviewState('In review');
+
+    await publishing.expectReviewState('Approved');
+    await expect(page.getByText(/didn’t work|permission/i)).toHaveCount(0);
   });
 
   test('publishing is refused while an open review is not approved', async ({
@@ -115,10 +114,12 @@ test.describe('@phase4 frontend publishing — review, publish, versions', () =>
   });
 
   test('a reviewer sends the story back with notes', async ({ page, api, data }) => {
-    // Driven as the ADMIN: `review/changes` carries the same `publishing.approve` gate as approve,
-    // so this is the actor who can actually review. The admin is not a member of the story, so their
-    // capability map denies `publication.publish` — the review card renders, the publication card
-    // does not, which is the gating working as designed.
+    // Driven as the ADMIN deliberately, to keep the STAFF path covered: after W3c-1 the route's
+    // coarse gate is `collaboration.use`, and the admin is authorized by the Policy Engine's staff
+    // rule (`publishing.approve`) rather than by any story role — the path that would have silently
+    // broken if narrowing the gate had not been safe. The admin is not a member of the story, so
+    // their capability map still denies `publication.publish`: the review card renders, the
+    // publication card does not, which is the gating working as designed.
     const story = await api.createPiece({ title: data.pieceTitle() });
     await api.requestReview(story.id);
 

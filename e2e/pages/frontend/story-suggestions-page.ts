@@ -68,9 +68,17 @@ export class StorySuggestionsPage {
     await this.list.getByRole('button', { name: 'Accept', exact: true }).first().click();
   }
 
-  /** The accepted card must say the prose is still the writer's to change. */
-  async expectApplyReminder(): Promise<void> {
-    await expect(this.page.getByText(/apply the replacement in the editor/i)).toBeVisible();
+  /**
+   * The accepted card must say the prose CHANGED (W3c-4).
+   *
+   * This asserted the opposite until the copy was fixed — "apply the replacement in the editor",
+   * true only until `f6827e0` made accept rewrite the body server-side. A stale assertion kept the
+   * suite green while the UI misled the writer, which is why the wording is pinned here explicitly
+   * rather than by a looser match that both copies would satisfy.
+   */
+  async expectAppliedNote(): Promise<void> {
+    await expect(this.page.getByText(/the replacement was applied to the piece/i)).toBeVisible();
+    await expect(this.page.getByText(/apply the replacement in the editor/i)).toHaveCount(0);
   }
 
   async expectConflict(): Promise<void> {

@@ -16,8 +16,9 @@ import { StorySuggestionsPage } from '../../pages/frontend/story-suggestions-pag
  *    so a rendered reply proves the thread endpoint is wired.
  * 2. **A suggestion is created with its anchor** and can then be accepted, which is exactly the
  *    path mobile could not execute.
- * 3. **Accepting says the prose is unchanged.** The server records the decision and leaves the piece
- *    alone; a card that implied otherwise would be silently wrong.
+ * 3. **Accepting says the prose CHANGED.** The server rewrites the anchored range and snapshots the
+ *    pre-edit version (`f6827e0`), so a card claiming the piece was left alone would be silently
+ *    wrong — which it did claim, and this suite asserted, until **W3c-4** (docs/48 §3.4).
  */
 test.describe('@phase4 frontend inline review — comments & suggestions', () => {
   test('a writer comments on their story, replies, and resolves the thread', async ({
@@ -59,8 +60,9 @@ test.describe('@phase4 frontend inline review — comments & suggestions', () =>
 
     await suggestions.propose({ original, suggested: 'oil lamp', from: 4 });
     await suggestions.acceptFirst();
-    // Accepting records the decision; the prose is still the writer's to change.
-    await suggestions.expectApplyReminder();
+    // Accepting APPLIES the edit server-side, and the card now says so (W3c-4). This asserts the
+    // copy only; that the piece body really changed is covered by the backend's own accept tests.
+    await suggestions.expectAppliedNote();
   });
 
   test('accepting a suggestion whose text has since changed reports the conflict', async ({

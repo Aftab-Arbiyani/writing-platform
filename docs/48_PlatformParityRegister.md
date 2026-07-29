@@ -1,7 +1,7 @@
 # 48 — Platform Parity Register (web ↔ mobile)
 
-**Status:** 🔒 Binding · **Owner:** every client epic · **Last swept:** 2026-07-28 (after W3a on web +
-the W-1 related-pieces port and the M-1 invite fix on mobile)
+**Status:** 🔒 Binding · **Owner:** every client epic · **Last swept:** 2026-07-29 (after W3a on web +
+the W-1 related-pieces port and the M-1 invite fix on mobile; **W3c-1 and W3c-4 closed** — §3.4)
 
 > **The rule.** **Web and mobile ship the same features.** Neither platform is allowed to drift
 > ahead of the other with product surface that the other has no plan for. A divergence is only
@@ -217,9 +217,10 @@ rather than absorbed.
 
 ## 3.4 Found by running the W3c suite (2026-07-29)
 
-Recorded, **not fixed** — each is outside the row that found it. The first is the one that matters.
+Recorded when found, **each outside the row that found it**. **W3c-1 and W3c-4 were fixed on
+2026-07-29** (see the resolutions in their entries); W3c-2 and W3c-3 remain open with their owners.
 
-### W3c-1 · **high** · the capability map offers an owner `review.approve`; the endpoint 403s it
+### W3c-1 · ~~**high**~~ · **CLOSED 2026-07-29** · the capability map offered an owner `review.approve`; the endpoint 403'd it
 
 **Both gates disagree, and the client is caught in the middle.** The Policy Engine's `review.approve`
 decision allows the story **owner** through its ownership rule, so `GET /stories/:id/capabilities`
@@ -249,6 +250,49 @@ path to the coarse guard, or stop having the Policy Engine allow an owner an act
 The W3c E2E documents the live behaviour (`publishing.spec.ts`, "DEFECT W3c-1") and will **fail** when
 the gates are reconciled, which is the prompt to delete it.
 
+#### Resolution (2026-07-29) — the route's gate was wrong, not the rule tables
+
+`review/approve` and `review/changes` now carry `@Permissions(PERMISSIONS.CollaborationUse)`, the same
+coarse gate as `POST stories/:id/review` and `GET stories/:id/review`. All four review routes agree.
+
+**This is not a loosening.** `review.service.ts` already asserted `POLICY_ACTIONS.ReviewApprove` /
+`ReviewRequestChanges` through the Policy Engine with the story resource, so `publishing.approve` on
+the route was a _second_ authorization path in front of the SSOT that AF6 made authoritative. The
+rule tables were left untouched — deliberately: `policy.constants.ts` documents the two paths as
+coexisting ("a platform editor approves via `publishing.approve`, a story editor approves via their
+story role"), so the Policy Engine allowing an owner was the intended design, and the route
+contradicting it was the defect. Deciding the other way — that a story owner may _not_ approve their
+own story's review — would have been a product decision about story roles, not a repair.
+
+**Staff did not lose their path.** `moderator`/`admin` do not grant `collaboration.use` directly; they
+inherit it from `user` through `PermissionResolver`'s rank inheritance. Verified live (below) and
+pinned by a unit test, because without that inheritance narrowing the gate would have locked staff out
+of approving — the failure mode this change could plausibly have introduced.
+
+Verified live against the local stack, one story per actor:
+
+```
+owner (writer@qalam.local, platform role `user`)  capability review.approve : allowed=true
+owner    POST …/review/approve                    : 200 approved
+owner    POST …/review/changes                    : 200 changes_requested
+member below Editor (story role `reviewer`)       : 403 POLICY_DENIED  rule=story-role
+non-member                                        : 403 POLICY_DENIED  rule=default-deny
+admin (staff path, publishing.approve)            : 200 approved
+story Editor (member path)                        : 200 approved
+owner    POST …/publish (after approving)         : 200
+```
+
+The two 403s come from the Policy Engine's own rules — `rule=story-role` / `rule=default-deny`, not
+the permission guard — which is the whole point: the gate that refuses is now the one that decides.
+
+**Tests.** `review.service.spec.ts` covers the three actors through a REAL `PolicyEngineService`
+(a mocked `assert` could not have seen this bug, since the service was never wrong);
+`publishing.controller.spec.ts` pins the route metadata and the rank-inheritance assumption.
+**E2E updated:** the test that documented the 403 is gone, replaced by
+`publishing.spec.ts` → "W3c-1: the owner approves their own review — no dead button", and
+"review → approve → publish, end to end" is now ONE actor through the UI instead of two.
+The admin-driven "sends the story back with notes" test was kept deliberately, as staff-path coverage.
+
 ### W3c-2 · **medium** · `QTag color="success"` fails AA contrast
 
 `packages/ui/src/components/q-tag.tsx` renders `success` as `bg-success/12 text-success` — measured
@@ -272,7 +316,7 @@ matches how every other a11y spec scans a resting page. The real fix is pinning 
 colour in `packages/ui/src/theme/antd-theme.ts`, alongside the Menu colours already pinned there for
 exactly this reason.
 
-### W3c-4 · **medium** · the web suggestion card still says the prose was not changed
+### W3c-4 · ~~**medium**~~ · **CLOSED 2026-07-29** · the web suggestion card said the prose was not changed
 
 Carried over from `qalam-mobile/docs/56` §2.6 (C-14) and repeated here because it is web's to fix:
 `frontend/src/features/collaboration/components/suggestion-card.tsx:75` renders "Accepted — apply the
@@ -282,6 +326,41 @@ were true until `f6827e0`.
 **Worse than a stale string:** `e2e/tests/frontend/inline-review.spec.ts` asserts that wording via
 `expectApplyReminder()`, so the suite is **green while the UI is wrong**. Fixing the copy requires
 updating that assertion in the same change.
+
+#### Resolution (2026-07-29)
+
+The accepted card now reads **"Accepted — the replacement was applied to the piece. The version before
+the edit was saved, so it can be reverted."** The second sentence is not decoration: `accept` captures
+a `pre_edit` snapshot before rewriting (`suggestion.service.ts:178`), so the revert really is there,
+and a writer whose prose changed under them needs to know it is recoverable.
+
+**Three assertions moved with the copy**, which is the actual lesson of this entry — the stale wording
+was pinned in more places than the register knew:
+
+| Where                                               | Was                                   | Now                              |
+| --------------------------------------------------- | ------------------------------------- | -------------------------------- |
+| `e2e/pages/frontend/story-suggestions-page.ts`      | `expectApplyReminder()`               | `expectAppliedNote()`            |
+| `frontend/…/components/suggestion-card.spec.tsx`    | "accepting does NOT change the piece" | "accepting DID change the piece" |
+| `frontend/…/api/collaboration.api.ts` (doc comment) | "does **not** rewrite the prose"      | "**does** rewrite the prose"     |
+
+The unit spec was the one the register missed: `docs/48` named only the E2E, so a fix that trusted this
+document would have failed the frontend suite. Both new assertions also check the OLD sentence is
+**absent**, not merely that the new one is present — a stale-copy defect is only really closed when the
+test would fail if the old string came back.
+
+**The copy lived on five surfaces, not one — and only a loose search finds them all.** Beyond the card
+and the three assertions above, the suggestions **page header** (`pages/suggestions-page.tsx`) said
+"Accepting records the decision — the wording is applied in the editor", and the inline-review spec's
+own file docstring asserted the same as its stated intent. Neither contains the card's sentence, so
+grepping the exact string missed both; they were found by searching for the _claim_
+("records the decision", "in the editor", "does not change"). A register entry that names one location
+invites exactly that mistake — when copy states a contract, assume it is duplicated and search for the
+meaning.
+
+**Parity.** Mobile says the same thing at the same moment — its toast was reverted to
+"Suggestion accepted." in mobile commit `dd12091`, and its card carries a status chip with no
+persistent note. Web's card is persistent rather than a toast, so it states the outcome where the
+writer will still see it later; neither client now claims the prose was left alone.
 
 ---
 
@@ -344,10 +423,10 @@ Not divergences — **neither client does these**, so they need a roadmap decisi
 Recorded here because W3b drew them as boundaries, and a boundary that lives only in a commit message
 is how the debt in this document accumulated in the first place.
 
-| #   | Gap                                                                                                 | Where both clients stand                                                                                                                                                                                                                                    | Shape of the work                                                                                                                |
-| --- | --------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| P-1 | ~~**Applying an accepted suggestion**~~ **CLOSED on the server 2026-07-29** — see the rewrite below | `POST /suggestions/:id/accept` now **rewrites the anchored range of the piece body**, in the same transaction that marks the suggestion accepted, and captures a `pre_edit` snapshot first. A stale anchor is `409 SUGGESTION_CONFLICT` and writes nothing. | Done on the backend (commit `f6827e0`, `qalam-mobile/docs/56` §3b). What remains is client-side and smaller — see W3c-4 in §3.4. |
-| P-2 | **Composing @mentions**                                                                             | `mentions` on the wire are resolved user **ids**. Neither composer sends any, so a typed `@handle` is plain text and nobody is notified.                                                                                                                    | Handle→id resolution per mention inside the composer — the same lookup the invite dialog uses, applied inline.                   |
+| #   | Gap                                                                                           | Where both clients stand                                                                                                                                                                                                                                    | Shape of the work                                                                                                                                                       |
+| --- | --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| P-1 | ~~**Applying an accepted suggestion**~~ **CLOSED — server 2026-07-29, both clients same day** | `POST /suggestions/:id/accept` now **rewrites the anchored range of the piece body**, in the same transaction that marks the suggestion accepted, and captures a `pre_edit` snapshot first. A stale anchor is `409 SUGGESTION_CONFLICT` and writes nothing. | Done on the backend (commit `f6827e0`, `qalam-mobile/docs/56` §3b); mobile's client half in `dd12091`; web's copy + assertions in W3c-4, §3.4. **Nothing outstanding.** |
+| P-2 | **Composing @mentions**                                                                       | `mentions` on the wire are resolved user **ids**. Neither composer sends any, so a typed `@handle` is plain text and nobody is notified.                                                                                                                    | Handle→id resolution per mention inside the composer — the same lookup the invite dialog uses, applied inline.                                                          |
 
 **P-1 was correctness-shaped, not a nicety** — and it went the server's way.
 
@@ -364,8 +443,9 @@ was reverted to "Suggestion accepted.", which is true again. Full record:
 product decision:
 
 - **Mobile + web both re-read the piece after an accept** — done (C-13, `qalam-mobile/docs/56` §2.7).
-- **The web suggestion card still tells the writer the prose was NOT changed** (C-14) and its E2E
-  asserts that wording, so the suite is green while the UI is wrong. See **W3c-4** in §3.4.
+- ~~**The web suggestion card still tells the writer the prose was NOT changed**~~ — **done
+  2026-07-29** (C-14). The copy and all three assertions that pinned it moved together; see
+  **W3c-4** in §3.4.
 - **Applying an edit from inside the editor** is no longer needed for correctness. The editor
   integration is now an optional nicety (seeing the change land live rather than on the next read),
   not the fix for a silent no-op.

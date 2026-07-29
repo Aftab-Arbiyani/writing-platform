@@ -13,10 +13,15 @@ import { CollaboratorIdentity } from './collaborator-identity';
 /**
  * One proposed edit (AF6, W3b): the text it replaces, the text it proposes, and the decision.
  *
- * **Accepting records a decision; it does not rewrite the prose.** The server checks the anchored
- * `originalText` is still present (else `SUGGESTION_CONFLICT`) and marks the suggestion accepted —
- * nothing touches the piece. So an accepted card says plainly that the change is still the writer's
- * to make in the editor. Implying otherwise would be the worst kind of lie: silent.
+ * **Accepting rewrites the prose.** Since commit `f6827e0`, `POST /suggestions/:id/accept` replaces
+ * the anchored range of the piece body with `suggestedText` in the same transaction that settles the
+ * suggestion, capturing a `pre_edit` snapshot first; a stale anchor is refused with
+ * `SUGGESTION_CONFLICT` and writes nothing. So an accepted card says the change has landed.
+ *
+ * It said the opposite until this fix (defect **W3c-4**, docs/48 §3.4) — and the E2E asserted the
+ * stale wording, so the suite stayed green while the UI told the writer their prose was untouched.
+ * The copy and its assertion move together for that reason. Mobile says the same thing at the same
+ * moment ("Suggestion accepted.", reverted in mobile commit `dd12091`).
  */
 const STATUS: Record<string, { label: string; color: QTagColor }> = {
   [SuggestionStatus.Pending]: { label: 'Pending', color: 'neutral' },
@@ -70,10 +75,10 @@ export function SuggestionCard({ storyId, suggestion }: SuggestionCardProps): Re
         </div>
 
         {suggestion.status === SuggestionStatus.Accepted ? (
-          // The one thing a writer must not have to guess about this surface.
+          // The one thing a writer must not have to guess about this surface: their prose changed.
           <p className="text-ink-muted text-xs">
-            Accepted — apply the replacement in the editor. Accepting records the decision; it does
-            not change the piece.
+            Accepted — the replacement was applied to the piece. The version before the edit was
+            saved, so it can be reverted.
           </p>
         ) : null}
 

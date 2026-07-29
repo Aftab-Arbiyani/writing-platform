@@ -102,6 +102,16 @@ export class PublishingController {
   }
 
   // ── Review workflow ──────────────────────────────────────────────────────────
+  //
+  // All four routes are coarse-gated on `collaboration.use`, never on
+  // `publishing.approve`. The reviewer decision is authorized by the Policy
+  // Engine against the story (`ACTION_STAFF_PERMISSION` for the staff path,
+  // ownership + `ACTION_MIN_STORY_ROLE` for the member path — policy.constants
+  // documents both as coexisting). Gating the route on `publishing.approve` put a
+  // second, coarser authz path in front of that SSOT and 403'd the story owner
+  // the capability map had just told `review.approve: allowed` (defect W3c-1,
+  // docs/48 §3.4). Staff keep their path: `moderator`/`admin` inherit
+  // `collaboration.use` from `user` by rank inheritance (PermissionResolver).
 
   @Post('stories/:id/review')
   @Permissions(PERMISSIONS.CollaborationUse)
@@ -115,7 +125,7 @@ export class PublishingController {
   }
 
   @Post('stories/:id/review/approve')
-  @Permissions(PERMISSIONS.PublishingApprove)
+  @Permissions(PERMISSIONS.CollaborationUse)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Approve a story in review (unlocks publish).' })
   @ApiOkResponse({ type: ReviewDto })
@@ -127,7 +137,7 @@ export class PublishingController {
   }
 
   @Post('stories/:id/review/changes')
-  @Permissions(PERMISSIONS.PublishingApprove)
+  @Permissions(PERMISSIONS.CollaborationUse)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Request changes on a story in review.' })
   @ApiOkResponse({ type: ReviewDto })

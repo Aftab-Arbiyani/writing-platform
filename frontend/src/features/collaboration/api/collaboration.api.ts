@@ -204,11 +204,12 @@ export const collaborationApi = {
   ): Promise<EditSuggestion> => post<EditSuggestion>(`${story(storyId)}/suggestions`, input),
 
   /**
-   * POST /suggestions/:id/accept — records the decision.
+   * POST /suggestions/:id/accept — applies the edit and records the decision.
    *
-   * It does **not** rewrite the prose: the service checks the anchored `originalText` is still
-   * present (else `SUGGESTION_CONFLICT`) and marks the suggestion accepted. Applying the
-   * replacement is the writer's step, in the editor.
+   * It **does** rewrite the prose (since `f6827e0`): the service replaces the anchored range of the
+   * piece body with `suggestedText` in the same transaction that marks the suggestion accepted,
+   * capturing a `pre_edit` snapshot first. A stale anchor is `409 SUGGESTION_CONFLICT` and writes
+   * nothing. Callers must therefore refresh the piece read, not just the suggestions list.
    */
   acceptSuggestion: (suggestionId: string): Promise<EditSuggestion> =>
     post<EditSuggestion>(`/suggestions/${encodeURIComponent(suggestionId)}/accept`),

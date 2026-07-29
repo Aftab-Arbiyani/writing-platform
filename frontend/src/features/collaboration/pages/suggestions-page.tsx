@@ -53,7 +53,7 @@ export function SuggestionsPage(): ReactElement {
     <div className="mx-auto flex w-full max-w-[760px] flex-col gap-6 px-4 py-6 sm:px-6">
       <QSectionHeader
         title={<h1 className="text-ink font-serif text-2xl font-semibold">Suggestions</h1>}
-        description="Proposed edits to this story. Accepting records the decision — the wording is applied in the editor."
+        description="Proposed edits to this story. Accepting applies the replacement to the piece and snapshots the version before the edit."
         actions={
           <div className="flex flex-wrap gap-1">
             <div className="flex gap-1" role="group" aria-label="Filter suggestions">

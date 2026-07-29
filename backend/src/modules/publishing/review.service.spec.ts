@@ -1,9 +1,20 @@
-import { POLICY_ACTIONS, ReviewDecision, ReviewState, Role, Visibility } from '@qalam/shared';
+import {
+  PERMISSIONS,
+  POLICY_ACTIONS,
+  ReviewDecision,
+  ReviewState,
+  Role,
+  StoryRole,
+  TrustLevel,
+  TrustStatus,
+  Visibility,
+} from '@qalam/shared';
 
 import type { AuditService } from '../audit/audit.service';
 import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
+import type { PermissionResolver } from '../permissions/permission.resolver';
 import type { PiecesService } from '../pieces/pieces.service';
-import type { PolicyEngineService } from '../policy';
+import { PolicyCacheService, PolicyEngineService } from '../policy';
 import type { ReviewSession } from './entities/review-session.entity';
 import {
   ReviewAlreadyRequestedException,
@@ -144,6 +155,117 @@ describe('ReviewService', () => {
       await expect(t.service.approve(STORY_ID, REVIEWER)).rejects.toBeInstanceOf(
         ReviewInvalidStateException,
       );
+    });
+  });
+
+  /**
+   * Who may decide a review (defect **W3c-1**, docs/48 §3.4). These run the REAL
+   * Policy Engine rather than a stubbed `assert`, because the bug was never in the
+   * service: the engine allowed the story owner while the route's coarse
+   * `@Permissions` gate refused them, so a mocked engine could not see it. Every
+   * denial here must come from the Policy Engine — the guard's only job is the
+   * `collaboration.use` base gate, which all three of these actors hold.
+   */
+  describe('reviewer authorization through the Policy Engine (W3c-1)', () => {
+    const OWNER: AuthenticatedUser = { id: 'author-1', role: Role.User, sessionVersion: 1 };
+    const MEMBER: AuthenticatedUser = { id: 'member-1', role: Role.User, sessionVersion: 1 };
+    const STRANGER: AuthenticatedUser = { id: 'stranger-1', role: Role.User, sessionVersion: 1 };
+
+    /** ReviewService wired to a real engine, with the story role the test needs. */
+    function buildWithEngine(storyRole: StoryRole | null) {
+      const t = build();
+      const resolver = {
+        resolve: jest.fn(async () => new Set<string>([PERMISSIONS.CollaborationUse])),
+      } as unknown as PermissionResolver;
+      const engine = new PolicyEngineService(resolver, new PolicyCacheService());
+      engine.registerTrustPort({
+        getTrustContext: async () => ({
+          status: TrustStatus.Normal,
+          level: TrustLevel.Member,
+          restrictions: [],
+        }),
+        isInteractionBlocked: async () => false,
+      });
+      engine.registerMembershipPort({
+        getStoryRole: async (_storyId, userId) => (userId === OWNER.id ? null : storyRole),
+      });
+
+      const pieces = {
+        getStoryContext: jest.fn().mockResolvedValue(CTX),
+      } as unknown as PiecesService;
+      const audit = { record: jest.fn().mockResolvedValue(undefined) } as unknown as AuditService;
+      const repo = {
+        findOpenSession: jest.fn().mockResolvedValue(null),
+        findCurrentSession: jest
+          .fn()
+          .mockResolvedValue(makeSession({ state: ReviewState.InReview })),
+        createReviewSession: jest.fn(),
+        saveReviewSession: jest
+          .fn()
+          .mockImplementation((session: ReviewSession) => Promise.resolve(session)),
+        recordEvent: jest.fn().mockResolvedValue(undefined),
+      } as unknown as PublishingRepository;
+
+      return { service: new ReviewService(pieces, engine, audit, repo), t };
+    }
+
+    it('lets the story owner approve, on a plain user role and no story membership', async () => {
+      // The case the route used to 403. `CTX.authorId === OWNER.id`, so the
+      // ownership rule grants it — no `publishing.approve` anywhere in sight.
+      const { service } = buildWithEngine(null);
+
+      const dto = await service.approve(STORY_ID, OWNER);
+
+      expect(dto.state).toBe(ReviewState.Approved);
+      expect(dto.reviewerId).toBe(OWNER.id);
+    });
+
+    it('lets the story owner request changes on a plain user role', async () => {
+      const { service } = buildWithEngine(null);
+
+      const dto = await service.requestChanges(STORY_ID, OWNER, 'Tighten the closing couplet.');
+
+      expect(dto.state).toBe(ReviewState.ChangesRequested);
+      expect(dto.notes).toBe('Tighten the closing couplet.');
+    });
+
+    it('refuses a member below Editor — from the story-role rule, not the guard', async () => {
+      // `ACTION_MIN_STORY_ROLE[review.approve]` is Editor; Reviewer ranks below it.
+      // Asserting `matchedRule` is the point: it proves the 403 is the Policy
+      // Engine's decision and not the coarse permission gate reappearing.
+      const { service } = buildWithEngine(StoryRole.Reviewer);
+
+      await expect(service.approve(STORY_ID, MEMBER)).rejects.toMatchObject({
+        code: 'POLICY_DENIED',
+        details: [expect.objectContaining({ rule: 'story-role' })],
+      });
+    });
+
+    it('refuses a member below Editor requesting changes', async () => {
+      const { service } = buildWithEngine(StoryRole.BetaReader);
+
+      await expect(service.requestChanges(STORY_ID, MEMBER)).rejects.toMatchObject({
+        code: 'POLICY_DENIED',
+        details: [expect.objectContaining({ rule: 'story-role' })],
+      });
+    });
+
+    it('refuses a non-member outright (default-deny)', async () => {
+      const { service } = buildWithEngine(null);
+
+      await expect(service.approve(STORY_ID, STRANGER)).rejects.toMatchObject({
+        code: 'POLICY_DENIED',
+        details: [expect.objectContaining({ rule: 'default-deny' })],
+      });
+    });
+
+    it('still lets a story Editor approve (the member path AF6 made authoritative)', async () => {
+      const { service } = buildWithEngine(StoryRole.Editor);
+
+      const dto = await service.approve(STORY_ID, MEMBER);
+
+      expect(dto.state).toBe(ReviewState.Approved);
+      expect(dto.reviewerId).toBe(MEMBER.id);
     });
   });
 });

@@ -70,9 +70,14 @@ describe('SuggestionCard', () => {
     );
   });
 
-  it('tells the writer that accepting does NOT change the piece', () => {
-    // The server records the decision and leaves the prose alone; a silent no-op would be the
-    // worst possible reading of "Accepted".
+  it('tells the writer that accepting DID change the piece', () => {
+    // The server applies the edit (`f6827e0`), so the card must say the prose moved — the writer's
+    // own text changed under them, which is the one thing they must not have to infer.
+    //
+    // This test asserted the opposite wording until **W3c-4** (docs/48 §3.4): the copy went stale
+    // when the server started rewriting, and because the assertion matched the stale copy, the suite
+    // stayed green while the UI was wrong. Hence the second expectation — the old sentence must be
+    // gone, not merely joined by a new one.
     renderWithProviders(
       <SuggestionCard
         storyId="story-1"
@@ -80,7 +85,8 @@ describe('SuggestionCard', () => {
       />,
     );
 
-    expect(screen.getByText(/apply the replacement in the editor/i)).toBeInTheDocument();
+    expect(screen.getByText(/the replacement was applied to the piece/i)).toBeInTheDocument();
+    expect(screen.queryByText(/apply the replacement in the editor/i)).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Accept' })).not.toBeInTheDocument();
   });
 

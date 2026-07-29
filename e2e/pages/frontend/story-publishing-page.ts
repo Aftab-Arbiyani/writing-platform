@@ -75,7 +75,7 @@ export class StoryPublishingPage {
     await this.expectReviewState('Approved');
   }
 
-  /** Click Approve WITHOUT asserting the outcome — for the owner-403 defect test (W3c-1). */
+  /** Click Approve WITHOUT asserting the outcome, so a test can assert it itself (W3c-1). */
   async approve(): Promise<void> {
     await this.reviewCard.getByRole('button', { name: 'Approve', exact: true }).click();
   }

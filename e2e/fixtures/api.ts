@@ -330,9 +330,10 @@ export class ApiHelper {
   /**
    * Approve a story's review as the ADMIN (POST /stories/:id/review/approve).
    *
-   * The admin, not the author: the route is coarse-gated on `PERMISSIONS.PublishingApprove`, which
-   * only moderator/admin hold — so an author cannot approve their own story even though the
-   * capability map says they may (defect W3c-1, docs/48 §3.4).
+   * The admin arranges it through the Policy Engine's STAFF path (`publishing.approve`). The author
+   * can now approve their own story too — the route's coarse gate is `collaboration.use` and the
+   * ownership rule allows the owner (W3c-1 closed, docs/48 §3.4) — so a test that wants the author's
+   * own approval should drive the UI rather than call this.
    */
   async approveReview(storyId: string): Promise<{ id: string; state: string }> {
     const res = await this.request.post(this.url(`/stories/${storyId}/review/approve`), {
