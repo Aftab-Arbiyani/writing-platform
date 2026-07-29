@@ -2,6 +2,7 @@ import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import { PieceStatus, Visibility } from '@qalam/shared';
 import { slugify } from '@qalam/utils';
 import { randomBytes } from 'node:crypto';
+import type { EntityManager } from 'typeorm';
 
 import { TransactionRunner } from '../../common/database/transaction-runner';
 import { DomainEventBus } from '../../common/events/domain-event-bus';
@@ -184,6 +185,41 @@ export class PiecesService {
       }
     });
     return this.getOwn(id, ownerId);
+  }
+
+  /**
+   * Replaces a piece's body inside a transaction the CALLER owns — the write half
+   * of accepting an edit suggestion (AF6), where the content change and the
+   * suggestion's resolution must commit or roll back together. Sanitizing and
+   * re-deriving the metrics stays here so no other module reimplements the
+   * content write; authorization is the caller's (the Policy Engine assertion it
+   * already made), which is why this takes an `ownerId` rather than an actor.
+   *
+   * `manager` is required, not optional: the only reason to reach for this over
+   * {@link update} is to enlist in an existing transaction.
+   */
+  async replaceContent(
+    id: string,
+    ownerId: string,
+    content: Record<string, unknown>,
+    manager: EntityManager,
+  ): Promise<void> {
+    const piece = await this.loadOwned(id, ownerId);
+    if (piece.status === PieceStatus.Archived) {
+      throw new PieceInvalidTransitionException(piece.status, 'edited');
+    }
+    sanitizeContent(content);
+    const metrics = deriveContentMetrics(content);
+    await this.pieces.update(
+      id,
+      {
+        content,
+        contentText: metrics.contentText,
+        wordCount: metrics.wordCount,
+        readingTimeSeconds: metrics.readingTimeSeconds,
+      },
+      manager,
+    );
   }
 
   async delete(id: string, ownerId: string): Promise<void> {

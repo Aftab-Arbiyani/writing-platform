@@ -1,7 +1,9 @@
+import type { EntityManager } from 'typeorm';
 import {
   NotificationType,
   POLICY_ACTIONS,
   PolicyEffect,
+  SnapshotReason,
   SuggestionStatus,
   Visibility,
 } from '@qalam/shared';
@@ -11,6 +13,8 @@ import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.in
 import type { AuditService } from '../audit/audit.service';
 import type { PiecesService } from '../pieces/pieces.service';
 import type { PolicyEngineService } from '../policy';
+import type { SnapshotService } from '../publishing';
+import { anchorText } from './content-text.util';
 import type { ActivityService } from './activity.service';
 import type { CollaborationNotifier } from './collaboration-notifier.port';
 import type { CollaborationRepository } from './collaboration.repository';
@@ -65,6 +69,9 @@ function suggestion(overrides?: Partial<StorySuggestion>): StorySuggestion {
   } as StorySuggestion;
 }
 
+/** The transaction the repository hands to `work` — asserted on to prove atomicity. */
+const MANAGER = { tag: 'tx' } as unknown as EntityManager;
+
 function build() {
   const repo = {
     findSuggestionById: jest.fn().mockResolvedValue(null),
@@ -73,16 +80,21 @@ function build() {
       .fn()
       .mockImplementation((data: Partial<StorySuggestion>) => Promise.resolve(suggestion(data))),
     saveSuggestion: jest.fn().mockImplementation((e: StorySuggestion) => Promise.resolve(e)),
-    withTransaction: jest.fn(<T>(work: (m: unknown) => Promise<T>) => work({})),
+    withTransaction: jest.fn(<T>(work: (m: EntityManager) => Promise<T>) => work(MANAGER)),
   } as unknown as jest.Mocked<CollaborationRepository>;
 
   const pieces = {
     getStoryContext: jest
       .fn()
       .mockResolvedValue({ authorId: OWNER, visibility: Visibility.Private, isPublished: false }),
-    // Current story text still contains the suggestion's originalText → no conflict.
-    getById: jest.fn().mockResolvedValue({ content: docWith('here is the original text') }),
+    // The text at the suggestion's anchor [0, 12) is still `originalText` → applies.
+    getById: jest.fn().mockResolvedValue({ content: docWith('the original text') }),
+    replaceContent: jest.fn().mockResolvedValue(undefined),
   } as unknown as jest.Mocked<PiecesService>;
+
+  const snapshots = {
+    capture: jest.fn().mockResolvedValue({ id: 'snap-1', version: 1 }),
+  } as unknown as jest.Mocked<SnapshotService>;
 
   const engine = {
     assert: jest.fn().mockResolvedValue(allow()),
@@ -98,8 +110,8 @@ function build() {
     notify: jest.fn().mockResolvedValue(undefined),
   } as jest.Mocked<CollaborationNotifier>;
 
-  const service = new SuggestionService(repo, pieces, engine, audit, activity, notifier);
-  return { service, repo, pieces, engine, audit, activity, notifier };
+  const service = new SuggestionService(repo, pieces, engine, audit, activity, snapshots, notifier);
+  return { service, repo, pieces, engine, audit, activity, notifier, snapshots };
 }
 
 describe('SuggestionService', () => {
@@ -143,8 +155,53 @@ describe('SuggestionService', () => {
       );
     });
 
-    it('throws SUGGESTION_CONFLICT when the story text no longer contains originalText', async () => {
+    it('rewrites the anchored range of the story body to the suggested text', async () => {
       const { service, repo, pieces } = build();
+      repo.findSuggestionById.mockResolvedValue(suggestion());
+
+      await service.accept('s-1', user(OWNER));
+
+      expect(pieces.replaceContent).toHaveBeenCalledTimes(1);
+      const [pieceId, ownerId, content] = pieces.replaceContent.mock.calls[0]!;
+      expect(pieceId).toBe(STORY);
+      // Written as the story's true author, not as the accepting collaborator.
+      expect(ownerId).toBe(OWNER);
+      expect(anchorText(content)).toBe('the improved text');
+    });
+
+    it('versions the pre-edit content through the publishing snapshot mechanism', async () => {
+      const { service, repo, snapshots } = build();
+      repo.findSuggestionById.mockResolvedValue(suggestion());
+
+      await service.accept('s-1', user(OWNER));
+
+      // `capture`, not `create`: the accept path must not be put through a second
+      // (publish-level) authorization.
+      expect(snapshots.capture).toHaveBeenCalledWith(STORY, user(OWNER), SnapshotReason.PreEdit);
+    });
+
+    it('applies the rewrite and the resolution in ONE transaction', async () => {
+      const { service, repo, pieces, activity } = build();
+      repo.findSuggestionById.mockResolvedValue(suggestion());
+
+      await service.accept('s-1', user(OWNER));
+
+      // All three writes get the same manager — a failed apply cannot leave the
+      // suggestion marked accepted.
+      expect(repo.withTransaction).toHaveBeenCalledTimes(1);
+      expect(pieces.replaceContent).toHaveBeenCalledWith(STORY, OWNER, expect.anything(), MANAGER);
+      expect(repo.saveSuggestion).toHaveBeenCalledWith(expect.anything(), MANAGER);
+      expect(activity.record).toHaveBeenCalledWith(
+        STORY,
+        OWNER,
+        expect.anything(),
+        expect.anything(),
+        MANAGER,
+      );
+    });
+
+    it('throws SUGGESTION_CONFLICT when the story text no longer contains originalText', async () => {
+      const { service, repo, pieces, snapshots } = build();
       repo.findSuggestionById.mockResolvedValue(suggestion());
       pieces.getById.mockResolvedValue({
         content: docWith('the text was rewritten entirely'),
@@ -154,6 +211,41 @@ describe('SuggestionService', () => {
         SuggestionConflictException,
       );
       expect(repo.saveSuggestion).not.toHaveBeenCalled();
+      expect(pieces.replaceContent).not.toHaveBeenCalled();
+      expect(snapshots.capture).not.toHaveBeenCalled();
+    });
+
+    it('refuses a STALE ANCHOR even when originalText still occurs elsewhere', async () => {
+      const { service, repo, pieces, snapshots } = build();
+      repo.findSuggestionById.mockResolvedValue(suggestion());
+      // `the original` is still in the document, but no longer at [0, 12) — the
+      // passage moved. Relocating the edit would rewrite text nobody agreed to, so
+      // this is a conflict, not a best-effort apply.
+      pieces.getById.mockResolvedValue({
+        content: docWith('a preface, then the original text'),
+      } as never);
+
+      await expect(service.accept('s-1', user(OWNER))).rejects.toBeInstanceOf(
+        SuggestionConflictException,
+      );
+      expect(pieces.replaceContent).not.toHaveBeenCalled();
+      expect(repo.saveSuggestion).not.toHaveBeenCalled();
+      expect(snapshots.capture).not.toHaveBeenCalled();
+    });
+
+    it('refuses an anchor whose range no longer fits the document', async () => {
+      const { service, repo, pieces } = build();
+      repo.findSuggestionById.mockResolvedValue(
+        suggestion({ anchor: { from: 0, to: 12 }, originalText: '' }),
+      );
+      // An empty `originalText` would otherwise match `slice` past the end of the
+      // text and apply at a position that does not exist.
+      pieces.getById.mockResolvedValue({ content: docWith('short') } as never);
+
+      await expect(service.accept('s-1', user(OWNER))).rejects.toBeInstanceOf(
+        SuggestionConflictException,
+      );
+      expect(pieces.replaceContent).not.toHaveBeenCalled();
     });
 
     it('rejects accepting a non-pending suggestion (SUGGESTION_ALREADY_RESOLVED)', async () => {

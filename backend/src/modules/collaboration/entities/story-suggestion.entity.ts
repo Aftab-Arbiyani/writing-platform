@@ -15,10 +15,11 @@ export interface SuggestionAnchor {
  * `originalText`) with `suggestedText`; the owner or a co-author accepts or
  * rejects, the author may withdraw.
  *
- * Accepting only marks the suggestion `accepted` — applying the edit to the
- * canonical piece content stays with the writer's editor (this module never
- * mutates `pieces`). `originalText` doubles as the conflict guard: if the story
- * text no longer contains it, acceptance is a `SUGGESTION_CONFLICT`.
+ * Accepting marks the suggestion `accepted` AND applies it: the anchored range of
+ * the piece body is rewritten to `suggestedText` (through `PiecesService`, in the
+ * same transaction). `anchor` + `originalText` are the guard — if the text at
+ * `[from, to)` in the current plain-text projection is no longer `originalText`,
+ * acceptance is a `SUGGESTION_CONFLICT` and nothing is written.
  */
 @Entity('story_suggestions')
 @Index('idx_story_suggestion', ['storyId', 'status'])

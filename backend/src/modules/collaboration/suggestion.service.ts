@@ -1,9 +1,11 @@
 import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
+import type { EntityManager } from 'typeorm';
 import {
   CollaborationActivity as ActivityType,
   NotificationEntityType,
   NotificationType,
   POLICY_ACTIONS,
+  SnapshotReason,
   SuggestionStatus,
 } from '@qalam/shared';
 
@@ -17,6 +19,7 @@ import {
 import { PieceNotFoundException } from '../pieces/exceptions/pieces.exceptions';
 import { PiecesService } from '../pieces/pieces.service';
 import { PolicyEngineService } from '../policy';
+import { SnapshotService } from '../publishing';
 import { decodeCursor } from '../../common/pagination/cursor.util';
 import { buildCursorPage } from '../../common/pagination/pagination.helper';
 import type { CursorPage } from '../../common/types/paginated-result';
@@ -39,7 +42,7 @@ import {
   type StoryFacts,
 } from './collaboration.policy';
 import { CollaborationRepository } from './collaboration.repository';
-import { extractPlainText } from './content-text.util';
+import { anchorText, replaceTextRange } from './content-text.util';
 import type { CreateSuggestionDto, SuggestionListQueryDto } from './dto/collaboration-request.dto';
 import type { SuggestionDto } from './dto/collaboration-response.dto';
 import type { StorySuggestion } from './entities/story-suggestion.entity';
@@ -49,9 +52,15 @@ import type { StorySuggestion } from './entities/story-suggestion.entity';
  * `engine.assert(StorySuggest)`; accept/reject/withdraw through
  * `SuggestionResolve` — the engine's self-service rule (resource `ownerId` =
  * suggestion author) lets the author withdraw their own suggestion, while
- * co-authors/owner resolve others'. Accept marks the suggestion accepted after a
- * conflict check (the story text must still contain `originalText`); it does NOT
- * mutate the piece content — applying the edit is the writer's editor action.
+ * co-authors/owner resolve others'.
+ *
+ * Accepting APPLIES the edit: the anchored range of the story body is rewritten
+ * to `suggestedText` and the suggestion is marked accepted, in one transaction, so
+ * an accepted suggestion always corresponds to a real change (it previously wrote
+ * only the three resolution columns and left the prose alone — defect D1,
+ * `qalam-mobile/docs/56` §3). The pre-edit content is versioned first through
+ * publishing's snapshot mechanism, and a stale anchor is refused with
+ * `SUGGESTION_CONFLICT` rather than relocated.
  */
 @Injectable()
 export class SuggestionService {
@@ -63,6 +72,7 @@ export class SuggestionService {
     private readonly engine: PolicyEngineService,
     private readonly audit: AuditService,
     private readonly activity: ActivityService,
+    private readonly snapshots: SnapshotService,
     @Optional()
     @Inject(COLLABORATION_NOTIFIER)
     private readonly notifier?: CollaborationNotifier,
@@ -142,6 +152,18 @@ export class SuggestionService {
     return { items: page.items.map(toSuggestionDto), meta: page.meta };
   }
 
+  /**
+   * Accepts a suggestion AND applies it. The single `SuggestionResolve` assertion
+   * above authorizes the whole operation — the content write reuses `PiecesService`
+   * with the story's true author as owner, and the snapshot is captured through the
+   * non-asserting `SnapshotService.capture` precisely so no second (publish-level)
+   * authorization slips into this path.
+   *
+   * Ordering: version → (rewrite + settle in one transaction) → notify/audit. The
+   * snapshot sits outside the transaction, matching the publish path; a snapshot of
+   * content that then failed to change is inert, whereas a suggestion marked
+   * accepted whose prose never changed is the defect being fixed.
+   */
   async accept(suggestionId: string, user: AuthenticatedUser): Promise<SuggestionDto> {
     const { suggestion, facts } = await this.loadForResolve(suggestionId);
     await this.engine.assert({
@@ -151,14 +173,19 @@ export class SuggestionService {
     });
 
     this.assertPending(suggestion);
-    await this.assertNoConflict(suggestion.storyId, facts.authorId, suggestion);
+    const content = await this.resolveAnchor(suggestion, facts.authorId);
 
-    const saved = await this.settle(
-      suggestion,
-      SuggestionStatus.Accepted,
-      user.id,
-      ActivityType.SuggestionAccepted,
-    );
+    await this.snapshots.capture(suggestion.storyId, user, SnapshotReason.PreEdit);
+    const saved = await this.repo.withTransaction(async (manager) => {
+      await this.pieces.replaceContent(suggestion.storyId, facts.authorId, content, manager);
+      return this.settle(
+        suggestion,
+        SuggestionStatus.Accepted,
+        user.id,
+        ActivityType.SuggestionAccepted,
+        manager,
+      );
+    });
     await this.safeNotify({
       recipientId: suggestion.authorId,
       actorId: user.id,
@@ -249,40 +276,58 @@ export class SuggestionService {
     }
   }
 
-  /** The story text must still contain the suggestion's `originalText`, else it's a conflict. */
-  private async assertNoConflict(
-    storyId: string,
-    ownerId: string,
+  /**
+   * Resolves the anchor against the CURRENT story text and returns the rewritten
+   * document. `from`/`to` are offsets into the plain-text projection — the contract
+   * both clients encode — so the guard is exact: the text at `[from, to)` must still
+   * be `originalText` and the range must still fit the document.
+   *
+   * Anything else is a stale anchor → `SUGGESTION_CONFLICT` (409) and nothing is
+   * written. Deliberately no fuzzy matching and no relocating to another occurrence
+   * of `originalText`: silently rewriting a passage the author never agreed to is
+   * worse than refusing an acceptance the reviewer can re-propose.
+   */
+  private async resolveAnchor(
     suggestion: StorySuggestion,
-  ): Promise<void> {
+    ownerId: string,
+  ): Promise<Record<string, unknown>> {
     // Read the current content as the owner (owner sees any status → never a 404).
-    const piece = await this.pieces.getById(storyId, ownerId);
-    const text = extractPlainText(piece.content);
-    if (!text.includes(suggestion.originalText)) {
+    const piece = await this.pieces.getById(suggestion.storyId, ownerId);
+    const text = anchorText(piece.content);
+    const { from, to } = suggestion.anchor;
+    if (from > to || to > text.length || text.slice(from, to) !== suggestion.originalText) {
       throw new SuggestionConflictException();
     }
+    return replaceTextRange(piece.content, from, to, suggestion.suggestedText);
   }
 
+  /**
+   * Writes the three resolution columns plus the activity row. `manager` joins the
+   * caller's transaction (accept, where the content rewrite must commit with it);
+   * without one, this owns a transaction of its own.
+   */
   private settle(
     suggestion: StorySuggestion,
     status: SuggestionStatus,
     resolverId: string,
     activityType: string,
+    manager?: EntityManager,
   ): Promise<StorySuggestion> {
     suggestion.status = status;
     suggestion.resolvedById = resolverId;
     suggestion.resolvedAt = new Date();
-    return this.repo.withTransaction(async (manager) => {
-      const saved = await this.repo.saveSuggestion(suggestion, manager);
+    const work = async (m: EntityManager): Promise<StorySuggestion> => {
+      const saved = await this.repo.saveSuggestion(suggestion, m);
       await this.activity.record(
         suggestion.storyId,
         resolverId,
         activityType,
         { suggestionId: suggestion.id },
-        manager,
+        m,
       );
       return saved;
-    });
+    };
+    return manager === undefined ? this.repo.withTransaction(work) : work(manager);
   }
 
   private async loadFacts(storyId: string): Promise<StoryFacts> {

@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuditModule } from '../audit/audit.module';
 import { NotificationsModule } from '../notifications';
 import { PiecesModule } from '../pieces/pieces.module';
+import { PublishingModule } from '../publishing/publishing.module';
 import { ActivityService } from './activity.service';
 import { COLLABORATION_NOTIFIER } from './collaboration-notifier.port';
 import { CollaborationController } from './collaboration.controller';
@@ -46,6 +47,11 @@ import { SuggestionService } from './suggestion.service';
     PiecesModule,
     AuditModule,
     NotificationsModule,
+    // For `SnapshotService` only — accepting a suggestion rewrites the story body,
+    // so the pre-edit content is versioned through publishing's existing snapshot
+    // mechanism rather than a second one here. Publishing does not depend on this
+    // module, so the edge is acyclic.
+    PublishingModule,
   ],
   controllers: [CollaborationController],
   providers: [

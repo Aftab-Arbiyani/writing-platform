@@ -60,6 +60,33 @@ export class SnapshotService {
       action: POLICY_ACTIONS.PublicationPublish,
       resource: buildStoryResource(storyId, ctx, PolicyResourceType.Publication),
     });
+    return this.write(storyId, ctx, actor, reason);
+  }
+
+  /**
+   * Captures the current content as the next version WITHOUT authorizing — for a
+   * caller that has already asserted its own action on this story and must not be
+   * put through a second, unrelated one (`publication.publish`). Collaboration
+   * uses this when accepting an edit suggestion: `suggestion.resolve` is the
+   * decision that gates the write, so re-asserting publish authority here would
+   * deny a co-author who may legitimately accept but not publish.
+   *
+   * Callers own authorization. {@link create} is the authorizing entry point.
+   */
+  async capture(
+    storyId: string,
+    actor: AuthenticatedUser,
+    reason: SnapshotReason,
+  ): Promise<SnapshotDto> {
+    return this.write(storyId, await this.requireContext(storyId), actor, reason);
+  }
+
+  private async write(
+    storyId: string,
+    ctx: StoryContext,
+    actor: AuthenticatedUser,
+    reason: SnapshotReason,
+  ): Promise<SnapshotDto> {
     const piece = await this.pieces.preview(storyId, ctx.authorId);
     const version = await this.repo.nextSnapshotVersion(storyId);
 

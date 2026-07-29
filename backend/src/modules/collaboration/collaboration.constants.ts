@@ -40,6 +40,13 @@ export const COLLABORATION_AUDIT_TARGET = {
  * The collaboration actions surfaced by `GET /stories/:storyId/capabilities`
  * (via `PolicyEngineService.explain`). The client reflects these decisions to
  * render permission displays / restricted states — it never re-derives them.
+ *
+ * The last three are editorial (`ACTION_MIN_STORY_ROLE`: Editor / CoAuthor /
+ * Editor) and belong here because the clients' publishing screens gate on them:
+ * an action absent from this list gets no decision, so every gate keyed on it
+ * default-denies (`no_policy`) — which is exactly what shipped (defect C-2,
+ * `qalam-mobile/docs/56` §2.1). Nothing may assume this list's length; both
+ * clients key decisions by action string.
  */
 export const COLLABORATION_CAPABILITY_ACTIONS: readonly PolicyActionCode[] = [
   POLICY_ACTIONS.StoryView,
@@ -51,6 +58,9 @@ export const COLLABORATION_CAPABILITY_ACTIONS: readonly PolicyActionCode[] = [
   POLICY_ACTIONS.CommentResolve,
   POLICY_ACTIONS.CommentDelete,
   POLICY_ACTIONS.SuggestionResolve,
+  POLICY_ACTIONS.StoryEdit,
+  POLICY_ACTIONS.PublicationPublish,
+  POLICY_ACTIONS.ReviewApprove,
 ];
 
 /** Default page size for cursor-paginated collaboration lists. */

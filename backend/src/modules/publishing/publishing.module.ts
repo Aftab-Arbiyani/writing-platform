@@ -37,6 +37,9 @@ import { SnapshotService } from './snapshot.service';
   ],
   controllers: [PublishingController],
   providers: [PublishingRepository, PublishingService, ReviewService, SnapshotService],
-  exports: [PublishingService],
+  // `SnapshotService` is exported for collaboration: accepting an edit suggestion
+  // rewrites the story body, and that revision is recorded with the SAME snapshot
+  // mechanism the publish path uses (no second versioning scheme).
+  exports: [PublishingService, SnapshotService],
 })
 export class PublishingModule {}
