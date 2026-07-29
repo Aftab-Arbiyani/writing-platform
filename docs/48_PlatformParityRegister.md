@@ -415,18 +415,30 @@ writer will still see it later; neither client now claims the prose was left alo
 
 Each is outside the two defects that pass was scoped to. **`success` was the colour the a11y scan
 happened to reach first, not the only one that fails** — the recipe is what fails, and every tinted
-QTag colour uses it. Measured with the same method as W3c-2 (label in the token, background = that
-token at 12% over the page):
+QTag colour uses it.
 
-### T-2 · **medium** · `QTag` `warning` and `info` fail AA on the backgrounds tags actually use
+**Measured by axe in a real browser, not by arithmetic.** §8.4 of [10](./e2e/10_UIQuality.md) is explicit
+that per-token arithmetic against the documented background is not verification: every dark-mode defect
+it lists passed that check and still failed in a browser, because something re-composited the colour.
+That warning applies directly here — and no a11y scan in the suite paints a `success` tag at all (the
+comments scan never resolves a comment; the blocks page uses W3c's `neutral` workaround). So QTag's
+exact classes were rendered on all three backgrounds against the app's real stylesheet and scanned.
+Two things came out of it: `text-<c>` is the **raw token with no alpha compositing** (unlike the
+header's ink, which paints `rgba(40,34,27,0.882)`), so the arithmetic model is valid for this
+component; and axe's ratios match it to within rounding.
 
 | Colour              | surface `#ffffff` | canvas `#faf7f1` | raised `#f3eee5` |
 | ------------------- | ----------------- | ---------------- | ---------------- |
-| `warning` `#8d651a` | 4.47 ❌           | 4.20 ❌          | 3.91 ❌          |
-| `info` `#3b6ea8`    | 4.50 ⚠️ (exactly) | 4.22 ❌          | 3.93 ❌          |
-| `accent` `#9e4b28`  | 5.06 ✅           | 4.75 ✅          | 4.42 ❌          |
-| `danger` `#b3382e`  | 4.97 ✅           | 4.67 ✅          | 4.34 ❌          |
-| `success` (fixed)   | 5.30 ✅           | 4.98 ✅          | 4.63 ✅          |
+| `warning` `#8d651a` | 4.48 ❌           | 4.18 ❌          | 3.92 ❌          |
+| `info` `#3b6ea8`    | 4.50 ⚠️ (exactly) | 4.23 ❌          | 3.93 ❌          |
+| `accent` `#9e4b28`  | 5.04 ✅           | 4.74 ✅          | 4.40 ❌          |
+| `danger` `#b3382e`  | 4.96 ✅           | 4.66 ✅          | 4.33 ❌          |
+| `success` (fixed)   | 5.29 ✅           | 4.96 ✅          | 4.62 ✅          |
+
+The `success` row is the browser-verified confirmation that W3c-2 is actually closed, on all three
+backgrounds — the number the commit quotes from arithmetic (5.30 / 4.98 / 4.63) lands within 0.02.
+Rendering the other four raised a real axe `color-contrast` violation, so T-2 is detectable, not
+theoretical: it simply has no scan pointed at it.
 
 **`warning` and `info` are live defects today**, on the same surfaces where `success` failed — `info` is
 in use (`restricted-wall`, `role-badge`). `accent` and `danger` are **latent**: they pass on surface and
@@ -462,6 +474,26 @@ today: they are chart-series colours for non-text graphics (3:1 bar, not 4.5) an
 variable cannot be read. But they are two undeclared copies of a "single source of truth", which is the
 condition that produced W3c-4 one section above. Either delete them in favour of the CSS variable or add
 them to the mirror list in `tokens.css`.
+
+### T-6 · **medium** · `resolveFirst()` asserts on the wrong element, so resolving a comment is untested
+
+Found while trying to render a `success` tag. `e2e/pages/frontend/story-comments-page.ts`:
+
+```ts
+await this.page.getByRole('button', { name: 'Resolve' }).first().click();
+await expect(this.page.getByText('Resolved', { exact: true }).first()).toBeVisible();
+```
+
+The comments page has a **status filter whose chip is labelled exactly "Resolved"**, and it is always
+visible — so this assertion passes whether or not anything resolved. Confirmed directly: the same
+locator, evaluated, returns an element painting ink on white (the chip), not a success tag.
+
+**And the flow underneath appears not to work.** Clicking Resolve and then filtering to Resolved shows
+"No comments yet". Whether the resolve write never lands or the `status=resolved` query does not return
+it is **not root-caused here** — recording the observation, not a diagnosis. Either way `inline-review.spec.ts`'s
+"a writer comments on their story, replies, and resolves the thread" is green without proving the third
+verb, which is the same defect class as W3c-4: an assertion that pins the wrong thing keeps the suite
+green over a broken surface. Fix the assertion first (scope it to the comment item), then see what fails.
 
 ---
 
