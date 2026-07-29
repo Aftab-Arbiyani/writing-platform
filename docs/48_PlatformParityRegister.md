@@ -411,7 +411,11 @@ writer will still see it later; neither client now claims the prose was left alo
 
 ---
 
-## 3.5 Found while fixing W3c-2 / W3c-3 (2026-07-29) — recorded, NOT fixed
+## 3.5 Found while fixing W3c-2 / W3c-3 (2026-07-29)
+
+**Recorded when found, outside the pass that found them. T-2, T-2b and T-3 were then fixed on
+2026-07-29** by the follow-up pass that closed the contrast class properly (see their resolutions).
+**T-4, T-5, T-6, T-7 and T-8 remain open** with no owner.
 
 Each is outside the two defects that pass was scoped to. **`success` was the colour the a11y scan
 happened to reach first, not the only one that fails** — the recipe is what fails, and every tinted
