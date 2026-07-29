@@ -83,18 +83,19 @@ soft-deleted rows ([04 §1.5](./04_DatabaseDesign.md)), so it is a safe identity
 
 ## 4. Track W — the web app (sequential)
 
-| #      | Epic                                                                                                  | Size | Rationale                                                                                                                                                                                                  | Unblocks               |
-| ------ | ----------------------------------------------------------------------------------------------------- | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
-| **B1** | By-slug read endpoint + freeze amendment ✅ **done**                                                  | S    | Hard prerequisite for W1                                                                                                                                                                                   | W1                     |
-| **W1** | **Reader page** `/p/:slug` ✅ **done**                                                                | M    | The product hole. Backend contract and mobile's full `reading` feature both exist to port from — [report](./46_WebReaderReadinessReport.md)                                                                | E2E reader row; W3, W4 |
-| **W2** | **AI writing assistant UI** (AF2) ✅ **done**                                                         | S–M  | The data layer is already built — best value-to-effort ratio on the list — [report](./47_WebAiAssistantReadinessReport.md)                                                                                 | E2E `af2` row          |
-| **W3** | Collaboration / publishing / trust (AF6) — **3 slices, [design](./49_WebCollaborationEpicDesign.md)** | L    | Touches both the editor and the reader, so it needs W1 and W2 to exist first                                                                                                                               | —                      |
-| **W4** | Monetization (AF5)                                                                                    | M    | Gating needs something to gate: premium pieces (W1) and metered AI (W2)                                                                                                                                    | E2E `af5` row          |
-| **W5** | AF4 retrieval-backed discovery / search                                                               | M    | An upgrade of the existing M3/M6 `/discover` + `/search` surfaces rather than a new one                                                                                                                    | —                      |
-| **W6** | AF3 story-intelligence client                                                                         | L    | **Held.** No client exists on any platform and there is no product definition — it needs a shape before it is an engineering task                                                                          | —                      |
-| **W7** | Engagement & parity backfill (**both clients**)                                                       | M–L  | Closes the unowned gaps [48 §5](./48_PlatformParityRegister.md) has been flagging: conversation layer on web, collections, clap/report, reader analytics, privacy prefs, and **P-2** (composing @mentions) | —                      |
-| **W8** | Remaining AI surfaces (**both clients**)                                                              | M    | AI conversations, prompt library, AI usage — mobile-shipped, no W row owned them                                                                                                                           | —                      |
-| **D1** | **Decision:** what does accepting a suggestion mean?                                                  | S    | **P-1**, [48 §5.1](./48_PlatformParityRegister.md) — correctness-shaped; a product call, not an engineering one                                                                                            | the client half of P-1 |
+| #      | Epic                                                                                                  | Size      | Rationale                                                                                                                                                                                                  | Unblocks                           |
+| ------ | ----------------------------------------------------------------------------------------------------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| **B1** | By-slug read endpoint + freeze amendment ✅ **done**                                                  | S         | Hard prerequisite for W1                                                                                                                                                                                   | W1                                 |
+| **W1** | **Reader page** `/p/:slug` ✅ **done**                                                                | M         | The product hole. Backend contract and mobile's full `reading` feature both exist to port from — [report](./46_WebReaderReadinessReport.md)                                                                | E2E reader row; W3, W4             |
+| **W2** | **AI writing assistant UI** (AF2) ✅ **done**                                                         | S–M       | The data layer is already built — best value-to-effort ratio on the list — [report](./47_WebAiAssistantReadinessReport.md)                                                                                 | E2E `af2` row                      |
+| **W3** | Collaboration / publishing / trust (AF6) — **3 slices, [design](./49_WebCollaborationEpicDesign.md)** | L         | Touches both the editor and the reader, so it needs W1 and W2 to exist first                                                                                                                               | —                                  |
+| **W4** | Monetization (AF5)                                                                                    | M         | ⚠️ This row's stated premise was half wrong — **premium pieces do not exist** (see B2). Its one real gate is metered AI (W2)                                                                               | E2E `af5` row                      |
+| **B2** | **Premium content** — enabler + both clients ⏸️ **HELD**                                              | S–M + M×2 | **Held 2026-07-29 at the user's decision: recorded, not scheduled.** Model chosen (tier-gated); see [§4.5](#45-b2--premium-content-held-detail)                                                            | the first real `isEntitled` caller |
+| **W5** | AF4 retrieval-backed discovery / search                                                               | M         | An upgrade of the existing M3/M6 `/discover` + `/search` surfaces rather than a new one                                                                                                                    | —                                  |
+| **W6** | AF3 story-intelligence client                                                                         | L         | **Held.** No client exists on any platform and there is no product definition — it needs a shape before it is an engineering task                                                                          | —                                  |
+| **W7** | Engagement & parity backfill (**both clients**)                                                       | M–L       | Closes the unowned gaps [48 §5](./48_PlatformParityRegister.md) has been flagging: conversation layer on web, collections, clap/report, reader analytics, privacy prefs, and **P-2** (composing @mentions) | —                                  |
+| **W8** | Remaining AI surfaces (**both clients**)                                                              | M         | AI conversations, prompt library, AI usage — mobile-shipped, no W row owned them                                                                                                                           | —                                  |
+| **D1** | **Decision:** what does accepting a suggestion mean?                                                  | S         | **P-1**, [48 §5.1](./48_PlatformParityRegister.md) — correctness-shaped; a product call, not an engineering one                                                                                            | the client half of P-1             |
 
 ### 4.1 W1 — Reader page (detail)
 
@@ -231,6 +232,71 @@ happen**, which is worth correcting whichever way D1 lands.
 **Before each of these rows starts:** run the reference audit ([48 §6](./48_PlatformParityRegister.md)
 step 2) against the shipping platform's request/response shapes. Three AF6 surfaces have been audited
 so far and **all three were broken** (M-1, M-2, M-3); a screen list is not evidence.
+
+---
+
+### 4.5 B2 — premium content (HELD) (detail)
+
+**Status: recorded, not scheduled.** Held by the user on 2026-07-29 — "maybe we will implement it in
+future". This section exists so the decisions already taken are not re-litigated when it thaws.
+
+**Why the row exists.** W4's rationale named "premium pieces (W1)" as one of the two things
+monetization would gate. **There is no premium-content model anywhere** — verified: `piece.entity.ts`
+has no premium/paywall column, `Visibility` is only `public | unlisted | private`, no piece route
+consults the Entitlement Service, and the reader's "More like this" is a plain first-tag search. So
+half of W4's stated premise had no contract behind it, and W4 correctly gates only metered AI. This is
+the **third** roadmap dependency found to be aspirational rather than verified (after W-1's related
+pieces and W3c-1's review gate) — see [§7](#7-what-this-roadmap-is-not).
+
+**Model chosen: tier-gated.** Decided by the user 2026-07-29 over two alternatives, both rejected on
+size rather than merit:
+
+| Model                         | Why not chosen                                                                                                                                                                                     |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Per-piece unlock with credits | Needs an unlock ledger and credit-spend on the read path; makes credits do double duty alongside AI metering. **L.**                                                                               |
+| Author revenue share          | Earnings attribution, payouts, tax, KYC, author accounting — **none of which exists** in the backend. A multi-epic program. `marketplace` is a reserved `PremiumFeature` code that anticipates it. |
+
+Tier-gated: an author marks a piece premium, `plus`/`pro`/`enterprise` subscribers read it in full,
+free readers get a server-truncated excerpt. It reuses the subscription and entitlement machinery W4
+builds and needs no payout system.
+
+**Scope when it thaws — B2, the enabler (S–M).** Breaks the roadmap's "no backend enabler" default, as
+B1 did, and needs the same freeze amendment.
+
+- Add `PremiumContent: 'premium_content'` to `PremiumFeature` and grant it in `plus`/`pro`/`enterprise`
+  under the `monetization.plans` setting. **No migration** — codes are varchar-backed by design.
+- `pieces` gains one additive `is_premium boolean not null default false` (metadata-only on PG 11+).
+  **Orthogonal to `Visibility`** — a piece can be public _and_ premium; state that in the entity
+  comment, since a client has already shipped a defect from misreading that enum.
+- **Read-path enforcement**: the by-slug endpoint and piece detail call
+  `PolicyEngineService.isEntitled(userId, 'premium_content')` — the **first real caller** of a port that
+  has had zero since AF5 shipped. Unentitled or anonymous → excerpt plus a lock flag; entitled → full
+  content; the author always sees their own piece whole.
+- **Excerpt derived server-side** from the TipTap JSON using `@qalam/utils`' existing `extractPlainText`.
+  Do **not** add a third flattener — two already exist with deliberately different semantics, and
+  `content-text.divergence.spec.ts` exists to stop them being merged.
+- Feed, search, discovery and related-pieces mark premium in their DTOs so clients badge without a
+  second fetch. The premium toggle joins the piece update DTO.
+
+**Scope — the clients (M each, both platforms).** The parity rule makes this a pair, not a web row with
+mobile deferred. Reader shows excerpt + a paywall CTA linking to plans; publish settings gain the
+toggle; lists gain the badge. This is **`PremiumGate`'s first genuine call site** on either platform,
+which also retires **M5-1** (a mobile component whose own doc comment claims usage it does not have).
+
+**Non-negotiable: enforcement truncates content server-side.** A client-side veil ships the full prose
+to anyone who opens devtools. The paywall is a read-path decision, not a rendering one.
+
+**Two product questions still open** (neither blocks holding it):
+
+1. How long the free excerpt is.
+2. Whether an author may mark an **already-published** piece premium retroactively. The column defaults
+   to `false`, so existing pieces are unaffected either way — but the retroactive case has a
+   reader-trust dimension worth deciding deliberately rather than by default.
+
+**Sequencing when it thaws:** `W4 → B2 → clients → W5`. B2 should precede W5, because W5 owns three
+more unenforced feature codes (`ai_discovery`, `premium_search`, `premium_recommendations`) and B2
+establishes the enforcement pattern they would otherwise each invent. Do not start B2 before W4's
+hand-off lands — B2's read-path lock flags must fit the entitlement client layer W4 builds.
 
 ---
 

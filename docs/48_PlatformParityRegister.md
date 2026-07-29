@@ -717,6 +717,53 @@ on one client while the other already ships it, so nothing is blocked on them.
 
 ---
 
+### 5.2 The monetization catalogue sells eight features and the backend enforces one (opened 2026-07-29, during W4)
+
+Not a divergence — **both clients are equally affected**, and the hole is server-side. Found while
+scoping W4's gating, which is what the row was supposed to be about.
+
+`monetization.plans` ([`settings.catalog.ts`](../backend/src/modules/settings/settings.catalog.ts))
+sells eight `PremiumFeature` codes across four tiers. **Exactly one is asserted anywhere:**
+
+| Feature                                                                                                                                 | Enforced?                                                                        |
+| --------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `ai_budget`                                                                                                                             | ✅ `AiUsageMeterService.checkQuota` — and only while the monetization flag is on |
+| `ai_writing`, `ai_discovery`, `premium_search`, `premium_recommendations`, `story_intelligence`, `advanced_analytics`, `publishing_pro` | ❌ computed and reported by the entitlement snapshot, **never asserted**         |
+
+**The bridge exists and is dead code.** `EntitlementPolicyProvider` self-registers the AF5 Entitlement
+Service into the Policy Engine as its entitlement port, and `PolicyEngineService.isEntitled()` is a
+public method — with **zero callers** in the backend. No rule in the ordered pipeline consults it. So a
+subscriber's plan is computed correctly and then ignored on every route but the AI meter's.
+
+**Consequences, in the order they bite:**
+
+1. **A client must not gate on the seven.** Gating `advanced_analytics` or `publishing_pro` in a UI
+   would be a client-only wall in front of a route the server serves to anyone — the same class of
+   defect as **W3c-1** (§3.4) inverted: dead UI rather than a dead button. W4 therefore gates only
+   `ai_budget`, and upsells the rest non-blockingly.
+2. **`ai_budget` has two distinct denials and the clients modelled one.** `assertAllowed(AiBudget)`
+   failing is an entitlement denial whose remedy is _"see plans"_; `assertWithinQuota` failing is
+   `QUOTA_EXCEEDED`, whose remedy is _"wait for reset"_ or buy credits. Conflating them tells a blocked
+   user to wait for a reset that will never help. W4 adds the missing state.
+3. **The meter no-ops when monetization is dark** (`checkQuota` returns early, AF1's own token caps
+   apply). Since both clients default the flag off, a UI that asserts quota or entitlement states in
+   that mode is asserting limits nothing enforces — correct under a flag-on E2E run and wrong in the
+   default build. Worth pinning both ways.
+4. **The free tier is internally contradictory.** `free` is granted `ai_budget` with a 20k/day,
+   200k/month token allowance but **not** `ai_writing`. If the server ever enforced `ai_writing`, the
+   free tier's budget would become unspendable. **That contradiction is a product question and it
+   blocks scoping the fix** — it must be answered before any row makes the server assert the declared
+   features.
+
+**Ownership.** `premium_content` (a ninth code that does not exist yet) is owned by **B2**, held —
+[45 §4.5](./45_WebClientRoadmap.md#45-b2--premium-content-held-detail). B2 will write the **first real
+`isEntitled` caller** and establish the enforcement pattern. **The other seven are unowned**, and
+closing them is a backend row plus the free-tier product decision above — not a client port. **W5**
+inherits three of them (`ai_discovery`, `premium_search`, `premium_recommendations`), which is why B2
+should precede it.
+
+---
+
 ## 6. Parity check — run at the end of every client epic
 
 Added to the per-epic flow as step 7 ([45 §2](./45_WebClientRoadmap.md)):
