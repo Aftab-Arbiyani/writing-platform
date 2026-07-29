@@ -12,10 +12,13 @@ export { CollaboratorsPage } from './pages/collaborators-page';
 export { InvitationsInboxPage } from './pages/invitations-inbox-page';
 export { CommentsPage } from './pages/comments-page';
 export { SuggestionsPage } from './pages/suggestions-page';
+export { PublishingPage } from './pages/publishing-page';
+export { BlocksPage } from './pages/blocks-page';
 
 export { CapabilityGate } from './components/capability-gate';
 export { RoleBadge } from './components/role-badge';
 export { PresenceBar } from './components/presence-bar';
+export { RestrictedWall } from './components/restricted-wall';
 
 export { useCapability, useStoryCapabilities } from './hooks/use-capabilities';
 export { useStoryMembers, useMemberActions } from './hooks/use-members';
@@ -32,16 +35,28 @@ export {
   useSuggestionActions,
   isSuggestionConflict,
 } from './hooks/use-suggestions';
+export { useStoryReview, useReviewActions, isNotApproved } from './hooks/use-review';
+export { useStoryHistory, usePublicationActions } from './hooks/use-publishing';
+export { useStorySnapshots, useSnapshotActions } from './hooks/use-snapshots';
+export { useMyTrust, useMyBlocks, useBlockActions, isRestricted } from './hooks/use-trust';
 export { isCollaborationEnabled } from './lib/collaboration-enabled';
 
 export type {
+  BlockEntry,
+  BlockKind,
   CollaborationComment,
   CommentAnchor,
   CommentThread as CommentThreadData,
   EditSuggestion,
+  PublicationHistoryEvent,
+  ReviewSession,
   StoryCapabilities,
   StoryCapability,
   StoryInvitation,
   StoryMember,
   StoryPresence,
+  StoryPublicationState,
+  StorySnapshot,
+  TrustSummary,
+  UserRestriction,
 } from './types/collaboration.types';

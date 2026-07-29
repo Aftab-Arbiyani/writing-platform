@@ -241,6 +241,117 @@ export class ApiHelper {
     return this.data<{ userId: string; role: string }[]>(res);
   }
 
+  // ── Publishing + trust (AF6 / W3c, docs/49 §5) ────────────────────────────────────────────
+
+  /**
+   * Create a draft as an arbitrary user (POST /pieces as the bearer of `token`).
+   *
+   * The writer-scoped {@link createPiece} cannot serve the restricted-wall flow: that needs a
+   * throwaway account carrying a restriction, and restricting the SHARED writer would leak into
+   * every other spec in the suite.
+   */
+  async createPieceAs(
+    token: string,
+    input: { title: string; body?: string },
+  ): Promise<PieceSummary> {
+    const res = await this.request.post(this.url('/pieces'), {
+      headers: { Authorization: `Bearer ${token}` },
+      data: {
+        title: input.title,
+        genreSlug: 'short-story',
+        languageCode: 'en',
+        content: this.tiptapDoc(input.body ?? `${input.title} — seeded by the E2E suite.`),
+      },
+    });
+    return this.data<PieceSummary>(res);
+  }
+
+  /**
+   * Apply an account restriction as an admin (POST /admin/users/:id/restrictions).
+   *
+   * This is how the restricted-state wall is arranged: the Policy Engine resolves the trust status
+   * from these rows, so a restricted user's capability decisions come back with a restrictive
+   * `effect` — which is the wall's trigger. Returns the restriction id so a test can lift it.
+   */
+  async restrictUser(
+    userId: string,
+    input: {
+      type: 'read_only' | 'muted' | 'restricted' | 'shadow' | 'suspended';
+      scope?: 'global' | 'publishing' | 'collaboration' | 'comments' | 'reporting';
+      reason?: string;
+    },
+  ): Promise<{ id: string; type: string; scope: string }> {
+    const res = await this.request.post(this.url(`/admin/users/${userId}/restrictions`), {
+      headers: await this.adminHeaders(),
+      data: {
+        type: input.type,
+        scope: input.scope ?? 'global',
+        reason: input.reason ?? 'e2e restriction',
+      },
+    });
+    return this.data<{ id: string; type: string; scope: string }>(res);
+  }
+
+  /** Lift a restriction (DELETE /admin/restrictions/:id) — teardown for the wall flow. */
+  async liftRestriction(id: string): Promise<void> {
+    const res = await this.request.delete(this.url(`/admin/restrictions/${id}`), {
+      headers: await this.adminHeaders(),
+    });
+    await this.data(res);
+  }
+
+  /** Block a user as the bearer of `token` (POST /users/:id/block) — arranges the blocks list. */
+  async blockUser(targetUserId: string, token: string): Promise<{ id: string; kind: string }> {
+    const res = await this.request.post(this.url(`/users/${targetUserId}/block`), {
+      headers: { Authorization: `Bearer ${token}` },
+      data: {},
+    });
+    return this.data<{ id: string; kind: string }>(res);
+  }
+
+  /** Mute a user as the bearer of `token` (POST /users/:id/mute). */
+  async muteUser(targetUserId: string, token: string): Promise<{ id: string; kind: string }> {
+    const res = await this.request.post(this.url(`/users/${targetUserId}/mute`), {
+      headers: { Authorization: `Bearer ${token}` },
+      data: {},
+    });
+    return this.data<{ id: string; kind: string }>(res);
+  }
+
+  /** Request a review as the seeded writer (POST /stories/:id/review) — no body. */
+  async requestReview(storyId: string): Promise<{ id: string; state: string }> {
+    const res = await this.request.post(this.url(`/stories/${storyId}/review`), {
+      headers: await this.writerHeaders(),
+      data: {},
+    });
+    return this.data<{ id: string; state: string }>(res);
+  }
+
+  /**
+   * Approve a story's review as the ADMIN (POST /stories/:id/review/approve).
+   *
+   * The admin, not the author: the route is coarse-gated on `PERMISSIONS.PublishingApprove`, which
+   * only moderator/admin hold — so an author cannot approve their own story even though the
+   * capability map says they may (defect W3c-1, docs/48 §3.4).
+   */
+  async approveReview(storyId: string): Promise<{ id: string; state: string }> {
+    const res = await this.request.post(this.url(`/stories/${storyId}/review/approve`), {
+      headers: await this.adminHeaders(),
+      data: {},
+    });
+    return this.data<{ id: string; state: string }>(res);
+  }
+
+  /** A story's snapshots as the seeded writer (GET /stories/:id/snapshots). */
+  async storySnapshots(
+    storyId: string,
+  ): Promise<{ id: string; version: number; reason: string }[]> {
+    const res = await this.request.get(this.url(`/stories/${storyId}/snapshots`), {
+      headers: await this.writerHeaders(),
+    });
+    return this.data<{ id: string; version: number; reason: string }[]>(res);
+  }
+
   /** Follow a user as the bearer of `token` (POST /users/:id/follow, no body). */
   async follow(targetUserId: string, token: string): Promise<{ status: string }> {
     const res = await this.request.post(this.url(`/users/${targetUserId}/follow`), {

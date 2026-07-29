@@ -60,6 +60,12 @@ const router = createBrowserRouter([
             path: 'write/:storyId/suggestions',
             lazy: () => import('@/app/routes/story-suggestions'),
           },
+          // W3c — review → approve → publish, versions and publication history. Chrome'd like the
+          // other three story-management surfaces above.
+          {
+            path: 'write/:storyId/publishing',
+            lazy: () => import('@/app/routes/story-publishing'),
+          },
           { path: 'me/stats', lazy: () => import('@/app/routes/stats') },
           { path: 'me/stats/pieces/:id', lazy: () => import('@/app/routes/piece-stats') },
           { path: 'notifications', lazy: () => import('@/app/routes/notifications') },
@@ -73,6 +79,9 @@ const router = createBrowserRouter([
               { path: 'account', lazy: () => import('@/app/routes/settings/account') },
               { path: 'appearance', lazy: () => import('@/app/routes/settings/appearance') },
               { path: 'notifications', lazy: () => import('@/app/routes/settings/notifications') },
+              // W3c — blocks/mutes + account standing. A settings section rather than its own
+              // top-level route: it is account-scoped, like every other tab here.
+              { path: 'blocks', lazy: () => import('@/app/routes/settings/blocks') },
             ],
           },
         ],

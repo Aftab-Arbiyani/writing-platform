@@ -1,9 +1,10 @@
 import { cn } from '@qalam/ui';
-import { Bell, Palette, ShieldCheck, UserRound } from 'lucide-react';
+import { Bell, Palette, ShieldCheck, ShieldOff, UserRound } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { NavLink, Outlet } from 'react-router';
 
+import { env } from '@/config/env';
 import { ROUTES } from '@/lib/routes';
 
 const SECTIONS: readonly { to: string; label: string; icon: LucideIcon }[] = [
@@ -14,19 +15,36 @@ const SECTIONS: readonly { to: string; label: string; icon: LucideIcon }[] = [
 ];
 
 /**
+ * Safety (blocks/mutes + standing) is an AF6 W3c section, so it appears only while collaboration is
+ * on — otherwise the tab would lead to a "Collaboration is off" panel.
+ *
+ * The flag is read from `env` rather than through collaboration's own `isCollaborationEnabled()`:
+ * features may not import features (docs/26 §4), and one string comparison is a smaller price than
+ * that edge. Both read the same variable, so they cannot disagree.
+ */
+const SAFETY_SECTION = {
+  to: ROUTES.settingsBlocks,
+  label: 'Safety',
+  icon: ShieldOff,
+} as const;
+
+/**
  * Settings shell (docs/06 §3.8, docs/11 §3): a 240px leading section-nav + content column at
  * `lg`, collapsing to a horizontal scroll nav above the content below `lg`. `NavLink` sets
  * `aria-current="page"` on the active section for free. Nested under `RequireAuth`; each section
  * renders through `<Outlet/>`.
  */
 export function SettingsLayout(): ReactElement {
+  const sections =
+    env.VITE_ENABLE_COLLABORATION === 'true' ? [...SECTIONS, SAFETY_SECTION] : SECTIONS;
+
   return (
     <div className="mx-auto w-full max-w-[960px] px-4 py-6 sm:px-6">
       <h1 className="mb-4 font-serif text-2xl font-semibold text-ink">Settings</h1>
       <div className="flex flex-col gap-6 lg:flex-row">
         <nav aria-label="Settings sections" className="lg:w-[240px] lg:shrink-0">
           <ul className="flex gap-1 overflow-x-auto border-b border-line pb-2 lg:flex-col lg:gap-0.5 lg:border-b-0 lg:pb-0">
-            {SECTIONS.map(({ to, label, icon: Icon }) => (
+            {sections.map(({ to, label, icon: Icon }) => (
               <li key={to}>
                 <NavLink
                   to={to}

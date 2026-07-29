@@ -1,6 +1,6 @@
 # 49 — W3 Design: Collaboration, Publishing & Trust on the web
 
-**Status:** 🚧 In progress — W3a + W3b landed, W3c next · **Epic:** W3 ([45 §4.3](./45_WebClientRoadmap.md)) · **Size:** L, landing in three slices
+**Status:** ✅ All three slices landed (W3a `10fa085`, W3b `0c0de84`, W3c 2026-07-29) · **Epic:** W3 ([45 §4.3](./45_WebClientRoadmap.md)) · **Size:** L, landed in three slices
 **Backend platform:** ✅ complete — [38](./38_CollaborationTrustPlatformArchitecture.md) (AF6)
 **Reference client:** `qalam-mobile/lib/features/collaboration/` — report `qalam-mobile/docs/50`
 
@@ -304,6 +304,75 @@ only while the seeded list was short; it broke once repeated runs filled the dat
 
 **Same one gate open as W3a:** no visual baseline is committed for either page — CI mints those (§6d).
 Playwright wrote host actuals on the full-suite run; both were deleted, not committed.
+
+---
+
+## 6g. W3c status (2026-07-29) — shipped, and the precondition that made it a port
+
+**Green:** 409 frontend unit tests, `tsc --noEmit` + `eslint` clean, build within bundle budget, and
+E2E **9/9 functional + 33/33 a11y in light AND dark** against the local stack with
+`RATE_LIMIT_ENABLED=false`.
+
+| Surface             | Route                            | Shipped                                                                                                                                                                        |
+| ------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Publishing workflow | `/write/:storyId/publishing`     | Review card (request / approve / request-changes with notes), publication card (publish / unpublish / schedule / visibility), versions (capture / revert), publication history |
+| Restricted state    | rendered where an effect demands | `RestrictedWall` — wraps the workflow, triggered by the server's own restrictive `effect`                                                                                      |
+| Blocks / mutes      | `/settings/blocks`               | Both kinds in one list, unblock/unmute through their own routes, plus account standing                                                                                         |
+
+**This row is the first true port of the epic, and only because the reference was repaired first.**
+W3a built invite from the contract (mobile's was broken, M-1) and W3b built from the DTOs entirely
+(M-2/M-3). W3c's reference — mobile's `publishing_workflow_screen` — had **eight** defects of its own,
+all fixed before this row started (`qalam-mobile/docs/56` §2.2, commit `b64db78`). Five of them were
+shapes no unit test catches, because the server accepted the request and discarded it:
+
+| Defect | What it was                                                                       | What web does                                                         |
+| ------ | --------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| P-1    | Five calls answer `PieceResponseDto`; mobile decoded them as an event/snapshot    | `StoryPublicationState` mirrors the piece fields the UI reads         |
+| P-2    | `schedule` sent `scheduledFor` + `visibility` → 400 on two keys and a missing one | `{scheduledAt}`, pinned by a unit test that asserts the key set       |
+| P-3    | A `followers` visibility the enum does not contain → 400 every time               | `VISIBILITY_OPTIONS` is asserted equal to `Object.values(Visibility)` |
+| P-4    | `GET …/review` answers `data: null`; mobile raised `API_MALFORMED_RESPONSE`       | `ReviewSession \| null`, and "Draft" is the rendered state            |
+| P-8    | Four handlers declare no `@Body()`; bodies were discarded in silence              | Those four calls send none, pinned per-call                           |
+
+**The nullable read, done web's way.** Mobile added an explicit `getOrNull` because its client threw
+on non-Map data. Web's `api-client` already returns `data` untouched, so nothing in the shared client
+needed loosening — the equivalent fix is to stop lying in the type (`Promise<ReviewSession | null>`)
+and pin it: `use-review.spec.tsx` asserts `null` arrives as **data**, is cached, and that a real
+failure still errors.
+
+**The restricted wall's shape was decided from web's own routing, not copied.** Mobile walls via a
+banner because its `guardRedirect` is pure and synchronous. Web's guard is a component and _could_
+read trust — but §5 says the wall is "rendered wherever an effect demands", and interception would put
+a blocking request in front of every navigation to answer a question a handful of surfaces ask. So
+`RestrictedWall` wraps the surface, keys on the server's `effect` (never a locally-derived status),
+fetches `GET /me/trust` **only** once a restrictive effect has been seen, and fails open. Both clients
+wall at the surface, each for its own reason.
+
+**Blocks/mutes had no reference at all** — mobile's trust data layer is complete and renders nowhere,
+recorded as **M-4** ([48 §3.3](./48_PlatformParityRegister.md)). Built from the DTOs, avoiding the one
+real defect in that dead code: `BlockDto.id` is the relationship and `blockedId` is the person, and
+mixing them up makes unblocking impossible while looking fine (T-1). Both a unit test and the E2E pin
+the id that goes out.
+
+### What running the suite found (again, the reason it is not optional)
+
+- **A backend defect the unit tests could not see (W3c-1).** The capability map tells a story owner
+  they may `review.approve`; the endpoint's coarse `@Permissions(PublishingApprove)` then 403s them.
+  Recorded in [48 §3.4](./48_PlatformParityRegister.md), not worked around — a client-side role check
+  is the one thing §3 forbids. The E2E documents the live behaviour and fails when it is fixed.
+- **Two contrast defects in shared UI (W3c-2, W3c-3)**, both first reached by this row's a11y scan.
+- **Two selector/isolation bugs of my own**, both the traps this epic has now hit three times:
+  `getByRole('region', {name: 'Publication'})` matched "Publication history" too (substring), and
+  counting rows in the shared writer's cumulative block list passed only until the second run — the
+  same shape as W3b's `drafts-page` fix. Both fixed here; the fix for the second is a throwaway
+  blocker, so the test owns its data.
+
+**Same one gate open as W3a and W3b:** no visual baseline is committed for the new pages — and none is
+minted here. Playwright wrote a host actual for `frontend-collaborators.png` during the full-suite run;
+it was deleted, not committed (§6d).
+
+**One pre-existing E2E failure, unrelated to this row:** `assistant.spec.ts` "the editor still writes
+and autosaves with the assistant mounted" fails under parallel load. Confirmed pre-existing by
+stashing every W3c change and re-running — it fails on the clean tree too (56 passed / 1 failed).
 
 ---
 

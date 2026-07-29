@@ -169,6 +169,11 @@ export const qk = {
       ['stories', id, 'comments', status ?? 'all'] as const, // GET …/comments
     suggestions: (id: string, status?: SuggestionStatus) =>
       ['stories', id, 'suggestions', status ?? 'all'] as const, // GET …/suggestions
+    // W3c. `review` caches a nullable resource: a story with no session answers `data: null`, which
+    // is the Draft state and a perfectly good cache entry (docs/49 §5, defect P-4).
+    review: (id: string) => ['stories', id, 'review'] as const, // GET …/review
+    snapshots: (id: string) => ['stories', id, 'snapshots'] as const, // GET …/snapshots
+    history: (id: string) => ['stories', id, 'publication-history'] as const, // GET …/publication-history
   },
 
   // A comment thread — its own resource (`GET /comments/:id/thread`), not a field on the comment.
@@ -181,6 +186,14 @@ export const qk = {
   invitations: {
     all: ['invitations'] as const,
     mine: () => ['invitations', 'mine'] as const, // GET /me/invitations
+  },
+
+  // Trust & safety (AF6 W3c) — the viewer's own standing and their personal block/mute list. Both
+  // are account-scoped, not story-scoped, so they sit outside `stories`.
+  trust: {
+    all: ['trust'] as const,
+    me: () => ['trust', 'me'] as const, // GET /me/trust
+    blocks: () => ['trust', 'blocks'] as const, // GET /me/blocks
   },
 
   // Taxonomy catalogues — NO /taxonomy endpoints exist (§2.1.1); sourced from search (browse).

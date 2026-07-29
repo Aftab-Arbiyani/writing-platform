@@ -188,6 +188,103 @@ Closed out per this document's own rule: §3 row deleted, sweep re-dated, port r
 
 ---
 
+## 3.3 M-4 — mobile has a blocks/mutes data layer and no screen (opened 2026-07-29, after W3c)
+
+**Mobile is behind, and it is a wiring gap rather than a contract defect.** Its trust layer is
+complete and correct after the docs/56 repair — `TrustRemoteDataSource`, `TrustRepository`,
+`BlockEntry` (including the T-1 fix), `trustSummary`/`myBlocks` providers — and **nothing renders any
+of it**. There is no blocks/mutes surface on mobile at all; `myBlocksProvider` has zero consumers.
+
+That is why W3c's blocks page was **built from the DTOs rather than ported** (docs/49 §5 says as
+much): there was no reference screen to open. Web now ships `/settings/blocks` — the list with both
+kinds, unblock/unmute through their own routes, and the viewer's account standing.
+
+| What web ships (W3c)                                  | Mobile today                                              |
+| ----------------------------------------------------- | --------------------------------------------------------- |
+| `/settings/blocks` — blocks + mutes, one list         | No screen. Data layer complete, zero consumers.           |
+| Unblock / unmute via `DELETE /users/:id/{block,mute}` | Repository methods exist; no UI calls them.               |
+| Account standing (`GET /me/trust`) beside the list    | `restricted_state_screen` + banner (a different surface). |
+
+**Shape of the port:** a settings screen listing `myBlocksProvider`, with the kind tag and the
+matching remove action. No backend change, no new contract — mobile's `trust_repository.dart` already
+has every method. Mobile's existing `restricted_state_screen` covers standing, so only the block list
+is genuinely new.
+
+**Not built here.** This is a mobile row and W3c is a web row; recorded per this document's own rule
+rather than absorbed.
+
+---
+
+## 3.4 Found by running the W3c suite (2026-07-29)
+
+Recorded, **not fixed** — each is outside the row that found it. The first is the one that matters.
+
+### W3c-1 · **high** · the capability map offers an owner `review.approve`; the endpoint 403s it
+
+**Both gates disagree, and the client is caught in the middle.** The Policy Engine's `review.approve`
+decision allows the story **owner** through its ownership rule, so `GET /stories/:id/capabilities`
+answers `allowed: true` — and both clients are built to reflect that map and never re-derive
+authorization (docs/49 §3). The endpoint is then coarse-gated on
+`@Permissions(PERMISSIONS.PublishingApprove)`, a **platform** permission only `moderator` and `admin`
+hold, so the click returns `403 AUTH_PERMISSION_DENIED`.
+
+Verified live against the local stack:
+
+```
+writer capability review.approve : true (allow)
+writer POST …/review/approve     : 403 AUTH_PERMISSION_DENIED
+admin  POST …/review/approve     : 200 approved
+```
+
+`POST …/review/changes` carries the identical gate and the identical problem.
+
+**Consequence:** every story owner is shown Approve and Request-changes buttons that cannot work.
+Mobile has the same two buttons gated the same way (`publishing_workflow_screen`), so this hits both
+clients equally — it simply has never been exercised there, because AF6 had no entry point until
+recently.
+
+**Not fixable in the client.** The only client-side "fix" would be a role check, which is the one
+thing docs/49 §3 forbids. It needs the backend to reconcile the two gates — either add the story-role
+path to the coarse guard, or stop having the Policy Engine allow an owner an action the route refuses.
+The W3c E2E documents the live behaviour (`publishing.spec.ts`, "DEFECT W3c-1") and will **fail** when
+the gates are reconciled, which is the prompt to delete it.
+
+### W3c-2 · **medium** · `QTag color="success"` fails AA contrast
+
+`packages/ui/src/components/q-tag.tsx` renders `success` as `bg-success/12 text-success` — measured
+`#3e7c4f` on `#e3e8de` = **4.01:1**, under the 4.5 AA floor for 12px text. The W3c a11y scan is the
+first to reach it (the suggestion card's "Accepted" tag has the same colour, but that page's scan
+never accepts one).
+
+Not registered as known a11y debt — `e2e/fixtures/a11y.ts` says an entry there "downgrades a real,
+user-facing defect: prefer fixing the app", and the register is deliberately empty. Instead the W3c
+page uses `neutral` for good standing (`danger` measures fine) and the token is left to its owner:
+fixing it re-tints every success tag on both apps and would re-mint every visual baseline, which only
+CI may do.
+
+### W3c-3 · **low** · AntD's derived hover colour on a default button fails AA
+
+A `QButton variant="secondary"` under the pointer renders its label in AntD's derived
+`defaultHoverColor` — `#ab6846` on white = **4.37:1**. Any a11y scan that leaves the cursor resting on
+a secondary button sees it; the W3c publishing scan did, because it clicks "Capture version" while
+arranging. Worked around by parking the pointer before scanning (with a comment saying why), which
+matches how every other a11y spec scans a resting page. The real fix is pinning the button hover
+colour in `packages/ui/src/theme/antd-theme.ts`, alongside the Menu colours already pinned there for
+exactly this reason.
+
+### W3c-4 · **medium** · the web suggestion card still says the prose was not changed
+
+Carried over from `qalam-mobile/docs/56` §2.6 (C-14) and repeated here because it is web's to fix:
+`frontend/src/features/collaboration/components/suggestion-card.tsx:75` renders "Accepted — apply the
+replacement in the editor", and `api/collaboration.api.ts#acceptSuggestion` documents the same. Both
+were true until `f6827e0`.
+
+**Worse than a stale string:** `e2e/tests/frontend/inline-review.spec.ts` asserts that wording via
+`expectApplyReminder()`, so the suite is **green while the UI is wrong**. Fixing the copy requires
+updating that assertion in the same change.
+
+---
+
 ## 4. Divergences that are NOT gaps (platform-inherent)
 
 These are accepted permanently and need no epic. They exist because the platforms genuinely differ.
@@ -247,14 +344,31 @@ Not divergences — **neither client does these**, so they need a roadmap decisi
 Recorded here because W3b drew them as boundaries, and a boundary that lives only in a commit message
 is how the debt in this document accumulated in the first place.
 
-| #   | Gap                                 | Where both clients stand                                                                                                                                                                         | Shape of the work                                                                                                                                                                                                                                                             |
-| --- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| P-1 | **Applying an accepted suggestion** | `POST /suggestions/:id/accept` records the decision and **does not touch the prose**. Web says so on the accepted card; **mobile toasts "Suggestion accepted." and changes nothing** — silently. | Editor integration: hand the anchored replacement to the editor, which applies it through its own commands (app-level seam, [49 §4](./49_WebCollaborationEpicDesign.md)). Alternatively a backend change so accept rewrites the piece — a product decision, not a client one. |
-| P-2 | **Composing @mentions**             | `mentions` on the wire are resolved user **ids**. Neither composer sends any, so a typed `@handle` is plain text and nobody is notified.                                                         | Handle→id resolution per mention inside the composer — the same lookup the invite dialog uses, applied inline.                                                                                                                                                                |
+| #   | Gap                                                                                                 | Where both clients stand                                                                                                                                                                                                                                    | Shape of the work                                                                                                                |
+| --- | --------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| P-1 | ~~**Applying an accepted suggestion**~~ **CLOSED on the server 2026-07-29** — see the rewrite below | `POST /suggestions/:id/accept` now **rewrites the anchored range of the piece body**, in the same transaction that marks the suggestion accepted, and captures a `pre_edit` snapshot first. A stale anchor is `409 SUGGESTION_CONFLICT` and writes nothing. | Done on the backend (commit `f6827e0`, `qalam-mobile/docs/56` §3b). What remains is client-side and smaller — see W3c-4 in §3.4. |
+| P-2 | **Composing @mentions**                                                                             | `mentions` on the wire are resolved user **ids**. Neither composer sends any, so a typed `@handle` is plain text and nobody is notified.                                                                                                                    | Handle→id resolution per mention inside the composer — the same lookup the invite dialog uses, applied inline.                   |
 
-**P-1 is correctness-shaped, not a nicety.** A writer who accepts a suggestion reasonably expects the
-wording to change; on mobile they are told it was accepted and nothing happens. Whatever the roadmap
-decides, mobile's toast should stop implying an edit occurred.
+**P-1 was correctness-shaped, not a nicety** — and it went the server's way.
+
+**What changed (2026-07-29, commit `f6827e0`).** D1 was decided in favour of the server-side arm:
+`SuggestionService.accept` now applies the edit. It rewrites the anchored range through
+`PiecesService`, in the same transaction that settles the suggestion, so an accepted suggestion always
+corresponds to a real change; it versions the pre-edit content first through publishing's existing
+`pre_edit` snapshot mechanism; and it refuses a stale anchor with `409 SUGGESTION_CONFLICT` rather
+than relocating the edit. Mobile's interim toast ("Marked accepted — apply the change in the editor.")
+was reverted to "Suggestion accepted.", which is true again. Full record:
+`qalam-mobile/docs/56` §3b.
+
+**What is still open, and it is not what P-1 described.** Three client-side items, none of them a
+product decision:
+
+- **Mobile + web both re-read the piece after an accept** — done (C-13, `qalam-mobile/docs/56` §2.7).
+- **The web suggestion card still tells the writer the prose was NOT changed** (C-14) and its E2E
+  asserts that wording, so the suite is green while the UI is wrong. See **W3c-4** in §3.4.
+- **Applying an edit from inside the editor** is no longer needed for correctness. The editor
+  integration is now an optional nicety (seeing the change land live rather than on the next read),
+  not the fix for a silent no-op.
 
 ---
 

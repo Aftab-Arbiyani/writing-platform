@@ -41,11 +41,17 @@ function setup() {
   return { result, invalidate };
 }
 
-/** True when some invalidateQueries call targeted the `['pieces', …]` prefix. */
-function invalidatedPieces(invalidate: ReturnType<typeof vi.spyOn>): boolean {
-  return invalidate.mock.calls.some(
-    (call) => (call[0] as { queryKey?: readonly unknown[] })?.queryKey?.[0] === 'pieces',
-  );
+/**
+ * True when some `invalidateQueries` call targeted the `['pieces', …]` prefix.
+ *
+ * Typed off the spy the setup actually returns rather than the bare `ReturnType<typeof vi.spyOn>`:
+ * that generic default is `(this: unknown, ...args: unknown[]) => unknown`, which `tsc -b` rejects
+ * as unassignable from `invalidateQueries`' own generic signature.
+ */
+type InvalidateSpy = ReturnType<typeof setup>['invalidate'];
+
+function invalidatedPieces(invalidate: InvalidateSpy): boolean {
+  return invalidate.mock.calls.some((call) => call[0]?.queryKey?.[0] === 'pieces');
 }
 
 describe('useSuggestionActions cache invalidation (C-13)', () => {

@@ -6,7 +6,9 @@ import { FeedPage } from '../../pages/frontend/feed-page';
 import { AssistantPanel } from '../../pages/frontend/assistant-panel';
 import { CollaboratorsPage } from '../../pages/frontend/collaborators-page';
 import { InvitationsPage } from '../../pages/frontend/invitations-page';
+import { SettingsBlocksPage } from '../../pages/frontend/settings-blocks-page';
 import { StoryCommentsPage } from '../../pages/frontend/story-comments-page';
+import { StoryPublishingPage } from '../../pages/frontend/story-publishing-page';
 import { StorySuggestionsPage } from '../../pages/frontend/story-suggestions-page';
 import { ProfilePage } from '../../pages/frontend/profile-page';
 import { ReaderPage } from '../../pages/frontend/reader-page';
@@ -141,6 +143,48 @@ test.describe('@phase5 @a11y frontend accessibility (authenticated)', () => {
     await suggestions.goto(story.id);
     await suggestions.propose({ original: 'lantern', suggested: 'oil lamp', from: 4 });
     await expectNoSeriousA11yViolations(page, { label: 'frontend /write/:storyId/suggestions' });
+  });
+
+  test('the publishing page has no critical/serious a11y violations', async ({
+    page,
+    api,
+    data,
+  }) => {
+    // W3c, scanned with a review IN FLIGHT and a version present, so the states axe cares about are
+    // all on screen: four `region` landmarks named by their own headings, the notes field's
+    // `aria-expanded` toggle, and the visibility group's `role="group"` + label.
+    const story = await api.createPiece({ title: data.pieceTitle() });
+    const publishing = new StoryPublishingPage(page);
+    await publishing.goto(story.id);
+    await publishing.requestReview();
+    await publishing.captureVersion();
+    // Park the pointer before scanning. Arranging the page leaves the cursor resting on the button
+    // it last clicked, and AntD's derived hover colour for a default button (#ab6846 on white =
+    // 4.37:1) is below AA — a shared-theme finding, recorded as W3c-3 (docs/48 §3.4), not something
+    // this page introduces. Every other a11y spec scans a resting page; this one has to say so.
+    await page.mouse.move(0, 0);
+    await expectNoSeriousA11yViolations(page, { label: 'frontend /write/:storyId/publishing' });
+  });
+
+  test('the safety settings page has no critical/serious a11y violations', async ({
+    page,
+    api,
+    data,
+  }) => {
+    // W3c. Scanned with a row present: the list carries the only destructive control in settings,
+    // and its kind tag has to be readable rather than colour-only.
+    const writerToken = await api.loginToken('writer@qalam.local', 'ChangeMe!Writer1');
+    const target = await api.createVerifiedUser({
+      email: `a11y-blocked-${data.username()}@qalam.local`,
+      username: data.username(),
+      password: 'ChangeMe!Blocked1',
+    });
+    await api.blockUser(target.id, writerToken);
+
+    const blocks = new SettingsBlocksPage(page);
+    await blocks.goto();
+    await blocks.expectResolved();
+    await expectNoSeriousA11yViolations(page, { label: 'frontend /settings/blocks' });
   });
 
   test('the not-found page has no critical/serious a11y violations', async ({ page, data }) => {

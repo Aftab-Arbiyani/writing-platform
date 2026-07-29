@@ -23,6 +23,8 @@ export const ROUTES = {
   settingsAccount: '/settings/account',
   settingsAppearance: '/settings/appearance',
   settingsNotifications: '/settings/notifications',
+  // Blocks/mutes + account standing (AF6 W3c) — a settings section, since both are account-scoped.
+  settingsBlocks: '/settings/blocks',
   // Auth corridor (docs/11 §10):
   login: '/auth/login',
   register: '/auth/register',
