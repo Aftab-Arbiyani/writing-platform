@@ -149,11 +149,25 @@ including the verified reference audit and the two deliberate departures from mo
 (6 screens + `CapabilityGate`/`PresenceBar`/`RoleBadge`), which was opened and checked
 surface-by-surface first.
 
-| #       | Slice                           | Surfaces                                                                                                          | Status                                                                                                                                                                                                        |
-| ------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **W3a** | Collaboration core (membership) | collaborators page, invite dialog, story invitations, invitations inbox + the three shared components             | 🟢 unit + **E2E green** (6/6 functional, a11y light **and** dark); only the visual baseline is outstanding — CI must mint it ([49 §6b–6d](./49_WebCollaborationEpicDesign.md))                                |
-| **W3b** | Inline review                   | comments (general + inline anchors, threads, resolve, @mentions), suggestions (accept/reject/withdraw + conflict) | 🟢 **shipped** `0c0de84` — unit + **E2E green** (5/5 functional incl. the conflict state, a11y light **and** dark); built from the DTOs, not ported ([49 §6f](./49_WebCollaborationEpicDesign.md))            |
-| **W3c** | Publishing + trust              | review→approve→publish, snapshots + revert, publication history, restricted-state walls, blocks/mutes             | 🟢 **shipped** — unit + **E2E green** (9/9 functional, 33/33 a11y light **and** dark); ported from mobile's repaired screens, blocks/mutes built from the DTOs ([49 §6g](./49_WebCollaborationEpicDesign.md)) |
+| #       | Slice                           | Surfaces                                                                                                          | Status                                                                                                                                                                                                                                                                                                                                                                           |
+| ------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **W3a** | Collaboration core (membership) | collaborators page, invite dialog, story invitations, invitations inbox + the three shared components             | 🟢 unit + **E2E green** (6/6 functional, a11y light **and** dark); only the visual baseline is outstanding — CI must mint it ([49 §6b–6d](./49_WebCollaborationEpicDesign.md))                                                                                                                                                                                                   |
+| **W3b** | Inline review                   | comments (general + inline anchors, threads, resolve, @mentions), suggestions (accept/reject/withdraw + conflict) | 🟢 **shipped** `0c0de84` — unit + **E2E green** (5/5 functional incl. the conflict state, a11y light **and** dark); built from the DTOs, not ported ([49 §6f](./49_WebCollaborationEpicDesign.md))                                                                                                                                                                               |
+| **W3c** | Publishing + trust              | review→approve→publish, snapshots + revert, publication history, restricted-state walls, blocks/mutes             | 🟢 **shipped** — unit + **E2E green** (9/9 functional, 33/33 a11y light **and** dark); ported from mobile's repaired screens, blocks/mutes built from the DTOs ([49 §6g](./49_WebCollaborationEpicDesign.md)). All four hand-off defects now fixed ([49 §6h](./49_WebCollaborationEpicDesign.md)); the owner now approves their own review, so that flow is one actor end to end |
+
+**Status of W3 as a whole (2026-07-29): all four hand-off defects fixed, ONE gate still open.**
+W3c-1 and W3c-4 landed in `2b0cf50`; W3c-2 and W3c-3 (the two shared-theme contrast defects) in
+`1e4d526`, which also **deleted** the pointer-parking workaround rather than leaving it to hide the next
+regression. Functional + a11y are green in light and dark on all three slices.
+
+**W3 is _not_ closed.** The single remaining gate is the visual baseline for `frontend-collaborators`,
+un-minted since W3a. It could not be minted here: there is no GitHub credential in this environment
+(`gh` absent, no token, no credential helper), so `develop` cannot be pushed and `web-e2e` cannot be
+dispatched — and minting locally is forbidden by [e2e/10 §8.3](./e2e/10_UIQuality.md), which this pass
+respected by deleting the two host-rendered PNGs Playwright wrote. **To close:** push `develop`, run
+`web-e2e` with `update_visual_baselines: true`, commit the artifact ([49 §6h](./49_WebCollaborationEpicDesign.md)).
+Note the baselines requested for `story-publishing`, `settings-blocks` and comments/suggestions have **no
+`@visual` tests yet**, so those must be written before they can be minted.
 
 **No backend enabler** — every surface maps to an existing AF6 route (flow step 2's default).
 

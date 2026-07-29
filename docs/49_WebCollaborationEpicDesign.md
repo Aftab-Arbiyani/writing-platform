@@ -228,6 +228,10 @@ That is deliberate: [e2e/10 §8.3](./e2e/10_UIQuality.md) permits baselines only
 actual-image on first run; **it was deleted rather than committed.** To close: run that workflow and
 commit the artifact.
 
+**Still open as of 2026-07-29, and now the ONLY thing between W3 and closed** — see §6h. The two theme
+defects that had to land first are fixed, so the mint is no longer blocked by pending re-tints; it is
+blocked only on running the workflow.
+
 ---
 
 ## 6e. Superseded — pre-run status (kept for the record)
@@ -373,6 +377,51 @@ it was deleted, not committed (§6d).
 **One pre-existing E2E failure, unrelated to this row:** `assistant.spec.ts` "the editor still writes
 and autosaves with the assistant mounted" fails under parallel load. Confirmed pre-existing by
 stashing every W3c change and re-running — it fails on the clean tree too (56 passed / 1 failed).
+
+---
+
+## 6h. The theme-defect pass (2026-07-29) — W3c-2 and W3c-3 closed, baseline gate still open
+
+The four defects W3c's hand-off carried are now **all fixed**: W3c-1 and W3c-4 in `2b0cf50`, W3c-2 and
+W3c-3 in `1e4d526` (findings in [48 §3.4–3.5](./48_PlatformParityRegister.md)).
+
+| Defect    | Fix                                                                                               |
+| --------- | ------------------------------------------------------------------------------------------------- |
+| **W3c-2** | `--q-success` `#3e7c4f` → `#356b44`; axe-measured 5.29 / 4.96 / 4.62 on surface / canvas / raised |
+| **W3c-3** | `Button.defaultHoverColor` pinned to the accent token; the pointer-parking workaround **deleted** |
+
+Both were verified by _removing_ the fix and watching the scan fail, not by arithmetic alone — which
+§8.4 of [10](./e2e/10_UIQuality.md) warns is not verification. Without the pin, axe reports
+`4.37 (#ab6846 on #ffffff)` and the publishing scan fails; with it, 31 a11y checks pass in
+**light and dark**. And because no scan anywhere paints a `success` tag, QTag's classes were rendered
+against the real stylesheet and measured directly.
+
+**Suite state on this tree** (frontend, chromium + dark, `--grep-invert @visual`): **82 passed, 1
+failed** — the pre-existing `assistant.spec.ts` flake above. The like-for-like comparison is the useful
+part: the same loaded run on the reverted tokens fails **2** (that flake _plus_ the publishing a11y
+scan), and **1** with the fix. Nothing else moved.
+
+### The gate that remains — and why it is still not closed
+
+**W3 is not closed.** One gate is open, the same one since W3a: no visual baseline is committed for
+`frontend-collaborators` (chromium or dark). It **could not be minted from this environment**:
+
+- `gh` is not installed, no `GH_TOKEN`/`GITHUB_TOKEN` is set, and no git credential helper is
+  configured — `git push --dry-run` fails with `could not read Username for 'https://github.com'`.
+  So the branch cannot be pushed and `web-e2e` cannot be dispatched. `develop` is **5 commits ahead**
+  of `origin/develop` (two of them pre-dating this work).
+- The forbidden fallback was **not** taken. Running `visual.spec.ts` locally made Playwright write two
+  host-rendered baselines; both were **deleted**, per [10 §8.3](./e2e/10_UIQuality.md). That is the third
+  time this trap has been hit — now recorded as a process gap, [48 §3.5](./48_PlatformParityRegister.md) T-8.
+
+**To close W3:** push `develop`, run `web-e2e` with `update_visual_baselines: true`, commit the
+`updated-visual-baselines` artifact. Nothing else is outstanding.
+
+**One discrepancy to settle first.** The requested coverage was `frontend-collaborators` plus
+`story-publishing`, `settings-blocks` and comments/suggestions — but `visual.spec.ts` defines **nine**
+screenshots and none of the last four are among them. A mint cannot create a baseline for a test that
+does not exist, so those three pages need `@visual` tests added before their baselines can be minted.
+That is a spec addition, outside a tokens-and-baselines pass, so it was **not** done here.
 
 ---
 

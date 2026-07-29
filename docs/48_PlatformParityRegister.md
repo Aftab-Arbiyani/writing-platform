@@ -495,6 +495,39 @@ it is **not root-caused here** — recording the observation, not a diagnosis. E
 verb, which is the same defect class as W3c-4: an assertion that pins the wrong thing keeps the suite
 green over a broken surface. Fix the assertion first (scope it to the comment item), then see what fails.
 
+### T-7 · **medium** · `assistant.spec.ts` "writes and autosaves" is flaky under parallel load
+
+**Already recorded by W3c** ([49 §6g](./49_WebCollaborationEpicDesign.md), "One pre-existing E2E failure"),
+which established it by stashing every W3c change. Repeated here only because this pass re-measured it
+independently and the numbers pin the mechanism — it is not a new defect.
+
+`tests/frontend/assistant.spec.ts:60` fails on the title assertion after `editor.reload()`
+(`expect(getByLabel('Title')).toHaveValue(...)`), but **only when the full suite runs**. Measured:
+
+| Condition                                       | Result               |
+| ----------------------------------------------- | -------------------- |
+| spec alone, 1 worker, current tokens            | 3/3 **pass**         |
+| full frontend suite, 8 workers, current tokens  | **fail** (2 runs)    |
+| full frontend suite, 8 workers, tokens reverted | **fail** — same test |
+
+The last row is the one that matters: it fails identically with the token change reverted, so it is
+**pre-existing and unrelated** — the same loaded run showed 2 failures before the fix (this plus the
+publishing a11y scan) and 1 after. It is a race between autosave persisting and the reload rehydrating,
+which only loses under contention. Not triaged further here.
+
+### T-8 · **high (process)** · running a visual spec locally silently mints host-rendered baselines
+
+`frontend-collaborators` has no baseline for `frontend-chromium` or `frontend-dark`, so running
+`visual.spec.ts` locally makes Playwright **write one** ("A snapshot doesn't exist …, writing actual")
+from the host's own browser. It looks like a pass on the next run. [10 §8.3](./e2e/10_UIQuality.md) forbids
+exactly this — baselines are only valid from `mcr.microsoft.com/playwright:v1.61.1-noble` — and both W3a
+and W3c already caught and deleted one. **This pass generated two more and deleted them.**
+
+Three occurrences is a process gap, not bad luck. Worth one of: `--ignore-snapshots` in the local run
+script, `ci: true` in the Playwright config so missing snapshots fail instead of being written, or a
+pre-commit hook rejecting untracked files under `*-snapshots/`. Recorded rather than fixed — it is a
+harness change, outside a tokens-and-baselines pass.
+
 ---
 
 ## 4. Divergences that are NOT gaps (platform-inherent)
