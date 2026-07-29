@@ -422,6 +422,53 @@ scan), and **1** with the fix. Nothing else moved.
 screenshots and none of the last four are among them. A mint cannot create a baseline for a test that
 does not exist, so those three pages need `@visual` tests added before their baselines can be minted.
 That is a spec addition, outside a tokens-and-baselines pass, so it was **not** done here.
+**Resolved 2026-07-29 (§6i): the four specs now exist.**
+
+---
+
+## 6i. The QTag recipe pass (2026-07-29) — T-2/T-3 closed, four visual specs added
+
+Three items, in the order they had to happen.
+
+**1. The recipe, not the swatches.** Every tinted QTag colour failed or nearly failed AA because the
+label and the fill were the **same token** — the colour was measured against itself, so the ratio was a
+property of one token plus whatever page sat behind it. Fixed structurally: a per-family
+`--q-<fam>-on-tint` label token, solved against the darkest page, with **the fills untouched** so hue
+and vividness are unchanged. Full before/after (axe, both themes, all three backgrounds) in
+[48 §3.5](./48_PlatformParityRegister.md). All five now clear 4.5:1 everywhere; **T-2 and T-3 are
+closed**, and dark mode moved only for `danger`, which was the recorded T-3 failure.
+
+The same pairing existed in **seven other places** — `offline-banner` (a live `warning` text failure),
+`notification-filters`, `notification-item`'s glyphs, `editor-toolbar`, admin's `login-form` — all
+converted. That breadth is the argument for fixing the recipe: darkening five fills would have muddied
+the palette and left the next colour free to reintroduce it.
+
+**2. The scan hole.** A token was only scanned if a page happened to paint one, and no scan painted a
+`success` tag at all. There is now a permanent spec that parses QTag's `COLOR` map out of the component,
+asserts the pairing rule statically, and renders every colour on all three backgrounds in both themes
+(48 §3.5, T-2b). Verified by breaking it both ways. W3c's `neutral` workaround on the blocks page is
+**removed** — good standing reads `success` again.
+
+**3. The four missing visual specs** — `frontend-story-publishing`, `frontend-settings-blocks`,
+`frontend-comments`, `frontend-suggestions` — added following the existing pattern, including its two
+hard-won data lessons: the blocks page snapshots as a **throwaway blocker** (the writer's block list is
+cumulative and would encode a per-run row count), and every list is masked so the shots pin layout
+rather than timestamps and generated ids. All 27 visual specs were validated with
+`--ignore-snapshots`, which exercises the arrangement without writing an image.
+
+### The mint must now re-mint EVERYTHING, not just the missing four
+
+This is the important change to the outstanding gate. The re-tint touches tags, notification glyphs,
+toolbar active states, the offline banner and admin's login error — so **every committed baseline is
+now stale**, not merely absent. A mint that only fills the gaps would leave the nine existing baselines
+describing the old palette and they would fail the next verification run.
+
+So the one CI run is `web-e2e` with `update_visual_baselines: true`, and the artifact it produces
+replaces **all** baselines: 13 pages × the engines/themes each is projected into. Reviewing that diff is
+where the re-tint actually gets looked at, which is why it is one run at the end rather than several.
+
+**Deliberately not minted here.** Nothing was generated locally and no image is committed —
+[10 §8.3](./e2e/10_UIQuality.md), and the T-8 trap this repo has now hit three times.
 
 ---
 

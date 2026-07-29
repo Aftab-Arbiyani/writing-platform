@@ -10,13 +10,20 @@ import { mediaUrl } from '@/lib/media';
 import { describeNotification, type NotificationTone } from '../lib/describe-notification';
 import type { NotificationItem as Item } from '../types/notification.types';
 
-/** Semantic tone → token classes for the activity glyph's tinted circle + icon colour. */
+/**
+ * Semantic tone → token classes for the activity glyph's tinted circle + icon colour.
+ *
+ * Same fill/label pairing rule as QTag: a `-on-tint` label, never the fill token
+ * (docs/48 §3.5). The glyph is an icon, so it answers to the 3:1 non-text bar rather
+ * than 4.5 and was not failing — but leaving the wrong pairing in place is how the
+ * class spread in the first place.
+ */
 const TONE: Record<NotificationTone, { circle: string; glyph: string }> = {
-  accent: { circle: 'bg-accent/12', glyph: 'text-accent' },
-  success: { circle: 'bg-success/12', glyph: 'text-success' },
-  danger: { circle: 'bg-danger/12', glyph: 'text-danger' },
-  info: { circle: 'bg-info/12', glyph: 'text-info' },
-  warning: { circle: 'bg-warning/12', glyph: 'text-warning' },
+  accent: { circle: 'bg-accent/12', glyph: 'text-accent-on-tint' },
+  success: { circle: 'bg-success/12', glyph: 'text-success-on-tint' },
+  danger: { circle: 'bg-danger/12', glyph: 'text-danger-on-tint' },
+  info: { circle: 'bg-info/12', glyph: 'text-info-on-tint' },
+  warning: { circle: 'bg-warning/12', glyph: 'text-warning-on-tint' },
   neutral: { circle: 'bg-raised', glyph: 'text-ink-muted' },
 };
 

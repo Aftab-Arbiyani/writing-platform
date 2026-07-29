@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
 import { expectNoSeriousA11yViolations } from '../../fixtures/a11y';
 import { freshLogin } from '../../fixtures/auth';
 import { test, expect } from '../../fixtures/test';
@@ -192,5 +195,74 @@ test.describe('@phase5 @a11y frontend accessibility (authenticated)', () => {
     const resilience = new ResiliencePage(page);
     await resilience.gotoUnknownAndExpectNotFound(`/no-such-route-${data.username()}`);
     await expectNoSeriousA11yViolations(page, { label: 'frontend not-found' });
+  });
+
+  /**
+   * Every QTag colour, on every page background, in one scan.
+   *
+   * **This test exists because the page-driven scans could not see the defect it guards.** A token
+   * is only scanned if some page happens to paint it, and `QTag color="success"` was painted by no
+   * scan at all: the comments scan never resolves a comment, and the blocks page had been switched
+   * to `neutral` precisely to dodge the failure. So `success` shipped at 4.02:1, and `warning` and
+   * `info` at 4.18 and 4.23, under a fully green a11y suite (docs/48 §3.5).
+   *
+   * Two properties make it a real guard rather than a snapshot of today's palette:
+   *
+   * 1. **The recipe is read from `q-tag.tsx` itself**, not restated here. Add a colour to the
+   *    component's `COLOR` map and it is scanned on the next run; pair a fill with the wrong label
+   *    token and this scan renders exactly that mistake. A copy of the class strings would have
+   *    drifted the first time the component changed.
+   * 2. **It renders into a live page**, so the app's real stylesheet, cascade and alpha compositing
+   *    apply. [10 §8.4](../../../docs/e2e/10_UIQuality.md) is explicit that computed contrast against
+   *    the documented tokens is not evidence — every defect it lists passed that check.
+   *
+   * Runs in both themes via the `frontend-dark` project, which is where the tint maths differs most.
+   */
+  test('every QTag colour clears AA on every page background', async ({ page }) => {
+    // Parse the component's own fill/label pairs. Reading the source keeps this test honest about
+    // what QTag actually renders; the assertions below fail loudly if the shape stops matching.
+    const source = readFileSync(
+      fileURLToPath(new URL('../../../packages/ui/src/components/q-tag.tsx', import.meta.url)),
+      'utf8',
+    );
+    const colorMap = /const COLOR: Record<QTagColor, string> = \{([\s\S]*?)\n\};/.exec(source);
+    expect(colorMap, 'could not find QTag COLOR map — update this parser').not.toBeNull();
+
+    const recipes = [...(colorMap?.[1] ?? '').matchAll(/^\s*(\w+):\s*'([^']+)',/gm)].map(
+      ([, name, classes]) => ({ name: name ?? '', classes: classes ?? '' }),
+    );
+    expect(recipes.length, 'parsed no QTag colours').toBeGreaterThanOrEqual(6);
+
+    // The pairing rule itself, asserted statically: a tinted fill must take an `-on-tint` label.
+    // This is the check that makes a sixth colour safe — it fails before any pixel is measured.
+    const mispaired = recipes.filter(
+      (r) => /bg-(\w+)\/12/.test(r.classes) && !/text-\w+-on-tint/.test(r.classes),
+    );
+    expect(
+      mispaired.map((r) => `${r.name}: ${r.classes}`),
+      'a tinted QTag colour pairs bg-<fam>/12 with a label that is not text-<fam>-on-tint',
+    ).toEqual([]);
+
+    // `SIZE.sm` from q-tag.tsx — the smallest text the tag renders, and so the hardest AA case.
+    const TAG_BASE = 'inline-flex items-center gap-1 rounded-sm font-medium h-5 px-2 text-xs';
+    const html = ['bg-surface', 'bg-canvas', 'bg-raised']
+      .map((bg) => {
+        const tags = recipes
+          .map((r) => `<span class="${TAG_BASE} ${r.classes}">${r.name} on ${bg}</span>`)
+          .join('');
+        return `<div class="${bg} flex flex-wrap gap-2 p-4">${tags}</div>`;
+      })
+      .join('');
+
+    await page.goto('/');
+    // String-form `evaluate`: the e2e tsconfig omits the `dom` lib on purpose (see pages/shared/
+    // viewport.ts), so the markup is built above in typed Node code and only the injection is a
+    // string. Class names only — nothing here interpolates page or user data.
+    await page.evaluate(
+      `(html) => { const d = document.createElement('div'); d.id = 'qtag-contrast-matrix'; d.innerHTML = html; document.body.appendChild(d); }`,
+      html,
+    );
+
+    await expectNoSeriousA11yViolations(page, { label: 'QTag colour × background matrix' });
   });
 });

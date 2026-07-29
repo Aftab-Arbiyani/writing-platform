@@ -66,14 +66,12 @@ export function BlocksPage(): ReactElement {
           <div className="flex flex-col gap-2">
             <div className="flex flex-wrap items-center gap-2 text-sm">
               {/*
-                Good standing is `neutral`, not `success`. `QTag color="success"` renders
-                #3e7c4f on bg-success/12 (#e3e8de) = **4.01:1**, under the 4.5 AA floor — a
-                pre-existing token defect in `packages/ui` that the W3c a11y scan is the first
-                to reach (recorded as W3c-2, docs/48 §3.4). Fixing the token is a design-system
-                change that would re-mint every visual baseline, so this page uses a variant that
-                passes and the token is left to its owner. `danger` measures fine.
+                Good standing reads `success` again. W3c had to use `neutral` here because
+                `QTag color="success"` measured 4.01:1 — a token defect this page's a11y scan was
+                the first to reach (W3c-2). The token is fixed and the label is now decoupled from
+                the fill, so the honest colour is also the accessible one (docs/48 §3.5).
               */}
-              <QTag color={restricted ? 'danger' : 'neutral'} size="sm">
+              <QTag color={restricted ? 'danger' : 'success'} size="sm">
                 {trustStatusLabel(trust.data?.status ?? '')}
               </QTag>
               {!restricted ? (

@@ -60,7 +60,7 @@ export function NotificationFilters({
               className={cn(
                 'whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium transition-colors',
                 active
-                  ? 'bg-accent/12 text-accent'
+                  ? 'bg-accent/12 text-accent-on-tint'
                   : 'text-ink-secondary hover:bg-raised hover:text-ink',
               )}
             >

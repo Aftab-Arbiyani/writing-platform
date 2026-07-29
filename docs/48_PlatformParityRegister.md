@@ -417,6 +417,8 @@ Each is outside the two defects that pass was scoped to. **`success` was the col
 happened to reach first, not the only one that fails** — the recipe is what fails, and every tinted
 QTag colour uses it.
 
+### T-2 · ~~**medium**~~ · **CLOSED 2026-07-29** · every tinted `QTag` colour inherited the same flaw
+
 **Measured by axe in a real browser, not by arithmetic.** §8.4 of [10](./e2e/10_UIQuality.md) is explicit
 that per-token arithmetic against the documented background is not verification: every dark-mode defect
 it lists passed that check and still failed in a browser, because something re-composited the colour.
@@ -450,11 +452,60 @@ and would re-mint the baselines again — so it belongs to one deliberate token 
 **Note `info` measures 4.50 exactly on surface: it passes only by rounding**, which is the kind of
 margin that a future background tweak silently breaks.
 
-### T-3 · **low** · dark mode's `QTag danger` is 4.47:1 on raised
+#### Resolution (2026-07-29) — the recipe was fixed, not the swatches
+
+**T-2 and T-3 are closed.** The paragraph above framed the remedy as "one line per token", which was
+the wrong shape: darkening five fills would have muddied the palette and left a sixth colour free to
+reintroduce the same flaw. The fault was structural — **label and fill were the same token**, so each
+colour was measured against itself and the ratio was a property of one token plus whatever page sat
+behind it. That is also why two colours passed on `surface` and failed on `raised`.
+
+The label is now a **separate token per family**, `--q-<fam>-on-tint`, solved against the darkest page.
+QTag pairs `bg-<fam>/12` with `text-<fam>-on-tint`. **The fills are untouched** — so hue, vividness and
+the tint itself are exactly as before (the measurements below show an identical `tint=` on both sides).
+This mirrors `textOnSolid`, which already existed for labels on a _solid_ accent fill.
+
+Browser-measured, axe, light mode — before → after:
+
+| Colour    | surface            | canvas             | raised             | label                                                           |
+| --------- | ------------------ | ------------------ | ------------------ | --------------------------------------------------------------- |
+| `accent`  | 5.04 → **5.31**    | 4.74 → **4.99**    | 4.40 ❌ → **4.64** | `#994827`                                                       |
+| `success` | 5.29 → **5.29**    | 4.96 → **4.96**    | 4.62 → **4.62**    | `#356b44` (unchanged — W3c-2 already moved the fill far enough) |
+| `warning` | 4.48 ❌ → **5.34** | 4.18 ❌ → **4.99** | 3.92 ❌ → **4.67** | `#7e5a17`                                                       |
+| `danger`  | 4.96 → **5.33**    | 4.66 → **5.00**    | 4.33 ❌ → **4.65** | `#ab352c`                                                       |
+| `info`    | 4.50 ⚠️ → **5.30** | 4.23 ❌ → **4.98** | 3.93 ❌ → **4.63** | `#356397`                                                       |
+
+Dark mode, same method. Four families were already clear and are **byte-identical** after the change;
+only `danger` moved, which is **T-3** and the one measured reason to touch a dark value:
+
+| Colour    | surface         | canvas          | raised             | label     |
+| --------- | --------------- | --------------- | ------------------ | --------- |
+| `accent`  | 5.46 → 5.46     | 6.00 → 6.00     | 4.94 → 4.94        | unchanged |
+| `success` | 5.34 → 5.34     | 5.83 → 5.83     | 4.77 → 4.77        | unchanged |
+| `warning` | 5.65 → 5.65     | 6.20 → 6.20     | 5.04 → 5.04        | unchanged |
+| `danger`  | 4.97 → **5.19** | 5.44 → **5.68** | 4.44 ❌ → **4.64** | `#dd8075` |
+| `info`    | 5.66 → 5.66     | 6.21 → 6.21     | 5.07 → 5.07        | unchanged |
+
+(axe measures dark `danger` before at 4.44 where T-3 recorded 4.47 — under AA on either reading.)
+
+**Seven other consumers shared the recipe**, which is the part the register had not noticed. The same
+`bg-<fam>/12 text-<fam>` pairing appears in `offline-banner` (a **live** `warning` text failure at
+4.18 on canvas), `notification-filters`, `notification-item`'s five glyphs, `editor-toolbar`, and
+admin's `login-form`. All now take the `-on-tint` label. The glyphs and toolbar icons are non-text and
+answered to the 3:1 bar, so they were not failing — but leaving the wrong pairing in place is precisely
+how the class spread from one component to eight.
+
+**W3c's `neutral` workaround on the blocks page is removed**: good standing renders `success` again.
+
+**What stops it recurring** is not the tokens, it is the scan — see the next entry.
+
+### T-3 · ~~**low**~~ · **CLOSED 2026-07-29** · dark mode's `QTag danger` was 4.47:1 on raised
 
 `#dc7b70` on its own tint over `#26221e`. Latent, same condition as `accent`/`danger` above — and note
 the token already carries a comment about being lightened once for this exact reason, so the ramp was
-tuned against `surface` and never re-checked against `raised`.
+tuned against `surface` and never re-checked against `raised`. **Fixed with T-2** via
+`--q-danger-on-tint: #dd8075` (4.64 on raised), which settles it without re-tinting the fill a second
+time.
 
 ### T-4 · **low** · AntD's derived _active_ colour on a default button is 3.46:1 in dark mode
 
@@ -494,6 +545,43 @@ it is **not root-caused here** — recording the observation, not a diagnosis. E
 "a writer comments on their story, replies, and resolves the thread" is green without proving the third
 verb, which is the same defect class as W3c-4: an assertion that pins the wrong thing keeps the suite
 green over a broken surface. Fix the assertion first (scope it to the comment item), then see what fails.
+
+**Still open.** The 2026-07-29 recipe pass did not touch it: the tag it was blocking is now rendered by
+a dedicated spec instead (below), so nothing depended on getting this flow working. The weak assertion
+and whatever sits under it are unchanged.
+
+### T-2b · **CLOSED 2026-07-29** · the scan hole — why a token could fail with a green suite
+
+Recorded as the root cause of T-2 rather than a defect in its own right, because it is the reason four
+colours could sit under AA with every a11y scan passing: **a token is only scanned if some page happens
+to paint it.** `QTag color="success"` was painted by no scan at all — the comments scan never resolves a
+comment (T-6), and the blocks page had been switched to `neutral` precisely to dodge the failure. §3.5
+originally measured the matrix by hand, in a throwaway spec that was deleted; a hand measurement that
+gets deleted is not a guard.
+
+It is now a permanent spec: **"every QTag colour clears AA on every page background"**
+(`e2e/tests/frontend/a11y.spec.ts`), running in `frontend-chromium` and `frontend-dark`. Two properties
+make it a guard rather than a snapshot of today's palette:
+
+1. **It reads the recipe out of `q-tag.tsx`** — parses the `COLOR` map, asserts every tinted fill is
+   paired with a `text-<fam>-on-tint` label, then renders each entry on all three page backgrounds.
+   A copy of the class strings would have drifted the first time the component moved; a sixth colour is
+   covered the moment it is added to the component, not when a page gets round to using it.
+2. **It renders into a live page**, so the real stylesheet, cascade and alpha compositing apply — the
+   [10 §8.4](./e2e/10_UIQuality.md) rule, honoured rather than restated.
+
+Both halves were verified by breaking them, not by assuming:
+
+```
+revert the labels to `text-<fam>`  → fails statically, listing all 5 mispaired colours,
+                                     before a single pixel is measured
+set --q-info-on-tint too light     → axe fails it on all three backgrounds
+                                     (2.36 / 2.22 / 2.06)
+```
+
+The static half matters more than the pixel half: it fails on the _rule_, so a wrong pairing cannot
+reach a browser at all. The pixel half catches a plausible-but-insufficient value, which no static rule
+could.
 
 ### T-7 · **medium** · `assistant.spec.ts` "writes and autosaves" is flaky under parallel load
 

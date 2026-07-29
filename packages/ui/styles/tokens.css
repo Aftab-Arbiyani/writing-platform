@@ -33,6 +33,37 @@
   --q-danger: #b3382e;
   --q-info: #3b6ea8;
 
+  /* ── Label colour ON a 12% tint of the same family ────────────────────────
+     The structural half of the QTag contrast class (docs/48 §3.5). The old recipe
+     was `bg-<fam>/12 text-<fam>`: label and fill were the SAME token, so each
+     colour was measured against itself and the ratio was a property of one token
+     plus the page — which is why every tinted colour inherited the flaw and why
+     two of them (accent, danger) passed on surface and failed on raised.
+
+     Decoupling the label from the fill fixes the whole family at once and leaves
+     the fills — and therefore the palette's hue and vividness — untouched. These
+     are the darkest-page (`raised`) solutions, so they clear AA on all three
+     backgrounds; hue is preserved (a straight RGB scale of the fill).
+
+     `success` needs no darkening: W3c-2 already moved the fill far enough, so its
+     label equals its fill. It is spelled out rather than aliased so a future fill
+     change cannot silently un-fix it.
+
+     Analogous to `textOnSolid` (the label on a SOLID accent fill) in
+     src/theme/antd-theme.ts — same idea, tinted rather than solid. Tailwind-only:
+     AntD has no tinted-label token to mirror this into.
+
+     A sixth family must add its own `-on-tint` value. What actually holds the line is
+     not this comment: the a11y spec reads QTag's `COLOR` map out of the component,
+     asserts every tinted fill is paired with a `-on-tint` label, then renders the
+     lot on all three backgrounds and scans it (e2e/tests/frontend/a11y.spec.ts). A
+     mispaired class fails statically; a too-light value fails on pixels. */
+  --q-accent-on-tint: #994827;
+  --q-success-on-tint: #356b44;
+  --q-warning-on-tint: #7e5a17;
+  --q-danger-on-tint: #ab352c;
+  --q-info-on-tint: #356397;
+
   /* ── Typography · families (self-hosted @fontsource, ADR §6) ──────────────
      UI/serif stacks carry Devanagari (Hindi) + Naskh/Nastaliq (Urdu)
      fallbacks — script coverage is a day-one requirement, not an add-on. */
@@ -125,6 +156,23 @@
   /* Lightened from #d06a5f: as 12px badge text on the danger/12 tint (#322320) it was 4.23:1. */
   --q-danger: #dc7b70;
   --q-info: #7ca6d6;
+
+  /* Label on a 12% tint of the same family — see the light-mode note. Dark mode
+     mostly needed nothing: measured on its own tint, four of the five already
+     cleared AA on all three backgrounds (accent 4.92, success 4.76, warning 5.03,
+     info 5.08 at worst), so their labels equal their fills.
+
+     `danger` is the exception and the one measured reason to move a dark value:
+     #dc7b70 was 4.47:1 on the tint over `raised` — under AA, and already recorded
+     as T-3 in docs/48 §3.5. Lightened to #dd8075 (4.66 worst). Note the fill was
+     itself lightened once before for this same defect on `surface`, and the ramp
+     was never re-checked against `raised`; a label token is the right place to
+     settle it, because it fixes the text without re-tinting the fill again. */
+  --q-accent-on-tint: #e08a5f;
+  --q-success-on-tint: #6baa7c;
+  --q-warning-on-tint: #c99a4c;
+  --q-danger-on-tint: #dd8075;
+  --q-info-on-tint: #7ca6d6;
 
   --q-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.35);
   --q-shadow-2: 0 2px 6px rgba(0, 0, 0, 0.4);

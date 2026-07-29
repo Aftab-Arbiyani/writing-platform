@@ -19,13 +19,29 @@ export interface QTagProps {
   className?: string;
 }
 
+/**
+ * Fill + label per colour. The label is the `-on-tint` token, NEVER the fill token.
+ *
+ * Painting `text-<fam>` on `bg-<fam>/12` measures a colour against itself, so the
+ * ratio depended on one token plus whatever page was behind it — every tinted
+ * colour inherited the flaw, and accent/danger passed on `surface` while failing on
+ * `raised` (docs/48 §3.5). The `-on-tint` tokens are solved against the darkest
+ * page, so all five clear AA on all three backgrounds with the fills unchanged.
+ *
+ * A new colour needs a `--q-<fam>-on-tint` token. This map is the single place that
+ * has to be right: the a11y spec (`e2e/tests/frontend/a11y.spec.ts`, "every QTag
+ * colour clears AA on every page background") PARSES it out of this file, asserts
+ * the pairing rule, then renders every entry on all three page backgrounds and
+ * scans it. So a sixth colour is covered the moment it is added here — and a fill
+ * paired with the wrong label fails the suite before any page uses it.
+ */
 const COLOR: Record<QTagColor, string> = {
   neutral: 'bg-raised text-ink-secondary',
-  accent: 'bg-accent/12 text-accent',
-  success: 'bg-success/12 text-success',
-  warning: 'bg-warning/12 text-warning',
-  danger: 'bg-danger/12 text-danger',
-  info: 'bg-info/12 text-info',
+  accent: 'bg-accent/12 text-accent-on-tint',
+  success: 'bg-success/12 text-success-on-tint',
+  warning: 'bg-warning/12 text-warning-on-tint',
+  danger: 'bg-danger/12 text-danger-on-tint',
+  info: 'bg-info/12 text-info-on-tint',
 };
 
 const SIZE: Record<'sm' | 'md', string> = {

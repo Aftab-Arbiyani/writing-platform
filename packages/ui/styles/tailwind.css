@@ -36,6 +36,15 @@
   --color-danger: var(--q-danger);
   --color-info: var(--q-info);
 
+  /* Label on a 12% tint of the same family → `text-success-on-tint` etc.
+     Pair every `bg-<fam>/12` with the matching `text-<fam>-on-tint`, never with
+     `text-<fam>` — that was the QTag contrast class (docs/48 §3.5). */
+  --color-accent-on-tint: var(--q-accent-on-tint);
+  --color-success-on-tint: var(--q-success-on-tint);
+  --color-warning-on-tint: var(--q-warning-on-tint);
+  --color-danger-on-tint: var(--q-danger-on-tint);
+  --color-info-on-tint: var(--q-info-on-tint);
+
   /* Fonts → font-ui / font-serif / font-mono */
   --font-ui: var(--q-font-ui);
   --font-serif: var(--q-font-serif);

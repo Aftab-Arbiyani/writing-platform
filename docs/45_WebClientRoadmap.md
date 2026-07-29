@@ -160,14 +160,25 @@ W3c-1 and W3c-4 landed in `2b0cf50`; W3c-2 and W3c-3 (the two shared-theme contr
 `1e4d526`, which also **deleted** the pointer-parking workaround rather than leaving it to hide the next
 regression. Functional + a11y are green in light and dark on all three slices.
 
-**W3 is _not_ closed.** The single remaining gate is the visual baseline for `frontend-collaborators`,
-un-minted since W3a. It could not be minted here: there is no GitHub credential in this environment
-(`gh` absent, no token, no credential helper), so `develop` cannot be pushed and `web-e2e` cannot be
-dispatched — and minting locally is forbidden by [e2e/10 §8.3](./e2e/10_UIQuality.md), which this pass
-respected by deleting the two host-rendered PNGs Playwright wrote. **To close:** push `develop`, run
-`web-e2e` with `update_visual_baselines: true`, commit the artifact ([49 §6h](./49_WebCollaborationEpicDesign.md)).
-Note the baselines requested for `story-publishing`, `settings-blocks` and comments/suggestions have **no
-`@visual` tests yet**, so those must be written before they can be minted.
+**The contrast class behind W3c-2 is now closed properly too (2026-07-29, [49 §6i](./49_WebCollaborationEpicDesign.md)).**
+`success` was the colour a scan happened to reach, not the only one failing: the label and the fill were
+the same token, so every tinted colour was measured against itself. Fixed structurally with a per-family
+`-on-tint` label token — fills untouched — which closes **T-2 and T-3** and the same pairing in seven
+other components. A permanent a11y spec now renders every QTag colour on all three backgrounds in both
+themes, so the next bad token fails CI instead of waiting for a page to paint it.
+
+**W3 is _not_ closed. One gate remains: the visual baselines.** It could not be minted here — there is no
+GitHub credential in this environment (`gh` absent, no token, no credential helper), so `develop` cannot be
+pushed and `web-e2e` cannot be dispatched. Minting locally is forbidden by
+[e2e/10 §8.3](./e2e/10_UIQuality.md), which this work respected: nothing was generated on this host and no
+image is committed.
+
+**The mint must now re-mint ALL baselines, not the missing ones.** The re-tint changes tags, notification
+glyphs, toolbar active states, the offline banner and admin's login error, so every committed baseline is
+**stale**, not merely absent — a gap-filling run would leave the nine existing ones describing the old
+palette. The four specs that were missing (`story-publishing`, `settings-blocks`, `comments`,
+`suggestions`) now exist, so the full set is 13 pages. **To close:** push `develop`, run `web-e2e` with
+`update_visual_baselines: true`, review the diff, commit the artifact.
 
 **No backend enabler** — every surface maps to an existing AF6 route (flow step 2's default).
 

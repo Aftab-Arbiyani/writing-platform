@@ -1,8 +1,12 @@
-import { freshLogin } from '../../fixtures/auth';
+import { freshLogin, freshLoginAs } from '../../fixtures/auth';
 import { test, expect } from '../../fixtures/test';
 import { AssistantPanel } from '../../pages/frontend/assistant-panel';
 import { CollaboratorsPage } from '../../pages/frontend/collaborators-page';
 import { ReaderPage } from '../../pages/frontend/reader-page';
+import { SettingsBlocksPage } from '../../pages/frontend/settings-blocks-page';
+import { StoryCommentsPage } from '../../pages/frontend/story-comments-page';
+import { StoryPublishingPage } from '../../pages/frontend/story-publishing-page';
+import { StorySuggestionsPage } from '../../pages/frontend/story-suggestions-page';
 import { LoginPage } from '../../pages/shared/login-page';
 
 /**
@@ -101,6 +105,95 @@ test.describe('@phase5 @visual frontend (authenticated)', () => {
       fullPage: true,
       // The owner row renders a truncated user id (no by-id profile lookup exists — docs/49 §5),
       // and that id differs per environment.
+      mask: [page.getByRole('listitem')],
+    });
+  });
+
+  test('the publishing page matches its visual baseline', async ({ page, api, data }) => {
+    // AF6/W3c (docs/49 §5). Arranged with a review in flight and one version captured, so the four
+    // cards are all in a populated state rather than empty — the review chip, the gated publication
+    // controls, the version row and the history timeline are exactly the tinted, state-carrying
+    // chrome that dark mode breaks ([10 §8.4]).
+    const story = await api.createPiece({ title: data.pieceTitle() });
+    const publishing = new StoryPublishingPage(page);
+    await publishing.goto(story.id);
+    await publishing.expectResolved();
+    await publishing.requestReview();
+    await publishing.captureVersion();
+    await expect(page).toHaveScreenshot('frontend-story-publishing.png', {
+      fullPage: true,
+      // Height is deterministic — a fresh story, and every history/version row in the shot is one
+      // this test caused. Content is not: each row carries a wall-clock timestamp, and the version
+      // row a word count. Masking the lists keeps the layout and drops the churn.
+      mask: [page.getByRole('listitem')],
+    });
+  });
+
+  test('the safety settings page matches its visual baseline', async ({ page, api, data }) => {
+    // AF6/W3c. A THROWAWAY blocker, for the reason the functional spec spells out: a block list is
+    // cumulative and the writer is shared, so as the writer this baseline would encode however many
+    // rows the database happened to hold and size-mismatch on the next run. Two rows, arranged here.
+    const password = 'ChangeMe!VisualBlocker1';
+    const blocker = await api.createVerifiedUser({
+      email: `visual-blocker-${data.username()}@qalam.local`,
+      username: data.username(),
+      password,
+    });
+    const blockerToken = await api.loginToken(blocker.email, password);
+    const blocked = await api.createVerifiedUser({
+      email: `visual-blocked-${data.username()}@qalam.local`,
+      username: data.username(),
+      password: 'ChangeMe!VisualBlocked1',
+    });
+    const muted = await api.createVerifiedUser({
+      email: `visual-muted-${data.username()}@qalam.local`,
+      username: data.username(),
+      password: 'ChangeMe!VisualMuted1',
+    });
+    await api.blockUser(blocked.id, blockerToken);
+    await api.muteUser(muted.id, blockerToken);
+
+    await freshLoginAs(page, blocker.email, password);
+    const blocks = new SettingsBlocksPage(page);
+    await blocks.goto();
+    await blocks.expectResolved();
+    await expect(page).toHaveScreenshot('frontend-settings-blocks.png', {
+      fullPage: true,
+      // The rows name generated users and the standing row is the one thing worth pinning by colour
+      // — it renders `QTag color="success"` again now the token is fixed (docs/48 §3.5), so this
+      // baseline is where that re-tint is actually reviewed.
+      mask: [page.getByRole('listitem')],
+    });
+  });
+
+  test('the comments page matches its visual baseline', async ({ page, api, data }) => {
+    // AF6/W3b. One comment, so the thread card renders rather than the empty state.
+    const story = await api.createPiece({ title: data.pieceTitle() });
+    const comments = new StoryCommentsPage(page);
+    await comments.goto(story.id);
+    await comments.expectResolved();
+    await comments.addComment(`Visual baseline comment ${data.username()}`);
+    await expect(page).toHaveScreenshot('frontend-comments.png', {
+      fullPage: true,
+      // The card carries a relative timestamp and a truncated author id (`CommentDto` sends no
+      // display name — docs/48 §3.2 M-3), both environment-dependent.
+      mask: [page.getByRole('listitem')],
+    });
+  });
+
+  test('the suggestions page matches its visual baseline', async ({ page, api, data }) => {
+    // AF6/W3b. A proposed edit, so the diff lines and the anchor label are in the shot — the
+    // strikethrough/replacement pair is the part whose colours have to survive both themes.
+    const story = await api.createPiece({
+      title: data.pieceTitle(),
+      body: 'The lantern burned low over the water.',
+    });
+    const suggestions = new StorySuggestionsPage(page);
+    await suggestions.goto(story.id);
+    await suggestions.expectResolved();
+    await suggestions.propose({ original: 'lantern', suggested: 'oil lamp', from: 4 });
+    await expect(page).toHaveScreenshot('frontend-suggestions.png', {
+      fullPage: true,
       mask: [page.getByRole('listitem')],
     });
   });

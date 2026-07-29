@@ -44,7 +44,7 @@ export function LoginForm({ onSuccess }: LoginFormProps): ReactElement {
         <div
           role="alert"
           aria-live="polite"
-          className="rounded-md bg-danger/12 px-3 py-2 text-sm text-danger"
+          className="rounded-md bg-danger/12 px-3 py-2 text-sm text-danger-on-tint"
         >
           {formError}
         </div>

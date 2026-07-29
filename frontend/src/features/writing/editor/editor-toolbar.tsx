@@ -274,7 +274,7 @@ export function EditorToolbar({ editor, isRtl }: { editor: Editor; isRtl: boolea
                 cmd.disabled
                   ? 'cursor-not-allowed text-ink-muted opacity-50'
                   : cmd.active
-                    ? 'bg-accent/12 text-accent'
+                    ? 'bg-accent/12 text-accent-on-tint'
                     : 'text-ink-secondary hover:bg-raised hover:text-ink',
               )}
             >
