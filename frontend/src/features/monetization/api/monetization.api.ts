@@ -154,10 +154,9 @@ export const monetizationApi = {
   /**
    * GET /monetization/subscription/history — lifecycle events, cursor-paginated.
    *
-   * **Unlike every other list here, this 404s `SUBSCRIPTION_NOT_FOUND` for a user with no
-   * subscription instead of answering an empty page** (verified live). The history hook treats that
-   * code as "no history" so a free viewer sees an empty section rather than an error; the
-   * asymmetry is recorded as a defect, not worked around further (docs/48 §3.6, W4-1).
+   * Answers an empty page for a viewer with no subscription, like the three sibling ledgers below.
+   * That was not true when W4 shipped — it 404'd `SUBSCRIPTION_NOT_FOUND` for every free reader, and
+   * the hook compensated — until W4-1 fixed the service to scope by `user_id` (docs/48 §3.6).
    */
   subscriptionHistory: (
     cursor?: string,
@@ -222,10 +221,11 @@ export const monetizationApi = {
   /**
    * POST /monetization/purchases/restore — re-grant from a store receipt.
    *
-   * Returns `{ restored, providerRef, expiresAt }` — NOT the `{ restored, subscription,
-   * creditsGranted }` that `@qalam/api-types` declares (see {@link RestorePurchasesResult}).
-   * Store-receipt-only, so like credit purchases this has no browser path; the method exists for
-   * contract completeness and is not wired to a control.
+   * Returns `{ restored, providerRef, expiresAt }`. `@qalam/api-types` used to declare a different
+   * shape entirely; W4-2 corrected the package against this controller and pinned the two together, so
+   * {@link RestorePurchasesResult} is now just an alias of the package type. Store-receipt-only, so like
+   * credit purchases this has no browser path; the method exists for contract completeness and is not
+   * wired to a control.
    */
   restorePurchases: (input: {
     provider: PaymentProvider;

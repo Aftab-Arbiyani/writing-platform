@@ -475,6 +475,48 @@ export class ApiHelper {
     expect(res.ok(), `revoke override ${id} → ${res.status()}`).toBeTruthy();
   }
 
+  /**
+   * Subscribe as the bearer of `token`, through the real `POST /monetization/subscription`.
+   *
+   * Defaults to the `manual` provider, which settles the charge without a processor (`ManualAdapter`,
+   * enabled by `PAYMENTS_MANUAL_ENABLED` in this stack). Every real adapter is key-gated and this stack
+   * holds no processor credentials, so this is the only provider that can complete a checkout here —
+   * see 48 §3.6 W4-4 for why a Stripe test key was rejected in its favour.
+   */
+  async subscribe(
+    token: string,
+    input: { tier: string; interval: string; provider?: string; couponCode?: string },
+  ): Promise<{
+    subscription: { id: string; tier: string; status: string; provider: string };
+    checkoutUrl: string | null;
+  }> {
+    const res = await this.request.post(this.url('/monetization/subscription'), {
+      headers: { Authorization: `Bearer ${token}` },
+      data: { provider: 'manual', ...input },
+    });
+    return this.data(res);
+  }
+
+  /** The viewer's payment ledger — proves a charge was actually recorded, not just a subscription. */
+  async payments(
+    token: string,
+  ): Promise<Array<{ id: string; provider: string; status: string; amount: number }>> {
+    const res = await this.request.get(this.url('/monetization/payments'), {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return this.data(res);
+  }
+
+  /** The viewer's invoices — the billing document that accompanies the payment. */
+  async invoices(
+    token: string,
+  ): Promise<Array<{ id: string; number: string; status: string; total: number }>> {
+    const res = await this.request.get(this.url('/monetization/invoices'), {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return this.data(res);
+  }
+
   /** The viewer's own entitlement snapshot — asserts the server side of a gate. */
   async entitlements(token: string): Promise<{
     tier: string;

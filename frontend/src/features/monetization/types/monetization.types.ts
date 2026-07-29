@@ -37,6 +37,7 @@ export type {
   PurchaseResponse,
   PurchaseStatus,
   QuotaWindow,
+  RestorePurchasesResponse,
   SubscriptionEventResponse,
   SubscriptionResponse,
   SubscriptionStatus,
@@ -46,18 +47,17 @@ export type {
   ValidateCouponResponse,
 } from '@qalam/api-types';
 
+// A re-export does not bring the name into local scope, so the alias below needs its own import.
+import type { RestorePurchasesResponse as ApiRestorePurchasesResponse } from '@qalam/api-types';
+
 /**
  * The result of `POST /monetization/purchases/restore`.
  *
- * **Declared here rather than imported, because `@qalam/api-types` has it wrong.** That package
- * declares `RestorePurchasesResponse` as `{ restored, subscription, creditsGranted }`; the
- * controller returns `{ restored, providerRef, expiresAt }` — a different shape with no field in
- * common beyond `restored` (`monetization.controller.ts#restore`, verified live). Importing the
- * package's version would type-check against a response that never arrives, so this is the shape
- * the server actually sends. The drift is recorded as a defect, not fixed here (docs/48 §3.6, W4-2).
+ * **Now a plain alias of the package type.** W4 declared this shape locally because
+ * `@qalam/api-types` had it wrong — it said `{ restored, subscription, creditsGranted }` where the
+ * controller returns `{ restored, providerRef, expiresAt }`. W4-2 fixed the package against the
+ * controller and pinned all three together (`monetization-contract.spec.ts`), so the local copy would
+ * now be a second definition of a shape that already has one authority. The alias is kept only so the
+ * feature's existing imports keep working.
  */
-export interface RestorePurchasesResult {
-  restored: number;
-  providerRef: string | null;
-  expiresAt: string | null;
-}
+export type RestorePurchasesResult = ApiRestorePurchasesResponse;

@@ -32,6 +32,7 @@ import { MonetizationFeatureService } from './monetization.feature-service';
 import { MonetizationNotificationListener } from './listeners/monetization-notification.listener';
 import { AppleAdapter } from './payments/adapters/apple.adapter';
 import { GooglePlayAdapter } from './payments/adapters/google-play.adapter';
+import { ManualAdapter } from './payments/adapters/manual.adapter';
 import { StripeAdapter } from './payments/adapters/stripe.adapter';
 import { PAYMENT_PROVIDER_ADAPTERS } from './payments/payment-provider.port';
 import { PaymentRegistryService } from './payments/payment-registry.service';
@@ -88,14 +89,16 @@ import { UsageService } from './usage.service';
     StripeAdapter,
     AppleAdapter,
     GooglePlayAdapter,
+    ManualAdapter,
     {
       provide: PAYMENT_PROVIDER_ADAPTERS,
-      useFactory: (stripe: StripeAdapter, apple: AppleAdapter, google: GooglePlayAdapter) => [
-        stripe,
-        apple,
-        google,
-      ],
-      inject: [StripeAdapter, AppleAdapter, GooglePlayAdapter],
+      useFactory: (
+        stripe: StripeAdapter,
+        apple: AppleAdapter,
+        google: GooglePlayAdapter,
+        manual: ManualAdapter,
+      ) => [stripe, apple, google, manual],
+      inject: [StripeAdapter, AppleAdapter, GooglePlayAdapter, ManualAdapter],
     },
     PaymentRegistryService,
     // Config + platform gate.

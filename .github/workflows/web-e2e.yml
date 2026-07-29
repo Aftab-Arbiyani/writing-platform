@@ -80,6 +80,9 @@ jobs:
       # Rate limiter off — the suite registers many throwaway users + logs in fresh per test
       # from one IP (docs/e2e/03 fresh-login), which the auth throttle would 429.
       RATE_LIMIT_ENABLED: 'false'
+      # The `manual` payment provider — lets the af5 row assert subscribe → payment → entitlement
+      # without a processor credential (48 §3.6 W4-4). Never enabled outside a test stack.
+      PAYMENTS_MANUAL_ENABLED: 'true'
       CI: 'true'
       E2E_API_URL: http://localhost:4000/api/v1
       E2E_MAILPIT_URL: http://localhost:8025
@@ -199,6 +202,9 @@ jobs:
       ADMIN_URL: http://localhost:5174
       SCHEDULER_ENABLED: 'false'
       RATE_LIMIT_ENABLED: 'false'
+      # The `manual` payment provider — lets the af5 row assert subscribe → payment → entitlement
+      # without a processor credential (48 §3.6 W4-4). Never enabled outside a test stack.
+      PAYMENTS_MANUAL_ENABLED: 'true'
       CI: 'true'
       E2E_API_URL: http://localhost:4000/api/v1
       E2E_MAILPIT_URL: http://localhost:8025

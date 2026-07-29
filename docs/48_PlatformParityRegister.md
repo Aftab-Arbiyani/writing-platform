@@ -1,8 +1,9 @@
 # 48 — Platform Parity Register (web ↔ mobile)
 
-**Status:** 🔒 Binding · **Owner:** every client epic · **Last swept:** 2026-07-29 (after **W4** on web —
-row 2 of §2 closed, five contract findings in §3.6, two mobile follow-ups in §3.7; earlier the same day
-after W3a + the W-1 port and the M-1 fix on mobile, **W3c-1 and W3c-4 closed** — §3.4)
+**Status:** 🔒 Binding · **Owner:** every client epic · **Last swept:** 2026-07-29 (after **W4's register
+close-out** — **W4-1, W4-2, W4-4, W4-5 and T-8 all CLOSED**, T-7 widened to three tests, and mobile's
+`formatMoney` fixed for parity (§3.7); earlier the same day W4 itself closed row 2 of §2, and W3a closed
+**W3c-1 / W3c-4** — §3.4)
 
 > **The rule.** **Web and mobile ship the same features.** Neither platform is allowed to drift
 > ahead of the other with product surface that the other has no plan for. A divergence is only
@@ -603,12 +604,36 @@ independently and the numbers pin the mechanism — it is not a new defect.
 | full frontend suite, 8 workers, current tokens  | **fail** (2 runs)    |
 | full frontend suite, 8 workers, tokens reverted | **fail** — same test |
 
+**Widened by the W4 measurement (2026-07-29).** W4 re-measured this the same way — stash every change,
+rebuild, run the suite — and found the flake set is **larger than one test**. Ten runs in total:
+
+| Condition                 | Runs | Fully green | Runs with one failure | Which test flaked                                                        |
+| ------------------------- | ---- | ----------- | --------------------- | ------------------------------------------------------------------------ |
+| pre-W4 baseline (stashed) | 3    | 1           | 2                     | `assistant.spec.ts:60` ×1, `a11y.spec.ts` register page (dark) ×1        |
+| with W4 (137 tests)       | 7    | 1           | 6                     | `assistant.spec.ts:60` ×4, register a11y ×1, `publishing.spec.ts:116` ×1 |
+
+So **three** distinct tests flake under contention, not one:
+
+| Test                                                       | Nature                                                   |
+| ---------------------------------------------------------- | -------------------------------------------------------- |
+| `assistant.spec.ts:60` "writes and autosaves"              | autosave-persist vs reload-rehydrate race (the original) |
+| `a11y.spec.ts` "register page …" (`frontend-dark` only)    | axe scan on a page still settling                        |
+| `publishing.spec.ts:116` "sends the story back with notes" | review-state write vs re-read                            |
+
+All three pass in isolation (verified individually) and each fails only in a loaded 8-worker run. **No
+W4 test failed in any of the ten runs**, and one W4 run was fully green at 137/137 — so adding 25 tests
+did not create the problem, it made an existing one more likely to be observed. CI's `retries: 2` absorbs
+all three, which is why this has never been seen there; locally retries are 0 by design.
+
+**Still recorded rather than chased** — the shared shape is "a write is not yet readable when the next
+step asserts on it", which is a waiting strategy to fix in three page objects, not a product defect.
+
 The last row is the one that matters: it fails identically with the token change reverted, so it is
 **pre-existing and unrelated** — the same loaded run showed 2 failures before the fix (this plus the
 publishing a11y scan) and 1 after. It is a race between autosave persisting and the reload rehydrating,
 which only loses under contention. Not triaged further here.
 
-### T-8 · **high (process)** · running a visual spec locally silently mints host-rendered baselines
+### T-8 · ~~**high (process)**~~ · **CLOSED 2026-07-29** · running a visual spec locally silently mints host-rendered baselines
 
 `frontend-collaborators` has no baseline for `frontend-chromium` or `frontend-dark`, so running
 `visual.spec.ts` locally makes Playwright **write one** ("A snapshot doesn't exist …, writing actual")
@@ -618,8 +643,27 @@ and W3c already caught and deleted one. **This pass generated two more and delet
 
 Three occurrences is a process gap, not bad luck. Worth one of: `--ignore-snapshots` in the local run
 script, `ci: true` in the Playwright config so missing snapshots fail instead of being written, or a
-pre-commit hook rejecting untracked files under `*-snapshots/`. Recorded rather than fixed — it is a
-harness change, outside a tokens-and-baselines pass.
+pre-commit hook rejecting untracked files under `*-snapshots/`.
+
+#### Resolution (2026-07-29) — the config now refuses, and the refusal is the default
+
+W4 made it a **fourth** occurrence, which settled it. `playwright.config.ts` sets **`updateSnapshots:
+'none'`**: a missing baseline now fails with "A snapshot doesn't exist at …" and writes nothing.
+
+`ci: true` was considered and is not a Playwright option; `--ignore-snapshots` in a run script is worse
+than useless here, because it _skips the comparison_ — a visual spec would go green without ever
+rendering, which is a quieter version of the same lie. `'none'` is the only setting that keeps the
+comparison and removes the write.
+
+**The one path that may still mint is unaffected**, because a CLI flag overrides config: `web-e2e`'s
+`web-e2e-visual` job already passes an explicit `--update-snapshots` inside the pinned image ([10 §8.3]).
+Both directions were verified — a local run of a baseline-less spec failed and left the 44-file snapshot
+inventory byte-identical (checksummed before and after), and the same spec with `--update-snapshots` still
+wrote its PNG, which was then removed.
+
+**Intended consequence:** a newly added visual spec **fails until the workflow mints its baseline**. The
+three W4 billing specs are in exactly that state. A red spec asking for a baseline is correct; a green one
+that invented its own is not.
 
 ---
 
@@ -640,7 +684,7 @@ route where the guard and the Entitlement Service can disagree. Verified live on
 database (4h-old container, per the row's instruction): every read answers 200 for the seeded writer, so
 the `billing.use` seed-grant defect fixed in `de61316` is confirmed closed in practice, not just in code.
 
-### W4-1 · **medium** · `subscription/history` 404s where its three sibling ledgers answer an empty page
+### W4-1 · ~~**medium**~~ · **CLOSED 2026-07-29** · `subscription/history` 404s where its three sibling ledgers answer an empty page
 
 `GET /monetization/subscription/history` is one of four cursor-paginated owner-scoped ledgers on this
 controller. The other three (`/invoices`, `/payments`, `/purchases`) answer `data: []` for a viewer with
@@ -655,12 +699,25 @@ GET /monetization/subscription/history  → 404 SUBSCRIPTION_NOT_FOUND      ← 
 Every free reader hits it, since having no subscription is the majority state. Mobile never saw this: it
 has no subscription-history UI at all (its repository exposes `history()` and no screen calls it).
 
-**Mitigated client-side, deliberately narrowly.** `useSubscriptionHistory` maps that one code to an empty
-page so the "Plan changes" tab reads "No plan changes yet" instead of showing an error panel; every other
-failure still errors. A client should not be where one of four sibling endpoints gets its shape corrected,
-so the asymmetry is recorded rather than absorbed silently.
+**Mitigated client-side, deliberately narrowly.** `useSubscriptionHistory` mapped that one code to an
+empty page so the "Plan changes" tab read "No plan changes yet" instead of showing an error panel.
 
-### W4-2 · **medium** · `@qalam/api-types` declares the wrong shape for `purchases/restore`
+#### Resolution (2026-07-29) — fixed at the endpoint, and the workaround deleted
+
+`SubscriptionService.listHistory` resolved the caller's subscription with `getByUser` (which throws) and
+filtered events by `subscription_id`. It now filters by **`user_id`** — the same owner scoping the three
+siblings use — so the lookup that threw is gone entirely rather than guarded.
+
+That needed one more thing to be honest: `subscription_events` was the only one of the four ledger tables
+**without** a `(user_id, created_at)` index, which is presumably why it went via `subscription_id` in the
+first place. Trading a 404 for a sequential scan of an append-only table is not a fix, so
+`idx_subscription_event_user_created` was added to match `idx_invoice_user_created` and its two siblings
+(migration `1784620000000`, `CREATE INDEX CONCURRENTLY`, up/down round-trip verified).
+
+The client-side mapping is **removed**, and its spec now asserts the opposite — a 404 must surface as an
+error. If the endpoint regresses, that fails loudly instead of a client quietly absorbing it again.
+
+### W4-2 · ~~**medium**~~ · **CLOSED 2026-07-29** · `@qalam/api-types` declares the wrong shape for `purchases/restore`
 
 | Source                                          | Shape                                        |
 | ----------------------------------------------- | -------------------------------------------- |
@@ -672,8 +729,22 @@ a response that never arrives — `subscription` and `creditsGranted` are always
 `expiresAt` is invisible to the type system. Mobile happens to read the _correct_ fields (`restored`,
 `expiresAt`), so it was written from the controller rather than the package.
 
-W4 declares its own `RestorePurchasesResult` from the controller and says why in a comment. The package is
-handwritten pending `openapi.json`, which is exactly how this drifts.
+W4 declared its own `RestorePurchasesResult` from the controller and said why in a comment.
+
+#### Resolution (2026-07-29) — and there was a **third** wrong copy
+
+Fixing the package turned up one more: `monetization-response.dto.ts` also declared
+`{ restored, subscription, creditsGranted }`, and because the route carried **no `@ApiOkResponse`**, that
+class was orphaned — so Swagger documented nothing and the DTO was never compared to anything. The drift
+existed in three places and was checkable in none.
+
+All three now agree with the controller: the package type is corrected, the Swagger DTO is corrected and
+**renamed `RestoreResultDto`** (the request DTO already owned `RestorePurchasesDto` — two same-named classes
+in one module is how the orphan stayed invisible), and the route declares it. A missing `region` on
+`CreateSubscriptionRequest` was found in the same sweep and added: the DTO accepts it and the controller
+uses it, so regional pricing was reachable from the API and invisible to every typed client.
+
+The frontend's local override is now a plain alias of the package type.
 
 ### W4-3 · see [§5.2](#52-the-monetization-catalogue-sells-eight-features-and-the-backend-enforces-one-opened-2026-07-29-during-w4)
 
@@ -687,7 +758,7 @@ from the implementation, confirming its predictions held:
   granting an `ai_writing` override flips the snapshot to `allowed: true` while changing no route's
   behaviour — the decision is computed and then unused.
 
-### W4-4 · **high** · there is no inert payment port, so `subscribe` cannot succeed anywhere without third-party keys
+### W4-4 · ~~**high**~~ · **CLOSED 2026-07-29** · there is no inert payment port, so `subscribe` cannot succeed anywhere without third-party keys
 
 [`docs/e2e/06 §6`](./e2e/06_PhasePlan.md) parked the `af5` row partly on the premise that "the third-party
 allowance covers running against an inert **port**". **That premise does not hold.** Every adapter is
@@ -704,25 +775,72 @@ key-gated and refuses rather than no-ops:
 **no implementation**, so it is not the escape hatch its presence suggests. Verified live with the payments
 flag raised: all four refuse.
 
-**Consequence for the `af5` row.** "Subscribe → entitlement granted" cannot be asserted through a payment
-in any environment without real credentials. W4's E2E splits it and fakes neither half: the subscribe leg
-drives the real button to the real endpoint and asserts the honest refusal, and the entitlement leg proves
-grant → snapshot → gate through an **admin entitlement override** — the same Entitlement Service, the same
-snapshot the client gates on. Closing the payment leg needs a Stripe test key in the E2E stack; that is a
-**stack item**, tracked in `06 §6`, not a client gap.
+**Consequence for the `af5` row.** "Subscribe → entitlement granted" could not be asserted through a
+payment in any environment without real credentials, so W4's E2E asserted the honest refusal plus an
+entitlement grant via admin override.
 
-### W4-5 · **medium** · `@qalam/api-types` declares a `couponCode` on `ChangePlanRequest` that the DTO rejects
+#### Resolution (2026-07-29) — `manual` is now implemented, and it was the right seam
+
+`PaymentProvider.Manual` shipped in the vocabulary documented as covering "admin/comp grants" with **no
+adapter** — that absence is the actual gap. `ManualAdapter` fills it: `createCheckout` reports
+`activated: true`, so `BillingService` opens the subscription **and** calls `recordSuccessfulCharge`,
+writing the paid invoice and the succeeded payment. One request produces the whole chain.
+
+**Chosen over a Stripe test key**, for three reasons. `StripeAdapter.createCheckout` does a real `fetch` to
+`api.stripe.com`, so every E2E run would take on a third party's availability and latency — a flake class
+this suite has no defence against. It would need a payment credential in CI secrets. And it would not prove
+more of what the row is about: Stripe's HTTP client and its webhook HMAC scheme are already covered offline
+by `stripe.adapter.spec.ts`. What `manual` does **not** cover is Stripe's redirect flow, its webhook path,
+and provider-side subscription state — still unasserted by the browser suite, recorded here rather than
+implied away.
+
+**Safety.** Off unless `PAYMENTS_MANUAL_ENABLED === 'true'` (a boolean, since there is no credential to gate
+on); every money-moving call throws `PAYMENT_PROVIDER_NOT_CONFIGURED` otherwise; `verifyWebhookSignature`
+returns false unconditionally, so nobody can post a "manual" event and have it trusted; `validateReceipt`
+never approves. Enabled in `e2e/scripts/stack-up.sh` and both `web-e2e` job envs, nowhere else. **It books
+revenue nobody collected**, so it is a test-stack provider and not a comp-grant mechanism — real comps keep
+going through `/admin/monetization/overrides`, which does not touch the ledger.
+
+The `af5` row now asserts **subscribe → payment → entitlement** for real: a throwaway subscriber, a 499
+succeeded payment, a paid invoice, `ai_writing` flipping to allowed, and the client rendering both the tier
+and the receipt. The platform-dark refusal is still asserted alongside it, because that is every
+deployment's default state.
+
+**One spec-design bug this exposed, worth keeping.** The two flag-flipping tests raced under
+`fullyParallel` — `feature.payments.enabled` is a single global row, so the dark test switched it off
+mid-checkout and the payment test failed with `MONETIZATION_DISABLED`. They are now in a
+`test.describe.serial` block. The entitlement-override test needs no such treatment: its change is scoped
+to one user.
+
+### W4-5 · ~~**medium**~~ · **CLOSED 2026-07-29** · `@qalam/api-types` declares a `couponCode` on `ChangePlanRequest` that the DTO rejects
 
 `ChangePlanRequest` in `packages/api-types` carries `couponCode?: string`. The backend's `ChangePlanDto` has
 no such property, and the app runs `ValidationPipe({ whitelist: true, forbidNonWhitelisted: true })`
 (`main.ts:169`) — so sending it does not get politely dropped, it **400s the entire plan change**.
 
 This is the same trap as **M-1** (§3.1), one package-level type away: a client trusts a published type,
-sends a field the DTO forbids, and the whole write fails. W4 hides the promo field from existing
-subscribers rather than sending it, and says why at the call site.
+sends a field the DTO forbids, and the whole write fails.
 
-Whether a coupon _should_ apply to a plan change is a product question. Today it cannot, and the type says
-it can.
+#### Resolution (2026-07-29) — removed from the type, and the class of defect is now pinned
+
+`couponCode` is gone from `ChangePlanRequest`. Whether a coupon _should_ apply to a plan change stays a
+product question; until the DTO grows the field, the honest contract is that it cannot.
+
+**The pin matters more than the fix.** `monetization-contract.spec.ts` reads the request interfaces out of
+the package's own source and asserts that every declared key is a _validated_ property of the DTO that
+receives it — which is what `forbidNonWhitelisted` actually requires, and what `@ApiProperty()` alone does
+not satisfy. Response shapes are pinned by compile-time mutual assignability against the controller's
+declared return type.
+
+Getting there took two attempts, and the first is worth recording because it is the failure mode these
+tests are prone to. v1 hand-listed the interface keys behind a `satisfies Record<keyof T, true>` guard, and
+**re-introducing the exact W4-5 drift left all nine tests green**: the literal knew nothing of the new
+field, and Jest transpiles without type-checking so the compile-time guard never ran. `tsc` did not catch
+it either — the backend had no `@qalam/api-types` dependency at all, so the import silently failed to
+resolve and the whole response half was inert. Fixed by adding the devDependency and by **parsing the
+package source** for keys, the same technique the QTag contrast scan uses on `q-tag.tsx` (T-2b) and for the
+same reason: a test that restates what it checks drifts from it. The drift was re-injected afterwards, the
+suite failed as it should, and it was reverted.
 
 ---
 
@@ -762,6 +880,28 @@ app.
 
 Web built the field from the DTO (there was nothing to port) and validates through the real endpoint before
 checkout. Mobile needs the same field on `plans_screen`. Small, and worth doing with M5-1.
+
+### M5-3 · ~~**low**~~ · **CLOSED 2026-07-29** · mobile's `formatMoney` mis-rendered every currency but five
+
+Found by auditing whether W4's web-side money bug existed anywhere else. It did — in the one other place
+money is formatted.
+
+`monetization_format.dart` divided **every** amount by 100 and looked the symbol up in a five-entry table,
+falling back to a bare code. Two consequences: a zero-decimal currency was wrong by 100× (¥1499 rendered as
+"¥14.99" — a plausible-looking price two orders of magnitude out), and any currency beyond the five rendered
+as `"AUD 14.99"`.
+
+Fixed the same way as web: a minor-unit table for the currencies that are not hundredths, and `intl`'s
+`NumberFormat.simpleCurrency` for the symbol, with the decimal count pinned to the real minor unit rather
+than the locale's display convention (CLDR renders PKR with none, which would round 1499 paisa to "PKR 15").
+
+**`NumberFormat.currency` was the wrong entry point and the existing test caught it** — it treats `name` as
+the literal symbol, so USD came out as "USD14.99". `simpleCurrency` resolves the code to a symbol. Worth
+noting because the two read almost identically at a glance.
+
+Audited and clear elsewhere: the frontend has no other money formatter, and `admin/src/lib/format.ts`'s
+`formatUsd` takes major units by contract and has **zero callers** (admin has no monetization surface yet).
+So this bug was monetization-only, on both platforms.
 
 ---
 

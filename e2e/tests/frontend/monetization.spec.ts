@@ -1,4 +1,4 @@
-import { freshLogin } from '../../fixtures/auth';
+import { freshLogin, freshLoginAs } from '../../fixtures/auth';
 import { test, expect } from '../../fixtures/test';
 import { BillingPage } from '../../pages/frontend/billing-page';
 import {
@@ -115,42 +115,112 @@ test.describe('@phase4 frontend monetization', () => {
   });
 
   /**
-   * The subscribe leg, driven for real.
+   * **Serial, and it has to be.** Both tests below flip `feature.payments.enabled`, which is a single
+   * global row shared by every worker — and the suite runs `fullyParallel` across 8 of them. Run in
+   * parallel they race: the dark test sets the flag false while the payment test is mid-checkout, which
+   * is exactly how this first failed (`MONETIZATION_DISABLED` on a request that should have succeeded).
    *
-   * Both server refusals are exercised, because a deployment can be in either state and they are
-   * different sentences to a reader: the flag being down (the default) and the flag being up with no
-   * provider credentials. The payments flag is restored afterwards — it is global, and leaving it
-   * changed would alter the starting state every later spec observes.
+   * `describe.serial` pins them to one worker in order. The rest of the file stays parallel because
+   * nothing else here mutates server-global state — the entitlement-override test scopes its change to
+   * one user, which is why it does not need to be in here.
    */
-  test('subscribing explains itself honestly when the platform is dark', async ({ page, api }) => {
-    const previous = await api.setPaymentsEnabled(false);
+  test.describe.serial('the platform flag', () => {
+    /**
+     * The subscribe leg, driven for real and completed for real.
+     *
+     * **This is what W4-4 unblocked.** When W4 shipped, no provider could complete a checkout in any
+     * environment without third-party credentials — every adapter is key-gated and `PaymentProvider.Manual`
+     * was in the vocabulary with no implementation, so the row could only assert a refusal. `ManualAdapter`
+     * fills that documented gap: it settles a charge without a processor, off unless
+     * `PAYMENTS_MANUAL_ENABLED` says otherwise, which this stack sets.
+     *
+     * A **throwaway** subscriber, not the shared writer, for two reasons: a subscription is a
+     * once-per-account state that would make a second run collide with `SUBSCRIPTION_ALREADY_ACTIVE`, and
+     * trial eligibility is once-per-account too, so only a fresh user reaches `trialing` deterministically.
+     */
+    test('subscribing records a payment and grants the entitlement, end to end', async ({
+      page,
+      api,
+      data,
+    }) => {
+      const previous = await api.setPaymentsEnabled(true);
+      try {
+        const password = 'ChangeMe!E2ESubscriber1';
+        const subscriber = await api.createVerifiedUser({
+          email: `af5-subscriber-${data.username()}@qalam.local`,
+          username: data.username(),
+          password,
+        });
+        const token = await api.loginToken(subscriber.email, password);
 
-    const plans = new PlansPage(page);
-    await plans.goto();
-    await plans.expectResolved();
-    await plans.choose('Plus');
-    await plans.expectPaymentsUnavailable();
+        // Before: the free tier excludes ai_writing.
+        const before = await api.entitlements(token);
+        expect(
+          before.features.find((f) => f.feature === 'ai_writing')?.allowed,
+          'a fresh account should not be entitled to ai_writing',
+        ).toBe(false);
 
-    await api.setPaymentsEnabled(previous);
-  });
+        // Subscribe → the charge settles in the same request (no redirect, no webhook to wait for).
+        const checkout = await api.subscribe(token, { tier: 'plus', interval: 'monthly' });
+        expect(checkout.checkoutUrl, 'a settled charge needs no redirect').toBeNull();
+        expect(checkout.subscription.tier).toBe('plus');
+        expect(checkout.subscription.provider).toBe('manual');
 
-  test('subscribing explains itself when no payment provider is configured', async ({
-    page,
-    api,
-  }) => {
-    // With the platform flag UP, the request reaches the payment registry — and is declined, because no
-    // adapter has credentials on this stack. Asserting this is what proves the client does not fake a
-    // checkout: it drove the real button to the real endpoint and reported what came back.
-    const previous = await api.setPaymentsEnabled(true);
-    try {
-      const plans = new PlansPage(page);
-      await plans.goto();
-      await plans.expectResolved();
-      await plans.choose('Plus');
-      await plans.expectPaymentsUnavailable();
-    } finally {
-      await api.setPaymentsEnabled(previous);
-    }
+        // PAYMENT — the leg that was unassertable before. A subscription row alone would not prove the
+        // billing ledger ran; these two rows are what `recordSuccessfulCharge` writes.
+        const payments = await api.payments(token);
+        expect(payments, 'a completed checkout must record a payment').toHaveLength(1);
+        expect(payments[0]?.status).toBe('succeeded');
+        expect(payments[0]?.amount).toBe(499); // Plus monthly, from the live pricing config.
+
+        const invoices = await api.invoices(token);
+        expect(invoices, 'a completed checkout must record an invoice').toHaveLength(1);
+        expect(invoices[0]?.status).toBe('paid');
+
+        // ENTITLEMENT — the plan the payment bought is now granted, recomputed by the Entitlement Service.
+        const after = await api.entitlements(token);
+        expect(after.tier).toBe('plus');
+        expect(
+          after.features.find((f) => f.feature === 'ai_writing')?.allowed,
+          'the paid plan must grant ai_writing',
+        ).toBe(true);
+
+        // And the client renders it: the hub shows the tier, and billing history shows the receipt.
+        await freshLoginAs(page, subscriber.email, password);
+        const billing = new BillingPage(page);
+        await billing.goto();
+        await billing.expectTier('Plus');
+
+        const history = new BillingHistoryPage(page);
+        await history.goto();
+        await history.expectResolved();
+        await history.expectRowCount(1);
+        await history.selectTab('Payments');
+        await history.expectRowCount(1);
+      } finally {
+        await api.setPaymentsEnabled(previous);
+      }
+    });
+
+    /**
+     * The refusal is still a real state and still asserted — it is what a deployment shows before an admin
+     * raises the platform flag, which is every deployment's default.
+     */
+    test('subscribing explains itself honestly when the platform is dark', async ({
+      page,
+      api,
+    }) => {
+      const previous = await api.setPaymentsEnabled(false);
+      try {
+        const plans = new PlansPage(page);
+        await plans.goto();
+        await plans.expectResolved();
+        await plans.choose('Plus');
+        await plans.expectPaymentsUnavailable();
+      } finally {
+        await api.setPaymentsEnabled(previous);
+      }
+    });
   });
 
   /**

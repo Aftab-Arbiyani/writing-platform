@@ -142,6 +142,16 @@ export class BillingHistoryPage {
     await expect(target).toHaveAttribute('aria-selected', 'true');
   }
 
+  /** Rows in the active ledger tab. Scoped to the panel — the settings nav is a list too. */
+  private get rows(): Locator {
+    return this.page.getByRole('tabpanel').getByRole('listitem');
+  }
+
+  /** How many rows the active ledger shows — the client-side half of "a payment was recorded". */
+  async expectRowCount(count: number): Promise<void> {
+    await expect(this.rows).toHaveCount(count, { timeout: 30_000 });
+  }
+
   /**
    * A tab that has nothing to show says so, and does NOT show an error.
    *

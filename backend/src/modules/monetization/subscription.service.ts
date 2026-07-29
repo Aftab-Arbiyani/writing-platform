@@ -297,16 +297,29 @@ export class SubscriptionService {
     return saved;
   }
 
-  /** Cursor-paginated subscription history (newest first). */
+  /**
+   * Cursor-paginated subscription history (newest first).
+   *
+   * **Answers an empty page for a user with no subscription, not a 404.** It used to resolve the
+   * subscription with `getByUser`, which throws `SUBSCRIPTION_NOT_FOUND` — so this endpoint 404'd for
+   * every free user while its three sibling ledgers on the same controller (`/invoices`, `/payments`,
+   * `/purchases`) answered `data: []` for exactly the same viewer. Having no subscription is the
+   * majority state, so the majority of callers got an error where the truth was "nothing has happened
+   * yet", and both clients would have had to special-case one of four otherwise-identical lists
+   * (48 §3.6 W4-1).
+   *
+   * Scoping the query by `user_id` instead of by a resolved subscription id makes it match its
+   * siblings and removes the need for the lookup at all. The events table carries `user_id`, so this is
+   * the same owner scoping the other three use — not a widening.
+   */
   async listHistory(
     userId: string,
     cursor: CursorPayload | null,
     limit: number,
   ): Promise<SubscriptionEvent[]> {
-    const subscription = await this.getByUser(userId);
     const qb = this.events
       .createQueryBuilder('e')
-      .where('e.subscription_id = :sid', { sid: subscription.id })
+      .where('e.user_id = :userId', { userId })
       .orderBy('e.created_at', 'DESC')
       .addOrderBy('e.id', 'DESC')
       .limit(limit + 1);

@@ -87,15 +87,34 @@ export interface CreateSubscriptionRequest {
   couponCode?: string;
   /** Store purchase token (Apple/Google) when provider is a store; Stripe uses checkout. */
   receipt?: string;
+  /**
+   * Region code for regional pricing/tax (e.g. `GB`).
+   *
+   * Added in W4-2's sweep: `CreateSubscriptionDto` accepts it and the controller passes it to
+   * `startSubscriptionCheckout`, but this interface omitted it — so regional pricing was reachable from
+   * the API and invisible to every typed client. Drift in the opposite direction to `couponCode`
+   * (W4-5): harmless rather than breaking, but the same root cause.
+   */
+  region?: string;
 }
 
-/** `POST /monetization/subscription/change` — upgrade/downgrade or switch interval. */
+/**
+ * `POST /monetization/subscription/change` — upgrade/downgrade or switch interval.
+ *
+ * **There is no `couponCode` here, and adding one back would break every caller.** This interface
+ * declared one until W4-5 (docs/48 §3.6): `ChangePlanDto` has no such property and the app runs
+ * `ValidationPipe({ whitelist: true, forbidNonWhitelisted: true })`, so sending it does not get
+ * dropped — it **400s the entire plan change**. A client that trusted the old type shipped a broken
+ * upgrade button, which is mobile's M-1 defect one package upstream.
+ *
+ * Whether a coupon *should* apply to a plan change is a product question. Until it is answered and the
+ * DTO grows the field, the honest contract is that it cannot.
+ */
 export interface ChangePlanRequest {
   tier: PlanTier;
   interval: BillingInterval;
   /** When true, a downgrade schedules for period end; an upgrade is immediate + prorated. */
   atPeriodEnd?: boolean;
-  couponCode?: string;
 }
 
 /** The result of starting a checkout — either a redirect URL (Stripe) or a done flag (store). */
@@ -232,11 +251,21 @@ export interface RestorePurchasesRequest {
   receipt: string;
 }
 
-/** Result of a purchase restore. */
+/**
+ * Result of a purchase restore.
+ *
+ * **Corrected in W4-2** (docs/48 §3.6). This declared `{ restored, subscription, creditsGranted }` —
+ * two of three fields the controller never sends, and it omitted the one it does. A client typed
+ * against the old shape read `undefined` for `subscription` and `creditsGranted`, and could not see
+ * `expiresAt` at all. Kept in step with `monetization.controller.ts#restore` by
+ * `monetization-contract.spec.ts`.
+ */
 export interface RestorePurchasesResponse {
   restored: number;
-  subscription: SubscriptionResponse | null;
-  creditsGranted: number;
+  /** Provider-native reference for the restored transaction, when the provider gave one. */
+  providerRef: string | null;
+  /** Subscription paid-through date from the receipt, ISO-8601; null when not a subscription. */
+  expiresAt: string | null;
 }
 
 /** One purchase record. */

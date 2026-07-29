@@ -152,10 +152,22 @@ export class PurchaseDto {
 }
 
 /** The result of restoring purchases. */
-export class RestorePurchasesDto {
+/**
+ * The result of `POST /monetization/purchases/restore`.
+ *
+ * **Corrected in W4-2** (docs/48 §3.6). This declared `{ restored, subscription, creditsGranted }`
+ * while the controller returned `{ restored, providerRef, expiresAt }` — and because the route carried
+ * no `@ApiOkResponse`, the class was orphaned, so the drift was invisible: Swagger documented nothing
+ * and this shape was never compared to anything. `@qalam/api-types` had copied the same wrong fields.
+ * The route now declares this DTO, and `monetization-contract.spec.ts` pins all three together.
+ *
+ * Named `RestoreResultDto` rather than `RestorePurchasesDto` because the REQUEST DTO already owns that
+ * name — two same-named classes in one module is how the orphan went unnoticed.
+ */
+export class RestoreResultDto {
   @ApiProperty() restored!: number;
-  @ApiProperty({ nullable: true, type: SubscriptionDto }) subscription!: SubscriptionDto | null;
-  @ApiProperty() creditsGranted!: number;
+  @ApiProperty({ nullable: true }) providerRef!: string | null;
+  @ApiProperty({ nullable: true }) expiresAt!: string | null;
 }
 
 /** A plan in the public catalogue. */

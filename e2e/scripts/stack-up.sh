@@ -45,6 +45,12 @@ pnpm --filter backend seed:e2e
 # bucket and 429s (docs/e2e/06 §6); `web-e2e.yml` sets this and local runs must too.
 export RATE_LIMIT_ENABLED=false
 
+# The `manual` payment provider (ManualAdapter) — settles a charge without a processor, so the af5
+# row can assert subscribe → payment → entitlement end to end. Every real adapter is key-gated and
+# this stack holds no processor credentials, so without this nothing can complete a checkout
+# (docs/e2e/06 §6, 48 §3.6 W4-4). Off by default everywhere else: it books revenue nobody collected.
+export PAYMENTS_MANUAL_ENABLED=true
+
 # Start the backend on the host (dev mode → NODE_ENV!=production so dev seeds and
 # non-secure cookies work), unless it is already answering health checks.
 if curl -sf -o /dev/null "${HEALTH_URL}"; then

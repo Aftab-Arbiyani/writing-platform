@@ -383,6 +383,46 @@ describe('SubscriptionService', () => {
     });
   });
 
+  /**
+   * W4-1 (docs/48 §3.6). `listHistory` used to call `getByUser`, which throws
+   * `SUBSCRIPTION_NOT_FOUND` — so this endpoint 404'd for every free user while the three sibling
+   * ledgers on the same controller answered an empty page for the same viewer. Both clients would
+   * otherwise have to special-case one of four identical lists.
+   */
+  describe('listHistory', () => {
+    it('returns an empty page for a user with no subscription instead of throwing', async () => {
+      const { service } = build({ existingSub: null });
+      await expect(service.listHistory('u1', null, 20)).resolves.toEqual([]);
+    });
+
+    it('scopes by user_id, never by a resolved subscription id', async () => {
+      // The mechanism, not just the outcome: filtering by user_id is what removes the lookup that
+      // threw. A future refactor that goes back through the subscription would fail here even if it
+      // happened to return [] for this fixture.
+      const { service, events, subscriptions } = build({ existingSub: null });
+      await service.listHistory('u1', null, 20);
+
+      const qb = (events.createQueryBuilder as jest.Mock).mock.results[0]?.value as {
+        where: jest.Mock;
+      };
+      expect(qb.where).toHaveBeenCalledWith('e.user_id = :userId', { userId: 'u1' });
+      expect(subscriptions.findOne).not.toHaveBeenCalled();
+    });
+
+    it('still applies the keyset cursor', async () => {
+      const { service, events } = build({ existingSub: null });
+      await service.listHistory('u1', { k: '2026-07-29T00:00:00.000Z', id: 'evt-9' }, 20);
+
+      const qb = (events.createQueryBuilder as jest.Mock).mock.results[0]?.value as {
+        andWhere: jest.Mock;
+      };
+      expect(qb.andWhere).toHaveBeenCalledWith(expect.stringContaining('e.created_at'), {
+        ck: '2026-07-29T00:00:00.000Z',
+        cid: 'evt-9',
+      });
+    });
+  });
+
   describe('recordEvent side-effects', () => {
     it('should always call entitlements.invalidate after every transition', async () => {
       const { service, entitlements } = build({

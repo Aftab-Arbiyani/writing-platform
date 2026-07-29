@@ -34,6 +34,19 @@ export const paymentsConfig = registerAs('payments', () => ({
     sandboxVerifyUrl:
       process.env.APPLE_SANDBOX_VERIFY_URL ?? 'https://sandbox.itunes.apple.com/verifyReceipt',
   },
+  /**
+   * The **manual** provider — settles a charge without a processor (`ManualAdapter`).
+   *
+   * Gated on an explicit boolean rather than a credential, because there is none to hold; the effect is
+   * the same as a blank secret elsewhere in this file, which is that the provider is inert until a
+   * deployment opts in. **Off by default, and it must stay that way in production**: it records a real
+   * payment + paid invoice at the plan's real price, so enabling it books revenue nobody collected.
+   * Its purpose is a stack that needs a working checkout without a processor — the E2E stack. Real
+   * comp grants go through `/admin/monetization/overrides`, which does not touch the ledger.
+   */
+  manual: {
+    enabled: process.env.PAYMENTS_MANUAL_ENABLED === 'true',
+  },
   /** Google Play Billing (purchase-token validation via Play Developer API). */
   google: {
     /** Service-account JSON (or its access token) for the Play Developer API. Blank => off. */

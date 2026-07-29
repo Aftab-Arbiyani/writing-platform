@@ -61,6 +61,29 @@ export default defineConfig({
     ? [['html', { open: 'never' }], ['github'], ['list']]
     : [['html', { open: 'never' }], ['list']],
 
+  /**
+   * **A missing visual baseline FAILS. It is never written.** (docs/e2e/10 §8.3, [48 T-8].)
+   *
+   * Playwright's default is `'missing'`: a spec with no committed baseline silently writes one from
+   * whatever browser happens to be running, prints "A snapshot doesn't exist …, writing actual", and
+   * then passes on the next run. On a dev machine that mints a **host-rendered** baseline, which §8.3
+   * forbids outright — baselines are only valid from `mcr.microsoft.com/playwright:v1.61.1-noble`.
+   *
+   * That happened four times (W3a, W3c, the tokens pass, W4) before this line existed. Three of the
+   * four were caught and the files deleted; the failure mode is that the fourth is not, and a wrong
+   * baseline is worse than none because it turns the whole visual dimension into a tautology.
+   *
+   * `'none'` makes the default posture refuse. The **only** thing that may mint is the `web-e2e`
+   * workflow's `web-e2e-visual` job, which runs inside the pinned image and passes an explicit
+   * `--update-snapshots` — a CLI flag, so it overrides this. Nothing else can, including
+   * `--ignore-snapshots`, which merely skips comparison.
+   *
+   * Consequence, and it is the intended one: a newly added visual spec **fails until its baseline is
+   * minted by that workflow**. A red spec asking for a baseline is the correct state; a green one that
+   * invented its own is not.
+   */
+  updateSnapshots: 'none',
+
   use: {
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',

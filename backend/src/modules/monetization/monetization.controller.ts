@@ -26,6 +26,7 @@ import {
   EntitlementSnapshotDto,
   PlansDto,
   PurchaseDto,
+  RestoreResultDto,
   SubscriptionDto,
   UsageSummaryDto,
 } from './dto/monetization-response.dto';
@@ -355,6 +356,7 @@ export class MonetizationController {
   @ApiOperation({
     summary: 'Restore store purchases from a receipt. Errors: PURCHASE_NOT_FOUND.',
   })
+  @ApiOkResponse({ type: RestoreResultDto })
   async restore(
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: RestorePurchasesDto,

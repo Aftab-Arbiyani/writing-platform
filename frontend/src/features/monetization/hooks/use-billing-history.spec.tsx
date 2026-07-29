@@ -33,38 +33,47 @@ beforeEach(() => {
 });
 
 /**
- * The odd one out among the four history lists.
+ * The four ledgers behave alike, which is the property W4-1 restored.
  *
- * `GET /monetization/subscription/history` answers **404 SUBSCRIPTION_NOT_FOUND** for a viewer with no
- * subscription, where invoices / payments / purchases all answer an empty page (verified live —
- * `SubscriptionService.listHistory` loads the subscription first and throws). Every free reader who
- * opens billing history would otherwise meet an error panel on a tab whose truthful content is
- * "nothing has happened yet". Recorded as a backend defect (docs/48 §3.6, W4-1); mapped here so the
- * surface is honest in the meantime.
+ * `subscription/history` used to 404 `SUBSCRIPTION_NOT_FOUND` for a viewer with no subscription while
+ * its three siblings answered an empty page, and this hook carried a mapping to compensate. The service
+ * now scopes by `user_id` (docs/48 §3.6, W4-1), so the mapping is gone — and these tests pin the
+ * consequence: the hook must be plain, and a 404 must NOT be quietly swallowed any more.
  */
-describe('useSubscriptionHistory — the 404 asymmetry', () => {
-  it('maps SUBSCRIPTION_NOT_FOUND to an empty page', async () => {
-    history.mockRejectedValue(
-      new ApiError(404, {
-        code: ERROR_CODES.SUBSCRIPTION_NOT_FOUND,
-        message: 'No subscription found.',
-      }),
-    );
+describe('useSubscriptionHistory', () => {
+  it('pages a real history like any other ledger', async () => {
+    history.mockResolvedValue({
+      items: [
+        {
+          id: 'evt-1',
+          type: 'activated',
+          fromTier: null,
+          toTier: 'plus',
+          fromStatus: null,
+          toStatus: 'active',
+          createdAt: new Date().toISOString(),
+        },
+      ],
+      meta: { nextCursor: null, hasMore: false },
+    });
     const { wrapper } = setup();
     const { result } = renderHook(() => useSubscriptionHistory(), { wrapper });
 
     await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
-    expect(result.current.data?.pages[0]?.items).toEqual([]);
-    expect(result.current.hasNextPage).toBe(false);
-    expect(result.current.isError).toBe(false);
+    expect(result.current.data?.pages[0]?.items).toHaveLength(1);
   });
 
-  it('still errors on any other failure', async () => {
-    // The mapping is confined to one code so a genuine problem is not hidden behind "nothing yet".
+  it('surfaces a 404 as an error rather than hiding it', async () => {
+    // The inverse of the old behaviour, asserted on purpose. If the endpoint ever regresses to 404ing
+    // for a free viewer, this fails — which is what should happen, rather than a client silently
+    // absorbing it again and the regression going unnoticed on both platforms.
     history.mockRejectedValue(
-      new ApiError(500, { code: ERROR_CODES.INTERNAL_SERVER_ERROR, message: 'boom' }),
+      new ApiError(404, {
+        code: ERROR_CODES.SUBSCRIPTION_NOT_FOUND,
+        message: 'No subscription found.',
+      }),
     );
     const { wrapper } = setup();
     const { result } = renderHook(() => useSubscriptionHistory(), { wrapper });

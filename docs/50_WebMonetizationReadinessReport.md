@@ -179,43 +179,62 @@ Under the parity rule, two rows mobile now needs ([48 §3.7](./48_PlatformParity
 
 ## 6. Verification
 
-| Check                          | Result                                                                                                                       |
-| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
-| Frontend unit suite            | ✅ **490 passed** (96 files) — 90 of them monetization's, plus the AI availability additions                                 |
-| `eslint .` (frontend + e2e)    | ✅ clean, 0 errors 0 warnings                                                                                                |
-| `npm run build`                | ✅ (`tsc -b && vite build` — **not** `--noEmit`, per the standing instruction)                                               |
-| Bundle budget                  | ✅ within budget; entry unchanged at 144.1 kB gzip. The five billing routes code-split to 5–9 kB each                        |
-| E2E typecheck                  | ✅ clean                                                                                                                     |
-| Frontend E2E (chromium + dark) | ✅ **136 passed** including 25 new — the `af5` functional spec (13), a11y ×4 in both themes, visual ×3 in both themes        |
-| Live contract probe            | ✅ all 20 routes exercised by hand against the running backend on a pre-existing DB before a line of client code was written |
+Re-run in full at the register close-out (2026-07-29), across both repos:
 
-### 6.1 The `af5` E2E row, and why it is green in two halves
+| Check                             | Result                                                                                       |
+| --------------------------------- | -------------------------------------------------------------------------------------------- |
+| Backend suite                     | ✅ **987 passed** (136 files) — +14 `ManualAdapter`, +9 api-types contract, +3 `listHistory` |
+| Backend lint / tsc / `nest build` | ✅ clean                                                                                     |
+| Migration                         | ✅ `1784620000000` applied, reverted and re-applied; index confirmed in `pg_indexes`         |
+| `@qalam/api-types` build          | ✅ clean after the three corrections                                                         |
+| Frontend unit suite               | ✅ **503 passed** (97 files)                                                                 |
+| `eslint .` (frontend + e2e + be)  | ✅ clean, 0 errors 0 warnings                                                                |
+| `npm run build`                   | ✅ (`tsc -b && vite build`)                                                                  |
+| Bundle budget                     | ✅ within budget; entry unchanged at 144.1 kB gzip                                           |
+| Mobile                            | ✅ `flutter analyze` **0 issues**; **572 tests passed** (+5 `formatMoney`)                   |
+| Frontend E2E (functional + a11y)  | ✅ **105 passed**, chromium + dark, including the af5 payment assertion                      |
+| Frontend E2E (visual)             | ⏸ **8 pages await their first baseline** — see §6.2, this is T-8 working as intended         |
 
-[`docs/e2e/06 §6`](./e2e/06_PhasePlan.md) parked this row partly on the premise that "the third-party
-allowance covers running against an inert **port**". **That premise is wrong** (W4-4): every adapter is
-key-gated and `PaymentProvider.Manual` has no adapter at all, so without real credentials the registry
-declines for every provider. The port does not no-op; it refuses.
+### 6.1 The `af5` E2E row
 
-So the row asserts both halves and fakes neither:
+**Updated 2026-07-29 (register close-out).** As shipped, this row asserted the entitlement leg end to end
+and the subscribe leg only as far as the server's refusal, because [W4-4](./48_PlatformParityRegister.md)
+found there was **no inert payment port** to run against: every adapter is key-gated and
+`PaymentProvider.Manual` sat in the vocabulary with no implementation, so `manual` declined too.
 
-1. **Subscribe** is driven through the real button to the real endpoint, and the assertion is the honest
-   refusal with nothing charged — in **both** server states a deployment can be in (`MONETIZATION_DISABLED`
-   with the pre-seeded flag down; `PAYMENT_PROVIDER_NOT_CONFIGURED` with it raised, which the spec toggles
-   through the admin API and restores).
-2. **Entitlement granted → the gate opens** is proven end to end via an **admin entitlement override** —
-   the same Entitlement Service, the same snapshot the client gates on, the same decision-cache
-   invalidation a subscription transition triggers. Both directions are asserted: a `deny` override closes
-   the credit-balance gate, revoking it reopens it.
+`ManualAdapter` now fills that gap — a provider that settles a charge without a processor, off unless
+`PAYMENTS_MANUAL_ENABLED` says otherwise. The row asserts the full chain:
 
-What is still unasserted is a **completed payment**, which needs a Stripe test key in the E2E stack — a
-stack item, cheap compared to the AI-provider stub, and tracked in `06 §6`.
+1. **subscribe → payment → entitlement**, on a throwaway subscriber: a 499 succeeded payment, a paid
+   invoice, `ai_writing` flipping to allowed, and the client rendering the new tier and the receipt.
+2. **entitlement granted → the gate opens**, separately, via an admin override — both directions.
+3. **the honest refusal**, still asserted, since a platform with its flag down is the default state.
 
-### 6.2 Visual baselines
+Chosen over a Stripe test key because `StripeAdapter` makes a real call to `api.stripe.com` (a third-party
+dependency and a flake class mid-suite), it would need a payment credential in CI, and it would not prove
+more of what the row is about — Stripe's HTTP client and webhook HMAC are already covered offline by
+`stripe.adapter.spec.ts`. **Stripe's redirect flow, webhook path, and provider-side state remain
+unasserted** by the browser suite.
 
-**None minted.** Three visual specs were added and no snapshots were written: local runs used
-`--ignore-snapshots`, precisely because [48 T-8](./48_PlatformParityRegister.md) records that running a
-visual spec locally silently mints host-rendered baselines three times over. CI mints them in the pinned
-Playwright image.
+### 6.2 Visual baselines — T-8 changed what "green" means here
+
+`playwright.config.ts` now sets **`updateSnapshots: 'none'`** ([48 T-8](./48_PlatformParityRegister.md),
+closed at this pass), so a missing baseline **fails** instead of being silently written from the host's
+browser. That is the fix, and it has an immediate visible consequence worth stating plainly rather than
+hiding behind a filtered test run:
+
+**Eight visual pages have no committed baseline** — the three W4 added (plans, billing hub, AI usage) and,
+it turns out, five from W3 (collaborators, publishing, safety settings, comments, suggestions). Only eight
+pages ever had one: login, register, not-found, editor, AI panel, settings, reader, feed.
+
+So those five W3 pages had been **silently minting host-rendered baselines on every local run since W3**,
+which is precisely the failure T-8 described and the reason its fourth occurrence was treated as decisive.
+They now fail honestly and are queued for the same mint.
+
+Verified twice over: a local run of a baseline-less spec failed and left the 44-file snapshot inventory
+byte-identical (checksummed before and after, plus a clean `git status`), and the same spec with an explicit
+`--update-snapshots` still wrote its PNG — which was then deleted. The `web-e2e-visual` job passes that flag
+inside the pinned image, so the one sanctioned mint path is untouched.
 
 ### 6.3 Pre-existing E2E flakes, measured
 
