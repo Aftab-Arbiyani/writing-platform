@@ -21,7 +21,12 @@
   --q-border: #e7e1d6;
   --q-accent: #9e4b28; /* terracotta ink */
   --q-accent-hover: #b45a32;
-  --q-success: #3e7c4f;
+  /* Darkened from #3e7c4f. `QTag color="success"` paints the label in this token over a 12% tint of
+     the SAME token, so the colour is measured against itself: #3e7c4f on the tint rendered 4.28:1 on
+     surface, 4.02:1 on canvas and 3.74:1 on raised — under AA for what is 12px text (W3c-2,
+     docs/48 §3.4). Hue preserved; now 5.30:1 / 4.98:1 / 4.63:1. Dark mode's #6baa7c already clears
+     it (5.32 / 5.82 / 4.76) and is unchanged. */
+  --q-success: #356b44;
   /* Darkened from #a97a1f (3.82:1 on surface) — it renders as 12px status text in the moderation
      queue, so it must clear AA as text, not just the 3:1 non-text bar. Now 5.24:1 / 4.90:1 / 4.53:1. */
   --q-warning: #8d651a;

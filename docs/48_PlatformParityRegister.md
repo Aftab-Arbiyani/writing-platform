@@ -293,7 +293,7 @@ the permission guard — which is the whole point: the gate that refuses is now 
 "review → approve → publish, end to end" is now ONE actor through the UI instead of two.
 The admin-driven "sends the story back with notes" test was kept deliberately, as staff-path coverage.
 
-### W3c-2 · **medium** · `QTag color="success"` fails AA contrast
+### W3c-2 · ~~**medium**~~ · **CLOSED 2026-07-29** · `QTag color="success"` failed AA contrast
 
 `packages/ui/src/components/q-tag.tsx` renders `success` as `bg-success/12 text-success` — measured
 `#3e7c4f` on `#e3e8de` = **4.01:1**, under the 4.5 AA floor for 12px text. The W3c a11y scan is the
@@ -306,6 +306,28 @@ page uses `neutral` for good standing (`danger` measures fine) and the token is 
 fixing it re-tints every success tag on both apps and would re-mint every visual baseline, which only
 CI may do.
 
+#### Resolution (2026-07-29) — `--q-success` darkened, light mode only
+
+`#3e7c4f` → **`#356b44`** in `packages/ui/styles/tokens.css`, mirrored in `src/theme/antd-theme.ts`.
+Hue preserved (a straight RGB scale). Measured on all three page backgrounds, since QTag paints the
+label in the same token as its 12% fill and so the colour is measured _against itself_:
+
+| Background        | Rendered tint | Before | After      |
+| ----------------- | ------------- | ------ | ---------- |
+| surface `#ffffff` | `#e7ede9`     | 4.28:1 | **5.30:1** |
+| canvas `#faf7f1`  | `#e2e6dc`     | 4.02:1 | **4.98:1** |
+| raised `#f3eee5`  | `#dcded2`     | 3.74:1 | **4.63:1** |
+
+The register's original 4.01:1 was the canvas case (an independent calculation reproduces it as
+4.02). **Dark mode is unchanged** — `#6baa7c` already measures 5.32 / 5.82 / 4.76.
+
+`accentHover` was rejected as the value for a related reason worth recording: the obvious candidate is
+not always the safe one. See W3c-3's resolution.
+
+Because the token is shared, this also re-tints `notification-item`'s success glyph (same `/12` + text
+recipe), every `text-success` indicator, and AntD's `colorSuccess`. That breadth is why it was bundled
+with the baseline mint rather than fixed in isolation.
+
 ### W3c-3 · **low** · AntD's derived hover colour on a default button fails AA
 
 A `QButton variant="secondary"` under the pointer renders its label in AntD's derived
@@ -315,6 +337,31 @@ arranging. Worked around by parking the pointer before scanning (with a comment 
 matches how every other a11y spec scans a resting page. The real fix is pinning the button hover
 colour in `packages/ui/src/theme/antd-theme.ts`, alongside the Menu colours already pinned there for
 exactly this reason.
+
+#### Resolution (2026-07-29) — pinned, and the workaround deleted
+
+`Button.defaultHoverColor` is pinned to the **accent token itself** (`c.accent`), beside the Menu
+colours: 6.02 / 5.63 / 5.21 light, 6.64 / 7.15 / 5.99 dark, on surface / canvas / raised.
+
+**Not `accentHover`,** which is what "hover colour" invites you to reach for: it measures 4.72:1 on
+surface but **4.41:1 on canvas**, so it would have replaced a caught AA failure with a subtler one that
+the publishing scan (on canvas) would still have flagged. Pinning to `accent` makes hover darken toward
+the ink rather than lightening away from it, which is also the right direction on paper.
+
+**The workaround is gone** — `page.mouse.move(0, 0)` is deleted from the publishing a11y scan, which
+now scans with the cursor resting wherever arranging left it. It was the only instance in the suite
+(`grep mouse.move e2e/` returns nothing now).
+
+Both halves were verified by _removing_ the fix and watching the scan fail, rather than by assuming:
+
+```
+without the pin → the publishing a11y scan fails, axe reporting
+  [serious] color-contrast — 4.37 (foreground #ab6846, background #ffffff, 14px) expected 4.5:1
+with the pin    → 31 a11y checks pass, frontend-chromium AND frontend-dark
+```
+
+axe's own number matches the register's original measurement exactly, which is the evidence that the
+pinned token — not the parked pointer — is what carries this now.
 
 ### W3c-4 · ~~**medium**~~ · **CLOSED 2026-07-29** · the web suggestion card said the prose was not changed
 
@@ -361,6 +408,60 @@ meaning.
 "Suggestion accepted." in mobile commit `dd12091`, and its card carries a status chip with no
 persistent note. Web's card is persistent rather than a toast, so it states the outcome where the
 writer will still see it later; neither client now claims the prose was left alone.
+
+---
+
+## 3.5 Found while fixing W3c-2 / W3c-3 (2026-07-29) — recorded, NOT fixed
+
+Each is outside the two defects that pass was scoped to. **`success` was the colour the a11y scan
+happened to reach first, not the only one that fails** — the recipe is what fails, and every tinted
+QTag colour uses it. Measured with the same method as W3c-2 (label in the token, background = that
+token at 12% over the page):
+
+### T-2 · **medium** · `QTag` `warning` and `info` fail AA on the backgrounds tags actually use
+
+| Colour              | surface `#ffffff` | canvas `#faf7f1` | raised `#f3eee5` |
+| ------------------- | ----------------- | ---------------- | ---------------- |
+| `warning` `#8d651a` | 4.47 ❌           | 4.20 ❌          | 3.91 ❌          |
+| `info` `#3b6ea8`    | 4.50 ⚠️ (exactly) | 4.22 ❌          | 3.93 ❌          |
+| `accent` `#9e4b28`  | 5.06 ✅           | 4.75 ✅          | 4.42 ❌          |
+| `danger` `#b3382e`  | 4.97 ✅           | 4.67 ✅          | 4.34 ❌          |
+| `success` (fixed)   | 5.30 ✅           | 4.98 ✅          | 4.63 ✅          |
+
+**`warning` and `info` are live defects today**, on the same surfaces where `success` failed — `info` is
+in use (`restricted-wall`, `role-badge`). `accent` and `danger` are **latent**: they pass on surface and
+canvas and fail only if a tinted tag is ever placed on `bg-raised`. No tinted tag sits on `raised` today
+(only `neutral`, which is opaque and measures 5.00), so nothing renders them broken yet.
+
+Fixing these is the same one-line-per-token change, but it re-tints two more colour families app-wide
+and would re-mint the baselines again — so it belongs to one deliberate token pass, not to this one.
+**Note `info` measures 4.50 exactly on surface: it passes only by rounding**, which is the kind of
+margin that a future background tweak silently breaks.
+
+### T-3 · **low** · dark mode's `QTag danger` is 4.47:1 on raised
+
+`#dc7b70` on its own tint over `#26221e`. Latent, same condition as `accent`/`danger` above — and note
+the token already carries a comment about being lightened once for this exact reason, so the ramp was
+tuned against `surface` and never re-checked against `raised`.
+
+### T-4 · **low** · AntD's derived _active_ colour on a default button is 3.46:1 in dark mode
+
+The sibling of W3c-3 that pinning hover does not cover: `colorPrimaryActive` derives to `#996145`,
+which measures **3.46 / 3.72 / 3.12** on dark surface / canvas / raised. Light mode is fine (`#783218`,
+9.26:1). It is low severity because it only renders while the pointer is held down, which is why no axe
+scan catches it — the same blind spot that let the hover defect live until a scan happened to leave the
+cursor parked. The fix is one more line beside the hover pin (`defaultActiveColor: c.accent`), left
+undone deliberately under this pass's scope lock.
+
+### T-5 · **low** · two token mirrors nobody is tracking
+
+`tokens.css` names its mirrors — "styles/tailwind.css and src/theme/antd-theme.ts" — and both were
+updated. But `frontend/src/features/analytics/lib/chart-options.ts` carries the palette hexes **twice
+more** (`FALLBACKS.light.palette[2]` and an inline `?? '#3e7c4f'`), and they are now stale. Harmless
+today: they are chart-series colours for non-text graphics (3:1 bar, not 4.5) and only used when the CSS
+variable cannot be read. But they are two undeclared copies of a "single source of truth", which is the
+condition that produced W3c-4 one section above. Either delete them in favour of the CSS variable or add
+them to the mirror list in `tokens.css`.
 
 ---
 

@@ -158,11 +158,11 @@ test.describe('@phase5 @a11y frontend accessibility (authenticated)', () => {
     await publishing.goto(story.id);
     await publishing.requestReview();
     await publishing.captureVersion();
-    // Park the pointer before scanning. Arranging the page leaves the cursor resting on the button
-    // it last clicked, and AntD's derived hover colour for a default button (#ab6846 on white =
-    // 4.37:1) is below AA — a shared-theme finding, recorded as W3c-3 (docs/48 §3.4), not something
-    // this page introduces. Every other a11y spec scans a resting page; this one has to say so.
-    await page.mouse.move(0, 0);
+    // Scanned with the cursor left wherever arranging put it — resting on the last button clicked.
+    // This spec used to park the pointer at (0,0) first, because AntD's derived hover colour for a
+    // default button was 4.37:1 (W3c-3). That token is now pinned in `antd-theme.ts`, so the
+    // workaround is gone deliberately: parking the pointer would hide the next regression in exactly
+    // the state this page is most likely to regress in.
     await expectNoSeriousA11yViolations(page, { label: 'frontend /write/:storyId/publishing' });
   });
 
