@@ -37,7 +37,7 @@ RUN pnpm install --frozen-lockfile
 RUN pnpm turbo build --filter frontend
 
 # ── Stage 2: runtime — static bundle behind non-root nginx ──────────────────
-FROM nginx:1.27-alpine AS runtime
+FROM nginx:1.31-alpine AS runtime
 
 # OCI image labels — trace the built bundle back to its source commit/build.
 ARG BUILD_VERSION=0.0.0-dev
