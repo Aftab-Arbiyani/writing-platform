@@ -162,8 +162,16 @@ jobs:
           node backend/dist/main.js &
           e2e/scripts/wait-health.sh http://localhost:4000/health 120
 
+      # `chromium` is installed ALONGSIDE the matrix browser, always. Both setup projects
+      # (`setup-frontend`, `setup-admin`) are pinned to `devices['Desktop Chrome']` because auth
+      # state is engine-agnostic — so every leg needs chromium to mint storageState, even the
+      # firefox and webkit ones. Installing only `${{ matrix.browser }}` meant those two legs died
+      # in `Before Hooks` with "browserType.launch: Executable doesn't exist …
+      # chromium_headless_shell", which fails the setup project and SKIPS every project that
+      # depends on it — so the firefox and webkit legs reported failure without running a single
+      # real test. On the chromium leg the extra argument is a harmless no-op.
       - name: Install Playwright browser (${{ matrix.browser }})
-        run: pnpm --filter e2e exec playwright install --with-deps ${{ matrix.browser }}
+        run: pnpm --filter e2e exec playwright install --with-deps ${{ matrix.browser }} chromium
 
       # Functional (P1–P4) + @a11y on all engines; @responsive (chromium-only viewport
       # projects) on the chromium leg. @visual is EXCLUDED here — it runs in the pinned
@@ -173,6 +181,13 @@ jobs:
           PROJECTS="--project=frontend-${{ matrix.browser }} --project=admin-${{ matrix.browser }}"
           if [ "${{ matrix.browser }}" = "chromium" ]; then
             PROJECTS="$PROJECTS --project=frontend-mobile --project=frontend-tablet --project=admin-mobile --project=admin-tablet"
+            # The dark projects are Desktop Chrome + colorScheme:'dark' and match UI_QUALITY_ONLY
+            # (a11y|visual), so on this leg — with `--grep-invert @visual` below — they contribute
+            # the dark-mode @a11y run. Their @visual half runs in the pinned-image job. Before this,
+            # NO job selected either dark project: the sharded job listed only the engine + viewport
+            # projects and the visual job hardcoded the six desktop ones, so both dark projects and
+            # their committed baselines were dead config (docs/e2e/10 §3.3).
+            PROJECTS="$PROJECTS --project=frontend-dark --project=admin-dark"
           fi
           pnpm --filter e2e exec playwright test $PROJECTS --grep-invert @visual --shard=${{ matrix.shard }}/2
 
@@ -335,6 +350,7 @@ jobs:
             npx playwright test --grep @visual \
               --project=frontend-chromium --project=frontend-firefox --project=frontend-webkit \
               --project=admin-chromium --project=admin-firefox --project=admin-webkit \
+              --project=frontend-dark --project=admin-dark \
               $UPDATE --workers=2
 
       - name: Upload updated baselines (on regenerate)
