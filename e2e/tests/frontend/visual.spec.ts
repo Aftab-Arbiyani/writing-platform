@@ -184,9 +184,18 @@ test.describe('@phase5 @visual frontend (authenticated)', () => {
     const comments = new StoryCommentsPage(page);
     await comments.goto(story.id);
     await comments.expectResolved();
-    await comments.addComment(`Visual baseline comment ${data.username()}`);
+    // FIXED body text. `data.username()` is variable-length (`e2e_<seed>-<worker>-<n>`), and the
+    // comment card is masked — which hides its PIXELS but not its BOX, so a longer string wraps to
+    // another line and the card grows. The story is fresh per run, so the text need not be unique.
+    await comments.addComment('Visual baseline comment');
     await expect(page).toHaveScreenshot('frontend-comments.png', {
-      fullPage: true,
+      // Viewport, NOT fullPage. Two independent mints of this commit disagreed by 8.05% on chromium
+      // (the top 86 rows, full width) and by 124px of HEIGHT on webkit. The header is identical in
+      // both — it just sits ~21px lower in one, with everything below row 86 unchanged: the
+      // signature of a sticky header under fullPage, where Playwright's scroll-and-stitch settles
+      // the sticky element at a different offset per run. The reader baseline drifted the same way
+      // (11px). Viewport captures one paint with no stitching, so the offset cannot vary.
+      //
       // The card carries a relative timestamp and a truncated author id (`CommentDto` sends no
       // display name — docs/48 §3.2 M-3), both environment-dependent.
       mask: [page.getByRole('listitem')],
