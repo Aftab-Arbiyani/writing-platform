@@ -17,6 +17,24 @@
 @import '@qalam/ui/styles/tokens.css';
 @import '@qalam/ui/styles/tailwind.css';
 
+/* Tailwind v4 ignores node_modules, so it won't see the token-mapped utility classes used
+ * inside @qalam/ui components. Scan the package SOURCE so those classes are generated in
+ * this app's build — the frontend already does this (frontend/src/styles/global.css).
+ *
+ * Without it, admin's CSS shipped only `.text-danger-on-tint` — the one on-tint utility
+ * admin's OWN source uses (login-form.tsx). The other four (accent/info/success/warning) are
+ * referenced only inside `QTag`, so they were never emitted, and every tinted QTag in admin
+ * rendered its label as INHERITED grey instead of the token colour. That is a contrast
+ * defect, not a cosmetic one: the `-on-tint` tokens exist precisely because the label must be
+ * solved against the fill (docs/48 §3.5), and inherited grey is not.
+ *
+ * It hid for a while because the visual baselines tolerate `maxDiffPixelRatio: 0.02` and the
+ * env badge is ~0.04% of the viewport — under tolerance, so admin-analytics stayed green with
+ * a grey badge. It only surfaced when admin-users breached the threshold for an unrelated
+ * reason (table height) and the rewritten baseline swept the grey badge in with it.
+ */
+@source '../../../packages/ui/src';
+
 /* UI font — self-hosted, no CDN (privacy + perf). Admin is a workbench: Inter only. */
 @import '@fontsource-variable/inter';
 
