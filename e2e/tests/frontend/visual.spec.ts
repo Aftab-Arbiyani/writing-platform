@@ -214,7 +214,13 @@ test.describe('@phase5 @visual frontend (authenticated)', () => {
     await suggestions.expectResolved();
     await suggestions.propose({ original: 'lantern', suggested: 'oil lamp', from: 4 });
     await expect(page).toHaveScreenshot('frontend-suggestions.png', {
-      fullPage: true,
+      // Viewport, NOT fullPage — same failure the comments baseline had, same signature: two mints
+      // of this commit differed by 9.00% confined to the top 90 rows at full width, with the header
+      // rendering identically but at a different offset. This page is 745px, i.e. 25px past the
+      // 720px fold, and every baseline that drifted this way was marginally over it (comments 741,
+      // reader 731). Pages well past the fold (settings 1597, billing-plans 1731) were
+      // byte-identical across three mints, so the trigger is the ambiguous few pixels of overflow,
+      // not fullPage alone — which is why the other tall baselines are deliberately left as they are.
       mask: [page.getByRole('listitem')],
     });
   });
