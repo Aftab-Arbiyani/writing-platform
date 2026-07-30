@@ -43,7 +43,7 @@ jobs:
       # Turborepo local cache — keyed by sha, restored from the most recent
       # run on any branch so unchanged tasks are replayed, not re-executed.
       - name: Restore turbo cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: .turbo
           key: turbo-${{ runner.os }}-${{ github.sha }}
