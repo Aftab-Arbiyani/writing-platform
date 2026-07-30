@@ -1,3 +1,5 @@
+import type { Page } from '@playwright/test';
+
 import { freshLogin, freshLoginAs } from '../../fixtures/auth';
 import { test, expect } from '../../fixtures/test';
 import { AssistantPanel } from '../../pages/frontend/assistant-panel';
@@ -23,6 +25,20 @@ import { LoginPage } from '../../pages/shared/login-page';
  * Baselines are produced in ONE controlled environment — the pinned Playwright Docker image
  * (`mcr.microsoft.com/playwright:vX`) — never on a dev machine ([10 §2.2, §5]); see e2e/pages/README.
  */
+/**
+ * Wait for every transient toast to auto-dismiss before snapshotting.
+ *
+ * Toasts are AntD `notification` (docs/07 §7.9), which closes on a TIMER — so a screenshot taken
+ * straight after a mutating action captures however many happen still to be on screen. That is a
+ * race, and it is not hypothetical: story-publishing drifted 2.25% between two mints of the same
+ * commit (over the 2% gate) purely because one run still had both "Review requested." and "Snapshot
+ * captured." up while the next had only one. No baseline here is guarding toasts — every one of them
+ * is guarding the surface underneath.
+ */
+async function settleToasts(page: Page): Promise<void> {
+  await expect(page.locator('.ant-notification-notice')).toHaveCount(0, { timeout: 15_000 });
+}
+
 test.describe('@phase5 @visual frontend (unauthenticated)', () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 
@@ -132,6 +148,7 @@ test.describe('@phase5 @visual frontend (authenticated)', () => {
     await publishing.expectResolved();
     await publishing.requestReview();
     await publishing.captureVersion();
+    await settleToasts(page);
     await expect(page).toHaveScreenshot('frontend-story-publishing.png', {
       fullPage: true,
       // Height is deterministic — a fresh story, and every history/version row in the shot is one
@@ -188,6 +205,7 @@ test.describe('@phase5 @visual frontend (authenticated)', () => {
     // comment card is masked — which hides its PIXELS but not its BOX, so a longer string wraps to
     // another line and the card grows. The story is fresh per run, so the text need not be unique.
     await comments.addComment('Visual baseline comment');
+    await settleToasts(page);
     await expect(page).toHaveScreenshot('frontend-comments.png', {
       // Viewport, NOT fullPage. Two independent mints of this commit disagreed by 8.05% on chromium
       // (the top 86 rows, full width) and by 124px of HEIGHT on webkit. The header is identical in
@@ -213,6 +231,7 @@ test.describe('@phase5 @visual frontend (authenticated)', () => {
     await suggestions.goto(story.id);
     await suggestions.expectResolved();
     await suggestions.propose({ original: 'lantern', suggested: 'oil lamp', from: 4 });
+    await settleToasts(page);
     await expect(page).toHaveScreenshot('frontend-suggestions.png', {
       // Viewport, NOT fullPage — same failure the comments baseline had, same signature: two mints
       // of this commit differed by 9.00% confined to the top 90 rows at full width, with the header
