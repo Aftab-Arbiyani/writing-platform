@@ -1,0 +1,66 @@
+{
+  "generatedAt": "2026-07-21T14:11:52.510Z",
+  "environment": "local",
+  "results": [
+    {
+      "scenario": "cursor-encode-decode",
+      "iterations": 2000,
+      "minMs": 0,
+      "meanMs": 0,
+      "p50Ms": 0,
+      "p95Ms": 0,
+      "maxMs": 0.01,
+      "opsPerSecond": 0
+    },
+    {
+      "scenario": "response-envelope-serialize",
+      "iterations": 2000,
+      "minMs": 0,
+      "meanMs": 0,
+      "p50Ms": 0,
+      "p95Ms": 0,
+      "maxMs": 0.03,
+      "opsPerSecond": 0
+    },
+    {
+      "scenario": "permission-resolve",
+      "iterations": 2000,
+      "minMs": 0,
+      "meanMs": 0,
+      "p50Ms": 0,
+      "p95Ms": 0,
+      "maxMs": 0.01,
+      "opsPerSecond": 0
+    },
+    {
+      "scenario": "ai-token-estimate",
+      "iterations": 2000,
+      "minMs": 0,
+      "meanMs": 0,
+      "p50Ms": 0,
+      "p95Ms": 0,
+      "maxMs": 0.01,
+      "opsPerSecond": 0
+    },
+    {
+      "scenario": "ai-prompt-render",
+      "iterations": 2000,
+      "minMs": 0,
+      "meanMs": 0.01,
+      "p50Ms": 0,
+      "p95Ms": 0,
+      "maxMs": 15.64,
+      "opsPerSecond": 100000
+    },
+    {
+      "scenario": "latency-percentile-compute",
+      "iterations": 2000,
+      "minMs": 0.04,
+      "meanMs": 0.06,
+      "p50Ms": 0.05,
+      "p95Ms": 0.07,
+      "maxMs": 2.84,
+      "opsPerSecond": 16667
+    }
+  ]
+}

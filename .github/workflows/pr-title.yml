@@ -1,0 +1,49 @@
+# PR titles must follow conventional commits — the squash-merge commit message
+# is derived from the title. Scope list mirrors commitlint.config.mjs.
+name: PR Title
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize]
+
+permissions:
+  pull-requests: read
+
+jobs:
+  lint-title:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate PR title
+        uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          requireScope: false
+          scopes: |
+            auth
+            users
+            pieces
+            taxonomy
+            engagement
+            collections
+            feeds
+            search
+            notifications
+            analytics
+            moderation
+            media
+            prompts
+            admin
+            backend
+            frontend
+            admin-app
+            ui
+            shared
+            api-types
+            utils
+            config
+            infra
+            docs
+            deps
+            release
+            e2e

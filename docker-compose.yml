@@ -1,0 +1,170 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Qalam — development stack
+#
+# Default profile = infrastructure only (postgres, redis, minio, mailpit).
+# Apps run on the host via `pnpm dev` for hot reload.
+#
+#   docker compose up -d                 # infra only (day-to-day development)
+#   docker compose --profile full up -d  # everything containerized (integration)
+#
+# Compose-level env vars are documented in .env.example (copy to .env).
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: qalam
+
+services:
+  # ── Infrastructure (default profile) ───────────────────────────────────────
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-qalam}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-qalam}
+      POSTGRES_DB: ${POSTGRES_DB:-qalam}
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-qalam} -d ${POSTGRES_DB:-qalam}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - qalam
+
+  redis:
+    image: redis:7-alpine
+    # AOF persistence so queues (BullMQ) survive a container restart
+    command: ['redis-server', '--appendonly', 'yes']
+    ports:
+      - '${REDIS_PORT:-6379}:6379'
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - qalam
+
+  minio:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-qalam}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-qalamqalam}
+    ports:
+      - '${MINIO_PORT:-9000}:9000' # S3 API
+      - '${MINIO_CONSOLE_PORT:-9001}:9001' # web console
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ['CMD', 'mc', 'ready', 'local']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - qalam
+
+  # One-shot job: creates the qalam-media bucket, then exits.
+  minio-init:
+    image: minio/mc
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+        mc alias set qalam http://minio:9000 ${MINIO_ROOT_USER:-qalam} ${MINIO_ROOT_PASSWORD:-qalamqalam} &&
+        mc mb --ignore-existing qalam/qalam-media &&
+        echo 'bucket qalam-media ready'
+      "
+    networks:
+      - qalam
+
+  mailpit:
+    image: axllent/mailpit
+    ports:
+      - '${MAILPIT_SMTP_PORT:-1025}:1025' # SMTP
+      - '${MAILPIT_UI_PORT:-8025}:8025' # web UI
+    networks:
+      - qalam
+
+  # ── Applications (opt-in: --profile full) ──────────────────────────────────
+  # Build context is the repo root — the Dockerfiles copy the whole monorepo
+  # (pruned by .dockerignore) and build with pnpm + turbo.
+
+  backend:
+    profiles: ['full']
+    build:
+      context: .
+      dockerfile: infrastructure/docker/backend.Dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-qalam}:${POSTGRES_PASSWORD:-qalam}@postgres:5432/${POSTGRES_DB:-qalam}
+      REDIS_URL: redis://redis:6379
+    ports:
+      - '4000:4000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - qalam
+
+  frontend:
+    profiles: ['full']
+    build:
+      context: .
+      dockerfile: infrastructure/docker/frontend.Dockerfile
+    # Container serves the static bundle via non-root nginx on :8080; host port
+    # mirrors the Vite dev port so URLs stay familiar.
+    ports:
+      - '5173:8080'
+    depends_on:
+      - backend
+    networks:
+      - qalam
+
+  admin:
+    profiles: ['full']
+    build:
+      context: .
+      dockerfile: infrastructure/docker/admin.Dockerfile
+    ports:
+      - '5174:8080'
+    depends_on:
+      - backend
+    networks:
+      - qalam
+
+  # Edge reverse proxy for the fully containerized stack. reverse-proxy.conf.template
+  # is a real production vhost but requires envsubst rendering + TLS certs, so it
+  # is mounted read-only for REFERENCE only (NOT under /etc/nginx/templates, so
+  # nginx does not auto-apply it) — this dev edge starts on its default config.
+  # Render a concrete config per infrastructure/nginx/reverse-proxy.conf.template
+  # before relying on this service for real proxying.
+  nginx:
+    profiles: ['full']
+    image: nginx:1.27-alpine
+    ports:
+      - '8080:80'
+    volumes:
+      - ./infrastructure/nginx/reverse-proxy.conf.template:/opt/qalam/reverse-proxy.conf.template:ro
+    depends_on:
+      - backend
+      - frontend
+      - admin
+    networks:
+      - qalam
+
+volumes:
+  postgres-data:
+  redis-data:
+  minio-data:
+
+networks:
+  qalam:

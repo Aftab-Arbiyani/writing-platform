@@ -1,0 +1,37 @@
+{
+  "name": "@qalam/api-types",
+  "version": "0.1.0",
+  "description": "Qalam wire contract: OpenAPI-generated API types (Phase 1) + handwritten request/response helpers.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "generate": "echo 'openapi.json not yet emitted by backend (Phase 1)' && exit 1"
+  },
+  "dependencies": {
+    "@qalam/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@qalam/config": "workspace:*",
+    "eslint": "^9.0.0",
+    "openapi-typescript": "^7.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.6.0"
+  }
+}

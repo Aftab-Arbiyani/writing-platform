@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-label="Qalam — a premium writing sanctuary">
+  <rect width="1200" height="630" fill="#FAF7F1"/>
+  <rect x="0" y="0" width="1200" height="12" fill="#9E4B28"/>
+  <g transform="translate(96 210)">
+    <rect width="168" height="168" rx="38" fill="#9E4B28"/>
+    <text x="84" y="118" font-family="'Noto Naskh Arabic', 'Times New Roman', serif" font-size="92" fill="#FFFFFF" text-anchor="middle">&#1602;</text>
+  </g>
+  <text x="300" y="300" font-family="Georgia, 'Times New Roman', serif" font-size="96" font-weight="600" fill="#2b2620">Qalam</text>
+  <text x="302" y="372" font-family="Georgia, 'Times New Roman', serif" font-size="40" fill="#6b6255">A premium writing sanctuary.</text>
+  <text x="302" y="430" font-family="Georgia, 'Times New Roman', serif" font-size="28" fill="#8f887a">Write, publish, and read — in Hindi, Urdu, and beyond.</text>
+</svg>

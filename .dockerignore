@@ -1,0 +1,18 @@
+# Keep Docker build contexts lean — everything here is either rebuilt inside
+# the image (node_modules, dist) or must never enter an image (.env, .git).
+node_modules
+**/node_modules
+**/dist
+.turbo
+**/.turbo
+.git
+docs
+**/*.md
+coverage
+**/coverage
+.env
+.env.*
+# Local tooling / CI artifacts that must never bloat the image context.
+.github
+**/*.spec.ts
+**/*.e2e-spec.ts

@@ -1,0 +1,192 @@
+/*
+ * Qalam global stylesheet — Tailwind v4 CSS-first setup.
+ *
+ * Tailwind's preflight is deliberately NOT imported: AntD 5 ships its own reset
+ * (via cssinjs), and loading preflight on top causes base-element fights
+ * (buttons, headings, links) and specificity wars between the two systems.
+ * We import only the theme + utilities layers (docs/00 §6, "Conflict rule").
+ */
+@layer theme, base, components, utilities;
+
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
+
+/* Single token source: --q-* CSS variables + their @theme mapping so utilities
+ * like bg-canvas / text-primary / border-border resolve to the same values AntD
+ * receives through getAntdTheme(). */
+@import '@qalam/ui/styles/tokens.css';
+@import '@qalam/ui/styles/tailwind.css';
+
+/* Tailwind v4 ignores node_modules, so it won't see the token-mapped utility classes
+ * used inside @qalam/ui components. Scan the package SOURCE so those classes are
+ * generated in this app's build. */
+@source '../../../packages/ui/src';
+
+/* Self-hosted fonts via @fontsource — no CDN (privacy + perf, docs/00 §6). */
+@import '@fontsource-variable/inter';
+@import '@fontsource/lora/400.css';
+@import '@fontsource/lora/400-italic.css';
+@import '@fontsource/lora/600.css';
+
+@layer base {
+  /*
+   * The two preflight rules we cannot do without (docs/e2e/10 §8.2).
+   *
+   * Skipping preflight (above) also skips its `box-sizing: border-box` reset, so every
+   * element fell back to the CSS default `content-box`. Each `w-full` + `px-*` container
+   * therefore resolved to `100% + padding` and overflowed its parent by exactly its
+   * padding — 32px at `px-4`, 48px at `sm:px-6` — which is what made every reader page
+   * scroll sideways below `lg` (24px mobile / 40px tablet once the 8px body margin is
+   * accounted for). AntD's own cssinjs styles already assume border-box, so this aligns
+   * the two systems rather than fighting them; it is not the base-element reset the ADR
+   * conflict rule warns about. The admin app was never affected because it is composed
+   * from AntD layout primitives (which set their own box-sizing) and already zeroes the
+   * body margin.
+   */
+  *,
+  ::before,
+  ::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    background: var(--q-bg-canvas);
+    color: var(--q-text-primary);
+    /* Tell the UA which palette to draw native widgets (scrollbars, form controls, the default
+       button face) in. Without this the browser paints them light over a dark app — the admin
+       app already declared it; the frontend never did. */
+    color-scheme: light;
+  }
+
+  :root[data-theme='dark'] {
+    color-scheme: dark;
+  }
+
+  /*
+   * The other preflight rule we cannot do without. Un-preflighted `<button>` keeps the UA's
+   * `ButtonFace` background, which rendered the feed's tab pills as light-grey chips on the dark
+   * canvas (1.08:1 against their own label). This lives in `base`, so AntD's own unlayered button
+   * styles still win — the layer does the discriminating for us, and only unstyled buttons reset.
+   */
+  button {
+    background-color: transparent;
+    background-image: none;
+  }
+
+  body {
+    /* UA default is 8px; admin already zeroes it. Left unreset, it insets the whole app
+       and adds its 8px to the overflow measured above. */
+    margin: 0;
+    font-family:
+      'Inter Variable',
+      'Inter',
+      system-ui,
+      -apple-system,
+      'Segoe UI',
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--q-accent) 24%, transparent);
+  }
+
+  /* Visible focus ring per design system: 2px accent, offset 2px (docs/00 §7 A11y). */
+  :focus-visible {
+    outline: 2px solid var(--q-accent);
+    outline-offset: 2px;
+  }
+}
+
+/*
+ * Reading/editing prose (docs/06 §3.2, §3.3, §7). One class styles both the TipTap editing
+ * surface (.ProseMirror) and the read-only preview, so what you write is what readers see.
+ * Reading serif, generous line-height, logical spacing; RTL flows from the element `dir`.
+ * Only the whitelisted nodes/marks are styled (headings 2-4, lists, blockquote, bold/italic/
+ * underline) — the same set the server accepts.
+ */
+@layer components {
+  .qalam-prose {
+    font-family: var(--q-font-serif), Georgia, serif;
+    /*
+     * Size and leading are indirected through two variables so the READER can adjust them
+     * per device (W1, docs/45 §4.1 — the reader-preferences panel sets them inline on the
+     * prose element). The fallbacks are the previous literal values, so the editing surface
+     * — which never sets them — renders byte-identically to before.
+     */
+    font-size: var(--q-prose-size, 1.25rem);
+    line-height: var(--q-prose-leading, var(--q-leading-latin));
+    color: var(--q-text-primary);
+    /* Long unbreakable strings/URLs must wrap rather than overflow on narrow screens. */
+    overflow-wrap: anywhere;
+  }
+  .qalam-prose:focus {
+    outline: none;
+  }
+  .qalam-prose > * + * {
+    margin-block-start: 1.1em;
+  }
+  /*
+   * Heading sizes are expressed as ratios OF the body size rather than fixed rem, so a reader
+   * who scales the text up scales the whole hierarchy with it instead of flattening it. At the
+   * default 1.25rem body these evaluate to exactly the previous 1.6 / 1.35 / 1.15rem.
+   */
+  .qalam-prose h2 {
+    font-size: calc(var(--q-prose-size, 1.25rem) * 1.28);
+    font-weight: 600;
+    line-height: 1.3;
+    margin-block-start: 1.6em;
+  }
+  .qalam-prose h3 {
+    font-size: calc(var(--q-prose-size, 1.25rem) * 1.08);
+    font-weight: 600;
+    line-height: 1.35;
+    margin-block-start: 1.4em;
+  }
+  .qalam-prose h4 {
+    font-size: calc(var(--q-prose-size, 1.25rem) * 0.92);
+    font-weight: 600;
+    margin-block-start: 1.2em;
+  }
+  .qalam-prose blockquote {
+    border-inline-start: 3px solid var(--q-accent);
+    padding-inline-start: 1rem;
+    color: var(--q-text-secondary);
+    font-style: italic;
+  }
+  .qalam-prose ul,
+  .qalam-prose ol {
+    padding-inline-start: 1.5rem;
+  }
+  .qalam-prose ul {
+    list-style: disc;
+  }
+  .qalam-prose ol {
+    list-style: decimal;
+  }
+  .qalam-prose li + li {
+    margin-block-start: 0.4em;
+  }
+  /* Placeholder for the empty editor (extension-placeholder adds is-editor-empty). */
+  .qalam-prose p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    color: var(--q-text-muted);
+    float: inline-start;
+    height: 0;
+    pointer-events: none;
+  }
+}
+
+/* Print-friendly view (docs: Print Friendly View) — hide app chrome so printing the analytics
+   dashboard yields a clean report. Chrome is tagged with `data-print-hidden`. */
+@media print {
+  [data-print-hidden] {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+  }
+  main {
+    padding-bottom: 0 !important;
+  }
+}

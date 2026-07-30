@@ -1,0 +1,26 @@
+version: 2
+# Automated dependency + action updates (docs 15 §4). Weekly, grouped to keep
+# PR volume low; security updates arrive out-of-band from GitHub regardless.
+updates:
+  - package-ecosystem: npm
+    directory: '/'
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      nest:
+        patterns: ['@nestjs/*']
+      types:
+        patterns: ['@types/*']
+      dev-tooling:
+        patterns: ['eslint*', 'prettier', 'turbo', 'typescript', 'jest*', 'ts-*', 'vitest']
+
+  - package-ecosystem: github-actions
+    directory: '/'
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: docker
+    directory: '/infrastructure/docker'
+    schedule:
+      interval: weekly

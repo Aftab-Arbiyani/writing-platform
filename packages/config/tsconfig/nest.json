@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "./base.json",
+  // NestJS 11 + the Nest/ts-node CLI pipeline are still standard on CommonJS,
+  // so the backend compiles to commonjs with classic node resolution.
+  "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node10",
+    "target": "ES2022",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "declaration": false,
+    "sourceMap": true,
+    // Entities and DI-injected members are assigned by TypeORM/Nest at runtime,
+    // not in the constructor — definite-assignment checks would fight every class.
+    "strictPropertyInitialization": false,
+    // Must be false for decorator DI compatibility: `define` semantics initialize
+    // fields to undefined AFTER decorators/constructor param injection ran,
+    // clobbering injected values and TypeORM column defaults.
+    "useDefineForClassFields": false
+  }
+}

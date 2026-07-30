@@ -1,0 +1,6 @@
+packages:
+  - backend
+  - frontend
+  - admin
+  - e2e
+  - packages/*

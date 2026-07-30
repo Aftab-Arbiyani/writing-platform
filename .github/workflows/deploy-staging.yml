@@ -1,0 +1,197 @@
+# Continuous deployment to STAGING (docs 15 §10).
+#
+# Every merge to main builds the immutable `sha-<short>` backend image, pushes
+# it to GHCR, then deploys it to the single staging VM over SSH using the shared
+# deploy scripts (zero-downtime docker-compose swap), smoke-tests it, and tags
+# the Sentry release.
+#
+# SECRETS are configured as GitHub *Environment* secrets on the `staging`
+# environment (the spec's STAGING_SSH_* — environment-scoped, so no prefix
+# needed): SSH_HOST, SSH_USER, SSH_KEY, DATABASE_URL. Optional: SENTRY_AUTH_TOKEN,
+# SENTRY_ORG, SENTRY_PROJECT. DEPLOY_DIR may be set as an environment variable.
+#
+# FORK/PR SAFETY: there is no pull_request trigger, so forks cannot run this;
+# additionally every secret-dependent step is gated on `env.HAS_DEPLOY == 'true'`
+# (false when SSH_HOST is absent), and the `staging` environment can add its own
+# protection rules.
+#
+# Third-party actions are pinned to commit SHAs (# vX.Y.Z).
+name: Deploy Staging
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# One staging deploy at a time; a newer run queues behind the current one
+# rather than cancelling a deploy in flight.
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: staging
+    permissions:
+      contents: read
+      packages: write # build + push the sha image to GHCR
+    env:
+      REGISTRY: ghcr.io
+      HAS_DEPLOY: ${{ secrets.SSH_HOST != '' }}
+      HAS_SENTRY: ${{ secrets.SENTRY_AUTH_TOKEN != '' }}
+      DEPLOY_DIR: ${{ vars.DEPLOY_DIR || '/opt/qalam' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Compute image metadata
+        id: meta
+        run: |
+          SHORT_SHA="${GITHUB_SHA:0:12}"
+          IMAGE="${REGISTRY}/${GITHUB_REPOSITORY_OWNER}/qalam-backend"
+          IMAGE="$(echo "$IMAGE" | tr '[:upper:]' '[:lower:]')"
+          {
+            echo "short_sha=${SHORT_SHA}"
+            echo "image=${IMAGE}"
+            echo "version=sha-${SHORT_SHA}"
+            echo "build_time=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+
+      # Build the sha-tagged image (RELEASE_CHANNEL=staging so /version reports
+      # the channel). deploy-production PROMOTES a release-built image instead.
+      - name: Build and push backend image
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
+        with:
+          context: .
+          file: infrastructure/docker/backend.Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.image }}:sha-${{ steps.meta.outputs.short_sha }}
+          build-args: |
+            BUILD_VERSION=${{ steps.meta.outputs.version }}
+            GIT_SHA=${{ github.sha }}
+            BUILD_TIME=${{ steps.meta.outputs.build_time }}
+            BUILD_NUMBER=${{ github.run_number }}
+            RELEASE_CHANNEL=staging
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
+
+      # ── Everything below touches the VM and is gated on secret presence ─────
+      - name: Configure SSH
+        if: env.HAS_DEPLOY == 'true'
+        env:
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+      # Ship the deploy scripts + compose files to the VM (the scripts run there,
+      # against the local DB and docker daemon).
+      - name: Sync deploy scripts to VM
+        if: env.HAS_DEPLOY == 'true'
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+        run: |
+          # DEPLOY_DIR is a runner-side value — intentional client-side expansion.
+          # shellcheck disable=SC2029
+          ssh "$SSH_USER@$SSH_HOST" "mkdir -p '$DEPLOY_DIR'"
+          rsync -az --delete scripts infrastructure "$SSH_USER@$SSH_HOST:$DEPLOY_DIR/"
+
+      # Write the deploy env to a 0600 file and scp it — keeps secrets off the
+      # remote command line/process list. Removed in the always() cleanup below.
+      - name: Stage deploy environment
+        if: env.HAS_DEPLOY == 'true'
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          BACKEND_IMAGE: ${{ steps.meta.outputs.image }}:sha-${{ steps.meta.outputs.short_sha }}
+          EXPECTED_VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          umask 077
+          {
+            echo "BACKEND_IMAGE=$BACKEND_IMAGE"
+            echo "EXPECTED_VERSION=$EXPECTED_VERSION"
+            echo "GIT_SHA=$GITHUB_SHA"
+            echo "RELEASE_CHANNEL=staging"
+            echo "DATABASE_URL=$DATABASE_URL"
+          } > deploy.env
+          scp deploy.env "$SSH_USER@$SSH_HOST:$DEPLOY_DIR/.deploy.env"
+          rm -f deploy.env
+
+      # deploy.sh performs the zero-downtime swap: pull, migrate, health-gated
+      # cutover. Runs on the VM with the staged env sourced.
+      - name: Deploy (pull, migrate, health-gated switch)
+        if: env.HAS_DEPLOY == 'true'
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+        run: |
+          ssh "$SSH_USER@$SSH_HOST" bash -s "$DEPLOY_DIR" <<'REMOTE'
+          set -euo pipefail
+          cd "$1"
+          set -a; . ./.deploy.env; set +a
+          bash scripts/deploy/deploy.sh
+          REMOTE
+
+      - name: Smoke test (asserts /version)
+        if: env.HAS_DEPLOY == 'true'
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+        run: |
+          ssh "$SSH_USER@$SSH_HOST" bash -s "$DEPLOY_DIR" <<'REMOTE'
+          set -euo pipefail
+          cd "$1"
+          set -a; . ./.deploy.env; set +a
+          bash scripts/deploy/smoke.sh
+          REMOTE
+
+      # Mark the Sentry release (release-tracking). Gated + tokenless-safe: the
+      # token travels in an Authorization header, never echoed.
+      - name: Tag Sentry release
+        if: env.HAS_DEPLOY == 'true' && env.HAS_SENTRY == 'true'
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          curl -sf -X POST \
+            "https://sentry.io/api/0/organizations/${SENTRY_ORG}/releases/" \
+            -H "Authorization: Bearer ${SENTRY_AUTH_TOKEN}" \
+            -H 'Content-Type: application/json' \
+            -d "{\"version\":\"${VERSION}\",\"projects\":[\"${SENTRY_PROJECT}\"],\"refs\":[{\"repository\":\"${GITHUB_REPOSITORY}\",\"commit\":\"${GITHUB_SHA}\"}]}" \
+            > /dev/null
+          echo "Sentry release ${VERSION} tagged."
+
+      - name: Cleanup staged environment
+        if: always() && env.HAS_DEPLOY == 'true'
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+        run: |
+          # DEPLOY_DIR is a runner-side value — intentional client-side expansion.
+          # shellcheck disable=SC2029
+          ssh "$SSH_USER@$SSH_HOST" "rm -f '$DEPLOY_DIR/.deploy.env'" || true
+
+      - name: Deploy skipped (no SSH secrets)
+        if: env.HAS_DEPLOY != 'true'
+        run: echo "::notice::staging SSH secrets not configured — image was built and pushed, VM deploy skipped."

@@ -1,0 +1,27 @@
+{
+  "name": "e2e",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Browser end-to-end tests (Playwright) for the frontend and admin apps. See docs/e2e/.",
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "report": "playwright show-report",
+    "codegen": "playwright codegen",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.12.1",
+    "@playwright/test": "^1.55.0",
+    "@qalam/api-types": "workspace:*",
+    "@qalam/config": "workspace:*",
+    "@types/node": "^24.0.0",
+    "dotenv": "^16.4.0",
+    "eslint": "^9.0.0",
+    "typescript": "^5.6.0"
+  }
+}

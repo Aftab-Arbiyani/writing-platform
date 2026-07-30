@@ -1,0 +1,68 @@
+/*
+ * Global stylesheet — Tailwind v4 layered setup WITHOUT preflight.
+ *
+ * Why no preflight: AntD 5 ships its own CSS reset via cssinjs, and the admin
+ * panel is AntD-heavy (tables, forms, pickers). Loading Tailwind's preflight on
+ * top causes specificity wars over button/heading/box-sizing resets, so we
+ * import only the theme and utilities layers and let AntD own the base reset
+ * (docs/00 §6 conflict rule). Tokens are defined once in @qalam/ui and feed
+ * both AntD's ConfigProvider theme and Tailwind's theme — no drift.
+ */
+@layer theme, base, antd, components, utilities;
+
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
+
+/* Design tokens (--q-* light/dark via [data-theme]) + Tailwind theme mapping. */
+@import '@qalam/ui/styles/tokens.css';
+@import '@qalam/ui/styles/tailwind.css';
+
+/* UI font — self-hosted, no CDN (privacy + perf). Admin is a workbench: Inter only. */
+@import '@fontsource-variable/inter';
+
+@layer base {
+  html {
+    color-scheme: light;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  :root[data-theme='dark'] {
+    color-scheme: dark;
+  }
+
+  /*
+   * Preflight is skipped here too, so unstyled `<button>` keeps the UA `ButtonFace` background —
+   * a mid-grey (#6b6b6b) under `color-scheme: dark`, which put muted text at 1.53:1 on it.
+   * In `base`, so AntD's unlayered button styles are unaffected.
+   */
+  button {
+    background-color: transparent;
+    background-image: none;
+  }
+
+  body {
+    margin: 0;
+    min-block-size: 100dvh;
+    background-color: var(--q-bg-canvas);
+    color: var(--q-text-primary);
+    font-family: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+  }
+}
+
+/*
+ * Corrections to AntD's own DOM that cannot be expressed through its theme tokens
+ * (docs/e2e/10 §8.1).
+ */
+@layer antd {
+  /*
+   * AntD Table renders a zero-height `aria-hidden` measure row to size its columns, and copies
+   * the selection column's header into it — so a *second*, focusable "Select all" checkbox sits
+   * inside an aria-hidden subtree (axe `aria-hidden-focus`, serious). `visibility: hidden` takes
+   * the duplicates out of the tab order and the a11y tree while preserving their layout boxes,
+   * which is all the measure row actually needs.
+   */
+  .ant-table-measure-row :is(a, button, input, select, textarea, [tabindex]) {
+    visibility: hidden;
+  }
+}

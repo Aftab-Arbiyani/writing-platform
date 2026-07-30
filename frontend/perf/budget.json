@@ -1,0 +1,6 @@
+{
+  "_comment": "Frontend performance budgets (P7.3). Mirrors the server budget catalogue ids frontend.* in backend/src/modules/performance/performance.constants.ts. Sizes are gzip KB. Checked by perf/check-bundle-budget.mjs after `vite build`.",
+  "initialJsKb": 300,
+  "maxChunkKb": 600,
+  "maxCssKb": 120
+}

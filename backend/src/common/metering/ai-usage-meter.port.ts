@@ -1,0 +1,53 @@
+import type { AiFeature, AiProvider, AiTokenUsage } from '@qalam/shared';
+
+/**
+ * The AI usage-metering seam (AF5). Lives in `common` (dependency-free) so the AI
+ * platform and the Monetization platform both reference it WITHOUT importing each
+ * other's module — exactly like {@link JobEnqueuer}/`JOB_ENQUEUER`.
+ *
+ * The AI orchestrator (`AiCompletionService`) injects this OPTIONALLY: it calls
+ * `checkQuota` before a generation and `recordConsumption` after. When the Monetization
+ * module is loaded it provides the token globally with a credit-aware implementation, so
+ * every AI request is metered against the user's plan quota + credit balance and every
+ * completion debits the credit ledger — the mandate "every AI request must pass through
+ * the Usage Service" without duplicating any token counting (the AI platform still owns
+ * `ai_usage_logs`). When absent (AI-only deployment / unit tests), the orchestrator falls
+ * back to its own token-cap check with zero behavior change.
+ */
+export interface AiUsageQuotaCheck {
+  userId: string;
+  feature: AiFeature;
+  provider: AiProvider;
+  model: string;
+  /** Pre-call token estimate (the reservation the meter may check against a budget). */
+  estimatedTokens: number;
+}
+
+/** A completed AI call's consumption, recorded after the provider responds. */
+export interface AiUsageConsumption {
+  userId: string;
+  feature: AiFeature;
+  provider: AiProvider;
+  model: string;
+  usage: AiTokenUsage;
+  /** Estimated USD cost the AI platform already computed from the model rates. */
+  costUsd: number;
+  conversationId?: string | null;
+  /** Correlation id of the originating request (the ledger's dedupe/ref key). */
+  requestId?: string | null;
+}
+
+/** The metering port the AI orchestrator delegates quota + consumption to. */
+export interface AiUsageMeter {
+  /**
+   * Throw a domain exception (e.g. QUOTA_EXCEEDED / INSUFFICIENT_CREDITS / ENTITLEMENT_DENIED)
+   * if the user may not make this AI request. Called BEFORE the provider call.
+   */
+  checkQuota(input: AiUsageQuotaCheck): Promise<void>;
+
+  /** Record a completed call's consumption (usage rollup + credit debit). Called AFTER. */
+  recordConsumption(input: AiUsageConsumption): Promise<void>;
+}
+
+/** DI token for the {@link AiUsageMeter} (provided globally by the Monetization module). */
+export const AI_USAGE_METER = Symbol('AI_USAGE_METER');
