@@ -166,7 +166,7 @@ jobs:
 
       - name: Upload report + traces
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report-${{ matrix.browser }}-shard${{ matrix.shard }}
           path: |
@@ -315,7 +315,7 @@ jobs:
 
       - name: Upload updated baselines (on regenerate)
         if: ${{ inputs.update_visual_baselines == true && !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: updated-visual-baselines
           path: e2e/tests/**/*-snapshots/**/*.png
@@ -323,7 +323,7 @@ jobs:
 
       - name: Upload report + diffs
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report-visual
           path: |
