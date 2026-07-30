@@ -79,8 +79,18 @@ test.describe('@phase5 @visual frontend (authenticated)', () => {
   });
 
   test('the reader matches its visual baseline', async ({ page, api, data }) => {
-    // The reading view (W1, docs/45 §4.1). Snapshotted whole: unlike the feed, its height is
-    // determined by ONE piece of fixed, spec-arranged content, so the shot is stable across runs.
+    // The reading view (W1, docs/45 §4.1).
+    //
+    // Viewport, NOT fullPage. The original claim here was that the height is "determined by ONE
+    // piece of fixed, spec-arranged content, so the shot is stable across runs" — that is not true,
+    // and two mints of the same commit disproved it: 1280x731 then 1280x720. The content is not
+    // fixed. `data.pieceTitle()` embeds a per-run token (`E2E Piece <seed>-<worker>-<n>`), so the
+    // h1's rendered length — and therefore where it wraps — changes between runs. Masking the
+    // heading hides its PIXELS but not its box, so layout still moves with it.
+    //
+    // A height change is the worst failure mode available here: a size mismatch is unconditional,
+    // so `maxDiffPixelRatio` cannot absorb it the way it absorbs sub-pixel AA noise. Viewport is
+    // what the feed and both admin console baselines already do, for this exact reason.
     const title = data.pieceTitle();
     const piece = await api.createPublishedPiece({ title });
     const reader = new ReaderPage(page);
@@ -89,7 +99,6 @@ test.describe('@phase5 @visual frontend (authenticated)', () => {
     // Wait for the second wave so the bar is in the shot rather than racing it.
     await expect(reader.engagement).toBeVisible({ timeout: 30_000 });
     await expect(page).toHaveScreenshot('frontend-reader.png', {
-      fullPage: true,
       // The title carries a per-run unique token, and engagement counts move as other specs
       // publish and react — both are content, not layout.
       mask: [page.getByRole('heading', { level: 1 }), reader.engagement],
