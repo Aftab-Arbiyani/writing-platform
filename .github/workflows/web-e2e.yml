@@ -119,7 +119,19 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # The two dark-launch flags MUST be set here, not on the preview server. Vite inlines
+      # `import.meta.env` at BUILD time (`frontend/src/config/env.ts` parses it), so the
+      # `webServer.env` block in `e2e/playwright.config.ts` only takes effect locally, where the
+      # command is `dev` and env is read per request. In CI the command is `preview`, which serves
+      # an already-built bundle — and the visual job reuses servers this workflow starts, so
+      # `webServer` never runs at all. Without these, `VITE_ENABLE_*` fall back to their `'false'`
+      # defaults and every collaboration/monetization spec silently tests the flag-off surface:
+      # the routes are unregistered, `settings-layout` drops its Safety and Billing sections, and
+      # the @visual specs fail before `toHaveScreenshot` so their baselines can never be minted.
       - name: Build shared packages + both apps
+        env:
+          VITE_ENABLE_COLLABORATION: 'true'
+          VITE_ENABLE_MONETIZATION: 'true'
         run: |
           pnpm --filter "@qalam/*" build
           pnpm --filter frontend build
@@ -241,7 +253,19 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # The two dark-launch flags MUST be set here, not on the preview server. Vite inlines
+      # `import.meta.env` at BUILD time (`frontend/src/config/env.ts` parses it), so the
+      # `webServer.env` block in `e2e/playwright.config.ts` only takes effect locally, where the
+      # command is `dev` and env is read per request. In CI the command is `preview`, which serves
+      # an already-built bundle — and the visual job reuses servers this workflow starts, so
+      # `webServer` never runs at all. Without these, `VITE_ENABLE_*` fall back to their `'false'`
+      # defaults and every collaboration/monetization spec silently tests the flag-off surface:
+      # the routes are unregistered, `settings-layout` drops its Safety and Billing sections, and
+      # the @visual specs fail before `toHaveScreenshot` so their baselines can never be minted.
       - name: Build shared packages + both apps
+        env:
+          VITE_ENABLE_COLLABORATION: 'true'
+          VITE_ENABLE_MONETIZATION: 'true'
         run: |
           pnpm --filter "@qalam/*" build
           pnpm --filter frontend build
