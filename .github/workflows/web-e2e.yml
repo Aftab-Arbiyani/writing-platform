@@ -128,8 +128,20 @@ jobs:
       # defaults and every collaboration/monetization spec silently tests the flag-off surface:
       # the routes are unregistered, `settings-layout` drops its Safety and Billing sections, and
       # the @visual specs fail before `toHaveScreenshot` so their baselines can never be minted.
+      #
+      # `VITE_API_URL` is REQUIRED and has no default in `frontend/src/config/env.ts`, and
+      # `frontend/.env` is gitignored — so it does not exist on a runner. Without this line the
+      # frontend bundle throws at MODULE LOAD ("Invalid environment configuration: VITE_API_URL:
+      # Required"), `#root` never mounts, and the app serves a blank page that still answers 200
+      # — so `wait-health.sh` passes and the failure only surfaces as `setup-frontend` timing out
+      # on `getByLabel('Email')`, taking all 48 frontend specs with it as skips.
+      #
+      # Admin does NOT need it here only because `admin/src/config/env.ts` defaults the same
+      # value. Set it explicitly for both anyway: the default silently masking a missing var is
+      # what made this a one-app outage instead of an obvious two-app one.
       - name: Build shared packages + both apps
         env:
+          VITE_API_URL: http://localhost:4000/api/v1
           VITE_ENABLE_COLLABORATION: 'true'
           VITE_ENABLE_MONETIZATION: 'true'
         run: |
@@ -262,8 +274,20 @@ jobs:
       # defaults and every collaboration/monetization spec silently tests the flag-off surface:
       # the routes are unregistered, `settings-layout` drops its Safety and Billing sections, and
       # the @visual specs fail before `toHaveScreenshot` so their baselines can never be minted.
+      #
+      # `VITE_API_URL` is REQUIRED and has no default in `frontend/src/config/env.ts`, and
+      # `frontend/.env` is gitignored — so it does not exist on a runner. Without this line the
+      # frontend bundle throws at MODULE LOAD ("Invalid environment configuration: VITE_API_URL:
+      # Required"), `#root` never mounts, and the app serves a blank page that still answers 200
+      # — so `wait-health.sh` passes and the failure only surfaces as `setup-frontend` timing out
+      # on `getByLabel('Email')`, taking all 48 frontend specs with it as skips.
+      #
+      # Admin does NOT need it here only because `admin/src/config/env.ts` defaults the same
+      # value. Set it explicitly for both anyway: the default silently masking a missing var is
+      # what made this a one-app outage instead of an obvious two-app one.
       - name: Build shared packages + both apps
         env:
+          VITE_API_URL: http://localhost:4000/api/v1
           VITE_ENABLE_COLLABORATION: 'true'
           VITE_ENABLE_MONETIZATION: 'true'
         run: |
