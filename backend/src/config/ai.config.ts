@@ -61,5 +61,25 @@ export const aiConfig = registerAs('ai', () => ({
       apiKey: process.env.SELF_HOSTED_AI_API_KEY ?? '',
       baseUrl: process.env.SELF_HOSTED_AI_BASE_URL ?? '',
     },
+    /**
+     * The stub provider holds no credential — its gate is `stub.enabled` below. The entry exists
+     * so every `AiProvider` resolves in this map, which is indexed by the *resolved* default
+     * provider (`AiHealthIndicator`); the permanently-blank key also keeps the credential-based
+     * readiness answer truthful, since there is no live provider behind it.
+     */
+    [AiProvider.Stub]: { apiKey: '', baseUrl: '' },
+  },
+  /**
+   * The **stub** provider (`StubAdapter`) — streams one fixed passage instead of generating.
+   *
+   * Gated on an explicit boolean rather than a credential, because there is none to hold; the
+   * effect is the same as a blank `apiKey` above, which is that the provider is inert until a
+   * deployment opts in. Mirrors `payments.manual.enabled` (payments.config.ts) exactly, including
+   * the reason it exists: an E2E stack needs a working AI path with no third party in it. **Off by
+   * default, and it must stay that way outside a test stack** — with it on and
+   * `AI_DEFAULT_PROVIDER=stub`, every writer's suggestion is the same canned paragraph.
+   */
+  stub: {
+    enabled: process.env.AI_STUB_ENABLED === 'true',
   },
 }));

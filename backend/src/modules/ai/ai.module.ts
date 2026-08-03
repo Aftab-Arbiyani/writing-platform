@@ -26,6 +26,7 @@ import { AI_PROVIDER_ADAPTERS } from './providers/ai-provider.port';
 import { AnthropicAdapter } from './providers/adapters/anthropic.adapter';
 import { GeminiAdapter } from './providers/adapters/gemini.adapter';
 import { OpenAiAdapter } from './providers/adapters/openai.adapter';
+import { StubAdapter } from './providers/adapters/stub.adapter';
 import { ProviderRegistryService } from './providers/provider-registry.service';
 import { AiModel } from './registry/entities/ai-model.entity';
 import { ModelRegistryService } from './registry/model-registry.service';
@@ -71,14 +72,18 @@ import { UsageService } from './tokens/usage.service';
     OpenAiAdapter,
     AnthropicAdapter,
     GeminiAdapter,
+    // The `stub` provider is registered like the rest and gated like the rest: it refuses every call
+    // unless `AI_STUB_ENABLED=true` (see stub.adapter.ts). Registration is not exposure.
+    StubAdapter,
     {
       provide: AI_PROVIDER_ADAPTERS,
-      useFactory: (openai: OpenAiAdapter, anthropic: AnthropicAdapter, gemini: GeminiAdapter) => [
-        openai,
-        anthropic,
-        gemini,
-      ],
-      inject: [OpenAiAdapter, AnthropicAdapter, GeminiAdapter],
+      useFactory: (
+        openai: OpenAiAdapter,
+        anthropic: AnthropicAdapter,
+        gemini: GeminiAdapter,
+        stub: StubAdapter,
+      ) => [openai, anthropic, gemini, stub],
+      inject: [OpenAiAdapter, AnthropicAdapter, GeminiAdapter, StubAdapter],
     },
     ProviderRegistryService,
     // Registries + accounting.

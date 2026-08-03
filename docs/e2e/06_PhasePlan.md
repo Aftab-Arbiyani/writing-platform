@@ -52,7 +52,7 @@ Legend: ✅ in-phase target · ⏸ targeted but deferred (client UI not yet ship
 | Settings: change password (throwaway user)     |     |     | ✅  |     | `features/settings`, [04 §6](./04_TestData.md)                                                                                                                                                                                                                                                           |
 | Silent token refresh survives navigation       |     |     | ✅  |     | [03 §7](./03_AuthStrategy.md)                                                                                                                                                                                                                                                                            |
 | Analytics: own stats page renders real data    |     |     |     | ✅  | `features/analytics` (`m9` shapes)                                                                                                                                                                                                                                                                       |
-| AI writing assistant: panel + gating           |     |     |     | ✅  | `features/ai` (`af2`) — W2 shipped the UI; the model-backed _suggestion_ half needs a provider in the stack (§6)                                                                                                                                                                                         |
+| AI writing assistant: panel + gating           |     |     |     | ✅  | `features/ai` (`af2`) — W2 shipped the UI; ~~the model-backed _suggestion_ half needs a provider in the stack~~ suite runs with `AI_STUB_ENABLED=true` + `AI_DEFAULT_PROVIDER=stub`. **Generated suggestion → streamed → applied to the draft asserted end to end** via the `stub` provider (§6)         |
 | Monetization: subscribe → entitlement granted  |     |     |     | ✅  | `features/monetization` (`af5`) — W4 ([45 §4](../45_WebClientRoadmap.md), [report](../50_WebMonetizationReadinessReport.md)); suite runs with `VITE_ENABLE_MONETIZATION=true` + `PAYMENTS_MANUAL_ENABLED=true`. **Subscribe → payment → entitlement asserted end to end** via the `manual` provider (§6) |
 | Collaboration: invite by handle → accept       |     |     |     | ✅  | `features/collaboration` (`af6`) — W3a ([49](../49_WebCollaborationEpicDesign.md)); suite runs with `VITE_ENABLE_COLLABORATION=true`, and the server flag fails open, so **no untestable half**                                                                                                          |
 | Inline review: comment → reply → resolve       |     |     |     | ✅  | `features/collaboration` (`af6`) — W3b; replies come from `GET /comments/:id/thread`, so a rendered reply proves the thread wiring                                                                                                                                                                       |
@@ -238,14 +238,83 @@ Landed specs:
 - **AI writing-assistant suggestion** (row `af2`) — ~~no component consumes the AI layer and no
   route is registered~~ **the UI shipped in W2** ([45 §4.2](../45_WebClientRoadmap.md)):
   `assistant.spec.ts` drives the real panel over the real editor, and it is covered by the a11y and
-  visual dimensions in both themes. **What is still not asserted is a generated suggestion**, and
-  the reason is environmental rather than a client gap: the AI feature flags are dark-launched (AF1
-  seeds them disabled) and the E2E stack configures **no AI provider**, so nothing can generate one.
-  Stubbing `/ai/completions` is ruled out by the no-mocks invariant ([README §invariants]), and the
-  third-party allowance ([00 §6]) covers running against an inert **port** — which payments have and
-  AI does not. Closing it needs an OpenAI-compatible stub service in the E2E stack plus seeded
-  provider/model rows; that is a stack item, tracked here, and it also unblocks the AF3/AF4 client
-  epics that will need the same thing.
+  visual dimensions in both themes. ~~What is still not asserted is a generated suggestion~~ **it now
+  is** — see the closure record below. The two blockers named here were the AI flags' dark launch and
+  the absent provider; both are addressed, neither by changing the production seed.
+
+  **The premise was wrong in the same way `af5`'s was, and correcting it is what closed the gap.**
+  The claim was that "the third-party allowance covers running against an inert **port** — which
+  payments have and AI does not". Payments did not have one either (that is what W4-4 found), and
+  neither did AI: every adapter is credential-gated (`OpenAiCompatibleAdapter.isConfigured()` and its
+  Anthropic/Gemini siblings each test an `apiKey` for emptiness), so the registry did not no-op for a
+  keyless stack — it **refused** with `AI_PROVIDER_NOT_CONFIGURED`. There was no inert port to run
+  against, and no `AiProvider` value reserved for one.
+
+  `StubAdapter` (`backend/src/modules/ai/providers/adapters/stub.adapter.ts`) is that port, built to
+  the `ManualAdapter` template: registered in the same registry alongside anthropic/gemini/openai,
+  gated on `AI_STUB_ENABLED` rather than a credential (there is none to hold), and refusing every call
+  when the flag is down. Two properties are deliberate and both are asserted by
+  `stub.adapter.spec.ts`:
+
+  - **It streams in many chunks.** Fixed-width deltas (28 chars) with a 25 ms pause between them, then
+    a terminal chunk carrying `finishReason` + `usage`. A single-blob reply would have left the
+    streaming path — the one the assistant and Ask-My-Book both depend on, and the one most likely to
+    be wrong — entirely unexercised. Verified live: one request produces 12 `delta` frames.
+  - **Its output is deterministic.** One constant passage, pure chunking, arithmetic token counts, no
+    clock and no random source, so nothing here can drift the `frontend-ai-panel` baselines the way an
+    absolute date drifted the comment-tile golden.
+
+  The stub's prose says what it is, because an accepted suggestion lands in the writer's draft: text
+  that read like real prose could be published as if a model had written it.
+
+  **The flags are the other half.** AF1 seeds `feature.ai.enabled` and every
+  `feature.ai.<camelCase>.enabled` **disabled**, and that IS every deployment's starting state — so the
+  suite raises them **per test through the admin API and restores them in `finally`**
+  (`api.enableAiFeatures` / `api.restoreFeatureFlags`), the pattern `monetization.spec.ts` established
+  for `feature.payments.enabled`, rather than changing the seed. The flags are global rows and the
+  suite is `fullyParallel`, so the three tests that disagree about them live in one
+  `test.describe.serial` block — two assert the flag-down surface, the third raises them. Only
+  `writing_assistant` is raised, so the Craft Coach's separately-gated assertion keeps its meaning.
+  The model row the registry needs is a catalogue entry (`stub-1`, zero cost, streaming + JSON), which
+  the registry upserts on boot exactly like every other model.
+
+  **What the row now asserts, with nothing mocked at the app boundary:** flags raised → the panel
+  offers live controls → "Continue writing" → `POST /ai/completions/stream` through the real
+  orchestrator (prompt template, context builders, safety, token accounting) → SSE deltas accumulate
+  into the panel's live region until the full passage is present → **Accept** hands the text to the
+  editor's registered target → it appears in the document, autosaves, and survives a reload. The panel
+  is fed only by `aiApi.stream`, so matching the complete final text is an assertion that every chunk
+  arrived and concatenated in order.
+
+  **What remains unasserted is a real vendor**: its HTTP/SSE dialect, its error and rate-limit
+  responses, and prose quality. Those are covered offline by the adapter unit tests, and closing them
+  would need a paid key plus a tolerance for a third party mid-suite — the same trade declined for
+  Stripe (48 §3.6 W4-4). Also still unasserted: the Craft Coach's generated report (its flag stays
+  down, so `coach-report` parsing is unexercised end to end), and AF3's per-analysis JSON schemas — the
+  stub answers a valid but schema-agnostic object when JSON is asked for, which AF3's tolerant parser
+  degrades on rather than crashes; a caller needing a specific schema must teach `bodyFor` that schema.
+
+  **Rows this unblocks:** `af2`'s last leg (closed here), **W5** (the AI-discovery/Ask-My-Book surface
+  needed exactly this stub to assert a cited answer), **W8**, and the **AF3 client epic** — each of
+  which needs a generating provider in the stack and now has one.
+
+  **The four `frontend-ai-panel` baselines are expected to stay green, and that is a consequence of the
+  per-test toggle, not luck.** The panel's appearance is driven entirely by `/ai/features` — a
+  configured provider changes nothing about what it renders — and the `web-e2e-visual` job runs
+  `--grep @visual` only, so no test in that job raises a flag. The panel therefore still screenshots
+  its flag-down "AI is turned off" state, byte-identical to the committed baselines. Two consequences
+  worth knowing: (a) a **local** whole-suite run mixes @visual with the flag-raising test and can
+  produce a spurious diff — `updateSnapshots: 'none'` correctly refuses to mint over it, and the answer
+  is to run @visual on its own in the pinned image, never to weaken that setting; (b) if the flags are
+  ever raised suite-wide instead, all four baselines DO need re-minting by that workflow and the
+  flag-down assertion has to move somewhere else first.
+
+  Enabled by `AI_STUB_ENABLED=true` + `AI_DEFAULT_PROVIDER=stub` in `scripts/stack-up.sh` and both
+  `web-e2e` job envs, and nowhere else. They are **backend** vars, not part of the Vite build step:
+  the client has no AI switch, and `AI_DEFAULT_PROVIDER` is what makes the orchestrator resolve `stub`
+  instead of the `openai` default, whose adapter would refuse for want of a key. With them on, every
+  writer's suggestion is the same canned paragraph — test stacks only.
+
 - **Monetization subscribe→entitlement** (row `af5`) — ~~there is no monetization/subscribe/billing
   feature or route in the frontend~~ **the UI shipped in W4** ([45 §4](../45_WebClientRoadmap.md)), and
   ~~the payment leg cannot be asserted without a processor credential~~ **it now is**
@@ -278,9 +347,13 @@ Landed specs:
   `stripe.adapter.spec.ts`. Closing the rest would need a real Stripe test key and a tolerance for a
   third-party dependency mid-suite; that trade was considered and declined (48 §3.6 W4-4).
 
-Both rows have now re-entered the matrix as `✅` — `af2` with W2, `af5` with W4. `af5`'s stack gap is
-**closed** (the `manual` provider); `af2` still needs an AI-provider stub, and `af5` would need a real
-Stripe key to cover Stripe's own redirect + webhook paths. Both are scoped above and tracked here.
+Both rows have now re-entered the matrix as `✅` — `af2` with W2, `af5` with W4 — and **both stack gaps
+are closed**: `af5`'s by the `manual` payment provider, `af2`'s by the `stub` AI provider. What each
+still lacks is its real third party: a Stripe key for Stripe's own redirect + webhook paths, a vendor
+key for a real model's wire dialect and error responses. Both are scoped above and tracked here.
+
+Neither closure changed a client, a seed, or a production default — each is one inert adapter plus
+per-test flag toggling, which is the shape any future "the E2E stack cannot reach X" gap should take.
 
 **Live-run notes / findings (the payoff E2E exists for):**
 
@@ -300,6 +373,19 @@ Stripe key to cover Stripe's own redirect + webhook paths. Both are scoped above
    system `fs.inotify.max_user_watches` when other projects hold watchers, crashing the servers
    (ENOSPC). Local live-validation ran the backend built (`node dist/main.js`) and the two apps via
    `preview` (CI mode) — no file watchers — which is also what CI serves.
+4. **`EditorPage.waitForSaved()` cannot detect a _second_ save, and mistaking that for a bug costs an
+   afternoon.** The autosave indicator reads "Saved · HH:MM" from the previous save, so on a draft that
+   has already saved once it matches **instantly**; a reload then races the 2 s autosave debounce and
+   reads the pre-change content back. That looked exactly like "the accepted AI suggestion is never
+   persisted" — the app was fine, the wait was not. `waitForNextAutosave()` (armed _before_ the change,
+   awaited after; it waits for the `PATCH /pieces/:id` response) is the correct wait for any test that
+   changes content and then reloads. `waitForSaved()` remains right for the FIRST save, where the URL
+   swap `/write` → `/write/:id` is the real signal.
+5. **The AI panel disables its quick actions on an empty document**, independently of availability
+   (`nothingToWorkWith` in `assistant-tab.tsx`). So `AssistantPanel.expectAvailable()` — which asserts
+   _enabled_, because that is what distinguishes `available` from a still-loading `unknown` — requires a
+   draft with text in it. Asserting on a blank draft fails for a reason that has nothing to do with
+   flags or providers.
 
 ---
 

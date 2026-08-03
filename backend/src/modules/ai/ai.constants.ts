@@ -32,4 +32,7 @@ export const PROVIDER_LABELS: Record<string, string> = {
   openrouter: 'OpenRouter',
   lm_studio: 'LM Studio',
   self_hosted: 'Self-hosted',
+  // Named for what it is wherever it is listed (`GET /admin/ai/providers`, the admin org-default
+  // picker): it generates nothing, and nobody should choose it thinking otherwise.
+  stub: 'Stub (test stacks only)',
 };

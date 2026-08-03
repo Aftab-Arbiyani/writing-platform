@@ -1092,6 +1092,70 @@ So this bug was monetization-only, on both platforms.
 
 ---
 
+## 3.8 Found while closing the E2E AI-provider gap (2026-08-03)
+
+Opened while building `StubAdapter` — the AI counterpart of W4-4's `ManualAdapter` — so the `af2` row can
+assert a generated suggestion ([e2e/06 §6](./e2e/06_PhasePlan.md)). All three are **recorded, not fixed**:
+each is outside that row, and two of them are about keeping the AI and payments halves consistent, which
+is a decision rather than a repair. Two E2E-harness traps found the same day are recorded where they will
+be read — [e2e/06 §6 live-run notes 4 and 5](./e2e/06_PhasePlan.md).
+
+### AI-1 · **low** · `PAYMENTS_MANUAL_ENABLED` is undeclared in `env.schema.ts`, so its typo mode is silent
+
+`backend/src/config/env.schema.ts` declares every other provider knob — all three Stripe values, Apple's,
+Google Play's, and each AI credential + base URL — but **not** `PAYMENTS_MANUAL_ENABLED`, which W4 added
+only as a `process.env` read in `payments.config.ts`. Two consequences: `PAYMENTS_MANUAL_ENABLED=ture`
+boots happily with payments quietly refusing (the schema is the project's fail-fast contract, and it never
+sees the var), and a reader auditing what a deployment can turn on cannot find it in the one file that is
+supposed to list exactly that.
+
+`AI_STUB_ENABLED` **is** declared, because declaring one's own new var is part of writing it. That leaves
+the two intentionally-inert providers described differently in the schema, which is the smaller wrong. Fix
+is one line plus a note in `19_DeploymentGuide.md`'s env table; not taken here because the payments module
+is not this row's scope.
+
+### AI-2 · **low** · a stack running an inert AI provider reports its AI as `inert`, which understates it
+
+`AiHealthIndicator` computes `configured` from `config.providers[defaultProvider].apiKey`, so with
+`AI_DEFAULT_PROVIDER=stub` + `AI_STUB_ENABLED=true` — an AI subsystem that answers completions and streams
+all day — `/health` reports `configured: false, mode: 'inert'`. Verified on the live local stack.
+
+**`PaymentHealthIndicator` has exactly the same blind spot** (it reports stripe/apple/google and ignores
+`manual` entirely), so the stub was left alone deliberately: a one-sided fix would make the two indicators
+disagree about what "inert" means, and the useful change is teaching both that a flag-gated provider counts
+as configured — with `mode` distinguishing a _test_ provider from a live one, since a readiness probe that
+says "live" because a stub is on would be worse than the current understatement. That is a P7.1/P7.4
+observability decision, not an E2E one.
+
+### AI-3 · **low** · `IMPLEMENTED_AI_PROVIDERS` and `IMPLEMENTED_PAYMENT_PROVIDERS` are dead exports
+
+Both are declared in `@qalam/shared` and have **zero consumers** anywhere — backend, frontend, admin, e2e
+(grepped). They read like a gate ("which providers have a working implementation") and gate nothing; the
+live answers are `ProviderRegistryService.implementedProviders()` / `configuredProviders()`, computed from
+what is actually registered.
+
+This mattered while deciding where `AiProvider.Stub` belongs. It was kept **out** of the list, mirroring
+`PaymentProvider.Manual`'s absence from the payments one — a consistent choice, but consistency with a
+constant nobody reads is a weak reason for anything. Either give both lists a consumer or delete them;
+leaving two exported enumerations that look authoritative and are not is how a future adapter gets
+registered in one place and forgotten in the other.
+
+**And there is a live consumer that should be reading it.** `admin/src/features/ai/pages/ai-config-page.tsx`
+builds its org-default provider dropdown from `Object.values(AiProvider)`, and its Zod schema accepts the
+same raw enum — so the picker already offers the **five** extension-point providers that have no adapter
+(`azure_openai`, `ollama`, `openrouter`, `lm_studio`, `self_hosted`), and now `stub` as a sixth. Choosing any
+of them sets an org default whose every completion answers `AI_PROVIDER_NOT_CONFIGURED`.
+
+**The bound worth stating: `stub` is no more dangerous there than the five that preceded it.** Selecting it
+on a real deployment produces refusals, not canned prose, because the adapter's own gate (`AI_STUB_ENABLED`)
+is what decides whether it serves — an admin cannot switch it on from the UI. Still, the picker should offer
+what the registry reports as configured (`GET /admin/ai/providers`-shaped data) rather than the vocabulary,
+and that is the fix that would make `IMPLEMENTED_AI_PROVIDERS` earn its existence. Not taken here: admin is
+the deferred client in this epic ([45 §5](./45_WebClientRoadmap.md)), and the picker's behaviour predates
+this row by five entries.
+
+---
+
 ## 4. Divergences that are NOT gaps (platform-inherent)
 
 These are accepted permanently and need no epic. They exist because the platforms genuinely differ.

@@ -132,4 +132,31 @@ export const AI_MODEL_CATALOG: readonly AiModelMetadata[] = [
     availability: AiModelAvailability.Available,
     isDefault: false,
   },
+  // ── Stub (test stacks only) ──────────────────────────────────────────────
+  /**
+   * The model the `stub` provider serves (`StubAdapter`). It has to exist here because the registry
+   * is what resolves a call's model — `AiConfigService.resolveForUser` asks for the default model of
+   * the resolved provider, so a stub provider with no catalogue entry throws `AI_MODEL_NOT_FOUND`
+   * before any adapter is reached. Registered unconditionally for the same reason the adapter is:
+   * the row is inert unless `AI_STUB_ENABLED=true` makes the provider callable.
+   *
+   * **Costs are zero and that is deliberate** — no vendor is billed, so a non-zero rate would put
+   * invented spend in the usage ledger and the writer's cost figures. Capabilities are declared
+   * honestly for what the adapter actually does: streams, answers JSON when asked, no vision.
+   */
+  {
+    id: 'stub-1',
+    provider: AiProvider.Stub,
+    displayName: 'Stub (no model — fixed text)',
+    contextWindow: 128_000,
+    maxOutputTokens: 4_096,
+    capabilities: [AiModelCapability.Text, AiModelCapability.Streaming, AiModelCapability.JsonMode],
+    supportsStreaming: true,
+    supportsVision: false,
+    supportsJsonMode: true,
+    inputCostPerMillion: 0,
+    outputCostPerMillion: 0,
+    availability: AiModelAvailability.Available,
+    isDefault: true,
+  },
 ];

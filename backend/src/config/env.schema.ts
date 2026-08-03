@@ -132,6 +132,10 @@ export const envSchema = z.object({
       'openrouter',
       'lm_studio',
       'self_hosted',
+      // Test stacks only — the `stub` provider streams a fixed passage instead of calling a
+      // vendor. Accepted here because pointing the orchestrator at it is exactly how an E2E
+      // stack gets a working AI path; it is still inert unless AI_STUB_ENABLED is also 'true'.
+      'stub',
     ])
     .default('openai'),
   AI_DEFAULT_MODEL: z.string().default(''),
@@ -155,6 +159,12 @@ export const envSchema = z.object({
   LM_STUDIO_BASE_URL: z.string().default('http://localhost:1234/v1'),
   SELF_HOSTED_AI_API_KEY: z.string().default(''),
   SELF_HOSTED_AI_BASE_URL: z.string().default(''),
+  /**
+   * The `stub` provider's gate — the AI counterpart of `PAYMENTS_MANUAL_ENABLED`. Off unless
+   * exactly `'true'`; anything else (including `'1'`) leaves it refusing every call. Declared here
+   * so a stack that sets it is validated and a reader of this file can see it exists.
+   */
+  AI_STUB_ENABLED: z.string().default('false'),
 
   // ── Monetization / payments (AF5 — Phase 2). Provider secrets are blank by
   //    default (blank = provider not configured → the billing subsystem stays

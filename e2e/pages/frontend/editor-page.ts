@@ -45,10 +45,38 @@ export class EditorPage {
     await this.page.waitForURL(/\/write\/[0-9a-f-]{8}-/i, { timeout: 15_000 });
   }
 
+  /**
+   * A promise that settles when the NEXT autosave PATCH lands. **Call it BEFORE the change**, then
+   * await it after.
+   *
+   * `waitForSaved()` cannot serve this case, and the difference cost an afternoon: the indicator
+   * reads "Saved · HH:MM" from the PREVIOUS save, so on a draft that has already saved once it
+   * matches instantly, and a reload then races the 2s autosave debounce and reads the pre-change
+   * content back — which looks exactly like the app failing to persist the change.
+   */
+  waitForNextAutosave(): Promise<unknown> {
+    return this.page.waitForResponse(
+      (res) =>
+        res.request().method() === 'PATCH' &&
+        /\/pieces\/[0-9a-f-]{8}-/i.test(res.url()) &&
+        res.ok(),
+      { timeout: 20_000 },
+    );
+  }
+
   /** Reload the current draft URL and wait for the editor to re-render. */
   async reload(): Promise<void> {
     await this.page.reload();
     await expect(this.titleInput).toBeVisible({ timeout: 30_000 });
+  }
+
+  /**
+   * Assert the document contains `text` — the assertion for anything applied to the draft by
+   * something other than typing (an accepted AI suggestion), including after a reload, which proves
+   * the insert went through the editor's own commands and was autosaved rather than only painted.
+   */
+  async expectBodyContains(text: string): Promise<void> {
+    await expect(this.body).toContainText(text, { timeout: 15_000 });
   }
 
   /** Assert the editor restored the given title + body (e.g. after a reload). */

@@ -83,6 +83,14 @@ jobs:
       # The `manual` payment provider — lets the af5 row assert subscribe → payment → entitlement
       # without a processor credential (48 §3.6 W4-4). Never enabled outside a test stack.
       PAYMENTS_MANUAL_ENABLED: 'true'
+      # The `stub` AI provider — the same move for AI: it streams a fixed passage so the af2 row can
+      # assert a generated suggestion without a vendor key (docs/e2e/06 §6). Both vars are needed and
+      # they are BACKEND vars, deliberately not in the Vite build step above: the client has no AI
+      # switch to set, and `AI_DEFAULT_PROVIDER` is what makes the orchestrator resolve `stub` (its
+      # default is `openai`, whose adapter would refuse for want of a key). Never outside a test stack
+      # — with these on, every writer's suggestion is the same canned paragraph.
+      AI_STUB_ENABLED: 'true'
+      AI_DEFAULT_PROVIDER: stub
       CI: 'true'
       E2E_API_URL: http://localhost:4000/api/v1
       E2E_MAILPIT_URL: http://localhost:8025
@@ -244,6 +252,14 @@ jobs:
       # The `manual` payment provider — lets the af5 row assert subscribe → payment → entitlement
       # without a processor credential (48 §3.6 W4-4). Never enabled outside a test stack.
       PAYMENTS_MANUAL_ENABLED: 'true'
+      # The `stub` AI provider — the same move for AI: it streams a fixed passage so the af2 row can
+      # assert a generated suggestion without a vendor key (docs/e2e/06 §6). Both vars are needed and
+      # they are BACKEND vars, deliberately not in the Vite build step above: the client has no AI
+      # switch to set, and `AI_DEFAULT_PROVIDER` is what makes the orchestrator resolve `stub` (its
+      # default is `openai`, whose adapter would refuse for want of a key). Never outside a test stack
+      # — with these on, every writer's suggestion is the same canned paragraph.
+      AI_STUB_ENABLED: 'true'
+      AI_DEFAULT_PROVIDER: stub
       CI: 'true'
       E2E_API_URL: http://localhost:4000/api/v1
       E2E_MAILPIT_URL: http://localhost:8025

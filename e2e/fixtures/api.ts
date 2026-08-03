@@ -44,6 +44,21 @@ export interface AdminUserDetail {
   readonly [key: string]: unknown;
 }
 
+/** A feature-flag row as `GET /admin/feature-flags` returns it. */
+interface FeatureFlagRow {
+  readonly id: string;
+  readonly key: string;
+  readonly enabled: boolean;
+  readonly rolloutPercentage: number;
+}
+
+/** Enough of a flag's prior state to put it back byte-for-byte. */
+export interface FeatureFlagRestore {
+  readonly id: string;
+  readonly enabled: boolean;
+  readonly rolloutPercentage: number;
+}
+
 export interface PieceSummary {
   readonly id: string;
   readonly slug: string | null;
@@ -436,6 +451,72 @@ export class ApiHelper {
       data: { enabled, rolloutPercentage: enabled ? 100 : 0 },
     });
     await this.data(res);
+    return previous;
+  }
+
+  // ── AI feature flags (AF1 dark launch, docs/e2e/06 §6) ───────────────────────
+
+  /**
+   * Raise the AI master flag plus the named per-feature flags, returning a handle that
+   * {@link restoreFeatureFlags} puts back exactly as they were.
+   *
+   * **Why a per-test toggle rather than a seeded default.** AF1 dark-launches every AI flag
+   * (`feature.ai.enabled` and each `feature.ai.<camelCase>.enabled` seed disabled) and that IS the
+   * contract every deployment starts from — `assistant.spec.ts` asserts the flag-down surface, so a
+   * suite-wide enable would delete that assertion and quietly change what the AI panel's committed
+   * visual baselines contain. Same posture as `setPaymentsEnabled`: flip server-side state for the
+   * one test that needs it, restore it in `finally`.
+   *
+   * **The flags are GLOBAL rows**, and the suite runs `fullyParallel`. Any test using this must be
+   * pinned to one worker (`test.describe.serial`) alongside anything else that reads the same flags,
+   * for the reason the monetization spec documents: a neighbouring test flipping them mid-flight is
+   * how this class of race first showed up.
+   *
+   * Keys are resolved BY KEY, never by id — ids are generated per database and this suite runs
+   * against freshly-seeded and long-lived stacks alike.
+   */
+  async enableAiFeatures(featureFlagKeys: string[]): Promise<FeatureFlagRestore[]> {
+    // The master switch is what `AiFeatureService.isAiEnabled` reads; a per-feature flag alone
+    // resolves to `off`, not `feature-off`, so raising only one proves nothing.
+    return this.setFeatureFlags(['feature.ai.enabled', ...featureFlagKeys], true);
+  }
+
+  /** Put flags back to their recorded state (teardown for {@link enableAiFeatures}). */
+  async restoreFeatureFlags(previous: FeatureFlagRestore[]): Promise<void> {
+    const headers = await this.adminHeaders();
+    for (const flag of previous) {
+      const res = await this.request.patch(this.url(`/admin/feature-flags/${flag.id}`), {
+        headers,
+        data: { enabled: flag.enabled, rolloutPercentage: flag.rolloutPercentage },
+      });
+      await this.data(res);
+    }
+  }
+
+  /** Set several flags at once; returns their previous state in restore order. */
+  private async setFeatureFlags(keys: string[], enabled: boolean): Promise<FeatureFlagRestore[]> {
+    const headers = await this.adminHeaders();
+    const listRes = await this.request.get(this.url('/admin/feature-flags'), { headers });
+    const flags = await this.data<FeatureFlagRow[]>(listRes);
+
+    const previous: FeatureFlagRestore[] = [];
+    for (const key of keys) {
+      const flag = flags.find((f) => f.key === key);
+      expect(flag, `${key} is not seeded — the flag catalogue moved`).toBeTruthy();
+      if (!flag) continue;
+      previous.push({
+        id: flag.id,
+        enabled: flag.enabled,
+        rolloutPercentage: flag.rolloutPercentage,
+      });
+      const res = await this.request.patch(this.url(`/admin/feature-flags/${flag.id}`), {
+        headers,
+        // Rollout matters as much as the boolean: `evaluateFeatureFlag` treats a partial rollout as
+        // a per-subject hash and 0% as off, so `enabled: true` alone can still resolve to off.
+        data: { enabled, rolloutPercentage: enabled ? 100 : 0 },
+      });
+      await this.data(res);
+    }
     return previous;
   }
 

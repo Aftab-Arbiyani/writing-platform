@@ -29,6 +29,14 @@ export const AiProvider = {
   OpenRouter: 'openrouter',
   LmStudio: 'lm_studio',
   SelfHosted: 'self_hosted',
+  /**
+   * A **test-stack** provider that generates nothing: it streams one fixed passage so the
+   * whole AI path (flags → orchestrator → SSE → client accumulation) can be asserted without a
+   * vendor credential. Deliberately NOT in {@link IMPLEMENTED_AI_PROVIDERS} — same posture as
+   * `PaymentProvider.Manual`, which is likewise absent from its list. Its adapter refuses every
+   * call unless `AI_STUB_ENABLED=true`, so no real deployment can reach it.
+   */
+  Stub: 'stub',
 } as const;
 export type AiProvider = (typeof AiProvider)[keyof typeof AiProvider];
 

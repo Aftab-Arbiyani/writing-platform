@@ -51,6 +51,15 @@ export RATE_LIMIT_ENABLED=false
 # (docs/e2e/06 §6, 48 §3.6 W4-4). Off by default everywhere else: it books revenue nobody collected.
 export PAYMENTS_MANUAL_ENABLED=true
 
+# The `stub` AI provider (StubAdapter) — streams a fixed passage with no vendor behind it, so the af2
+# row can assert a generated suggestion arriving in the editor. Every real AI adapter is credential-
+# gated and this stack holds no vendor key, so without this the AI module refuses rather than no-ops
+# (docs/e2e/06 §6). `AI_DEFAULT_PROVIDER` is the other half: the default is `openai`, so the
+# orchestrator would resolve a provider whose adapter has no key. Test stacks only — with these set,
+# every writer's "suggestion" is the same canned paragraph.
+export AI_STUB_ENABLED=true
+export AI_DEFAULT_PROVIDER=stub
+
 # Start the backend on the host (dev mode → NODE_ENV!=production so dev seeds and
 # non-secure cookies work), unless it is already answering health checks.
 if curl -sf -o /dev/null "${HEALTH_URL}"; then
