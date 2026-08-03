@@ -1,9 +1,12 @@
 version: 2
 # Automated dependency + action updates (docs 15 §4). Weekly, grouped to keep
 # PR volume low; security updates arrive out-of-band from GitHub regardless.
+# target-branch is develop on every ecosystem: main is release-only, so bumps
+# have to land on develop first or they would skip the integration branch.
 updates:
   - package-ecosystem: npm
     directory: '/'
+    target-branch: develop
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
@@ -17,10 +20,12 @@ updates:
 
   - package-ecosystem: github-actions
     directory: '/'
+    target-branch: develop
     schedule:
       interval: weekly
 
   - package-ecosystem: docker
     directory: '/infrastructure/docker'
+    target-branch: develop
     schedule:
       interval: weekly
