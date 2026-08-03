@@ -4,6 +4,12 @@ import type { AiFeature, AiFeaturesResponse, AiUsageResponse } from '@qalam/api-
 /**
  * Whether an AI surface may be used right now, and if not, why (W2/AF2, docs/45 §4.2).
  *
+ * **Why this is app-level rather than inside `features/ai`.** W5 gives a second feature AI surfaces
+ * — retrieval-backed search and discover in `features/search` — and a feature may never import
+ * another feature (docs/26 §4). Rather than fork the gate copy or couple the two features, the pure
+ * resolver moved down here, which is the same move-down the reader's author card forced in W1. It is
+ * pure vocabulary + copy: no hooks, no api calls, nothing feature-specific.
+ *
  * Three independent gates, deliberately distinguished because they need different copy and
  * different remedies:
  *

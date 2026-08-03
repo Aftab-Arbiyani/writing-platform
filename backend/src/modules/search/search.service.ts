@@ -108,9 +108,20 @@ export class SearchService {
 
   // ── Piece search ─────────────────────────────────────────────────────────
 
+  /**
+   * Piece search.
+   *
+   * `options.recordHistory: false` runs the same read WITHOUT touching search history — for
+   * callers whose query the user never typed. The AF4 Recommendation Engine is one: it derives a
+   * query from a story graph or a seed piece and reuses this method, so with recording on, a
+   * machine-composed string like `Aria mentor castle` lands in the reader's "recent searches" and
+   * in the global keyword trends that feed discovery ([48 §3.9](../../../../docs/48_PlatformParityRegister.md),
+   * W5-5). A user-typed query still records — that is what the history is for.
+   */
   async searchPieces(
     query: SearchPiecesQueryDto,
     viewer: Viewer,
+    options?: { recordHistory?: boolean },
   ): Promise<CursorPage<SearchPieceDto>> {
     const q = this.requireQuery(query.q);
     const cursor = parseSearchCursor(query.cursor);
@@ -121,7 +132,9 @@ export class SearchService {
       return buildCursorPage(rows, query.limit, (row) => pieceCursorKey(row, query.sort));
     });
 
-    await this.record(viewer, q, SearchType.Pieces);
+    if (options?.recordHistory !== false) {
+      await this.record(viewer, q, SearchType.Pieces);
+    }
     return { items: page.items.map(toSearchPiece), meta: page.meta };
   }
 

@@ -11,6 +11,7 @@ import {
 import { AiFeatureService } from '../../ai';
 import { DiscoveryService } from '../../feed/discovery.service';
 import { TrendingService } from '../../feed/trending.service';
+import { PiecesService } from '../../pieces/pieces.service';
 import { SearchService } from '../../search';
 import type { StoryGraphDto } from '../../story-intelligence/dto/story-response.dto';
 import { StoryIntelligenceService } from '../../story-intelligence/story-intelligence.service';
@@ -41,6 +42,9 @@ export class RecommendationService {
     private readonly discovery: DiscoveryService,
     private readonly search: SearchService,
     private readonly story: StoryIntelligenceService,
+    // Read-only seed lookup for piece-scoped kinds, through the pieces module's own exported
+    // service so its visibility rules are the ones that apply (never a direct repository read).
+    private readonly pieces: PiecesService,
     private readonly telemetry: RetrievalTelemetryService,
   ) {}
 
@@ -158,38 +162,121 @@ export class RecommendationService {
     }
   }
 
-  /** Related stories: derive a query from the story graph's salient entities → reuse search. */
+  /**
+   * Related stories, from the most specific seed available:
+   *
+   * 1. **`storyId`** — the story graph's salient entities (the SSOT wins when there is one).
+   * 2. **`pieceId`** — the seed piece's own tags + title ({@link relatedToPiece}).
+   * 3. **neither** — community trending, which is honest but is NOT "related", so its reason says
+   *    "Popular right now" rather than claiming a relationship it cannot support.
+   */
   private async relatedStories(
     userId: string,
     dto: RecommendationQueryDto,
     limit: number,
   ): Promise<RecommendationItemDto[]> {
-    if (!isStory(dto.storyId)) {
-      const page = await this.trending.getFeed(undefined, limit);
-      return page.items.map((p, i) =>
-        this.pieceRec(p, dto.kind, 'Popular right now', [], positional(i, page.items.length)),
-      );
+    if (isStory(dto.storyId)) {
+      const graph = await this.story.getGraphSnapshot(userId, dto.storyId);
+      const terms = topNames(graph, 6);
+      if (terms.length === 0) return [];
+      const influencedBy: RelatedEntity[] = terms.map((name) => ({
+        id: name,
+        type: 'entity',
+        name,
+        relation: 'shared theme',
+      }));
+      return this.searchRelated(userId, dto.kind, terms, influencedBy, limit, {
+        reason: `Shares themes with your story: ${terms.slice(0, 3).join(', ')}`,
+      });
     }
-    const graph = await this.story.getGraphSnapshot(userId, dto.storyId);
-    const terms = topNames(graph, 6);
-    if (terms.length === 0) return [];
-    const influencedBy: RelatedEntity[] = terms.map((name) => ({
-      id: name,
-      type: 'entity',
-      name,
-      relation: 'shared theme',
-    }));
-    const page = await this.search.searchPieces(
-      { q: terms.join(' '), sort: SearchSort.Relevance, limit },
-      { id: userId },
-    );
+
+    if (isStory(dto.pieceId)) {
+      return this.relatedToPiece(userId, dto, dto.pieceId, limit);
+    }
+
+    const page = await this.trending.getFeed(undefined, limit);
     return page.items.map((p, i) =>
+      this.pieceRec(p, dto.kind, 'Popular right now', [], positional(i, page.items.length)),
+    );
+  }
+
+  /**
+   * Related stories seeded by a PIECE — the reader's "more like this" (docs/45 §4.1, W5).
+   *
+   * `pieceId` sat in the contract, documented on both sides of the wire, and read by nothing until
+   * W5 ([48 §3.9](../../../../docs/48_PlatformParityRegister.md), W5-2): a piece-seeded request fell
+   * through to community trending, so a client asking "what is like THIS piece" got whatever was
+   * popular. This implements the parameter that was already advertised.
+   *
+   * The seed is read through `PiecesService.getById` **as the caller**, so its visibility rules
+   * apply unchanged — a piece the viewer may not read surfaces as `PIECE_NOT_FOUND` rather than
+   * leaking through a recommendation. Terms come from the piece's own tags plus its title, which is
+   * strictly more signal than the clients' current one-tag search, and the seed is excluded from its
+   * own results (the server knows the seed; a client should not have to filter it back out).
+   */
+  private async relatedToPiece(
+    userId: string,
+    dto: RecommendationQueryDto,
+    pieceId: string,
+    limit: number,
+  ): Promise<RecommendationItemDto[]> {
+    const piece = await this.pieces.getById(pieceId, userId);
+    const tagNames = piece.tags.map((tag) => tag.name).filter((name) => name !== '');
+    const terms = tagNames.length > 0 ? tagNames.slice(0, 6) : titleTerms(piece.title);
+    if (terms.length === 0) return [];
+
+    const influencedBy: RelatedEntity[] = tagNames.slice(0, 6).map((name) => ({
+      id: name,
+      type: 'tag',
+      name,
+      relation: 'shared tag',
+    }));
+    const reason =
+      tagNames.length > 0
+        ? `Shares tags with “${piece.title}”: ${tagNames.slice(0, 3).join(', ')}`
+        : `Similar in subject to “${piece.title}”`;
+
+    return this.searchRelated(userId, dto.kind, terms, influencedBy, limit, {
+      reason,
+      excludeId: piece.id,
+    });
+  }
+
+  /**
+   * The shared tail of both related-stories paths: run the derived terms through the E8 search
+   * engine and map each hit into an explained recommendation.
+   *
+   * **`recordHistory: false` matters.** These terms are machine-composed, and `searchPieces`
+   * otherwise writes them into the viewer's recent searches and the global keyword trends — so a
+   * reader opening a piece would find `Aria mentor castle` in their own search history (48 §3.9,
+   * W5-5). One extra result is fetched so excluding the seed cannot shorten the page.
+   */
+  private async searchRelated(
+    userId: string,
+    kind: RecommendationKind,
+    terms: string[],
+    influencedBy: RelatedEntity[],
+    limit: number,
+    opts: { reason: string; excludeId?: string },
+  ): Promise<RecommendationItemDto[]> {
+    const page = await this.search.searchPieces(
+      {
+        q: terms.join(' '),
+        sort: SearchSort.Relevance,
+        limit: opts.excludeId !== undefined ? limit + 1 : limit,
+      } as Parameters<SearchService['searchPieces']>[0],
+      { id: userId },
+      { recordHistory: false },
+    );
+    const items = page.items.filter((p) => opts.excludeId === undefined || p.id !== opts.excludeId);
+    const kept = items.slice(0, limit);
+    return kept.map((p, i) =>
       this.pieceRec(
         p as unknown as Record<string, unknown>,
-        dto.kind,
-        `Shares themes with your story: ${terms.slice(0, 3).join(', ')}`,
+        kind,
+        opts.reason,
         influencedBy,
-        positional(i, page.items.length),
+        positional(i, kept.length),
       ),
     );
   }
@@ -427,6 +514,19 @@ function positional(index: number, total: number): number {
 
 function orderOf(data: Record<string, unknown>): number {
   return typeof data.order === 'number' && Number.isFinite(data.order) ? data.order : 0;
+}
+
+/**
+ * Fallback terms for an untagged seed piece: the title's own significant words. Short words are
+ * dropped because a one- or two-letter token matches nothing useful in FTS, and an empty list is a
+ * legitimate answer — a piece with no tags and no title has nothing to be "like".
+ */
+function titleTerms(title: string): string[] {
+  return title
+    .split(/\s+/)
+    .map((word) => word.replace(/[^\p{L}\p{N}]/gu, ''))
+    .filter((word) => word.length > 2)
+    .slice(0, 6);
 }
 
 function topNames(graph: StoryGraphDto, n: number): string[] {

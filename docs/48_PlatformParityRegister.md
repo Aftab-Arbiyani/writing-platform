@@ -1156,6 +1156,139 @@ this row by five entries.
 
 ---
 
+## 3.9 W5 pre-flight — the AF4 contract audit (2026-08-03)
+
+Opened by W5's step-0 audit (**before** any web code): read all nine `/ai/*` retrieval routes against
+their DTOs, then diff mobile's AF4 client against both. The register's rule is that the platform being
+ported from must actually contain what the roadmap row claims ([§6](#6-parity-check--run-at-the-end-of-every-client-epic)),
+and this time it half does. **Two of the four findings change what W5 can deliver**, so they are recorded
+here before implementation rather than discovered mid-epic.
+
+Contract as it actually stands (file:line):
+
+| Route                             | Where                               | Gate                                    | Notes                                                    |
+| --------------------------------- | ----------------------------------- | --------------------------------------- | -------------------------------------------------------- |
+| `POST /ai/search`                 | `semantic-search.controller.ts:50`  | `ai.use` + `feature.ai.semanticSearch`  | Library scope (no `storyId`) needs no graph              |
+| `GET /ai/search/suggestions`      | `semantic-search.controller.ts:67`  | same                                    | Top-8 result titles, no LLM                              |
+| `GET /ai/search/saved`            | `semantic-search.controller.ts:79`  | `ai.use`                                | Owner-scoped list                                        |
+| `POST /ai/search/saved`           | `semantic-search.controller.ts:88`  | `ai.use`                                | Idempotent by name; cap 50 (`SAVED_SEARCH_MAX_PER_USER`) |
+| `DELETE /ai/search/saved/:id`     | `semantic-search.controller.ts:102` | `ai.use`                                | 204                                                      |
+| `GET /ai/recommendations`         | `recommendation.controller.ts:26`   | `ai.use` + `feature.ai.recommendations` | 11 kinds; `collections` returns empty by design          |
+| `POST /ai/ask`                    | `ask-book.controller.ts:29`         | `ai.use` + `feature.ai.askBook`         | **Owned story + built AF3 graph** (see W5-4)             |
+| `POST /ai/ask/stream`             | `ask-book.controller.ts:45`         | same                                    | `sources` → `start` → `delta`* → `done` \| `error`       |
+| `GET /ai/explorer/:storyId/:view` | `story-explorer.controller.ts:26`   | `ai.use`                                | Graph-only, no LLM — **AF3/W6 territory, not W5's row**  |
+
+### W5-1 · **high** · `@qalam/api-types` declares a search filter shape the DTO rejects outright
+
+`packages/api-types/src/retrieval.ts:114` declares:
+
+```ts
+filters?: { language?: string; genre?: string; tags?: string[] };
+```
+
+`SemanticSearchDto` has no `filters` property at all — it takes them **flat**, and `tags` as a
+**comma-separated string** (`retrieval-request.dto.ts:59-75`). The global pipe runs
+`forbidNonWhitelisted: true` (`backend/src/main.ts:170`), so a client that trusts the wire package does not
+get its filters silently ignored — it gets **400 `VALIDATION_FAILED`** on the whole search.
+
+**Mobile is the correct reference here, and api-types is the liar:**
+`lib/features/ai/domain/value_objects/retrieval_requests.dart:31-40` sends `language`/`genre` flat and
+`'tags': tags!.join(',')`. Third instance of the same class as W4-2 and W4-5 — a handwritten wire package
+drifting from the DTO it mirrors. **This is FIX-THEN-PORT: api-types must be corrected before the web API
+layer is written**, or W5 ships a search whose filter path 400s.
+
+### W5-2 · **medium** · `pieceId` is documented on both sides of the wire and read by nothing
+
+`RecommendationQueryDto.pieceId` (`retrieval-request.dto.ts:125`) and `RecommendationRequest.pieceId`
+(`api-types/src/retrieval.ts:206`) both document "seed piece for related-stories / related-chapters".
+`grep -rn pieceId backend/src/modules/retrieval/` returns **exactly one hit — the DTO declaration**.
+`RecommendationService.byKind` reads `dto.kind` and `dto.storyId` only, so `related_stories` with a
+`pieceId` and no `storyId` takes the fallback at `recommendation.service.ts:167-172`:
+`trending.getFeed()` — literally reasoned as "Popular right now".
+
+Nobody has ever noticed because nobody has ever sent it: mobile threads `pieceId` through its query object
+and its controller and passes **`pieceId: null`** at the only call site
+(`ai_discovery_screen.dart:105`).
+
+**This is what blocks W5's reader row.** "Upgrade _more like this_ to the AF4 recommender" (45 §4.1, W1's
+deferral) cannot be piece-related against today's backend — it would replace a tag search that IS about the
+piece with community trending that is not, and call it a recommendation. Closing it is a small **additive
+backend enabler** (implement the parameter the contract already advertises: derive terms from the seed
+piece, reuse `SearchService` exactly as the `storyId` branch does) or the row drops the upgrade and keeps
+the tag search. **Decision required — recorded, not chosen.**
+
+### W5-3 · **medium** · mobile's Story Explorer has no entry point, and Ask My Book is reachable only through it
+
+`app_router.dart:494` registers `/ai/explorer/:storyId`; **no `push`/`go` site for it exists anywhere in
+`lib/`** (grepped). `AskBookScreen` is pushed from exactly one place —
+`story_explorer_screen.dart:57` — i.e. from the screen nobody can reach. The reachable AF4 chain is
+`editor_screen.dart:423` → AI conversations → `ai_discovery_screen.dart:50` → semantic search; explorer and
+ask sit outside it.
+
+This is the AF6 shape repeating (`qalam-mobile/docs/56_MobileAF5AF6ContractAudit.md`):
+code that compiles, has tests, and cannot be opened by a user. Consequence for W5: **Ask My Book has never
+been exercised by any client on any platform**, so the web cannot port it — it would be
+BUILD-FROM-CONTRACT against an unverified reference, which is a different (larger) task than the row's "an
+upgrade of the existing surfaces rather than a new one".
+
+### W5-4 · context, not a defect · story-scoped retrieval needs an owned story AND a built graph
+
+`GraphRetriever.retrieve` returns `[]` unless `storyId` is present, then reads the SSOT through the
+owner-scoped `getGraphSnapshot` (`graph.retriever.ts:46-50`) — a foreign or missing story propagates
+`STORY_NOT_FOUND` by design, and an empty graph yields zero candidates. Ask then still calls the LLM with an
+**empty context**, so the honest outcome on a graph-less stack is an answer with **zero citations** rather
+than an error.
+
+No client builds graphs: AF3's analyses are the producer and **W6 is held** (45 §4). So on the web today,
+Ask can only ever answer about the reader's _own_ piece, ungrounded. That is a product-shaped limit, not a
+bug — recorded so the W5 decision is made with it in view rather than discovered after the surface ships.
+
+**Verdict table for the row (audit output):**
+
+| Surface                                   | Verdict                 | Why                                                                 |
+| ----------------------------------------- | ----------------------- | ------------------------------------------------------------------- |
+| Semantic search (library) + suggestions   | **PORTABLE**            | Mobile's client matches the DTO field-for-field; no graph needed    |
+| Saved searches                            | **PORTABLE**            | Plain owner-scoped CRUD, cap enforced server-side                   |
+| Retrieval-backed discover (library kinds) | **PORTABLE**            | `trending`/`feed`/`authors`/`genres`/`related_topics` need no graph |
+| Search filters (language/genre/tags)      | **FIX-THEN-PORT**       | W5-1 — correct api-types first                                      |
+| Reader "more like this" → recommender     | **BLOCKED**             | W5-2 — needs the enabler, or keep the tag search                    |
+| Ask My Book                               | **BUILD-FROM-CONTRACT** | W5-3 (no verified reference) + W5-4 (no graph producer)             |
+| Story Explorer                            | **OUT OF ROW**          | AF3 surface; W6 owns it                                             |
+
+**Decisions taken (2026-08-03), so the row is unambiguous:**
+
+- **W5-2 → build the enabler.** `pieceId` is implemented for `related_stories`, which is what makes the
+  reader upgrade honest. `related_chapters` stays graph-scoped (`storyId` only) and both sides of the wire
+  now say so, instead of advertising a seed the service ignores.
+- **Ask My Book → deferred to W6**, where AF3's graph client makes it demonstrable. W5 stays what its row
+  says: an upgrade of the existing discover/search surfaces. The E2E ask-book streaming assertion travels
+  with it (it is now buildable at any time — the inert AI adapter landed in §3.8 — so what is missing is a
+  graph, not a provider).
+
+### W5-5 · ~~**medium**~~ · **CLOSED 2026-08-03** · the recommender wrote machine-composed queries into the reader's search history
+
+Found while implementing W5-2, and it is the reason the enabler is not simply "reuse `searchPieces` exactly
+as the `storyId` branch does". `SearchService.searchPieces` records every query it runs
+(`search.service.ts` → `record()` → `history.recordKeyword` + `history.upsertRecent`), and the AF4
+recommender's query is **not a query the user typed** — it is terms derived from a story graph or, now, from
+a seed piece.
+
+So the graph branch was already putting strings like `Aria mentor castle` into the caller's **recent
+searches** and into the **global keyword trends that feed discovery**. Shipping the piece-seeded branch on
+top would have multiplied that by every reader page view of every signed-in reader — a small pollution
+becoming a large one.
+
+**Fixed at the source rather than worked around:** `searchPieces` takes an internal
+`options.recordHistory` (default unchanged — a user-typed query still records), and the recommender passes
+`false` on **both** related-stories paths. This is an internal service signature, not an HTTP contract, so
+nothing on the wire moves. Asserted in `search.service.spec.ts` (records nothing when opted out, still
+returns results) and in `recommendation.service.spec.ts` (the recommender opts out).
+
+**Not fixed, and deliberately:** `KeywordRetriever` still records, because there the query IS the user's own
+search text — recording it is the feature, not a bug.
+
+---
+
 ## 4. Divergences that are NOT gaps (platform-inherent)
 
 These are accepted permanently and need no epic. They exist because the platforms genuinely differ.

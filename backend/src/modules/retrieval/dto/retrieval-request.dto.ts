@@ -118,7 +118,13 @@ export class RecommendationQueryDto {
   @MaxLength(120)
   storyId?: string;
 
-  @ApiPropertyOptional({ description: 'Seed piece for related-stories / related-chapters.' })
+  /**
+   * Seed piece for `related_stories` — the reader's "more like this" (W5). Read as the caller, so
+   * the piece's own visibility rules apply. `storyId` wins when both are given (the knowledge graph
+   * is the better seed). `related_chapters` remains graph-scoped and takes `storyId` only: a piece
+   * has no chapters to relate until an AF3 graph exists for it.
+   */
+  @ApiPropertyOptional({ description: 'Seed piece for related-stories (reader "more like this").' })
   @IsOptional()
   @IsString()
   @MaxLength(120)

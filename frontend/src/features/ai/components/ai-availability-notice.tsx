@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router';
 
 import { ROUTES } from '@/lib/routes';
 
-import { AVAILABILITY_COPY, type AiAvailability } from '../lib/ai-availability';
+import { AVAILABILITY_COPY, type AiAvailability } from '@/lib/ai-availability';
 
 const ICONS = {
   off: Sparkles,

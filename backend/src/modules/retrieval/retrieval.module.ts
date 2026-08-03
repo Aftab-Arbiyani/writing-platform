@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { AiModule } from '../ai/ai.module';
 import { FeedModule } from '../feed/feed.module';
+import { PiecesModule } from '../pieces/pieces.module';
 import { SearchModule } from '../search/search.module';
 import { SettingsModule } from '../settings/settings.module';
 import { StoryIntelligenceModule } from '../story-intelligence/story-intelligence.module';
@@ -63,6 +64,10 @@ import { RetrievalService } from './retrieval.service';
     StoryIntelligenceModule,
     SearchModule,
     FeedModule,
+    // Read-only: the Recommendation Engine reads a seed piece through the pieces module's exported
+    // service (visibility rules included) for piece-scoped kinds. No cycle — pieces imports nothing
+    // from retrieval.
+    PiecesModule,
     SettingsModule,
   ],
   controllers: [

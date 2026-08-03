@@ -8,7 +8,7 @@ import { useAiEditorTarget } from '@/stores/ai-editor-target.store';
 import { AiAvailabilityNotice } from './ai-availability-notice';
 import { AssistantTab } from './assistant-tab';
 import { CoachTab } from './coach-tab';
-import { availabilityFromErrorCode, resolveAvailability } from '../lib/ai-availability';
+import { availabilityFromErrorCode, resolveAvailability } from '@/lib/ai-availability';
 import { useAiFeatures, useAiUsage } from '../hooks/use-ai-meta';
 import { useAiStreamStore } from '../stores/ai-stream.store';
 

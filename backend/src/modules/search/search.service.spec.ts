@@ -178,6 +178,23 @@ describe('SearchService', () => {
       expect(history.upsertRecent).not.toHaveBeenCalled();
     });
 
+    /**
+     * The opt-out exists for machine-composed queries (the AF4 recommender derives terms from a
+     * story graph or a seed piece). Without it, opening a piece would put `Rain City` in the
+     * reader's own recent searches and in the global keyword trends (48 §3.9, W5-5).
+     */
+    it('records nothing when the caller opts out, but still returns results', async () => {
+      const { service, history } = build();
+      const page = await service.searchPieces(
+        piecesQuery(),
+        { id: 'viewer-1' },
+        { recordHistory: false },
+      );
+      expect(page.items.length).toBeGreaterThan(0);
+      expect(history.recordKeyword).not.toHaveBeenCalled();
+      expect(history.upsertRecent).not.toHaveBeenCalled();
+    });
+
     it('never fails the search when analytics writes error (best-effort)', async () => {
       const { service, history } = build();
       history.recordKeyword.mockRejectedValueOnce(new Error('redis down'));

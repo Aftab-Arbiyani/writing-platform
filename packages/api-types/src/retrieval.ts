@@ -101,7 +101,17 @@ export interface RetrievalResponseMeta {
 
 // ── Semantic Search ─────────────────────────────────────────────────────────────
 
-/** `POST /ai/search`. */
+/**
+ * `POST /ai/search`.
+ *
+ * **The filters are FLAT, and `tags` is a comma-separated string** — this mirrors
+ * `SemanticSearchDto` exactly (`backend/src/modules/retrieval/dto/retrieval-request.dto.ts`).
+ * It previously declared `filters?: { language, genre, tags: string[] }`, a shape the DTO has
+ * never had; because the global pipe runs `forbidNonWhitelisted: true` (`backend/src/main.ts`),
+ * a client that trusted it got **400 `VALIDATION_FAILED` on the whole search** rather than
+ * filters that quietly did nothing. Corrected in W5 before the web client was written
+ * ([48 §3.9](../../../docs/48_PlatformParityRegister.md), W5-1); mobile had it right all along.
+ */
 export interface SemanticSearchRequest {
   query: string;
   /** Scope to one story's graph (owner-scoped). Omit for library-wide search. */
@@ -111,7 +121,12 @@ export interface SemanticSearchRequest {
   limit?: number;
   /** Ask for a grounded natural-language synthesis of the results (an LLM call). */
   synthesize?: boolean;
-  filters?: { language?: string; genre?: string; tags?: string[] };
+  /** Language code filter (library scope). */
+  language?: string;
+  /** Genre slug filter (library scope). */
+  genre?: string;
+  /** Comma-separated tag slugs (library scope) — NOT an array. */
+  tags?: string;
 }
 
 /** One ranked, grounded, explainable search result. */
@@ -202,7 +217,10 @@ export interface RecommendationRequest {
   kind: RecommendationKind;
   /** Seed story for story-scoped kinds (related characters/chapters/topics). */
   storyId?: string;
-  /** Seed piece for related-stories / related-chapters. */
+  /**
+   * Seed piece for `related_stories` — the reader's "more like this". `storyId` wins when both are
+   * given. `related_chapters` is graph-scoped and takes `storyId` only.
+   */
   pieceId?: string;
   limit?: number;
 }

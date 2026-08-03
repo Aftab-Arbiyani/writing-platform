@@ -151,6 +151,24 @@ export const qk = {
     conversation: (id: string) => ['ai', 'conversation', id] as const, // GET /ai/conversations/:id
   },
 
+  // Retrieval Platform (AF4, W5 — docs/36). Kept under its own `retrieval` namespace rather than
+  // inside `ai`: these are ranked reads over the library, and a flag/usage refetch (`ai.*`) must
+  // not dump a page of search results. Deliberately NOT nested under `search` either — the E8
+  // keyword surface and the AF4 retrieval surface answer the same question differently and are
+  // cached side by side, so one can degrade to the other without evicting it.
+  retrieval: {
+    all: ['retrieval'] as const,
+    // The whole request shape is the key: two searches differing only by a filter are two
+    // different result sets, and `synthesize` changes whether an answer is present at all.
+    search: (payload: Record<string, unknown>) => ['retrieval', 'search', payload] as const, // POST /ai/search
+    suggestions: (q: string, storyId?: string) =>
+      ['retrieval', 'suggestions', q, storyId ?? ''] as const, // GET /ai/search/suggestions
+    saved: () => ['retrieval', 'saved'] as const, // GET /ai/search/saved
+    // One key per surface — discover renders several kinds at once, and each is its own read.
+    recommendations: (kind: string, seed?: string) =>
+      ['retrieval', 'recommendations', kind, seed ?? ''] as const, // GET /ai/recommendations
+  },
+
   // Collaboration / publishing / trust (AF6, W3 — docs/49). A "story" IS a piece
   // (`storyId === pieceId`), but these keys stay under their own `stories` namespace: they are
   // collaboration facts about a piece, not the piece itself, so invalidating one never dumps the
