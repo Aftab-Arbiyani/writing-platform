@@ -1,3 +1,5 @@
+import type { Page } from '@playwright/test';
+
 import { freshLogin, freshLoginAs } from '../../fixtures/auth';
 import { test, expect } from '../../fixtures/test';
 import { AssistantPanel } from '../../pages/frontend/assistant-panel';
@@ -23,6 +25,20 @@ import { LoginPage } from '../../pages/shared/login-page';
  * Baselines are produced in ONE controlled environment — the pinned Playwright Docker image
  * (`mcr.microsoft.com/playwright:vX`) — never on a dev machine ([10 §2.2, §5]); see e2e/pages/README.
  */
+/**
+ * Wait for every transient toast to auto-dismiss before snapshotting.
+ *
+ * Toasts are AntD `notification` (docs/07 §7.9), which closes on a TIMER — so a screenshot taken
+ * straight after a mutating action captures however many happen still to be on screen. That is a
+ * race, and it is not hypothetical: story-publishing drifted 2.25% between two mints of the same
+ * commit (over the 2% gate) purely because one run still had both "Review requested." and "Snapshot
+ * captured." up while the next had only one. No baseline here is guarding toasts — every one of them
+ * is guarding the surface underneath.
+ */
+async function settleToasts(page: Page): Promise<void> {
+  await expect(page.locator('.ant-notification-notice')).toHaveCount(0, { timeout: 15_000 });
+}
+
 test.describe('@phase5 @visual frontend (unauthenticated)', () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 
@@ -79,8 +95,18 @@ test.describe('@phase5 @visual frontend (authenticated)', () => {
   });
 
   test('the reader matches its visual baseline', async ({ page, api, data }) => {
-    // The reading view (W1, docs/45 §4.1). Snapshotted whole: unlike the feed, its height is
-    // determined by ONE piece of fixed, spec-arranged content, so the shot is stable across runs.
+    // The reading view (W1, docs/45 §4.1).
+    //
+    // Viewport, NOT fullPage. The original claim here was that the height is "determined by ONE
+    // piece of fixed, spec-arranged content, so the shot is stable across runs" — that is not true,
+    // and two mints of the same commit disproved it: 1280x731 then 1280x720. The content is not
+    // fixed. `data.pieceTitle()` embeds a per-run token (`E2E Piece <seed>-<worker>-<n>`), so the
+    // h1's rendered length — and therefore where it wraps — changes between runs. Masking the
+    // heading hides its PIXELS but not its box, so layout still moves with it.
+    //
+    // A height change is the worst failure mode available here: a size mismatch is unconditional,
+    // so `maxDiffPixelRatio` cannot absorb it the way it absorbs sub-pixel AA noise. Viewport is
+    // what the feed and both admin console baselines already do, for this exact reason.
     const title = data.pieceTitle();
     const piece = await api.createPublishedPiece({ title });
     const reader = new ReaderPage(page);
@@ -89,7 +115,6 @@ test.describe('@phase5 @visual frontend (authenticated)', () => {
     // Wait for the second wave so the bar is in the shot rather than racing it.
     await expect(reader.engagement).toBeVisible({ timeout: 30_000 });
     await expect(page).toHaveScreenshot('frontend-reader.png', {
-      fullPage: true,
       // The title carries a per-run unique token, and engagement counts move as other specs
       // publish and react — both are content, not layout.
       mask: [page.getByRole('heading', { level: 1 }), reader.engagement],
@@ -123,6 +148,7 @@ test.describe('@phase5 @visual frontend (authenticated)', () => {
     await publishing.expectResolved();
     await publishing.requestReview();
     await publishing.captureVersion();
+    await settleToasts(page);
     await expect(page).toHaveScreenshot('frontend-story-publishing.png', {
       fullPage: true,
       // Height is deterministic — a fresh story, and every history/version row in the shot is one
@@ -175,9 +201,19 @@ test.describe('@phase5 @visual frontend (authenticated)', () => {
     const comments = new StoryCommentsPage(page);
     await comments.goto(story.id);
     await comments.expectResolved();
-    await comments.addComment(`Visual baseline comment ${data.username()}`);
+    // FIXED body text. `data.username()` is variable-length (`e2e_<seed>-<worker>-<n>`), and the
+    // comment card is masked — which hides its PIXELS but not its BOX, so a longer string wraps to
+    // another line and the card grows. The story is fresh per run, so the text need not be unique.
+    await comments.addComment('Visual baseline comment');
+    await settleToasts(page);
     await expect(page).toHaveScreenshot('frontend-comments.png', {
-      fullPage: true,
+      // Viewport, NOT fullPage. Two independent mints of this commit disagreed by 8.05% on chromium
+      // (the top 86 rows, full width) and by 124px of HEIGHT on webkit. The header is identical in
+      // both — it just sits ~21px lower in one, with everything below row 86 unchanged: the
+      // signature of a sticky header under fullPage, where Playwright's scroll-and-stitch settles
+      // the sticky element at a different offset per run. The reader baseline drifted the same way
+      // (11px). Viewport captures one paint with no stitching, so the offset cannot vary.
+      //
       // The card carries a relative timestamp and a truncated author id (`CommentDto` sends no
       // display name — docs/48 §3.2 M-3), both environment-dependent.
       mask: [page.getByRole('listitem')],
@@ -195,8 +231,15 @@ test.describe('@phase5 @visual frontend (authenticated)', () => {
     await suggestions.goto(story.id);
     await suggestions.expectResolved();
     await suggestions.propose({ original: 'lantern', suggested: 'oil lamp', from: 4 });
+    await settleToasts(page);
     await expect(page).toHaveScreenshot('frontend-suggestions.png', {
-      fullPage: true,
+      // Viewport, NOT fullPage — same failure the comments baseline had, same signature: two mints
+      // of this commit differed by 9.00% confined to the top 90 rows at full width, with the header
+      // rendering identically but at a different offset. This page is 745px, i.e. 25px past the
+      // 720px fold, and every baseline that drifted this way was marginally over it (comments 741,
+      // reader 731). Pages well past the fold (settings 1597, billing-plans 1731) were
+      // byte-identical across three mints, so the trigger is the ambiguous few pixels of overflow,
+      // not fullPage alone — which is why the other tall baselines are deliberately left as they are.
       mask: [page.getByRole('listitem')],
     });
   });

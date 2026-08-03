@@ -36,11 +36,26 @@ export class StoryCommentsPage {
     await expect(this.page.getByText('No comments yet', { exact: true })).toBeVisible();
   }
 
-  /** Post a root comment and wait for it to appear in the list. */
+  /**
+   * Post a root comment and wait for it to actually land in the list.
+   *
+   * The settle is scoped to the LIST and to the composer clearing, not to page-wide text. It used to
+   * be `expect(page.getByText(body)).toBeVisible()`, which can resolve against the composer's own
+   * subtree — the text the caller just typed is on the page either way, so the assertion could pass
+   * before the post completed. That is not theoretical: a minted visual baseline caught the page
+   * mid-submit, with the typed text still in the composer, a spinner on the submit button, and "No
+   * comments yet" still rendered underneath — on a spec whose whole point is that the thread card
+   * renders INSTEAD of the empty state. It would have been committed as the reference.
+   *
+   * `setBody('')` runs only after `onSubmit` resolves (comment-composer.tsx), so an empty composer
+   * is a definitive success signal; the empty state clearing is what settles the layout.
+   */
   async addComment(body: string): Promise<void> {
     await this.composer.fill(body);
     await this.submit.click();
-    await expect(this.page.getByText(body, { exact: true })).toBeVisible();
+    await expect(this.page.getByRole('listitem').filter({ hasText: body })).toBeVisible();
+    await expect(this.page.getByText('No comments yet', { exact: true })).toHaveCount(0);
+    await expect(this.composer).toHaveValue('');
   }
 
   /** Reply to the first thread, expanding it so the reply is actually rendered. */
