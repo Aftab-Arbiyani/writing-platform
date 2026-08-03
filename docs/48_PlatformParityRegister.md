@@ -1,9 +1,14 @@
 # 48 — Platform Parity Register (web ↔ mobile)
 
-**Status:** 🔒 Binding · **Owner:** every client epic · **Last swept:** 2026-07-29 (after **W4's register
-close-out** — **W4-1, W4-2, W4-4, W4-5 and T-8 all CLOSED**, T-7 widened to three tests, and mobile's
-`formatMoney` fixed for parity (§3.7); earlier the same day W4 itself closed row 2 of §2, and W3a closed
-**W3c-1 / W3c-4** — §3.4)
+**Status:** 🔒 Binding · **Owner:** every client epic · **Last swept:** 2026-08-03 (after the **mobile
+parity batch** — **M-4, M5-1, M5-2, M5-4, M5-5 and M5-6 all CLOSED**. The first three closed the last
+AF5/AF6 surfaces where the two clients differed; the other three were opened and closed in the same
+pass, and **§2 row 2 — Monetization — is now at full parity, prose included**. One row left open:
+**M-5**, a pre-existing intermittent failure in mobile's suite, measured and recorded §3.7).
+Previously swept 2026-07-29 after
+**W4's register close-out** — **W4-1, W4-2, W4-4, W4-5 and T-8 all CLOSED**, T-7 widened to three tests,
+and mobile's `formatMoney` fixed for parity (§3.7); earlier the same day W4 itself closed row 2 of §2,
+and W3a closed **W3c-1 / W3c-4** — §3.4.
 
 > **The rule.** **Web and mobile ship the same features.** Neither platform is allowed to drift
 > ahead of the other with product surface that the other has no plan for. A divergence is only
@@ -38,17 +43,17 @@ epic now has to reconcile.
 Measured from `lib/features/**/presentation/screens` and `frontend/src/features/**/pages` plus route
 tables, not assumed.
 
-| #   | Area                  | Mobile has                                                                                                               | Web has                                                                             | Closed by                                                                                                                 |
-| --- | --------------------- | ------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| 1   | **Collaboration**     | 6 screens: collaborators, comments, invitations inbox, publishing workflow, restricted state, suggestions                | nothing                                                                             | **W3**                                                                                                                    |
-| 2   | ~~**Monetization**~~  | 5 screens: plans, subscription, billing history, credit dashboard, usage dashboard                                       | ✅ **all five** (W4) — plus a coupon field and two history tabs mobile lacks (§3.7) | **W4 ✅ closed 2026-07-29** — [report](./50_WebMonetizationReadinessReport.md)                                            |
-| 3   | **AI breadth**        | 8 screens: conversation, conversations list, discovery, usage, ask-book, prompt library, semantic search, story explorer | in-editor assistant + Craft Coach only (W2)                                         | **W5** (discovery/search/ask), **W6** (story explorer); conversations + prompt library + AI usage **unassigned — see §5** |
-| 4   | **Social depth**      | collections, collection detail, comments, responses (+ followers, follow requests)                                       | follow requests; followers via a dialog                                             | **unassigned — see §5**                                                                                                   |
-| 5   | **Reader actions**    | clap (1..50 accumulating) and report, on the reader action bar                                                           | like, bookmark, copy-link share                                                     | **unassigned — see §5**                                                                                                   |
-| 6   | **Reading analytics** | `reading_analytics_screen` — the _reader's_ own stats                                                                    | writer + per-piece analytics only                                                   | **unassigned — see §5**                                                                                                   |
-| 7   | **Onboarding**        | `onboarding_screen` — first-run flow                                                                                     | nothing                                                                             | **unassigned — see §5**                                                                                                   |
-| 8   | **Privacy prefs**     | dedicated privacy screen: private account, **show bookmarks count**, **show reading-history count**                      | private-notebook toggle inside edit-profile                                         | **unassigned — small, see §5**                                                                                            |
-| 9   | **Offline behaviour** | engagement + follow taken offline are queued and reconciled by a unified `SyncEngine`                                    | no offline write queue                                                              | **see §4** (partly platform-inherent)                                                                                     |
+| #   | Area                  | Mobile has                                                                                                               | Web has                                                                                                                                      | Closed by                                                                                                                 |
+| --- | --------------------- | ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **Collaboration**     | 6 screens: collaborators, comments, invitations inbox, publishing workflow, restricted state, suggestions                | nothing                                                                                                                                      | **W3**                                                                                                                    |
+| 2   | ~~**Monetization**~~  | 5 screens: plans, subscription, billing history, credit dashboard, usage dashboard                                       | ✅ **all five** (W4) — **fully at parity since 2026-08-03**: the coupon field (M5-2) and the two missing history tabs (M5-6) are now on both | **W4 ✅ closed 2026-07-29** — [report](./50_WebMonetizationReadinessReport.md)                                            |
+| 3   | **AI breadth**        | 8 screens: conversation, conversations list, discovery, usage, ask-book, prompt library, semantic search, story explorer | in-editor assistant + Craft Coach only (W2)                                                                                                  | **W5** (discovery/search/ask), **W6** (story explorer); conversations + prompt library + AI usage **unassigned — see §5** |
+| 4   | **Social depth**      | collections, collection detail, comments, responses (+ followers, follow requests)                                       | follow requests; followers via a dialog                                                                                                      | **unassigned — see §5**                                                                                                   |
+| 5   | **Reader actions**    | clap (1..50 accumulating) and report, on the reader action bar                                                           | like, bookmark, copy-link share                                                                                                              | **unassigned — see §5**                                                                                                   |
+| 6   | **Reading analytics** | `reading_analytics_screen` — the _reader's_ own stats                                                                    | writer + per-piece analytics only                                                                                                            | **unassigned — see §5**                                                                                                   |
+| 7   | **Onboarding**        | `onboarding_screen` — first-run flow                                                                                     | nothing                                                                                                                                      | **unassigned — see §5**                                                                                                   |
+| 8   | **Privacy prefs**     | dedicated privacy screen: private account, **show bookmarks count**, **show reading-history count**                      | private-notebook toggle inside edit-profile                                                                                                  | **unassigned — small, see §5**                                                                                            |
+| 9   | **Offline behaviour** | engagement + follow taken offline are queued and reconciled by a unified `SyncEngine`                                    | no offline write queue                                                                                                                       | **see §4** (partly platform-inherent)                                                                                     |
 
 ---
 
@@ -190,7 +195,7 @@ Closed out per this document's own rule: §3 row deleted, sweep re-dated, port r
 
 ---
 
-## 3.3 M-4 — mobile has a blocks/mutes data layer and no screen (opened 2026-07-29, after W3c)
+## 3.3 ~~M-4~~ — **CLOSED 2026-08-03** — mobile has a blocks/mutes data layer and no screen (opened 2026-07-29, after W3c)
 
 **Mobile is behind, and it is a wiring gap rather than a contract defect.** Its trust layer is
 complete and correct after the docs/56 repair — `TrustRemoteDataSource`, `TrustRepository`,
@@ -214,6 +219,29 @@ is genuinely new.
 
 **Not built here.** This is a mobile row and W3c is a web row; recorded per this document's own rule
 rather than absorbed.
+
+### Resolution (2026-08-03) — ported, with the entry point treated as part of the port
+
+`blocks_screen.dart` at **`/settings/blocks`** — the same path web uses, because the surface is
+account-scoped rather than story-scoped and does not belong with the `/stories/:id/*` routes. It
+renders the standing summary and both kinds of relationship in one list, and removal calls the
+matching route.
+
+Three things were carried across deliberately:
+
+- **`entry.blockedId`, never `entry.id`.** T-1 is the trap this list exists to avoid, and it is
+  pinned by a data-source test that also asserts the relationship id never appears in the path.
+- **Standing is summarised here and detailed at `/restricted`.** §3.3 noted mobile already has
+  `restricted_state_screen`; rather than duplicate it, the card states the status in one line and
+  links through only when the account is actually restricted. Web shows the same information inline
+  because it has no separate wall route.
+- **`restrictionScopeLabel` was missing** from mobile's collaboration labels, so a listed restriction
+  could only say _what kind_ it was and not _what it applied to_. Added, and asserted.
+
+**The entry point is the row.** A "Safety" tile in the settings hub's Collaboration section, beside
+the invitations inbox that R-1 taught the same lesson about. The test asserts both halves of the
+chain — the tile pushes `Routes.settingsBlocks`, and the app's own router resolves that name — so a
+screen that becomes unreachable fails the suite rather than shipping quietly.
 
 ---
 
@@ -849,7 +877,7 @@ suite failed as it should, and it was reverted.
 Under the parity rule these are rows mobile now needs. Both are **mobile is behind**, and neither is a
 regression — they are gaps W4 surfaced by building the same surface properly.
 
-### M5-1 · **medium** · mobile's `PremiumGate` has zero call sites, and its own doc comment says otherwise
+### M5-1 · ~~**medium**~~ · **CLOSED 2026-08-03** · mobile's `PremiumGate` has zero call sites, and its own doc comment says otherwise
 
 `lib/features/monetization/presentation/widgets/premium_gate.dart` opens with:
 
@@ -871,7 +899,35 @@ so this is placement, not construction:
    quota state. Mobile currently surfaces both as a generic `Failure` message.
 3. Fix or delete the doc comment's claim.
 
-### M5-2 · **low** · mobile can never redeem a coupon
+#### Resolution (2026-08-03) — placement derived from what the server asserts, and the two denials split
+
+All three items, and the placement follows §5.2 rather than the widget's own ambition:
+
+1. **The credit balance is gated on `ai_budget`**, `optimistic`, exactly as web's credits page does —
+   the one premium feature any route actually asserts. Nothing else is gated. `PremiumBadge` marks the
+   viewer's tier on `subscription_screen`, which is where web puts it, and it withholds nothing.
+2. **The two `ai_budget` denials are now different states on mobile too.** `ENTITLEMENT_DENIED` and
+   `INSUFFICIENT_CREDITS` were unmapped in `AiErrorCopy`, so they fell through to the generic
+   `canRetry: true` failure — a blocked writer was invited to try again, and then (once
+   `QUOTA_EXCEEDED` was mapped) to wait for a reset that would never help. Both now carry a
+   `canUpgrade` remedy and a "See plans" action on all three AI surfaces (assistant panel, coach
+   panel, Ask). `QUOTA_EXCEEDED` reads as a spent allowance and never offers a plan.
+   `FeatureLockCard` makes the same split from the decision's own `reason`, so the lock says _reset on
+   <date>_ or _needs a paid plan_ rather than one generic sentence. Mobile lacked an
+   `EntitlementReason` vocabulary entirely — it was comparing against a bare `'plan_excludes'` string
+   literal — so that was mirrored from `@qalam/shared` along with `entitlementReasonLabel`.
+3. **The doc comment is rewritten, not deleted.** It now names its call sites, which is what makes it
+   checkable; a comment claiming universal use was worse than none because it is the thing a reader
+   checks instead of grepping.
+
+**One consequence had to be handled, not just noted.** With the gate in place, a build with
+`QALAM_ENABLE_MONETIZATION` down would have shown a paywall over an unreleased feature — the snapshot
+answers the free-tier default in that mode, which denies everything. `entitlementSnapshot` now
+short-circuits to that default without issuing a request when the flag is down (web's
+`enabled: isMonetizationEnabled()`), and the credit dashboard opens with the flag-off empty state web's
+credits page already had. **The other four monetization screens still lack that branch — see M5-4.**
+
+### M5-2 · ~~**low**~~ · **CLOSED 2026-08-03** · mobile can never redeem a coupon
 
 `MonetizationRepository.validateCoupon` exists, is implemented through to the data source, and **is called by
 nothing**. `plans_screen` passes no `couponCode` to `subscribe()`, and there is no field to type one into. So
@@ -880,6 +936,28 @@ app.
 
 Web built the field from the DTO (there was nothing to port) and validates through the real endpoint before
 checkout. Mobile needs the same field on `plans_screen`. Small, and worth doing with M5-1.
+
+#### Resolution (2026-08-03) — the field, and the `couponCode` that was never sent
+
+`coupon_field.dart` + a `CouponController`, placed on `plans_screen` below the plan list, and
+`subscribe()` now carries the accepted code. Three details taken from web's version rather than
+re-derived:
+
+- **Hidden from existing subscribers, not ignored for them.** `ChangePlanDto` has no `couponCode` and
+  the API runs `ValidationPipe({whitelist: true, forbidNonWhitelisted: true})`, so sending one would
+  400 the whole plan change (W4-5). The field only appears when there is no subscription.
+- **The code is normalized before it leaves.** `normalizeCouponCode` was mirrored from `@qalam/shared`;
+  the server looks a coupon up by its upper-cased, trimmed form, so an untrimmed lower-case code
+  simply finds nothing and reads to the user as "invalid".
+- **`valid: false` is an answer, not an error.** The endpoint catches both coupon exceptions and
+  resolves with a false flag, so it renders as a plain "that code isn't valid" rather than a failure
+  state — and the preview is explicitly not a promise: redemption still happens at checkout, and
+  checkout's own result is what the reader is told.
+
+No `tier` is sent with the preview: the reader has not chosen a plan when they type the code, so the
+server confirms it without a figure rather than pricing it against a guess. Mobile also had no
+`couponCodeMin`/`Max` mirror, so the field could accept a 60-character code that `@MaxLength(40)`
+would have 400'd; it now caps input.
 
 ### M5-3 · ~~**low**~~ · **CLOSED 2026-07-29** · mobile's `formatMoney` mis-rendered every currency but five
 
@@ -898,6 +976,115 @@ than the locale's display convention (CLDR renders PKR with none, which would ro
 **`NumberFormat.currency` was the wrong entry point and the existing test caught it** — it treats `name` as
 the literal symbol, so USD came out as "USD14.99". `simpleCurrency` resolves the code to a symbol. Worth
 noting because the two read almost identically at a glance.
+
+### M5-4 · ~~**low**~~ · **CLOSED 2026-08-03** · four of mobile's five monetization screens ignore the dark-launch flag (opened 2026-08-03, during M5-1)
+
+`QALAM_ENABLE_MONETIZATION` gated exactly one thing on mobile: whether the **Premium section appeared
+in the settings hub**. The `/billing/*` routes are registered unconditionally, so every one of them
+stayed deep-linkable in a dark build, and `plans_screen`, `subscription_screen`,
+`usage_dashboard_screen` and `billing_history_screen` rendered normally when reached — issuing live
+`/monetization/*` requests for a platform the build says is off.
+
+Web does not have this shape: all five of its monetization pages open with `isMonetizationEnabled()`
+and an empty state. `credit_dashboard_screen` gained one during M5-1, because that row's gate would
+otherwise have put a paywall over an unreleased feature — which is how the gap was found.
+
+**The collaboration side was already correct**, which is what made this a defect rather than a
+convention: every AF6 screen (`collaborators`, `comments`, `suggestions`, `publishing_workflow`,
+`invitations_inbox`, and the new `blocks`) checks `enableCollaboration` and says so. Monetization was
+the odd one out.
+
+#### Resolution (2026-08-03) — one widget, five screens, and the routes left alone
+
+`MonetizationOffScreen` carries the state and all five screens open with it, using web's own copy per
+surface. One widget rather than five inline copies because the five say nearly the same thing and the
+failure mode is drift — one of them quietly implying the feature exists while its neighbours say it
+does not.
+
+**The routes stay registered, deliberately.** Web's are too. Gating the route table would mean a dark
+build 404s a link that a flag flip makes valid, which is a worse answer than a screen saying plainly
+that the feature has not shipped. The honest state belongs on the screen, so the regression test
+asserts per-screen rather than per-route.
+
+### M5-5 · ~~**low**~~ · **CLOSED 2026-08-03** · `premiumFeatureAllowedProvider` is exported and unused (opened 2026-08-03, during M5-1)
+
+`monetization.dart` exported it from the feature barrel and nothing in `lib/` or `test/` read it — the
+same shape as M5-1 one layer down. It survived M5-1's fix because the gate reads the whole snapshot:
+it needs the `reason`, not just the verdict, to choose between "see plans" and "wait for the reset".
+
+#### Resolution (2026-08-03) — deleted, not given a caller
+
+A per-feature boolean is the wrong shape for the only consumer that would ever want it, so adding a
+call site would have meant building a second, worse gate to justify the first. The provider and its
+export are gone; a comment in its place points the next reader at `entitlementSnapshotProvider` and
+says why. A public provider nobody calls is a claim about the feature's API that is not true.
+
+### M5-6 · ~~**low**~~ · **CLOSED 2026-08-03** · two of mobile's four billing ledgers had no surface (opened 2026-08-03, while closing M5-4)
+
+**§2 had been carrying this as prose** — row 2's "plus a coupon field and two history tabs mobile
+lacks" — with no row of its own, which by this document's own rule (§6 step 5) is a bug in the
+document. Writing it up turned out to be writing up a fourth instance of the M5-2 / M-4 defect class.
+
+`MonetizationRepository.purchases()` and `.history()` are implemented through to the data source and
+were **called by nothing**. `billing_history_screen` showed two tabs where web's page shows four, so a
+mobile reader could not see a credit-pack purchase or a single plan change — including the ones the
+app's own credit dashboard lets them make.
+
+#### Resolution (2026-08-03) — the two tabs, and the raw wire strings they exposed
+
+Both ledgers are wired to new providers and the screen now shows four tabs. The four share one
+`_Ledger` frame, for the same reason web's `LedgerSection` exists: identical states with different row
+shapes, and the failure mode is one tab quietly losing its retry or wording its empty state
+differently.
+
+**`GET subscription/history` needs no client compensation.** W4-1 fixed the 404 at the endpoint and
+deleted web's mapping with it, so a 404 here is a real error and surfaces as one — the provider's doc
+comment says so, since absorbing it into an empty list is exactly what would hide a regression.
+
+**The missing labels came with it.** Mobile labelled five of the thirteen monetization enumerations
+and let the rest fall through to the wire value — which is why its billing history read `succeeded`
+and its credit ledger read `subscription grant` (an underscore-stripped `subscription_grant`). Web's
+`monetization-labels.ts` called this out when it was ported _from_ mobile. `InvoiceStatus`,
+`PaymentStatus`, `PurchaseKind`, `PurchaseStatus` and `CreditReason` are now mirrored with labels, and
+the two existing tabs plus the credit ledger stopped printing raw values. Every label still falls
+through to the wire string for an unknown value — these enumerations are open on the wire (varchar
+columns, docs/37), so an unrecognised value is a forward-compatible server, not a bug.
+
+`SubscriptionEvent.type` is deliberately **not** mapped: the wire types it as a plain `string`, so the
+set the server emits is not something the contract pins down and a switch would be inventing one.
+
+### M-5 · **medium** · mobile's suite fails ~2 runs in 10, with no assertion output (opened 2026-08-03, during the parity batch)
+
+**Recorded, not fixed.** Found because the parity batch's own verification kept coming back red on a
+test it had not touched, and the register's rule about calling something a flake without evidence
+(§3.4, T-7; and the webkit case in `docs/e2e`) says that has to be measured rather than assumed.
+
+`test/features/ai/retrieval_controllers_test.dart` — "RetrievalSessionController.submit commits a
+valid query" — fails intermittently in a **full-suite** run only.
+
+**Measured, both ways:**
+
+| Condition                      | Full-suite runs | Failures |
+| ------------------------------ | --------------- | -------- |
+| With the parity batch applied  | 14              | 2        |
+| **With the batch stashed**     | **10**          | **2**    |
+| That file alone, batch applied | 12              | 0        |
+
+So it is **pre-existing and unrelated to this batch** — the rate is the same with the changes removed,
+and the file never fails on its own. Recorded rather than shrugged at, because a suite that is red one
+run in five trains everyone to re-run instead of read.
+
+**The diagnostic detail is the useful part: there is no assertion output at all.** No `TestFailure`,
+no `EXCEPTION CAUGHT`, no expectation diff — the reporter goes straight from the test's start line to
+`-1`. That is not a wrong value; it is the test's execution being abandoned. The test's own body is
+three synchronous `read`s, but its `buildTestContainer` setup does real I/O — `createTemp`,
+`Hive.openBox` ×4, connectivity init — and under a fully parallel suite on a loaded machine that is
+the thing plausibly hitting the per-test timeout.
+
+**That last paragraph is a hypothesis, not a finding.** It fits the evidence and has not been proven;
+whoever picks this up should confirm before changing anything, and the obvious first step is running
+the suite with `--reporter expanded` and a raised timeout to see whether the abort is a timeout at
+all. **Not** by deleting or `skip`-ing the test.
 
 Audited and clear elsewhere: the frontend has no other money formatter, and `admin/src/lib/format.ts`'s
 `formatUsd` takes major units by contract and has **zero callers** (admin has no monetization surface yet).
