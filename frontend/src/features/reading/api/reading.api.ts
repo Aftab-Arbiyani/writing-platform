@@ -1,3 +1,5 @@
+import type { RecommendationResponse } from '@qalam/api-types';
+
 import { del, get, getPage, post, type CursorPage } from '@/lib/api-client';
 import { buildQueryString } from '@/lib/http';
 
@@ -57,13 +59,42 @@ export const readingApi = {
    * "More like this" — a tag-filtered piece search (`GET /search/pieces`), NOT a dedicated
    * related-pieces endpoint, because none exists and W1 adds no backend (docs/45 §7). The
    * frozen contract requires a non-empty `q`, so the tag's own NAME is the query and its SLUG is
-   * the filter: FTS matches tags, so the two agree rather than fight. The AF4 recommender
-   * (`GET /ai/recommendations`) is the eventual home for this — it needs auth plus the `ai.use`
-   * permission, which a signed-out reader does not have, so it belongs to W5, not here.
+   * the filter: FTS matches tags, so the two agree rather than fight.
+   *
+   * **Still here after W5, and not as a leftover.** The AF4 recommender below is the better answer
+   * where it can be reached, but it needs auth plus `ai.use` plus a live feature flag — none of which
+   * a signed-out reader has, and they are most of a public reading page's traffic. This is the
+   * fallback that keeps the section working for them.
    */
   related: (tag: { slug: string; name: string }, signal?: AbortSignal): Promise<RelatedPiece[]> =>
     getPage<RelatedPiece>(
       `/search/pieces${buildQueryString({ q: tag.name, tag: tag.slug, sort: 'trending', limit: 5 })}`,
       { signal },
     ).then((page: CursorPage<RelatedPiece>) => page.items),
+
+  /**
+   * GET /ai/recommendations?kind=related_stories&pieceId=… — the AF4 recommender's answer to "more
+   * like this" (W5).
+   *
+   * **This is the upgrade W1 deferred to this row**, and it is strictly better than the tag search
+   * above where it is available: the server seeds from ALL of the piece's tags plus its title rather
+   * than the first tag alone, excludes the piece from its own results, and returns a `reason` for
+   * each item — which is what makes it a recommendation instead of a list.
+   *
+   * It cannot replace the tag search, only precede it: every AF4 route needs auth + `ai.use` +
+   * `feature.ai.recommendations`, so a signed-out reader — the majority of a public reading page's
+   * traffic — can never reach it. The fallback is the point, not a leftover.
+   *
+   * Named here as well as in `features/search` because a feature may not import another feature
+   * (docs/26 §4) — the same reason `related` above names `/search/pieces`.
+   */
+  recommendedFor: (pieceId: string, signal?: AbortSignal): Promise<RecommendationResponse> =>
+    get<RecommendationResponse>(
+      `/ai/recommendations${buildQueryString({
+        kind: 'related_stories',
+        pieceId,
+        limit: 5,
+      })}`,
+      { signal },
+    ),
 };

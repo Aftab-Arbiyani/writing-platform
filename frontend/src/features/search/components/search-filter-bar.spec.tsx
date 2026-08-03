@@ -23,6 +23,7 @@ function makeParams(over: Partial<UseSearchQueryParamsResult> = {}): UseSearchQu
   return {
     q: 'barish',
     hasQuery: true,
+    mode: 'keyword',
     type: SearchType.Pieces,
     sort: SearchSort.Relevance,
     language: null,
@@ -33,6 +34,7 @@ function makeParams(over: Partial<UseSearchQueryParamsResult> = {}): UseSearchQu
     filters: {},
     hasActiveFilters: false,
     setQuery: vi.fn(),
+    setMode: vi.fn(),
     setType: vi.fn(),
     setSort: vi.fn(),
     setLanguage: vi.fn(),

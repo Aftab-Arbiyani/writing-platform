@@ -5,7 +5,7 @@ import { useState, type ReactElement } from 'react';
 
 import { useAiEditorTarget } from '@/stores/ai-editor-target.store';
 
-import { AiAvailabilityNotice } from './ai-availability-notice';
+import { AiAvailabilityNotice } from '@/components/ai-availability-notice';
 import { AssistantTab } from './assistant-tab';
 import { CoachTab } from './coach-tab';
 import { availabilityFromErrorCode, resolveAvailability } from '@/lib/ai-availability';

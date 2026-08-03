@@ -57,11 +57,20 @@ function isDatePreset(value: string | null): value is DatePreset {
   return value !== null && (DATE_VALUES as string[]).includes(value);
 }
 
+/**
+ * Which engine answers the query (W5/AF4). `keyword` is the E8 full-text search this page has
+ * always run; `ai` is the retrieval-backed one. In the URL (`mode=ai`) for the same reason every
+ * other control is: a shared link has to reproduce the results, and the two engines answer
+ * differently. `keyword` is the default and is omitted from the URL.
+ */
+export type SearchMode = 'keyword' | 'ai';
+
 export interface UseSearchQueryParamsResult {
   /** Raw query as typed into the URL (may be empty / below the minimum). */
   q: string;
   /** True once `q` is long enough to hit the FTS endpoints (docs 05 §3.2 — 2 chars). */
   hasQuery: boolean;
+  mode: SearchMode;
   type: SearchType;
   sort: SearchSort;
   language: string | null;
@@ -75,6 +84,7 @@ export interface UseSearchQueryParamsResult {
   hasActiveFilters: boolean;
 
   setQuery: (q: string) => void;
+  setMode: (mode: SearchMode) => void;
   setType: (type: SearchType) => void;
   setSort: (sort: SearchSort) => void;
   setLanguage: (code: string | null) => void;
@@ -89,6 +99,7 @@ export function useSearchQueryParams(): UseSearchQueryParamsResult {
   const [params, setParams] = useSearchParams();
 
   const q = params.get('q') ?? '';
+  const mode: SearchMode = params.get('mode') === 'ai' ? 'ai' : 'keyword';
   const type = isSearchType(params.get('type'))
     ? (params.get('type') as SearchType)
     : SearchType.All;
@@ -141,6 +152,7 @@ export function useSearchQueryParams(): UseSearchQueryParamsResult {
   return {
     q,
     hasQuery,
+    mode,
     type,
     sort,
     language,
@@ -153,6 +165,11 @@ export function useSearchQueryParams(): UseSearchQueryParamsResult {
     // The query is the primary navigation act (each search is a history entry, docs/06 §3.6).
     setQuery: (value) => {
       update({ q: value });
+    },
+    // Switching engine is navigational: it is a different answer to the same question, and back
+    // should return to the previous one rather than silently re-run it.
+    setMode: (value) => {
+      update({ mode: value === 'keyword' ? null : value });
     },
     // Switching tab is navigational too (back button returns to the prior tab).
     setType: (value) => {

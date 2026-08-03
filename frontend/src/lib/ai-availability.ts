@@ -36,11 +36,19 @@ import type { AiFeature, AiFeaturesResponse, AiUsageResponse } from '@qalam/api-
  */
 export type AiAvailability = 'available' | 'off' | 'feature-off' | 'quota' | 'upgrade' | 'unknown';
 
-/** A window is exhausted when it has a cap and has reached it. Unlimited windows never are. */
-function windowExhausted(window: {
-  tokenLimit: number | null;
-  usedFraction: number | null;
-}): boolean {
+/**
+ * A window is exhausted when it has a cap and has reached it. Unlimited windows never are.
+ *
+ * Takes the window as possibly-absent because this now runs on two features' surfaces (W5), and a
+ * usage payload missing a window must not be able to take one of them down: this is a pre-flight
+ * courtesy read, and the authoritative answer always comes back from the request itself
+ * ({@link availabilityFromErrorCode}). An absent window is "not exhausted" — the same posture as an
+ * absent `usage` object one level up.
+ */
+function windowExhausted(
+  window: { tokenLimit: number | null; usedFraction: number | null } | undefined,
+): boolean {
+  if (!window) return false;
   return window.tokenLimit !== null && (window.usedFraction ?? 0) >= 1;
 }
 

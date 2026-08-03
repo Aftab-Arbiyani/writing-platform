@@ -4,10 +4,15 @@ import { Link } from 'react-router';
 import { formatReadingTime } from '@/lib/format';
 import { piecePath } from '@/lib/routes';
 
-import type { RelatedPiece } from '../types/reading.types';
+import type { RelatedSuggestion } from '../hooks/use-related-pieces';
 
 /**
- * "More like this" (W1, docs/45 §4.1) — up to four pieces sharing this one's first tag.
+ * "More like this" (W1 §4.1, upgraded in W5) — up to four pieces to read next.
+ *
+ * The items come from the AF4 recommender for a signed-in reader and from a tag search otherwise
+ * (`useRelatedPieces` decides). When an item carries a `reason`, it is rendered: a recommendation
+ * that does not say why it was recommended is just a list, and AF4's whole design law is that every
+ * result explains itself. The tag-search fallback has no reason to give and shows none.
  *
  * A compact link list, deliberately **not** the feed's `PieceCard`: that component belongs to
  * `features/feed` and a feature may never import another feature (docs/26 §4). It also renders
@@ -17,7 +22,7 @@ import type { RelatedPiece } from '../types/reading.types';
  * Renders nothing at all when there is nothing to suggest — an empty "related" heading is worse
  * than no section.
  */
-export function RelatedPieces({ pieces }: { pieces: RelatedPiece[] }): ReactElement | null {
+export function RelatedPieces({ pieces }: { pieces: RelatedSuggestion[] }): ReactElement | null {
   if (pieces.length === 0) return null;
 
   return (
@@ -43,9 +48,16 @@ export function RelatedPieces({ pieces }: { pieces: RelatedPiece[] }): ReactElem
               </Link>
               <p className="mt-1 text-sm text-ink-muted">
                 <bdi>{author}</bdi>
-                <span aria-hidden> · </span>
-                {formatReadingTime(piece.readingTimeSeconds)}
+                {piece.readingTimeSeconds > 0 ? (
+                  <>
+                    <span aria-hidden> · </span>
+                    {formatReadingTime(piece.readingTimeSeconds)}
+                  </>
+                ) : null}
               </p>
+              {piece.reason !== '' ? (
+                <p className="mt-1 text-sm text-ink-secondary">{piece.reason}</p>
+              ) : null}
             </li>
           );
         })}

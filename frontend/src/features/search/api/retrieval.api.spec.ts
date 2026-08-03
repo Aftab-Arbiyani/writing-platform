@@ -132,14 +132,4 @@ describe('retrievalApi request shapes', () => {
       expect(get.mock.calls[0]?.[0]).not.toContain('pieceId');
     });
   });
-
-  describe('the gate reads', () => {
-    it('names the same two endpoints features/ai does, so the cache keys can be shared', async () => {
-      get.mockResolvedValue({} as never);
-      await retrievalApi.features();
-      await retrievalApi.usage();
-      expect(get.mock.calls[0]?.[0]).toBe('/ai/features');
-      expect(get.mock.calls[1]?.[0]).toBe('/ai/usage/me');
-    });
-  });
 });

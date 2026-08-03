@@ -18,6 +18,10 @@ const ICONS = {
  * The blocked state of an AI surface (W2/AF2) — off, not enabled for this account, out of allowance,
  * or needing a paid plan. Renders nothing when the surface is usable or still resolving.
  *
+ * App-level rather than inside `features/ai` because W5 gives `features/search` AI surfaces too, and
+ * a feature may not import another feature (docs/26 §4). It renders the shared copy from
+ * `@/lib/ai-availability` and knows one route; it holds no feature state.
+ *
  * The quota case is the one W2 required from day one: it is a routine outcome of metering, so it
  * reads as information rather than failure, and it says explicitly that the writing is unaffected.
  *

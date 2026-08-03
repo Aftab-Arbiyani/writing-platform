@@ -6,37 +6,13 @@ import type {
 } from '@qalam/api-types';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { resolveAvailability, type AiAvailability } from '@/lib/ai-availability';
+import { useAiAvailability } from '@/hooks/use-ai-availability';
 import { qk } from '@/lib/query-keys';
 
 import { retrievalApi } from '../api/retrieval.api';
 
 /** AF4 reads are ranked, not paginated, and cheap to keep briefly. */
 const RETRIEVAL_STALE = 60_000;
-
-/**
- * Whether an AF4 surface may be used, resolved from the same two reads the writing assistant uses
- * and through the same query keys, so the two features never disagree (W5, docs/45 §4).
- *
- * `semantic_search` and `recommendations` carry SEPARATE flags, so discover can be live while search
- * is dark or the reverse — which is why this takes the feature rather than answering once for "AI".
- */
-export function useRetrievalAvailability(feature: AiFeature): AiAvailability {
-  const features = useQuery({
-    queryKey: qk.ai.features(),
-    queryFn: ({ signal }) => retrievalApi.features(signal),
-    staleTime: RETRIEVAL_STALE,
-  });
-  const usage = useQuery({
-    queryKey: qk.ai.usage(),
-    queryFn: ({ signal }) => retrievalApi.usage(signal),
-    staleTime: 30_000,
-    // The quota gate is advisory here: search still works when this read fails, so a failure must
-    // not hold the surface hostage.
-    retry: false,
-  });
-  return resolveAvailability({ feature, features: features.data, usage: usage.data });
-}
 
 /**
  * Semantic search over the library (`POST /ai/search`).
@@ -50,7 +26,7 @@ export function useRetrievalAvailability(feature: AiFeature): AiAvailability {
  * spends the reader's rate-limit budget to be told the same thing three times.
  */
 export function useSemanticSearch(payload: SemanticSearchRequest, enabled = true) {
-  const availability = useRetrievalAvailability(AiFeature.SemanticSearch);
+  const availability = useAiAvailability(AiFeature.SemanticSearch);
   return useQuery({
     queryKey: qk.retrieval.search(payload as unknown as Record<string, unknown>),
     queryFn: ({ signal }) => retrievalApi.search(payload, signal),
@@ -69,7 +45,7 @@ export function useSemanticSearch(payload: SemanticSearchRequest, enabled = true
  * input's keystrokes, not with the cache.
  */
 export function useRetrievalSuggestions(q: string, storyId?: string) {
-  const availability = useRetrievalAvailability(AiFeature.SemanticSearch);
+  const availability = useAiAvailability(AiFeature.SemanticSearch);
   return useQuery({
     queryKey: qk.retrieval.suggestions(q, storyId),
     queryFn: ({ signal }) => retrievalApi.suggestions(q, storyId, signal),
@@ -81,7 +57,7 @@ export function useRetrievalSuggestions(q: string, storyId?: string) {
 
 /** The caller's saved searches (`GET /ai/search/saved`). */
 export function useSavedSearches() {
-  const availability = useRetrievalAvailability(AiFeature.SemanticSearch);
+  const availability = useAiAvailability(AiFeature.SemanticSearch);
   return useQuery({
     queryKey: qk.retrieval.saved(),
     queryFn: ({ signal }) => retrievalApi.savedSearches(signal),
@@ -128,7 +104,7 @@ export function useRecommendations(args: {
   limit?: number;
   enabled?: boolean;
 }) {
-  const availability = useRetrievalAvailability(AiFeature.Recommendations);
+  const availability = useAiAvailability(AiFeature.Recommendations);
   const seed = args.storyId ?? args.pieceId;
   return useQuery({
     queryKey: qk.retrieval.recommendations(args.kind, seed),

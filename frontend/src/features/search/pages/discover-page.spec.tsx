@@ -1,10 +1,13 @@
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { CursorPage } from '@/lib/api-client';
 import { renderWithProviders } from '@/test/render';
 
+import { useAiAvailability } from '@/hooks/use-ai-availability';
+
 import { discoverApi } from '../api/discover.api';
+import { retrievalApi } from '../api/retrieval.api';
 import type { PieceSummary, WriterCard } from '../types/search.types';
 import { DiscoverPage } from './discover-page';
 
@@ -16,6 +19,24 @@ vi.mock('../api/discover.api', () => ({
     tags: vi.fn(),
     genres: vi.fn(),
     languages: vi.fn(),
+  },
+}));
+
+// The AF4 shelves (W5) gate on the app-level availability hook and read through the retrieval api.
+// Both are mocked rather than left to the real api-client: an unmocked gate read would make the
+// shelves' absence depend on a failed fetch, which is not evidence that they self-silence.
+vi.mock('@/hooks/use-ai-availability', () => ({ useAiAvailability: vi.fn() }));
+
+vi.mock('../api/retrieval.api', () => ({
+  retrievalApi: {
+    features: vi.fn(),
+    usage: vi.fn(),
+    recommendations: vi.fn(),
+    search: vi.fn(),
+    suggestions: vi.fn(),
+    savedSearches: vi.fn(),
+    saveSearch: vi.fn(),
+    deleteSavedSearch: vi.fn(),
   },
 }));
 
@@ -72,6 +93,8 @@ function seedAll(): void {
 describe('DiscoverPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Default posture: AI dark, which is what AF1 seeds and therefore what most deployments show.
+    vi.mocked(useAiAvailability).mockReturnValue('off');
   });
 
   it('renders every discovery section from real backend reads', async () => {
@@ -103,5 +126,72 @@ describe('DiscoverPage', () => {
 
     renderWithProviders(<DiscoverPage />, { route: '/discover' });
     expect(await screen.findByText('Nothing to discover yet.')).toBeInTheDocument();
+  });
+
+  /**
+   * The AF4 shelves (W5). The editorial page is public and must be unchanged for a reader who has no
+   * AI — so the interesting assertions are the silent ones.
+   */
+  describe('AI recommendation shelves', () => {
+    it('renders nothing, and asks for nothing, while the flag is down', async () => {
+      seedAll();
+      renderWithProviders(<DiscoverPage />, { route: '/discover' });
+
+      await screen.findByRole('link', { name: 'Featured piece' });
+      expect(screen.queryByText('Recommended for you')).not.toBeInTheDocument();
+      expect(screen.queryByText('Pick up next')).not.toBeInTheDocument();
+      expect(retrievalApi.recommendations).not.toHaveBeenCalled();
+    });
+
+    it('renders a shelf with each item explained when recommendations are live', async () => {
+      seedAll();
+      vi.mocked(useAiAvailability).mockReturnValue('available');
+      vi.mocked(retrievalApi.recommendations).mockImplementation((args) =>
+        Promise.resolve({
+          kind: args.kind,
+          items:
+            args.kind === 'feed'
+              ? [
+                  {
+                    id: 'p9',
+                    kind: args.kind,
+                    targetType: 'piece',
+                    title: 'A recommended piece',
+                    summary: 'About the rain.',
+                    object: {},
+                    score: 0.9,
+                    confidence: 0.9,
+                    reason: 'Recommended for you from across Qalam',
+                    influencedBy: [],
+                    evidence: [],
+                    navigation: { kind: 'piece', ref: 'a-recommended-piece' },
+                  },
+                ]
+              : [],
+          meta: {
+            sources: [],
+            totalCandidates: 1,
+            returned: 1,
+            confidence: 0.9,
+            degraded: false,
+          },
+        } as unknown as Awaited<ReturnType<typeof retrievalApi.recommendations>>),
+      );
+
+      renderWithProviders(<DiscoverPage />, { route: '/discover' });
+
+      // The heading appears with the skeleton, so the ITEM is what proves the read resolved —
+      // asserting the heading alone would pass on a shelf that never loaded.
+      expect(
+        await screen.findByRole('link', { name: 'Story: A recommended piece' }),
+      ).toBeInTheDocument();
+      expect(screen.getByText('Recommended for you')).toBeInTheDocument();
+      // Every recommendation explains itself — that is AF4's design law, not a nicety.
+      expect(screen.getByText(/Recommended for you from across Qalam/)).toBeInTheDocument();
+      // The empty kind stays silent rather than printing a hollow heading.
+      await waitFor(() => {
+        expect(screen.queryByText('Pick up next')).not.toBeInTheDocument();
+      });
+    });
   });
 });

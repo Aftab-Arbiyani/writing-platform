@@ -104,6 +104,22 @@ describe('resolveAvailability', () => {
       'available',
     );
   });
+
+  /**
+   * A usage payload missing a window must not throw. This is a pre-flight courtesy read whose
+   * authoritative answer comes back from the request itself, and since W5 it runs on two features'
+   * surfaces — so a partial payload throwing here would blank a whole page instead of degrading to
+   * "we'll find out when we ask".
+   */
+  it('treats a missing window as not exhausted rather than throwing', () => {
+    expect(
+      resolveAvailability({
+        feature,
+        features: features(),
+        usage: {} as unknown as Parameters<typeof resolveAvailability>[0]['usage'],
+      }),
+    ).toBe('available');
+  });
 });
 
 describe('availabilityFromErrorCode', () => {

@@ -1,6 +1,4 @@
 import type {
-  AiFeaturesResponse,
-  AiUsageResponse,
   RecommendationKind,
   RecommendationResponse,
   SaveSearchRequest,
@@ -31,24 +29,6 @@ import { buildQueryString } from '@/lib/http';
  * (48 §3.9, W5-1).
  */
 export const retrievalApi = {
-  /**
-   * GET /ai/features and GET /ai/usage/me — the gate reads, named here as well as in
-   * `features/ai/api/ai.api.ts`.
-   *
-   * **Named twice on purpose.** These two surfaces need the same gate, and the alternative to
-   * naming the endpoints twice is `features/search` importing `features/ai`, which docs/26 §4
-   * forbids. Duplication is bounded to the path string: the pure resolver is shared
-   * (`@/lib/ai-availability`), and both features read through the SAME query keys
-   * (`qk.ai.features()` / `qk.ai.usage()`), so there is one cache entry and one refetch — never two
-   * requests answering the same question with different answers. Same precedent as
-   * `features/reading` naming `/search/pieces` for "more like this".
-   */
-  features: (signal?: AbortSignal): Promise<AiFeaturesResponse> =>
-    get<AiFeaturesResponse>('/ai/features', { signal }),
-
-  usage: (signal?: AbortSignal): Promise<AiUsageResponse> =>
-    get<AiUsageResponse>('/ai/usage/me', { signal }),
-
   /**
    * POST /ai/search — ranked, grounded, explainable results.
    *

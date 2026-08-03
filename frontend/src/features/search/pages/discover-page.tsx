@@ -1,5 +1,6 @@
 import { QButton, QEmptyState, QErrorState } from '@qalam/ui';
 import {
+  BookOpen,
   Compass,
   Flame,
   Hash,
@@ -24,6 +25,7 @@ import {
   TaxonomyCloud,
   WritersGrid,
 } from '../components/discover-sections';
+import { RecommendationShelf } from '../components/recommendation-shelf';
 import {
   useDiscoverGenres,
   useDiscoverLanguages,
@@ -40,6 +42,19 @@ import {
  * Latest feed, reusing F3). Every section is a real backend read (`/discover/*`, `/feed/trending`)
  * — never mock data — and hides itself when its slice is empty, so the page never shows a hollow
  * heading. All content-loaded errors degrade gracefully; a total failure shows one retry panel.
+ *
+ * **W5 adds two AF4 recommendation shelves above the editorial ones** (docs/45 §4, docs/36). They are
+ * additive and self-silencing: `feature.ai.recommendations` ships dark and every AF4 route needs
+ * `ai.use`, so a signed-out reader and an un-flagged deployment see exactly the page they saw before.
+ *
+ * **Only two shelves, where mobile's dedicated AI screen has five.** Mobile shows trending, for-you,
+ * continue-reading, authors and genres; on the web, three of those would be duplicates rather than
+ * additions — `RecommendationKind.Trending` runs the same `TrendingService` as "Trending now" below,
+ * `Authors` the same `DiscoveryService.getWriters` as "Writers to follow", and `Genres` the same
+ * `getTrendingGenres` as "Popular genres". The recommender's versions differ only by carrying a
+ * reason, so shipping them here would print the same rows twice on one page. The two that add
+ * something — a for-you set and a pick-up-next set — are the ones rendered. Recorded as an
+ * arrangement difference in [48 §4.1], not a parity gap.
  */
 export function DiscoverPage(): ReactElement {
   usePageTitle('Discover');
@@ -115,6 +130,14 @@ export function DiscoverPage(): ReactElement {
         )
       ) : (
         <>
+          {/*
+            Personalised before editorial: when these have anything to say they are more specific to
+            this reader than the featured shelves, and when they have nothing they render nothing, so
+            the editorial page keeps its existing first impression.
+          */}
+          <RecommendationShelf kind="feed" title="Recommended for you" icon={Sparkles} />
+          <RecommendationShelf kind="continue_reading" title="Pick up next" icon={BookOpen} />
+
           {has(featuredPieces.data, featuredPieces.isLoading) ? (
             <DiscoverSection title="Featured pieces" icon={Sparkles}>
               <PiecesGrid items={featuredPieces.data ?? []} isLoading={featuredPieces.isLoading} />
