@@ -48,6 +48,47 @@ describe('useSearchQueryParams', () => {
     expect(result.current.type).toBe(SearchType.Writers);
   });
 
+  /**
+   * The regression the W5 E2E run caught: two `update` calls in one handler both patch the same
+   * pre-navigation URL, so the second dropped the first's key. `setSearch` is one update.
+   */
+  it('sets the query and the engine together, keeping both', () => {
+    const { result } = renderHook(() => useSearchQueryParams(), {
+      wrapper: wrapperFor('/search'),
+    });
+    act(() => {
+      result.current.setSearch('barish', 'ai');
+    });
+    expect(result.current.q).toBe('barish');
+    expect(result.current.mode).toBe('ai');
+  });
+
+  it('loses nothing when the engine is set back to the default alongside a query', () => {
+    const { result } = renderHook(() => useSearchQueryParams(), {
+      wrapper: wrapperFor('/search?q=old&mode=ai'),
+    });
+    act(() => {
+      result.current.setSearch('barish', 'keyword');
+    });
+    expect(result.current.q).toBe('barish');
+    // `keyword` is the default and is omitted from the URL rather than written as a value.
+    expect(result.current.mode).toBe('keyword');
+  });
+
+  it('drops the engine when set separately after the query — the shape that broke', () => {
+    const { result } = renderHook(() => useSearchQueryParams(), {
+      wrapper: wrapperFor('/search'),
+    });
+    act(() => {
+      result.current.setMode('ai');
+      result.current.setQuery('barish');
+    });
+    // Documents the hazard rather than endorsing it: both setters patched the same snapshot, so the
+    // engine is gone. Any caller needing both must use `setSearch`.
+    expect(result.current.q).toBe('barish');
+    expect(result.current.mode).toBe('keyword');
+  });
+
   it('adds an explicit sort to the filters when changed', () => {
     const { result } = renderHook(() => useSearchQueryParams(), {
       wrapper: wrapperFor('/search?q=barish&type=pieces'),

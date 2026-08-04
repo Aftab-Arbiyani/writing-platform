@@ -85,6 +85,8 @@ export interface UseSearchQueryParamsResult {
 
   setQuery: (q: string) => void;
   setMode: (mode: SearchMode) => void;
+  /** Set the query AND the engine in one navigation — see the implementation for why it must be one. */
+  setSearch: (q: string, mode: SearchMode) => void;
   setType: (type: SearchType) => void;
   setSort: (sort: SearchSort) => void;
   setLanguage: (code: string | null) => void;
@@ -170,6 +172,19 @@ export function useSearchQueryParams(): UseSearchQueryParamsResult {
     // should return to the previous one rather than silently re-run it.
     setMode: (value) => {
       update({ mode: value === 'keyword' ? null : value });
+    },
+    /**
+     * Query + engine in ONE update, because two updates lose one of them.
+     *
+     * `update` patches `prev` inside a functional `setSearchParams`, and within a single handler both
+     * calls receive the SAME pre-navigation `prev` — React has not re-rendered in between. So
+     * `setMode('ai')` followed by `setQuery(q)` produced a URL with `q` and no `mode`: re-running a
+     * saved AF4 search landed in KEYWORD mode and answered the reader's saved question with a
+     * different engine, which is exactly the confusion `runSavedQuery` exists to prevent. Found by
+     * the E2E run, invisible in a unit test that stubs the router (docs/48 §3.9 W5-7).
+     */
+    setSearch: (value, mode) => {
+      update({ q: value, mode: mode === 'keyword' ? null : mode });
     },
     // Switching tab is navigational too (back button returns to the prior tab).
     setType: (value) => {

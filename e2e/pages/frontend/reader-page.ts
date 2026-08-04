@@ -54,6 +54,52 @@ export class ReaderPage {
     await expect(this.page.getByText('This piece isn’t here.')).toBeVisible({ timeout: 30_000 });
   }
 
+  // ── "More like this" (W1 §4.1, upgraded in W5) ─────────────────────────────
+
+  /** The related-pieces section. A labelled `section` → a `region` landmark named by its heading. */
+  get related(): Locator {
+    return this.page.getByRole('region', { name: 'More like this' });
+  }
+
+  private relatedItem(title: string): Locator {
+    return this.related.getByRole('listitem').filter({ hasText: title });
+  }
+
+  /**
+   * The section answered by the **AF4 recommender**, proven by the reason on every item.
+   *
+   * The two sources render the same section, so the reason is the only thing on screen that says
+   * which one answered: the recommender explains every item, and the tag-search fallback has no reason
+   * to give and renders none. The expected string is the one the server composes for a piece-seeded
+   * `related_stories` request (the `pieceId` enabler, 48 §3.9 W5-2), so this asserts the whole path —
+   * client parameter, server branch, rendered explanation.
+   *
+   * **It deliberately does not assert WHICH pieces come back.** The piece-seeded branch runs the seed's
+   * tags through the E8 search engine, which ranks by relevance over the whole corpus — and on a
+   * long-lived database that corpus is thousands of E2E pieces whose titles share tokens. A spec that
+   * demanded its own sibling in the top four was asserting the ranker's output, and it failed roughly
+   * one run in six for that reason while the feature was working perfectly (the reason line named the
+   * right seed and the right tag every time). What must hold is the SOURCE, and that is what this
+   * checks: at least one suggestion, and not one of them unexplained.
+   */
+  async expectRecommendedRelated(seedTitle: string): Promise<void> {
+    const items = this.related.getByRole('listitem');
+    await expect(items.first()).toBeVisible({ timeout: 30_000 });
+    await expect(items.filter({ hasNotText: `Shares tags with “${seedTitle}”` })).toHaveCount(0);
+  }
+
+  /**
+   * A suggestion produced by the **tag-search fallback** — the answer W1 shipped, and the one a
+   * signed-out reader (or an un-flagged deployment) still gets. It carries no reason, which is what
+   * distinguishes it here; the assertion is deliberately "no explanation" rather than "no AI",
+   * because that absence is the observable difference.
+   */
+  async expectFallbackRelated(title: string): Promise<void> {
+    const item = this.relatedItem(title);
+    await expect(item).toBeVisible({ timeout: 30_000 });
+    await expect(item).not.toContainText(/Shares tags with|Similar in subject to/);
+  }
+
   async expectAuthorLink(username: string): Promise<void> {
     await expect(
       this.article.getByRole('link', { name: new RegExp(username, 'i') }).first(),

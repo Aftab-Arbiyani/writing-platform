@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test';
 
 import { freshLogin, freshLoginAs } from '../../fixtures/auth';
+import { AI_FLAG_TEST_TIMEOUT_MS, withAiFlags } from '../../fixtures/feature-flags';
 import { test, expect } from '../../fixtures/test';
 import { AssistantPanel } from '../../pages/frontend/assistant-panel';
 import { BillingPage } from '../../pages/frontend/billing-page';
@@ -8,6 +9,7 @@ import { UsagePage } from '../../pages/frontend/billing-detail-pages';
 import { PlansPage } from '../../pages/frontend/plans-page';
 import { CollaboratorsPage } from '../../pages/frontend/collaborators-page';
 import { ReaderPage } from '../../pages/frontend/reader-page';
+import { SearchPage } from '../../pages/frontend/search-page';
 import { SettingsBlocksPage } from '../../pages/frontend/settings-blocks-page';
 import { StoryCommentsPage } from '../../pages/frontend/story-comments-page';
 import { StoryPublishingPage } from '../../pages/frontend/story-publishing-page';
@@ -78,10 +80,47 @@ test.describe('@phase5 @visual frontend (authenticated)', () => {
   test('the AI assistant panel matches its visual baseline', async ({ page }) => {
     // W2/AF2. Viewport, not fullPage: the drawer is fixed to the viewport and the editor behind
     // it is empty here, so a full-page shot would add nothing but height.
-    await page.goto('/write');
-    await expect(page.getByLabel('Title')).toBeVisible({ timeout: 30_000 });
-    await new AssistantPanel(page).open();
-    await expect(page).toHaveScreenshot('frontend-ai-panel.png');
+    //
+    // **Under the AI feature-flag lock, which is new in W5.** These four baselines contain the
+    // panel's flag-DOWN "AI is turned off" state, and that is a property of the seeded flags rather
+    // than of this test — [06 §6] note (a) records the consequence: a local whole-suite run that
+    // mixed @visual with the one flag-raising test could produce a spurious diff. W5 adds three more
+    // flag-raising tests, so "rare race" became "likely"; holding the lock makes the state this
+    // baseline was minted in true for the duration instead of merely usual.
+    // Queues on the AI feature-flag lock, and that wait counts against this test's budget.
+    test.setTimeout(AI_FLAG_TEST_TIMEOUT_MS);
+    await withAiFlags('visual: AI panel (flags down)', async () => {
+      await page.goto('/write');
+      await expect(page.getByLabel('Title')).toBeVisible({ timeout: 30_000 });
+      await new AssistantPanel(page).open();
+      await expect(page).toHaveScreenshot('frontend-ai-panel.png');
+    });
+  });
+
+  /**
+   * The AF4 search surface in the state every deployment ships in (W5, docs/45 §4).
+   *
+   * **Why the refusal and not a result set.** The populated AI panel is the wrong visual subject: its
+   * content is a live ranking over whatever the database holds — candidate counts, scores, other
+   * specs' pieces — so every run would differ in content and in height, and masking enough to stabilise
+   * it would leave nothing but the toggle. The same reasoning already governs `frontend-ai-panel`,
+   * which is deliberately a flag-down baseline ([06 §6]). What IS deterministic and worth pinning here
+   * is the chrome W5 added plus the notice behind it: the engine switch with `AI search` pressed, and
+   * the "AI is turned off" empty state that every un-flagged reader meets.
+   *
+   * The query is a fixed string, not `data.pieceTitle()` — a per-run token changes the field's
+   * rendered width and, on a marginal page height, its wrap point (the reader/comments/suggestions
+   * baselines all drifted that way).
+   */
+  test('the AI search refusal matches its visual baseline', async ({ page }) => {
+    // Queues on the AI feature-flag lock, and that wait counts against this test's budget.
+    test.setTimeout(AI_FLAG_TEST_TIMEOUT_MS);
+    const search = new SearchPage(page);
+    await withAiFlags('visual: AI search off', async () => {
+      await search.gotoQuery('lantern harbour', 'ai');
+      await search.expectAiOff();
+      await expect(page).toHaveScreenshot('frontend-search-ai-off.png', { fullPage: true });
+    });
   });
 
   test('the settings profile page matches its visual baseline', async ({ page }) => {

@@ -1,4 +1,5 @@
 import { freshLogin } from '../../fixtures/auth';
+import { AI_FLAG_TEST_TIMEOUT_MS, withAiFeatures } from '../../fixtures/feature-flags';
 import { test, expect } from '../../fixtures/test';
 import { FeedPage } from '../../pages/frontend/feed-page';
 import { ReaderPage } from '../../pages/frontend/reader-page';
@@ -86,6 +87,68 @@ test.describe('@phase2 frontend reader', () => {
     await page.reload();
     await reader.expectRendered(title);
     expect(await reader.proseFontSize()).toBe(enlarged);
+  });
+
+  /**
+   * "More like this" — the W1 section, upgraded in W5 to prefer the AF4 recommender (docs/45 §4).
+   *
+   * **Two sources render the same section, so the reason is the only observable difference**: the
+   * recommender explains every item, the tag search cannot and shows none. That is what these two
+   * tests pin, in both directions — a regression that silently swapped the sources would be invisible
+   * on screen otherwise, which is exactly why the unit specs pin it too.
+   */
+  test('“More like this” is answered by the AF4 recommender for a signed-in reader', async ({
+    page,
+    api,
+    data,
+  }) => {
+    // Queues on the AI feature-flag lock, and that wait counts against this test's budget.
+    test.setTimeout(AI_FLAG_TEST_TIMEOUT_MS);
+    // A shared tag is what makes this test meaningful: it is the seed for the recommender's
+    // piece-scoped request AND the only input the older fallback has, so both sources CAN answer and
+    // the reason is what says which one did.
+    const tag = `lantern${data.username()}`;
+    const seedTitle = data.pieceTitle();
+    const siblingTitle = data.pieceTitle();
+    const seed = await api.createPublishedPiece({ title: seedTitle, tags: [tag] });
+    await api.createPublishedPiece({ title: siblingTitle, tags: [tag] });
+
+    await freshLogin(page, 'writer');
+    const reader = new ReaderPage(page);
+    await withAiFeatures(
+      ['feature.ai.recommendations.enabled'],
+      'reader: recommended related',
+      async () => {
+        await reader.gotoSlug(seed.slug as string);
+        await reader.expectRendered(seedTitle);
+        // The reason names the SEED piece and the tag it shared, which only the piece-seeded branch
+        // composes (`relatedToPiece`) — the `pieceId` parameter that was advertised on both sides of
+        // the wire and read by nothing until W5 (48 §3.9 W5-2). The sibling exists so the recommender
+        // has something to find; which pieces it ranks first is the ranker's business, not this
+        // spec's (see the page object).
+        await reader.expectRecommendedRelated(seedTitle);
+      },
+    );
+  });
+
+  test('“More like this” degrades to the tag search for an anonymous reader', async ({
+    page,
+    api,
+    data,
+  }) => {
+    // No lock and no flags: every AF4 route needs auth + `ai.use`, so an anonymous reader can never
+    // reach the recommender whatever the flags say — which is the majority of a public reading page's
+    // traffic, and the reason the fallback still exists.
+    const tag = `lantern${data.username()}`;
+    const seedTitle = data.pieceTitle();
+    const siblingTitle = data.pieceTitle();
+    const seed = await api.createPublishedPiece({ title: seedTitle, tags: [tag] });
+    await api.createPublishedPiece({ title: siblingTitle, tags: [tag] });
+
+    const reader = new ReaderPage(page);
+    await reader.gotoSlug(seed.slug as string);
+    await reader.expectRendered(seedTitle);
+    await reader.expectFallbackRelated(siblingTitle);
   });
 
   test('an anonymous reader is sent to sign-in before a like is written', async ({

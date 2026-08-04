@@ -174,12 +174,18 @@ export class ApiHelper {
   /**
    * Create a DRAFT piece as the seeded writer (POST /pieces). `genreSlug` +
    * `languageCode` default to seeded taxonomy so the draft is publishable as-is.
+   *
+   * `tags` are free-form names the taxonomy resolves (creating any that are new). They matter to the
+   * AF4 rows: the recommender seeds a piece-scoped request from the piece's own tags (W5-2), and the
+   * reader's older tag-search fallback needs at least one tag to run at all — so a test that wants to
+   * tell those two sources apart has to arrange a tagged piece.
    */
   async createPiece(input: {
     title: string;
     genreSlug?: string;
     languageCode?: string;
     body?: string;
+    tags?: string[];
   }): Promise<PieceSummary> {
     const res = await this.request.post(this.url('/pieces'), {
       headers: await this.writerHeaders(),
@@ -188,6 +194,7 @@ export class ApiHelper {
         genreSlug: input.genreSlug ?? 'short-story',
         languageCode: input.languageCode ?? 'en',
         content: this.tiptapDoc(input.body ?? `${input.title} — seeded by the E2E suite.`),
+        ...(input.tags !== undefined ? { tags: input.tags } : {}),
       },
     });
     return this.data<PieceSummary>(res);
@@ -211,6 +218,7 @@ export class ApiHelper {
     genreSlug?: string;
     languageCode?: string;
     body?: string;
+    tags?: string[];
   }): Promise<PieceSummary> {
     const draft = await this.createPiece(input);
     return this.publishPiece(draft.id);
@@ -607,6 +615,38 @@ export class ApiHelper {
       headers: { Authorization: `Bearer ${token}` },
     });
     return this.data(res);
+  }
+
+  // ── Retrieval / AF4 (W5) ─────────────────────────────────────────────────────
+
+  /**
+   * Save a search as the seeded writer (`POST /ai/search/saved`).
+   *
+   * Arranging over REST rather than through the dialog, where the dialog is not the subject: the a11y
+   * scan needs a saved ROW to render, and driving the dialog there means closing an animated AntD modal
+   * after `expectNoSeriousA11yViolations` has stopped every animation on the page — which never
+   * completes ([fixtures/a11y.ts]). The dialog's own behaviour is asserted in `ai-search.spec.ts`.
+   *
+   * Requires the AF4 flags raised (every route here is gated on them), so call it inside
+   * `withAiFeatures`. Idempotent by name on the server.
+   */
+  async saveAiSearch(input: {
+    name: string;
+    query: string;
+  }): Promise<{ id: string; name: string }> {
+    const res = await this.request.post(this.url('/ai/search/saved'), {
+      headers: await this.writerHeaders(),
+      data: input,
+    });
+    return this.data<{ id: string; name: string }>(res);
+  }
+
+  /** Delete a saved search (204) — teardown, so the writer's capped list does not accumulate. */
+  async deleteAiSearch(id: string): Promise<void> {
+    const res = await this.request.delete(this.url(`/ai/search/saved/${id}`), {
+      headers: await this.writerHeaders(),
+    });
+    expect(res.ok(), `delete saved search ${id} → ${res.status()}`).toBeTruthy();
   }
 
   /** Read admin audit-log entries (admin+). Assert an admin action was recorded. */

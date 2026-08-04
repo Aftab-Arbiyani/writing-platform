@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 
 import { expectNoSeriousA11yViolations } from '../../fixtures/a11y';
 import { freshLogin } from '../../fixtures/auth';
+import { AI_FLAG_TEST_TIMEOUT_MS, withAiFeatures } from '../../fixtures/feature-flags';
 import { test, expect } from '../../fixtures/test';
 import { EditorPage } from '../../pages/frontend/editor-page';
 import { FeedPage } from '../../pages/frontend/feed-page';
@@ -16,9 +17,11 @@ import { SettingsBlocksPage } from '../../pages/frontend/settings-blocks-page';
 import { StoryCommentsPage } from '../../pages/frontend/story-comments-page';
 import { StoryPublishingPage } from '../../pages/frontend/story-publishing-page';
 import { StorySuggestionsPage } from '../../pages/frontend/story-suggestions-page';
+import { DiscoverPage } from '../../pages/frontend/discover-page';
 import { ProfilePage } from '../../pages/frontend/profile-page';
 import { ReaderPage } from '../../pages/frontend/reader-page';
 import { ResiliencePage } from '../../pages/frontend/resilience-page';
+import { SearchPage } from '../../pages/frontend/search-page';
 import { EditProfilePage } from '../../pages/frontend/settings-page';
 import { LoginPage } from '../../pages/shared/login-page';
 
@@ -233,6 +236,110 @@ test.describe('@phase5 @a11y frontend accessibility (authenticated)', () => {
     await history.goto();
     await history.expectResolved();
     await expectNoSeriousA11yViolations(page, { label: 'frontend /settings/billing/history' });
+  });
+
+  /**
+   * The three AF4 surfaces W5 added (docs/45 §4). Each is scanned **populated**, because the parts
+   * worth scanning only exist once the retrieval platform has answered: the ranking line states its
+   * relevance in sr-only text beside a bar that conveys nothing on its own, the related-entity and
+   * evidence lists are labelled `ul`s, and the type tags are tinted `QTag`s — the class of defect
+   * [10 §8.4] exists for, and the reason these run in the `frontend-dark` project too.
+   *
+   * They hold the AI feature-flag lock ([fixtures/feature-flags.ts]) because the flags are global rows
+   * that `assistant.spec.ts` asserts are down.
+   */
+  test('AI search results have no critical/serious a11y violations', async ({
+    page,
+    api,
+    data,
+  }) => {
+    // Queues on the AI feature-flag lock, and that wait counts against this test's budget.
+    test.setTimeout(AI_FLAG_TEST_TIMEOUT_MS);
+    const token = data.username();
+    const title = `Lantern ${token} at the harbour`;
+    await api.createPublishedPiece({ title, body: 'The lantern swung over black water.' });
+
+    const search = new SearchPage(page);
+    await withAiFeatures(['feature.ai.semanticSearch.enabled'], 'a11y: AI search', async () => {
+      await search.gotoQuery(`Lantern ${token}`, 'ai');
+      await search.expectGroundedResult(title);
+      await expectNoSeriousA11yViolations(page, { label: 'frontend /search?mode=ai' });
+
+      // The save dialog, scanned OPEN — it carries the feature's only text input, and a modal is
+      // where a missing label or a focus trap actually costs a reader the flow.
+      //
+      // Then NAVIGATED away from rather than closed, and that is not fastidiousness: the scan above
+      // stops every animation on the page ([fixtures/a11y.ts] injects `animation-duration: 0s`), and
+      // AntD's modal removes itself on the `animationend` of its zoom-leave — which a 0s animation
+      // never fires. Closing it here left the dialog in `ant-zoom-leave-active` indefinitely (measured:
+      // 62 polls over 30 s). A full navigation is the only reliable dismissal after a scan.
+      await search.openSaveDialog();
+      await expectNoSeriousA11yViolations(page, { label: 'frontend /search save dialog' });
+
+      // The saved LIST is a different surface, and its row is arranged over REST for the same reason
+      // — the dialog is not the subject here, and `ai-search.spec.ts` already drives it end to end.
+      const saved = await api.saveAiSearch({
+        name: `Lanterns ${token}`,
+        query: `Lantern ${token}`,
+      });
+      await search.goto();
+      await search.expectSaved(`Lanterns ${token}`);
+      await expectNoSeriousA11yViolations(page, { label: 'frontend /search saved list' });
+      // Leave the account as it was found: saved searches are per-user, server-side and capped at 50.
+      await api.deleteAiSearch(saved.id);
+    });
+  });
+
+  test('the discover recommendation shelves have no critical/serious a11y violations', async ({
+    page,
+    api,
+    data,
+  }) => {
+    // Queues on the AI feature-flag lock, and that wait counts against this test's budget.
+    test.setTimeout(AI_FLAG_TEST_TIMEOUT_MS);
+    await api.createPublishedPiece({ title: data.pieceTitle() });
+
+    const discover = new DiscoverPage(page);
+    await withAiFeatures(
+      ['feature.ai.recommendations.enabled'],
+      'a11y: discover shelves',
+      async () => {
+        await discover.goto();
+        await discover.expectRecommendationShelf(
+          'Recommended for you',
+          'Recommended for you from across Qalam',
+        );
+        await expectNoSeriousA11yViolations(page, { label: 'frontend /discover + AF4 shelves' });
+      },
+    );
+  });
+
+  test('the reader’s recommended related section has no critical/serious a11y violations', async ({
+    page,
+    api,
+    data,
+  }) => {
+    // Queues on the AI feature-flag lock, and that wait counts against this test's budget.
+    test.setTimeout(AI_FLAG_TEST_TIMEOUT_MS);
+    // The reader page is already scanned above, but on an untagged piece — which renders no related
+    // section at all. This scans the state W5 introduced: suggestions that carry an explanation.
+    const tag = `lantern${data.username()}`;
+    const seedTitle = data.pieceTitle();
+    const seed = await api.createPublishedPiece({ title: seedTitle, tags: [tag] });
+    const siblingTitle = data.pieceTitle();
+    await api.createPublishedPiece({ title: siblingTitle, tags: [tag] });
+
+    const reader = new ReaderPage(page);
+    await withAiFeatures(
+      ['feature.ai.recommendations.enabled'],
+      'a11y: reader related',
+      async () => {
+        await reader.gotoSlug(seed.slug as string);
+        await reader.expectRendered(seedTitle);
+        await reader.expectRecommendedRelated(seedTitle);
+        await expectNoSeriousA11yViolations(page, { label: 'frontend /p/:slug + More like this' });
+      },
+    );
   });
 
   test('the not-found page has no critical/serious a11y violations', async ({ page, data }) => {

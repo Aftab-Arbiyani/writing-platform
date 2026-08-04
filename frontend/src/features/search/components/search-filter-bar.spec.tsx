@@ -35,6 +35,7 @@ function makeParams(over: Partial<UseSearchQueryParamsResult> = {}): UseSearchQu
     hasActiveFilters: false,
     setQuery: vi.fn(),
     setMode: vi.fn(),
+    setSearch: vi.fn(),
     setType: vi.fn(),
     setSort: vi.fn(),
     setLanguage: vi.fn(),

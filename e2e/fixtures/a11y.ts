@@ -82,6 +82,13 @@ function formatViolations(violations: readonly AxeViolation[]): string {
 /**
  * Run axe on `page` and assert **zero** critical/serious WCAG A/AA violations. Call once
  * the page has reached a stable, data-loaded state ([10 §4.2]) — a mid-load scan is noise.
+ *
+ * **After calling this, never wait for an animated overlay to CLOSE on the same page.** The style tag
+ * below sets `animation-duration: 0s`, and rc-motion (AntD's Modal/Drawer/Popover) removes an exiting
+ * element on its `animationend` — which a zero-duration animation does not fire. A dialog closed after
+ * a scan therefore stays in `ant-zoom-leave-active` forever; the W5 AI-search scan lost 30 s to exactly
+ * that before it was changed to navigate away instead (docs/48 §3.9). Open overlays are fine to SCAN —
+ * that is the point — but dismiss them with a navigation.
  */
 export async function expectNoSeriousA11yViolations(
   page: Page,

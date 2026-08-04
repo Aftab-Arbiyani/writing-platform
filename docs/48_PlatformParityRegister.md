@@ -1287,6 +1287,106 @@ returns results) and in `recommendation.service.spec.ts` (the recommender opts o
 **Not fixed, and deliberately:** `KeywordRetriever` still records, because there the query IS the user's own
 search text — recording it is the feature, not a bug.
 
+### W5-6 · ~~**high**~~ · **CLOSED 2026-08-04** · a signed-out reader's piece page never rendered, because W5 put an authenticated read on it
+
+**Found by the W5 Phase-3 browser run, on tests that predate W5** — every anonymous `reader.spec.ts` case
+went red, and the screenshot showed the reading page stuck in its skeleton with the piece read having
+already succeeded.
+
+W5 moved the AI gate to an app-level hook (`frontend/src/hooks/use-ai-availability.ts`) so three features
+could share one cached read, and `useRelatedPieces` calls it unconditionally — hooks cannot be conditional.
+Both of its endpoints require a session. So a public reading page began issuing `GET /ai/features` and
+`GET /ai/usage/me` for visitors who have none, and **a 401 outside `/auth/*` is terminal to the api
+client**: one silent `/auth/refresh` (401 again — there is no cookie), then `onUnauthorized()`, which calls
+`expireSession()` **and `queryClient.clear()`** (`app/providers.tsx:44`). The cleared cache took the piece
+with it, and the reader sat in a skeleton indefinitely.
+
+Measured in one run of the backend log: **35 anonymous 401s on `/ai/features`, 35 on `/ai/usage/me`, 26
+failed refreshes.** The same defect was live on `/search?mode=ai`, which is also public.
+
+**Fixed at the gate, not at the consumers:** the hook resolves `signed-out` and issues **no request** when
+the session is not authenticated. `signed-out` is a new `AiAvailability` state (it could not be `unknown`,
+which renders a skeleton, nor `off`, which claims the instance has AI disabled), with copy — "Sign in to use
+AI search. Keyword search works without signing in." — and the only action that resolves it, a sign-in
+button carrying the full search URL as `returnTo`. Every AF4 read is already gated on
+`availability === 'available'`, so one change closes all of them.
+
+Covered by `src/hooks/use-ai-availability.spec.tsx` (asserting `get` is **never called** without a session,
+which is the property that matters) and by `ai-search.spec.ts`'s two signed-out E2E tests.
+
+### W5-7 · ~~**medium**~~ · **CLOSED 2026-08-04** · re-running a saved search silently used the wrong engine
+
+`SearchPage.runSavedQuery` called `params.setMode('ai')` then `params.setQuery(query)`. Both patch the URL
+through a functional `setSearchParams`, and within one handler both receive the **same** pre-navigation
+snapshot — React has not re-rendered in between — so the second write dropped `mode=ai`. A saved AF4 search
+therefore re-ran in **keyword** mode: the reader's saved question answered by a different engine and called
+the same search, which is precisely what the "saved searches switch engine" rule exists to prevent.
+
+Fixed with a single `setSearch(q, mode)` on `useSearchQueryParams` (one `update`, both keys). Three specs in
+`use-search-query-params.spec.tsx` cover it, including one that documents the two-setter shape as the hazard
+it is. **Invisible to a unit test that stubs the router** — it took a browser.
+
+### W5-8 · ~~**medium**~~ · **CLOSED 2026-08-04** · "Explain these results" produced no answer, because the cached retrieval plan outranked the request
+
+Also from the Phase-3 run. `SemanticSearchService.search` gated synthesis on `result.plan.synthesize`, and
+the plan travels **inside the cached `RetrievalResult`** whose key (`RetrievalCacheService.key`) does not
+include `synthesize` — correctly, since the retrieval half is identical either way. So for 120 s
+(`RETRIEVAL_CACHE_TTL_SECONDS`) whichever value arrived first won: a reader who loaded results and _then_
+pressed "Explain these results" hit their own cached plan saying "no synthesis" and got **no answer, no
+error, and a toggle showing on**.
+
+Reproduced over the wire (same query, seconds apart, on the existing database):
+
+```
+1st call, synthesize omitted   → answer: null
+2nd call, synthesize:true      → answer: null      ← the defect
+1st call WITH synthesize:true  → answer: "This paragraph came from the stub AI provider…"
+```
+
+**Fixed by asking the config, not the cached plan:** `plan.synthesize` is
+`config.synthesisEnabled && request.synthesize === true`, so the only thing it carried beyond the request is
+the admin switch — read directly from `RetrievalConfigService` (Redis-cached, so it costs nothing the plan
+was saving). Two specs added: synthesis on a request whose cached plan says no, and the admin switch still
+refusing. No new cache entries, and a request-scoped decision no longer rides in a shared cached object.
+
+### W5-9 · harness · the E2E suite could not hold two spec files to one opinion about a global flag
+
+Not a product defect; recorded because the fix is now load-bearing for four spec files. The AI feature flags
+are single global rows and the suite is `fullyParallel`; `assistant.spec.ts` asserted them DOWN while W5's
+three surfaces raise them from other files, which no `describe.serial` can order.
+
+`e2e/fixtures/feature-flags.ts` adds a cross-worker mutex (an atomic lock **directory** under
+`e2e/.stack/`, stale-broken after 3 min) with two entry points — `withAiFeatures` (raise + restore) and
+`withAiFlags` (assert the dark state, or screenshot a flag-dependent baseline). Three properties were forced
+by what the live run did:
+
+1. **The restore runs on its own `APIRequestContext`,** not the test's `api` fixture. The first run's
+   AI-search test exceeded the 30 s default timeout, Playwright tore its context down, and the `finally`
+   failed with "Target page, context or browser has been closed" — leaving the master flag raised, which
+   then failed every flag-down assertion in the run for a reason unrelated to the code under test.
+2. **Lock-taking tests carry `AI_FLAG_TEST_TIMEOUT_MS`,** because the queue wait is spent inside the test:
+   a test parked on the lock burns its own budget and would fail as a timeout without running an assertion.
+3. **The two flag-dependent visual baselines take the lock too** (`frontend-ai-panel`,
+   `frontend-search-ai-off`). Both encode the flag-DOWN surface, which [e2e/06 §6] note (a) already flagged
+   as a local hazard; W5 raised the number of flag-raising tests from one to four, so "rare race" became
+   "likely".
+
+### W5-10 · harness · two flakes the W5 specs introduced, both fixed by asserting something truer
+
+Recorded because each is a pattern, not a one-off:
+
+- **A modal closed after an axe scan never disappears.** `fixtures/a11y.ts` injects
+  `animation-duration: 0s` and rc-motion removes an exiting element on `animationend`, which a
+  zero-duration animation does not fire — the save dialog stayed in `ant-zoom-leave-active` for 30 s
+  (62 polls). The a11y spec now scans the dialog **open** and dismisses it by navigating; the rule is
+  documented on `expectNoSeriousA11yViolations` itself. The save flow also waits for the `POST` response
+  before the dialog assertion, so a slow write no longer reads as "the dialog did not close".
+- **Asserting the ranker's output is not asserting the feature.** The reader's recommender test demanded
+  its own sibling piece among the top four, but the piece-seeded branch ranks by relevance over the whole
+  corpus — thousands of E2E pieces sharing title tokens on a long-lived database — so it failed about one
+  run in six while the feature worked perfectly (the reason line named the right seed and tag every time).
+  It now asserts the **source**: at least one suggestion, and not one of them unexplained.
+
 ---
 
 ## 4. Divergences that are NOT gaps (platform-inherent)

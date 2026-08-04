@@ -12,6 +12,8 @@ pages/
              drafts-page.ts       # writer dashboard: status tabs, per-row Edit
              feed-page.ts         # Latest feed: load, infinite-scroll paginate, open, visible/absent
              search-palette.ts    # command palette: open, type, piece suggestion → /p/:slug
+             search-page.ts       # /search: engine toggle, AF4 results + grounding, suggestions, saved searches (W5)
+             discover-page.ts     # /discover: editorial sections + the two AF4 recommendation shelves (W5)
              profile-page.ts      # own/other profile, edit link, follow
              settings-page.ts     # Edit profile + change password
              notifications-page.ts# in-app inbox (reload-retry for post-commit events)
@@ -19,6 +21,13 @@ pages/
              moderation-page.ts   # /reports queue: resolve (DecisionDialog)
              audit-page.ts        # /audit-logs: search + assert action code
 ```
+
+## Fixtures worth knowing about
+
+| Fixture                     | What it is for                                                                                                                                                                                                                                                                                                                                      |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `fixtures/feature-flags.ts` | The **AI feature-flag mutex** (W5). Four spec files disagree about those global rows; `withAiFeatures` raises + restores under the lock, `withAiFlags` holds the dark state, and every lock-taking test adopts `AI_FLAG_TEST_TIMEOUT_MS` because the queue wait is spent inside the test ([48 §3.9 W5-9](../../docs/48_PlatformParityRegister.md)). |
+| `fixtures/a11y.ts`          | The axe wrapper + the known-debt register. Note its rule about **not closing an animated overlay after a scan** ([10 §4.2](../../docs/e2e/10_UIQuality.md)).                                                                                                                                                                                        |
 
 ## data-testid inventory (docs/e2e/05 §3.4)
 

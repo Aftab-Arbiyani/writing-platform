@@ -2,6 +2,8 @@ import { RetrievalIntent, RetrievalQueryType, RetrievalSource } from '@qalam/sha
 
 import type { AiCompletionService, AiFeatureService } from '../../ai';
 import type { RetrievalCacheService } from '../retrieval-cache.service';
+import type { RetrievalConfigService } from '../retrieval-config.service';
+import { DEFAULT_RETRIEVAL_CONFIG } from '../retrieval.constants';
 import type { RetrievalService } from '../retrieval.service';
 import type { RankedCandidate, RetrievalResult } from '../retrieval.types';
 import type { RetrievalTelemetryService } from '../observability/retrieval-telemetry.service';
@@ -72,7 +74,7 @@ function resultFixture(synthesize: boolean): RetrievalResult {
   };
 }
 
-function makeService(result: RetrievalResult) {
+function makeService(result: RetrievalResult, synthesisEnabled = true) {
   const retrieval = {
     retrieve: jest.fn().mockResolvedValue(result),
   } as unknown as RetrievalService;
@@ -94,8 +96,11 @@ function makeService(result: RetrievalResult) {
   const telemetry = {
     record: jest.fn().mockResolvedValue(undefined),
   } as unknown as RetrievalTelemetryService;
+  const config = {
+    getConfig: jest.fn().mockResolvedValue({ ...DEFAULT_RETRIEVAL_CONFIG, synthesisEnabled }),
+  } as unknown as RetrievalConfigService;
   return {
-    service: new SemanticSearchService(retrieval, completion, features, cache, telemetry),
+    service: new SemanticSearchService(retrieval, completion, features, cache, telemetry, config),
     complete,
     assertEnabled,
     telemetry,
@@ -127,5 +132,31 @@ describe('SemanticSearchService', () => {
     expect(input.promptKey).toBe('semantic_search.answer');
     expect(input.promptVariables.context).toBe('CTX'); // grounded on assembled context, not raw query
     expect(res.answer).toBe('A grounded answer.');
+  });
+
+  /**
+   * The defect the W5 browser run found (docs/48 §3.9 W5-8): synthesis used to be gated on
+   * `result.plan.synthesize`, and the plan rides inside the CACHED retrieval result whose key has no
+   * `synthesize` in it. So a reader who loaded results and then pressed "Explain these results" hit the
+   * plan cached by their own first request — `synthesize: false` — and never got an answer.
+   *
+   * The fixture below is exactly that state: a cached plan that says no, a request that says yes.
+   */
+  it('synthesises on the REQUEST, not on a cached plan that predates it', async () => {
+    const { service, complete } = makeService(resultFixture(false));
+    const res = await service.search('u1', { query: 'who is aria', synthesize: true });
+
+    expect(complete).toHaveBeenCalledTimes(1);
+    expect(res.answer).toBe('A grounded answer.');
+  });
+
+  it('still refuses synthesis when the admin switch is off', async () => {
+    // The one thing `plan.synthesize` carried that the request does not — read from the config
+    // directly, so it keeps working and keeps being request-scoped.
+    const { service, complete } = makeService(resultFixture(true), false);
+    const res = await service.search('u1', { query: 'who is aria', synthesize: true });
+
+    expect(complete).not.toHaveBeenCalled();
+    expect(res.answer).toBeNull();
   });
 });

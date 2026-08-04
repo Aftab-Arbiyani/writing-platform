@@ -1,7 +1,7 @@
 import { QButton, QEmptyState } from '@qalam/ui';
-import { Ban, Gauge, Sparkles } from 'lucide-react';
+import { Ban, Gauge, LogIn, Sparkles } from 'lucide-react';
 import type { ReactElement } from 'react';
-import { useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 
 import { ROUTES } from '@/lib/routes';
 
@@ -12,6 +12,7 @@ const ICONS = {
   'feature-off': Ban,
   quota: Gauge,
   upgrade: Sparkles,
+  'signed-out': LogIn,
 } as const;
 
 /**
@@ -37,9 +38,18 @@ export function AiAvailabilityNotice({
   availability: AiAvailability;
 }): ReactElement | null {
   const navigate = useNavigate();
+  const location = useLocation();
   if (availability === 'available' || availability === 'unknown') return null;
 
   const copy = AVAILABILITY_COPY[availability];
+  /**
+   * **W5 adds the second state that carries an action**, and it is the one a reader meets most often:
+   * every AF4 route needs a session, and the public search page is where a signed-out reader lands.
+   * `returnTo` carries the whole location — query string included — because on this page the query,
+   * the engine and the filters all live in the URL, so dropping it would return the reader to an empty
+   * search rather than to the one they were running.
+   */
+  const signIn = `${ROUTES.login}?returnTo=${encodeURIComponent(`${location.pathname}${location.search}`)}`;
   return (
     <QEmptyState
       icon={ICONS[availability]}
@@ -56,6 +66,16 @@ export function AiAvailabilityNotice({
             }}
           >
             See plans
+          </QButton>
+        ) : availability === 'signed-out' ? (
+          <QButton
+            variant="primary"
+            size="sm"
+            onClick={() => {
+              void navigate(signIn);
+            }}
+          >
+            Sign in
           </QButton>
         ) : undefined
       }

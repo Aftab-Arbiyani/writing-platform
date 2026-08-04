@@ -33,8 +33,17 @@ import type { AiFeature, AiFeaturesResponse, AiUsageResponse } from '@qalam/api-
  * this feature reading `GET /monetization/entitlements`, which is another feature's endpoint
  * (docs/26 §4) — so instead it is recognised from the code the failed request returns, which is the
  * same mechanism the other three already use as their fallback.
+ *
+ * **`signed-out` is the fifth, and W5 made it necessary.** Until W5 every AI surface lived behind an
+ * authenticated route, so "no session" was not a state any of them could be in. W5 puts AI surfaces on
+ * two PUBLIC pages — `/search?mode=ai` and the reader's "More like this" — where the majority of
+ * traffic has no session at all. Resolving that case to `unknown` (which is what an unauthenticated
+ * gate read produced) was actively harmful: the gate reads 401, and a 401 on a non-`/auth` route is a
+ * terminal session failure to the api client, which clears the whole query cache — taking the piece
+ * the reader came for with it. Naming the state is what lets the hook skip the requests entirely.
  */
-export type AiAvailability = 'available' | 'off' | 'feature-off' | 'quota' | 'upgrade' | 'unknown';
+export type AiAvailability =
+  'available' | 'off' | 'feature-off' | 'quota' | 'upgrade' | 'signed-out' | 'unknown';
 
 /**
  * A window is exhausted when it has a cap and has reached it. Unlimited windows never are.
@@ -117,6 +126,13 @@ export const AVAILABILITY_COPY: Record<
     title: 'You’ve used your AI allowance',
     description:
       'Your allowance resets at the start of the next period. Your writing is unaffected.',
+  },
+  // W5. Every AF4 route needs `ai.use`, which no anonymous visitor holds — so on the two public
+  // surfaces (AI search, "More like this") this is the honest answer, and unlike the others it is
+  // resolved WITHOUT a request: see the note on `signed-out` above for what asking costs.
+  'signed-out': {
+    title: 'Sign in to use AI search',
+    description: 'AI search runs on your account. Keyword search works without signing in.',
   },
   // The only blocked state with an action attached, because it is the only one the writer can resolve
   // themselves. The others are waiting or an admin; this one is a plan.

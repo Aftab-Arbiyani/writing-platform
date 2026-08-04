@@ -62,6 +62,14 @@ drawer, a piece page, profile, settings, one error/empty state; admin login, das
 edit modal, moderation queue, one analytics dashboard. A screenshot-per-test suite is unmaintainable —
 resist it.
 
+**Pick the deterministic state of a feature, not its richest one** (added 2026-08-04, W5). AF4 search
+contributes `frontend-search-ai-off` — the engine toggle plus the "AI is turned off" notice — and NOT a
+populated result set: those results are a live ranking over whatever the database holds, so their content
+and their height differ every run, and masking enough to stabilise them would leave only the chrome. This is
+the same reasoning that makes `frontend-ai-panel` a flag-DOWN baseline ([06 §6](./06_PhasePlan.md)), and both
+of those tests hold the AI feature-flag lock so the state they encode is guaranteed rather than usual
+([48 §3.9 W5-9](../48_PlatformParityRegister.md)).
+
 ---
 
 ## 3. Responsive
@@ -138,6 +146,13 @@ test('feed has no critical/serious a11y violations @phase5 @a11y', async ({ page
   `page.keyboard` spec, complementary to axe (axe doesn't test tab order).
 - Findings that are genuine-but-deferred get an issue + an `axe` disable with a linked reason — never a
   silent skip.
+- **Never wait for an animated overlay to CLOSE after a scan** (added 2026-08-04, W5). The helper stops
+  every animation on the page, and rc-motion (AntD Modal/Drawer/Popover) removes an exiting element on
+  `animationend` — which a zero-duration animation never fires, so a dialog closed after a scan stays in
+  `ant-zoom-leave-active` indefinitely. Scanning an overlay **open** is encouraged (it is the densest
+  interactive surface most features have); dismiss it with a navigation, and arrange whatever the next
+  scan needs over REST. Cost of learning this the hard way: a 30 s red in the AF4 search scan
+  ([48 §3.9 W5-10](../48_PlatformParityRegister.md)).
 
 ---
 

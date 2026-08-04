@@ -7,6 +7,7 @@ import type { SemanticSearchDto } from '../dto/retrieval-request.dto';
 import type { SemanticSearchResponseDto } from '../dto/retrieval-response.dto';
 import { RetrievalTelemetryService } from '../observability/retrieval-telemetry.service';
 import { RetrievalCacheService } from '../retrieval-cache.service';
+import { RetrievalConfigService } from '../retrieval-config.service';
 import { RETRIEVAL_CACHE_TTL_SECONDS } from '../retrieval.constants';
 import { RetrievalService } from '../retrieval.service';
 import type { RetrievalRequest, RetrievalResult } from '../retrieval.types';
@@ -27,6 +28,7 @@ export class SemanticSearchService {
     private readonly features: AiFeatureService,
     private readonly cache: RetrievalCacheService,
     private readonly telemetry: RetrievalTelemetryService,
+    private readonly config: RetrievalConfigService,
   ) {}
 
   async search(userId: string, dto: SemanticSearchDto): Promise<SemanticSearchResponseDto> {
@@ -68,7 +70,20 @@ export class SemanticSearchService {
     let answer: string | null = null;
     let llmLatencyMs = 0;
     let tokenUsage = 0;
-    if (dto.synthesize === true && result.plan.synthesize && result.candidates.length > 0) {
+    /**
+     * **Whether to synthesise is decided from THIS request plus the admin switch — never from the
+     * cached plan.**
+     *
+     * `plan.synthesize` is `config.synthesisEnabled && request.synthesize === true`, and the plan
+     * travels inside the cached `RetrievalResult` whose key does not include `synthesize` (nor should
+     * it: the retrieval half is identical either way). So the first caller of a query fixed the answer
+     * for the next 120 s — a reader who loaded results and *then* asked for an explanation got a
+     * cached plan saying "no synthesis" and no answer at all, with the toggle showing on and nothing
+     * to report. Found live by the W5 E2E run (docs/48 §3.9 W5-8); the config read is Redis-cached, so
+     * asking it here costs nothing the cached plan was saving.
+     */
+    const synthesisEnabled = (await this.config.getConfig()).synthesisEnabled;
+    if (dto.synthesize === true && synthesisEnabled && result.candidates.length > 0) {
       const llmStart = Date.now();
       const output = await this.completion.complete({
         userId,

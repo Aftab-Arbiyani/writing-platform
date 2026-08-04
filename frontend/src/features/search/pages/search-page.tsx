@@ -51,8 +51,9 @@ export function SearchPage(): ReactElement {
    */
   const runSavedQuery = (query: string): void => {
     recent.record(query);
-    params.setMode('ai');
-    params.setQuery(query);
+    // ONE navigation, not two: `setMode` + `setQuery` in the same handler both patch the same
+    // pre-navigation URL, so the second silently dropped the engine (docs/48 §3.9 W5-7).
+    params.setSearch(query, 'ai');
   };
 
   const onKeyDown = (event: KeyboardEvent<HTMLInputElement>): void => {
