@@ -53,6 +53,15 @@ const CHROMIUM_TABLET = {
  */
 export default defineConfig({
   testDir: './tests',
+  /**
+   * The run starts and ends with every AI feature flag DARK — the state AF1 seeds and the majority of
+   * these specs assert (`setup/ai-flags.global.ts`). The per-test mutex restores flags it raised, but a
+   * worker killed mid-test runs no `finally` at all, and a leaked raised flag then fails the next run's
+   * flag-down assertions for a reason unrelated to the code under test. These two hooks make that
+   * unrecoverable-by-design case recoverable.
+   */
+  globalSetup: './setup/ai-flags.global.ts',
+  globalTeardown: './setup/ai-flags.teardown.ts',
   fullyParallel: true,
   forbidOnly: CI, // a stray test.only fails CI, never silently narrows the run
   retries: CI ? 2 : 0, // retry only in CI; locally a flake must be seen

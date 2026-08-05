@@ -83,6 +83,30 @@ describe('SearchFilterBar', () => {
     expect(screen.queryByRole('button', { name: 'Filters' })).not.toBeInTheDocument();
   });
 
+  /**
+   * AI mode (W5). The engine has no scope tabs — it answers mixed entity types — so the bar cannot be
+   * gated on one, and it may only offer what `SemanticSearchDto` accepts (48 §3.9 W5-11).
+   */
+  it('offers language + genre in AI mode, where the default tab would have hidden every filter', () => {
+    renderWithProviders(
+      <SearchFilterBar params={makeParams({ mode: 'ai', type: SearchType.All })} />,
+    );
+    expect(screen.getByText('Language')).toBeInTheDocument();
+    expect(screen.getByText('Genre')).toBeInTheDocument();
+  });
+
+  it('hides the keyword-only filters in AI mode even when the tab says pieces', () => {
+    // The state a reader reaches by filtering on the Pieces tab and then switching engines: `type`
+    // stays in the URL, and reading-time / date / sort would render controls AF4 ignores.
+    renderWithProviders(
+      <SearchFilterBar params={makeParams({ mode: 'ai', type: SearchType.Pieces })} />,
+    );
+    expect(screen.getByText('Language')).toBeInTheDocument();
+    expect(screen.queryByText('Reading time')).not.toBeInTheDocument();
+    expect(screen.queryByText('Any time')).not.toBeInTheDocument();
+    expect(screen.queryByText('Most relevant')).not.toBeInTheDocument();
+  });
+
   it('clears filters when Clear is pressed', () => {
     const params = makeParams({ hasActiveFilters: true });
     renderWithProviders(<SearchFilterBar params={params} />);

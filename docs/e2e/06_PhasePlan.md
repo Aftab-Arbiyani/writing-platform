@@ -495,6 +495,18 @@ border-box`, so every `w-full` + `px-*` container overflowed by exactly its padd
   `tests/**/*-snapshots/`; CI verifies them in that **same image** via a container job (`web-e2e.yml`
   `web-e2e-visual`), with a `workflow_dispatch` input to regenerate + review in-PR ([10 §2.2, §5]).
 
+  **Count as of 2026-08-04: 76 committed** (64 frontend + 12 admin), grown by W3, W4 and W5. W5 adds one
+  spec — `frontend-search-ai-off`, the AI-search refusal — whose four baselines are **not committed yet**: a
+  new visual spec is red until this workflow mints them ([10 §8.3](./10_UIQuality.md)), and that red is the
+  correct state, not a gap. Re-verified in the pinned image on the W5 commit: **13 of the 16 frontend
+  baselines match byte-for-byte** in `frontend-chromium` and `frontend-dark`. The other three
+  (`frontend-comments`, `frontend-suggestions`, `frontend-collaborators`) do **not** reproduce on a
+  developer host — the whole page renders ~21px lower in one shot than the other, the offset class §2.2
+  documents for pages marginally past the fold — and the failing subset changes per run, so they are flaky
+  locally rather than drifted ([51 §4](../51_WebDiscoverySearchReadinessReport.md)). Firefox, WebKit and the
+  admin projects were not re-verified locally; CI's visual job covers all eight, and W5 changed no admin
+  surface.
+
 **Still open after Phase 5 (2026-07-27):** the release-gate write-up now exists
 ([docs/22 — Browser E2E](../22_ReleaseChecklist.md)), and two defects that made the workflow
 un-runnable are fixed (unreachable `main`-only trigger; backend started before migrations, which

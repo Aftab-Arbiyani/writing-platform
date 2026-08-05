@@ -1,6 +1,11 @@
 # 48 — Platform Parity Register (web ↔ mobile)
 
-**Status:** 🔒 Binding · **Owner:** every client epic · **Last swept:** 2026-08-03 (after the **mobile
+**Status:** 🔒 Binding · **Owner:** every client epic · **Last swept:** 2026-08-04 (after **W5's
+close-out** — the AF4 discovery/search row. **§2 row 3 halves**: web now has semantic search + AI
+discovery, and the sweep found that **ask-book is owned by nobody** (§5). Three defects W5 introduced
+and fixed are §3.9 W5-6…W5-8, one the sweep itself found is **W5-11**, and four arrangement
+differences the epic's code claimed were "recorded" are now actually in §4.1 — they were not.
+[Report](./51_WebDiscoverySearchReadinessReport.md).) Previously swept 2026-08-03 (after the **mobile
 parity batch** — **M-4, M5-1, M5-2, M5-4, M5-5 and M5-6 all CLOSED**. The first three closed the last
 AF5/AF6 surfaces where the two clients differed; the other three were opened and closed in the same
 pass, and **§2 row 2 — Monetization — is now at full parity, prose included**. One row left open:
@@ -43,17 +48,17 @@ epic now has to reconcile.
 Measured from `lib/features/**/presentation/screens` and `frontend/src/features/**/pages` plus route
 tables, not assumed.
 
-| #   | Area                  | Mobile has                                                                                                               | Web has                                                                                                                                      | Closed by                                                                                                                 |
-| --- | --------------------- | ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| 1   | **Collaboration**     | 6 screens: collaborators, comments, invitations inbox, publishing workflow, restricted state, suggestions                | nothing                                                                                                                                      | **W3**                                                                                                                    |
-| 2   | ~~**Monetization**~~  | 5 screens: plans, subscription, billing history, credit dashboard, usage dashboard                                       | ✅ **all five** (W4) — **fully at parity since 2026-08-03**: the coupon field (M5-2) and the two missing history tabs (M5-6) are now on both | **W4 ✅ closed 2026-07-29** — [report](./50_WebMonetizationReadinessReport.md)                                            |
-| 3   | **AI breadth**        | 8 screens: conversation, conversations list, discovery, usage, ask-book, prompt library, semantic search, story explorer | in-editor assistant + Craft Coach only (W2)                                                                                                  | **W5** (discovery/search/ask), **W6** (story explorer); conversations + prompt library + AI usage **unassigned — see §5** |
-| 4   | **Social depth**      | collections, collection detail, comments, responses (+ followers, follow requests)                                       | follow requests; followers via a dialog                                                                                                      | **unassigned — see §5**                                                                                                   |
-| 5   | **Reader actions**    | clap (1..50 accumulating) and report, on the reader action bar                                                           | like, bookmark, copy-link share                                                                                                              | **unassigned — see §5**                                                                                                   |
-| 6   | **Reading analytics** | `reading_analytics_screen` — the _reader's_ own stats                                                                    | writer + per-piece analytics only                                                                                                            | **unassigned — see §5**                                                                                                   |
-| 7   | **Onboarding**        | `onboarding_screen` — first-run flow                                                                                     | nothing                                                                                                                                      | **unassigned — see §5**                                                                                                   |
-| 8   | **Privacy prefs**     | dedicated privacy screen: private account, **show bookmarks count**, **show reading-history count**                      | private-notebook toggle inside edit-profile                                                                                                  | **unassigned — small, see §5**                                                                                            |
-| 9   | **Offline behaviour** | engagement + follow taken offline are queued and reconciled by a unified `SyncEngine`                                    | no offline write queue                                                                                                                       | **see §4** (partly platform-inherent)                                                                                     |
+| #   | Area                  | Mobile has                                                                                                               | Web has                                                                                                                                           | Closed by                                                                                                                                                     |
+| --- | --------------------- | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **Collaboration**     | 6 screens: collaborators, comments, invitations inbox, publishing workflow, restricted state, suggestions                | nothing                                                                                                                                           | **W3**                                                                                                                                                        |
+| 2   | ~~**Monetization**~~  | 5 screens: plans, subscription, billing history, credit dashboard, usage dashboard                                       | ✅ **all five** (W4) — **fully at parity since 2026-08-03**: the coupon field (M5-2) and the two missing history tabs (M5-6) are now on both      | **W4 ✅ closed 2026-07-29** — [report](./50_WebMonetizationReadinessReport.md)                                                                                |
+| 3   | **AI breadth**        | 8 screens: conversation, conversations list, discovery, usage, ask-book, prompt library, semantic search, story explorer | assistant + Craft Coach (W2), **semantic search + AI discovery shelves (W5 ✅ 2026-08-04)** — [report](./51_WebDiscoverySearchReadinessReport.md) | **W5 closed discovery + search**; **W6** (story explorer, held); conversations + prompt library + AI usage → **W8**; **ask-book is owned by NOBODY — see §5** |
+| 4   | **Social depth**      | collections, collection detail, comments, responses (+ followers, follow requests)                                       | follow requests; followers via a dialog                                                                                                           | **unassigned — see §5**                                                                                                                                       |
+| 5   | **Reader actions**    | clap (1..50 accumulating) and report, on the reader action bar                                                           | like, bookmark, copy-link share                                                                                                                   | **unassigned — see §5**                                                                                                                                       |
+| 6   | **Reading analytics** | `reading_analytics_screen` — the _reader's_ own stats                                                                    | writer + per-piece analytics only                                                                                                                 | **unassigned — see §5**                                                                                                                                       |
+| 7   | **Onboarding**        | `onboarding_screen` — first-run flow                                                                                     | nothing                                                                                                                                           | **unassigned — see §5**                                                                                                                                       |
+| 8   | **Privacy prefs**     | dedicated privacy screen: private account, **show bookmarks count**, **show reading-history count**                      | private-notebook toggle inside edit-profile                                                                                                       | **unassigned — small, see §5**                                                                                                                                |
+| 9   | **Offline behaviour** | engagement + follow taken offline are queued and reconciled by a unified `SyncEngine`                                    | no offline write queue                                                                                                                            | **see §4** (partly platform-inherent)                                                                                                                         |
 
 ---
 
@@ -1349,6 +1354,42 @@ the admin switch — read directly from `RetrievalConfigService` (Redis-cached, 
 was saving). Two specs added: synthesis on a request whose cached plan says no, and the admin switch still
 refusing. No new cache entries, and a request-scoped decision no longer rides in a shared cached object.
 
+### W5-11 · ~~**medium**~~ · **CLOSED 2026-08-04** · in AI mode the filter bar was either absent or offering controls the engine ignores
+
+**Found by this register's own §6 sweep**, not by a test — step 1 asks whether the epic delivered what its
+row named, and W5's row named filters that carry over between engines.
+
+`SearchFilterBar` returned `null` unless `type` was `pieces` or `writers`. AI mode deliberately has **no
+scope tabs** (AF4 answers mixed entity types), so `type` sat at its `all` default and the bar rendered
+**nothing at all** — the `language` / `genre` mapping W5 built, and that W5-1 corrected `api-types` for, was
+unreachable on a normal AI search. The mirror image was also live: a reader who filtered on the Pieces tab
+and then switched engines kept `type=pieces` in the URL and got **reading time, publish date and sort**,
+none of which `SemanticSearchDto` accepts — three controls that silently did nothing, which is the exact
+objection the code uses to justify hiding the scope tabs in AI mode, applied inconsistently one component
+over.
+
+**Fixed as one gate:** the bar renders for the AI engine on its own terms (no tab required) and offers only
+what that engine accepts. Two unit specs (`search-filter-bar.spec.tsx`) and one E2E assertion
+(`expectAiFiltersOffered`) pin both halves.
+
+### W5-12 · harness (pre-existing) · three visual baselines do not reproduce outside CI
+
+Recorded because [§6](#6-parity-check--run-at-the-end-of-every-client-epic) step 5 admits no unrecorded
+known difference, and because the next epic to run the visual suite locally will meet it.
+
+`frontend-comments` (both themes, 3 of 3 runs), `frontend-suggestions` (dark 3 of 3, chromium 1 of 3) and
+`frontend-collaborators` (chromium 2 of 3) fail in the pinned image on a developer host while the other 13
+frontend baselines match byte-for-byte in both themes. The diff shows the **entire page offset by ~21px** —
+every text row rendered twice in the diff, one above the other — with the masked list bands differing top
+and bottom as a consequence. That is the drift `visual.spec.ts` already documents for pages sitting
+marginally past the 720px fold, and the reason those three use viewport capture rather than `fullPage`;
+viewport reduced it without eliminating it.
+
+**Flaky, not drifted:** the failing subset changes between runs of the same commit, whereas a code change
+would fail the same shot every time. **Not W5's**, and not fixed here — all three are W3 surfaces, and the
+fix belongs to capture stability ([e2e/10 §2.2](./e2e/10_UIQuality.md)). The cost is coverage honesty: a
+local visual run verifies 13 of 16, and CI's `web-e2e-visual` job is the authority for the rest.
+
 ### W5-9 · harness · the E2E suite could not hold two spec files to one opinion about a global flag
 
 Not a product defect; recorded because the fix is now load-bearing for four spec files. The AI feature flags
@@ -1418,6 +1459,16 @@ every known difference to live in §2, §3, or §4 — so a later epic comparing
 | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Reader** | Web: author card at the **end** of the page, "More like this" below it. Mobile: author card **above** the prose, "More like this" at the end, after the comments/responses footer. | Mobile's author card placement predates the W-1 port and is the reader's byline-in-context; moving it would be a redesign of a shipped surface, not a parity fix. Both clients render the same two components with the same behaviour. |
 
+| **AI search** | Web: query suggestions are a "Try instead" **row beside the results**. Mobile: a **dropdown while typing**. | Same endpoint, same purpose. Mobile's search runs on submit, so a dropdown is the only place suggestions can go; the web field debounces straight into the URL, so results are already on screen and a dropdown would flicker on a 300 ms timer over the answer it duplicates. |
+| **AI discovery** | Web: **two** recommendation shelves on `/discover` (for-you, pick-up-next). Mobile: **five** on a dedicated AI discovery screen (adds trending, authors, genres). | The other three run the same `TrendingService` / `getWriters` / `getTrendingGenres` the web's editorial sections on that page already render — the recommender's versions differ only by carrying a reason. Shipping them would print the same rows twice on one page. |
+| **AF4 results** | Web: a result whose navigation target is a `graph_node`, `chapter` or timeline cue renders as a **plain card**. Mobile: opens a **detail sheet**. | The web has no route for those types until `W6` (story explorer). A card that clearly does not claim to navigate beats a link to nowhere; when W6 lands, the target becomes a link with no change to the card. |
+| **Saved searches** | Web: the **server list only**. Mobile: a device-local mirror merged with the server list. | Mobile is offline-first (`SyncEngine`, §2 row 9); a browser has no offline reading story to serve, so a local mirror would be cache with no consumer. Both clients read and write the same `/ai/search/saved` rows, which is the parity that matters. |
+
+**The bottom four rows were added by W5's sweep (2026-08-04), and they had to be.** The epic's own code
+comments said each of them was "recorded in 48 §4.1" — and none of them was. A claim in a comment is not
+a record ([§6](#6-parity-check--run-at-the-end-of-every-client-epic) step 5), and the next epic comparing
+those two surfaces would have found four unexplained differences.
+
 **Status of the reader row: parked, not closed.** Raised with the product owner on 2026-07-28 and
 deliberately deferred — judged low priority, and possibly worth aligning later. So it is accepted
 _for now_, not accepted permanently: nothing is blocked on it, no epic owns it, and no client should
@@ -1440,7 +1491,13 @@ list** — it was closed by the 2026-07-28 port, §3.1.)
 - **Collections** — mobile has a collections list + detail; web has neither, and no row covers it.
 - **Clap / report** — deliberately scoped out of W1, with no row that picks them up.
 - **Reader analytics, onboarding, privacy prefs, AI conversations + prompt library + usage** — all
-  mobile-shipped, none in the W-track.
+  mobile-shipped, none in the W-track. (The last three are named by `W8`, which is unclaimed.)
+- **Ask My Book — found unowned by W5's sweep (2026-08-04).** §2 row 3 read "**W5** (discovery/search/ask)",
+  and W5 did not ship it: `POST /ai/ask[/stream]` is grounded Q&A over a **story's knowledge graph**, so it
+  needs an owned story AND a built AF3 graph (§3.9 W5-4) — the same prerequisite the story explorer has, and
+  the reason W5's row could not absorb it. Mobile has the screen; web has nothing; `W6` holds the graph
+  prerequisite but its row names the explorer only. **Either W6's row grows to include it or it needs a row
+  of its own** — a roadmap decision ([45](./45_WebClientRoadmap.md)), not something an epic takes in passing.
 
 ### 5.1 Both-platform product gaps in inline review (opened 2026-07-28, after W3b)
 

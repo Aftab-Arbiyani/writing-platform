@@ -77,6 +77,28 @@ export class SearchPage {
     await expect(this.page.getByRole('tab', { name: 'Pieces' })).toHaveCount(0);
   }
 
+  /**
+   * AI mode offers exactly the filters the engine accepts — language and genre — and none of the
+   * keyword-only ones.
+   *
+   * Both halves were wrong until the W5 parity sweep (48 §3.9 W5-11): the bar was gated on a scope tab
+   * that AI mode does not have, so on a normal AI search it rendered nothing at all, and on a URL
+   * carrying `type=pieces` it rendered three controls `SemanticSearchDto` ignores. Asserted at desktop
+   * width, where the bar is inline rather than behind the mobile "Filters" sheet.
+   */
+  async expectAiFiltersOffered(): Promise<void> {
+    // By ROLE, not by label: AntD puts the `aria-label` on both the wrapper and the inner input, so a
+    // label lookup is ambiguous in strict mode. The combobox is the control a reader actually operates.
+    await expect(this.filterControl('Filter by language')).toBeVisible({ timeout: 30_000 });
+    await expect(this.filterControl('Filter by genre')).toBeVisible();
+    await expect(this.filterControl('Filter by reading time')).toHaveCount(0);
+    await expect(this.filterControl('Filter by publish date')).toHaveCount(0);
+  }
+
+  private filterControl(name: string): Locator {
+    return this.page.getByRole('combobox', { name });
+  }
+
   // ── AI results + grounding ────────────────────────────────────────────────
 
   get aiResults(): Locator {

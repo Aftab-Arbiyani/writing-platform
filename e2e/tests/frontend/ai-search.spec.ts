@@ -111,6 +111,10 @@ test.describe('@phase4 frontend AI search', () => {
       await search.expectGroundedResult(first);
       await search.expectCandidateMeta();
 
+      // The filters the engine actually accepts are reachable here, and the keyword-only ones are not
+      // (48 §3.9 W5-11 — this bar used to render nothing at all on an AI search).
+      await search.expectAiFiltersOffered();
+
       // Synthesis is opt-in per session — it is the only part of search that spends the reader's
       // allowance — so the answer must be absent until asked for, then grounded in these results.
       await expect(page.getByText('AI answer', { exact: true })).toHaveCount(0);
