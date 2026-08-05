@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 import { expectNoSeriousA11yViolations } from '../../fixtures/a11y';
-import { freshLogin } from '../../fixtures/auth';
+import { freshLogin, freshLoginAs } from '../../fixtures/auth';
 import { AI_FLAG_TEST_TIMEOUT_MS, withAiFeatures } from '../../fixtures/feature-flags';
 import { test, expect } from '../../fixtures/test';
 import { EditorPage } from '../../pages/frontend/editor-page';
@@ -10,6 +10,12 @@ import { FeedPage } from '../../pages/frontend/feed-page';
 import { AssistantPanel } from '../../pages/frontend/assistant-panel';
 import { BillingPage } from '../../pages/frontend/billing-page';
 import { BillingHistoryPage, UsagePage } from '../../pages/frontend/billing-detail-pages';
+import {
+  AiConversationsPage,
+  AiHubPage,
+  AiUsagePage,
+  PromptLibraryPage,
+} from '../../pages/frontend/ai-pages';
 import { PlansPage } from '../../pages/frontend/plans-page';
 import { CollaboratorsPage } from '../../pages/frontend/collaborators-page';
 import { InvitationsPage } from '../../pages/frontend/invitations-page';
@@ -236,6 +242,72 @@ test.describe('@phase5 @a11y frontend accessibility (authenticated)', () => {
     await history.goto();
     await history.expectResolved();
     await expectNoSeriousA11yViolations(page, { label: 'frontend /settings/billing/history' });
+  });
+
+  /**
+   * The four AI surfaces W8 added (docs/45 §4, row W8). All run in the `frontend-dark` project too —
+   * this file is `UI_QUALITY_ONLY`, so registering them here covers both themes at once, which is what
+   * docs/45 §2 requires and what makes deferring dark impossible rather than merely discouraged.
+   *
+   * Unlike the AF4 scans above, none of these takes the AI-flag lock: they read routes guarded by the
+   * `ai.use` permission, not by `feature.ai.enabled`.
+   */
+  test('the AI hub has no critical/serious a11y violations', async ({ page }) => {
+    // Two-line card links, the same pattern as the billing hub above and the same risk: an accessible
+    // name assembled from two spans is where a link most easily becomes unreadable.
+    const hub = new AiHubPage(page);
+    await hub.goto();
+    await hub.expectResolved();
+    await expectNoSeriousA11yViolations(page, { label: 'frontend /settings/ai' });
+  });
+
+  test('AI conversations has no critical/serious a11y violations', async ({ page, api, data }) => {
+    // Scanned POPULATED, because the parts worth scanning only exist on a row: three icon-only
+    // controls whose entire accessible name comes from `aria-label`, plus the inline rename form that
+    // replaces the row's contents. An empty-state scan would pass while every one of those was broken.
+    //
+    // As a THROWAWAY user, for the reason `ai-surfaces.spec.ts` sets out: every UI-created conversation
+    // is untitled, so on the shared writer this scan would race the functional spec's rows (and could
+    // delete one). A private account also means the scan sees exactly one row, every run.
+    const password = 'ChangeMe!A11yConv1';
+    const user = await api.createVerifiedUser({
+      email: `a11y-conv-${data.username()}@qalam.local`,
+      username: data.username(),
+      password,
+    });
+    // Arranged over the API, not by clicking "New conversation": that click leaves the cursor on a
+    // `variant="primary"` button whose AntD-derived hover background is #ab6846 (4.37:1 under white) —
+    // real, pre-existing token debt this scan surfaced, recorded in docs/48 §3.12 as W8-5 and NOT
+    // fixed here (a shared token is outside W8's scope). The create flow is asserted through the real
+    // button in `ai-surfaces.spec.ts`; this scan's subject is the row.
+    const token = await api.loginToken(user.email, password);
+    await api.createAiConversationAs(token, { title: 'A11y conversation row' });
+    await freshLoginAs(page, user.email, password);
+
+    const conversations = new AiConversationsPage(page);
+    await conversations.goto();
+    await conversations.expectResolved();
+    await expect(conversations.rows).toHaveCount(1);
+    await expectNoSeriousA11yViolations(page, { label: 'frontend /settings/ai/conversations' });
+  });
+
+  test('the prompt library has no critical/serious a11y violations', async ({ page }) => {
+    // Carries the only `aria-pressed` toggles in the app (the favourite stars) and a form whose fields
+    // are labelled by `aria-label` alone, since the design has no visible labels on it.
+    const library = new PromptLibraryPage(page);
+    await library.goto();
+    await library.expectResolved();
+    await expectNoSeriousA11yViolations(page, { label: 'frontend /settings/ai/prompts' });
+  });
+
+  test('AI token usage has no critical/serious a11y violations', async ({ page }) => {
+    // Its own `progressbar`s and `<dl>` grids, distinct from the AF5 usage page's above: this card
+    // shows an input/output split and no reset time, so it is a different DOM with the same risk — a
+    // bar conveying its quantity by width alone is invisible to a screen reader.
+    const usage = new AiUsagePage(page);
+    await usage.goto();
+    await usage.expectResolved();
+    await expectNoSeriousA11yViolations(page, { label: 'frontend /settings/ai/usage' });
   });
 
   /**

@@ -98,6 +98,22 @@ const router = createBrowserRouter([
                 path: 'billing/history',
                 lazy: () => import('@/app/routes/settings/billing-history'),
               },
+              // W8 — the remaining AI surfaces. `ai` is the hub and the only one in the section nav;
+              // the other four are reached from it, mirroring how Billing above is arranged.
+              // Registered unconditionally and with no premium gate: there is no AI kill switch, the
+              // master flag is the server's (`GET /ai/features`), and per docs/48 §5.2 the backend
+              // enforces exactly one premium feature — gating a route the server serves is a wall.
+              { path: 'ai', lazy: () => import('@/app/routes/settings/ai') },
+              {
+                path: 'ai/conversations',
+                lazy: () => import('@/app/routes/settings/ai-conversations'),
+              },
+              {
+                path: 'ai/conversations/:conversationId',
+                lazy: () => import('@/app/routes/settings/ai-conversation'),
+              },
+              { path: 'ai/prompts', lazy: () => import('@/app/routes/settings/ai-prompts') },
+              { path: 'ai/usage', lazy: () => import('@/app/routes/settings/ai-usage') },
             ],
           },
         ],

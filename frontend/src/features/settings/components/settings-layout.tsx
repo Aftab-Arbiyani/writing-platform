@@ -1,5 +1,13 @@
 import { cn } from '@qalam/ui';
-import { Bell, CreditCard, Palette, ShieldCheck, ShieldOff, UserRound } from 'lucide-react';
+import {
+  Bell,
+  CreditCard,
+  Palette,
+  ShieldCheck,
+  ShieldOff,
+  Sparkles,
+  UserRound,
+} from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { NavLink, Outlet } from 'react-router';
@@ -62,6 +70,19 @@ const BILLING_SECTION: Section = {
 };
 
 /**
+ * AI (conversations, prompt library, token usage) is an AF1/AF2 W8 section. Unlike Safety and Billing
+ * it is **not** flag-gated: there is no AI kill switch to read — the master AI flag is the server's,
+ * behind `GET /ai/features`, and the hub reports what it says. Like Billing, only the hub is listed
+ * (`end: false`), keeping this nav one-entry-per-section.
+ */
+const AI_SECTION: Section = {
+  to: ROUTES.settingsAi,
+  label: 'AI',
+  icon: Sparkles,
+  end: false,
+};
+
+/**
  * Settings shell (docs/06 §3.8, docs/11 §3): a 240px leading section-nav + content column at
  * `lg`, collapsing to a horizontal scroll nav above the content below `lg`. `NavLink` sets
  * `aria-current="page"` on the active section for free. Nested under `RequireAuth`; each section
@@ -70,6 +91,7 @@ const BILLING_SECTION: Section = {
 export function SettingsLayout(): ReactElement {
   const sections: readonly Section[] = [
     ...SECTIONS,
+    AI_SECTION,
     ...(env.VITE_ENABLE_COLLABORATION === 'true' ? [SAFETY_SECTION] : []),
     ...(env.VITE_ENABLE_MONETIZATION === 'true' ? [BILLING_SECTION] : []),
   ];

@@ -3,12 +3,14 @@ import type {
   AiCompletionResponse,
   AiConfigResponse,
   AiConversationDetail,
+  AiConversationExport,
   AiConversationSummary,
   AiFeaturesResponse,
   AiModelInfo,
   AiStreamEvent,
   AiUsageResponse,
   CreateAiConversationRequest,
+  UpdateAiConversationRequest,
   UpdateAiUserOverridesRequest,
 } from '@qalam/api-types';
 
@@ -53,8 +55,27 @@ export const aiApi = {
   createConversation: (payload: CreateAiConversationRequest): Promise<AiConversationSummary> =>
     post<AiConversationSummary>('/ai/conversations', payload),
 
+  /**
+   * Rename (and/or restatus) a conversation. Send only the keys being changed: the handler applies
+   * `title` and `status` independently (`ai-conversations.controller.ts:100-107`), and the global
+   * pipe runs `forbidNonWhitelisted`, so an extra key is a 400 rather than a no-op.
+   */
+  updateConversation: (
+    id: string,
+    payload: UpdateAiConversationRequest,
+  ): Promise<AiConversationSummary> =>
+    patch<AiConversationSummary>(`/ai/conversations/${encodeURIComponent(id)}`, payload),
+
   deleteConversation: (id: string): Promise<void> =>
     del(`/ai/conversations/${encodeURIComponent(id)}`),
+
+  /**
+   * The portable JSON export document. A normal enveloped GET — the route returns JSON, not a file
+   * (no `Content-Disposition`), so turning it into a download is the client's job
+   * (`lib/conversation-export.ts`). Its message shape is NOT `AiMessageDto` (docs/48 §3.12, W8-3).
+   */
+  exportConversation: (id: string, signal?: AbortSignal): Promise<AiConversationExport> =>
+    get<AiConversationExport>(`/ai/conversations/${encodeURIComponent(id)}/export`, { signal }),
 
   complete: (payload: AiCompletionRequest): Promise<AiCompletionResponse> =>
     post<AiCompletionResponse>('/ai/completions', payload),

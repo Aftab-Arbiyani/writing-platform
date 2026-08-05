@@ -9,6 +9,8 @@ export type {
   AiCompletionResponse,
   AiConfigResponse,
   AiConversationDetail,
+  AiConversationExport,
+  AiConversationExportMessage,
   AiConversationSummary,
   AiFeature,
   AiFeatureFlagInfo,
@@ -22,6 +24,7 @@ export type {
   AiStreamEvent,
   AiTokenUsage,
   AiUsageResponse,
+  AiUsageWindowSummary,
   CreateAiConversationRequest,
   UpdateAiUserOverridesRequest,
 } from '@qalam/api-types';

@@ -22,6 +22,28 @@ export {
   useAiConversations,
   useCreateConversation,
   useDeleteConversation,
+  useExportConversation,
+  useRenameConversation,
 } from './hooks/use-ai-conversations';
+
+// W8 — the three remaining AI surfaces (docs/45 §4, row W8), mounted under `/settings/ai`.
+export { AiHubPage } from './pages/ai-hub-page';
+export { AiConversationsPage } from './pages/ai-conversations-page';
+export { AiConversationPage } from './pages/ai-conversation-page';
+export { PromptLibraryPage } from './pages/prompt-library-page';
+export { AiUsagePage } from './pages/ai-usage-page';
+export { BUILT_IN_PROMPT_PRESETS, PROMPT_HISTORY_CAP, presetKindLabel } from './lib/prompt-presets';
+export type { PromptPreset, PromptPresetKind } from './lib/prompt-presets';
+export { usePromptLibraryStore } from './stores/prompt-library.store';
+export {
+  ASSISTANT_CONVERSATION_PARAM,
+  useAssistantConversation,
+} from './hooks/use-assistant-conversation';
+export { conversationTitle, featureLabel, roleLabel } from './lib/conversation-labels';
+export {
+  downloadConversationExport,
+  exportFilename,
+  serializeExport,
+} from './lib/conversation-export';
 export { useAiCompletion, useAiStream } from './hooks/use-ai-completion';
 export type * from './types/ai.types';

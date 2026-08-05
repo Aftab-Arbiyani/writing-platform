@@ -20,6 +20,14 @@ export const STORAGE_KEYS = {
    * to use this browser must not inherit the last one's plan.
    */
   entitlements: 'qalam.monetization.entitlements',
+  /**
+   * Prompt Library (AF2 W8) — favourites, custom presets and instruction history. Device-scoped like
+   * theme and recent searches, not account-scoped: the frozen v1 has no server surface for user
+   * prompt presets (docs/48 §3.12), so this store is the only copy that exists. It is also why
+   * sign-out leaves it alone — losing a writer's saved prompts on logout would be data loss, not
+   * hygiene, and nothing in it is another account's to see.
+   */
+  promptLibrary: 'qalam.ai.prompt-library',
 } as const;
 
 /** Cursor pagination sizes (docs/05 §5). */

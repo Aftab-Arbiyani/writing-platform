@@ -6,6 +6,7 @@ import { test, expect } from '../../fixtures/test';
 import { AssistantPanel } from '../../pages/frontend/assistant-panel';
 import { BillingPage } from '../../pages/frontend/billing-page';
 import { UsagePage } from '../../pages/frontend/billing-detail-pages';
+import { AiConversationsPage, AiUsagePage, PromptLibraryPage } from '../../pages/frontend/ai-pages';
 import { PlansPage } from '../../pages/frontend/plans-page';
 import { CollaboratorsPage } from '../../pages/frontend/collaborators-page';
 import { ReaderPage } from '../../pages/frontend/reader-page';
@@ -320,6 +321,72 @@ test.describe('@phase5 @visual frontend (authenticated)', () => {
     await expect(page).toHaveScreenshot('frontend-billing-usage.png', {
       fullPage: true,
       mask: [page.getByRole('listitem')],
+    });
+  });
+
+  /**
+   * The three AI surfaces W8 added (docs/45 §4, row W8).
+   *
+   * **These baselines do not exist yet, and this run must not create them.** `updateSnapshots: 'none'`
+   * is set in `playwright.config.ts` precisely so a local run cannot mint a host-rendered baseline —
+   * docs/48 §3.5 T-8, where exactly that silently happened. So these three tests are EXPECTED to fail
+   * until baselines are minted in the pinned CI image, in both the `frontend` and `frontend-dark`
+   * projects. That red is correct and is reported as such in the W8 readiness report; it is not a
+   * defect in the surfaces and must not be "fixed" by weakening the setting.
+   */
+  test('the AI conversations list matches its visual baseline', async ({ page, api, data }) => {
+    // Snapshotted POPULATED: the row is the design — a two-line link, a status tag slot, and three
+    // icon-only controls whose spacing at the row's right edge is the thing worth reviewing.
+    //
+    // As a THROWAWAY user, which a baseline needs even more than a functional test does: on the shared
+    // writer the row COUNT varies with whatever else is mid-flight, and a baseline of a list whose
+    // length changes per run can never be stable. A private account gives exactly one row, always.
+    //
+    // The row's timestamp still moves every run, so the row is masked; the page chrome, the search
+    // field and the overall arrangement are the subject.
+    const password = 'ChangeMe!VisualConv1';
+    const user = await api.createVerifiedUser({
+      email: `visual-conv-${data.username()}@qalam.local`,
+      username: data.username(),
+      password,
+    });
+    // Arranged over the API for the same reason as the a11y scan: clicking "New conversation" would
+    // bake that button's HOVER state into the baseline, so every future comparison would be against a
+    // hovered primary button rather than the page at rest.
+    const token = await api.loginToken(user.email, password);
+    await api.createAiConversationAs(token, { title: 'Visual baseline conversation' });
+    await freshLoginAs(page, user.email, password);
+
+    const conversations = new AiConversationsPage(page);
+    await conversations.goto();
+    await conversations.expectResolved();
+    await expect(conversations.rows).toHaveCount(1);
+    await expect(page).toHaveScreenshot('frontend-ai-conversations.png', {
+      fullPage: true,
+      mask: [page.getByRole('list', { name: 'Conversations' }).getByRole('listitem')],
+    });
+  });
+
+  test('the prompt library matches its visual baseline', async ({ page }) => {
+    // Fully deterministic — the built-in shelf ships in code and this scan adds no custom presets — so
+    // nothing needs masking. It carries the only `aria-pressed` icon toggles in the app, and their
+    // pressed/unpressed treatment is reviewed here in both themes.
+    const library = new PromptLibraryPage(page);
+    await library.goto();
+    await library.expectResolved();
+    await expect(page).toHaveScreenshot('frontend-ai-prompts.png', { fullPage: true });
+  });
+
+  test('the AI token usage page matches its visual baseline', async ({ page }) => {
+    // The AF1 twin of the billing usage baseline above, and worth its own: this card shows an
+    // input/output split and no reset time, so it is a different layout with the same progress bars.
+    // Counts are the shared writer's real usage and move as the AI specs run, so the cards are masked.
+    const usage = new AiUsagePage(page);
+    await usage.goto();
+    await usage.expectResolved();
+    await expect(page).toHaveScreenshot('frontend-ai-usage.png', {
+      fullPage: true,
+      mask: [page.getByRole('list', { name: 'Token usage windows' }).getByRole('listitem')],
     });
   });
 

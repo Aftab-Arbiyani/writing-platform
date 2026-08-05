@@ -70,6 +70,23 @@ the same reasoning that makes `frontend-ai-panel` a flag-DOWN baseline ([06 §6]
 of those tests hold the AI feature-flag lock so the state they encode is guaranteed rather than usual
 ([48 §3.9 W5-9](../48_PlatformParityRegister.md)).
 
+**Arrange over the API when clicking would bake in a hover** (added 2026-08-05, W8). W8's three baselines
+(`frontend-ai-conversations`, `frontend-ai-prompts`, `frontend-ai-usage`) and its a11y scan all arrange a
+populated conversation list through `api.createAiConversationAs` rather than by clicking "New
+conversation". Clicking leaves the pointer on a `variant="primary"` button, and AntD's derived
+primary-hover background is `#ab6846` — 4.37:1 under white, a **real** AA failure ([48 §3.12
+W8-5](../48_PlatformParityRegister.md), the same figure as W3c-3 on the half that was never pinned). A
+baseline captured that way would encode a hovered button forever, and the a11y scan would fail on
+pre-existing token debt it cannot fix.
+
+This is **not** the pointer-parking workaround the suite deliberately removed (`a11y.spec.ts:176-179`):
+nothing is moved or hidden, the arrangement simply does not click a button. Where the click itself is the
+subject, drive it — `ai-surfaces.spec.ts` does, through the real button.
+
+W8 also invalidated two existing baselines by intended change (the settings nav gained a row;
+`/settings/billing/usage` gained a cross-link card), so **10 shots need minting** — 6 new + 4 re-mints
+([52 §4.2](../52_WebAiSurfacesReadinessReport.md)).
+
 ---
 
 ## 3. Responsive

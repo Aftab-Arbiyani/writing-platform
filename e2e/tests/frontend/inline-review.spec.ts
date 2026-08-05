@@ -40,7 +40,15 @@ test.describe('@phase4 frontend inline review — comments & suggestions', () =>
     // A reply lands through POST /comments/:id/replies and is read back from the thread endpoint.
     await comments.replyToFirst(`E2E reply ${data.username()}`);
 
-    await comments.resolveFirst();
+    await comments.resolveFirst(body);
+
+    // The third verb, proven at the server rather than at a tag. T-6's register entry recorded that
+    // resolving and then filtering to Resolved showed "No comments yet", and left it undiagnosed
+    // between "the write never lands" and "the query never returns it". It was neither — the click
+    // never reached the Resolve button (docs/48 §3.5). With that fixed, the resolved comment comes
+    // back from `status=resolved`, which is the only assertion that rules out both hypotheses.
+    await comments.filterResolved();
+    await expect(page.getByRole('listitem').filter({ hasText: body })).toBeVisible();
   });
 
   test('a suggestion is proposed with its anchor, then accepted', async ({ page, api, data }) => {

@@ -34,6 +34,14 @@ export const ROUTES = {
   settingsBillingUsage: '/settings/billing/usage',
   settingsBillingCredits: '/settings/billing/credits',
   settingsBillingHistory: '/settings/billing/history',
+  // The AI surfaces (AF1/AF2, W8). A settings SECTION for the same reason as Billing and Safety:
+  // conversations, saved prompts and token usage are all account-scoped, and none of them is
+  // story-scoped or shareable. `settingsAi` is the hub (the web analog of the AI menu mobile hangs
+  // these off in the editor); the rest are reached from it and are not separate nav entries.
+  settingsAi: '/settings/ai',
+  settingsAiConversations: '/settings/ai/conversations',
+  settingsAiPrompts: '/settings/ai/prompts',
+  settingsAiUsage: '/settings/ai/usage',
   // Auth corridor (docs/11 §10):
   login: '/auth/login',
   register: '/auth/register',
@@ -77,6 +85,14 @@ export function searchPath(params: Record<string, string | undefined> = {}): str
   }
   const query = search.toString();
   return query ? `${ROUTES.search}?${query}` : ROUTES.search;
+}
+
+/**
+ * One AI conversation's detail path (AF1/AF2, W8). Keyed by UUID — the route is registered as a
+ * child of `/settings/ai/conversations` and `ParseUUIDPipe` on the server rejects anything else.
+ */
+export function aiConversationPath(conversationId: string): string {
+  return `${ROUTES.settingsAiConversations}/${encodeURIComponent(conversationId)}`;
 }
 
 /** Per-piece analytics detail path (docs/06 §3.10) — the writer's own piece, keyed by UUID. */

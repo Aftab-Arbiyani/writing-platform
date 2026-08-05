@@ -1,6 +1,14 @@
 # 48 — Platform Parity Register (web ↔ mobile)
 
-**Status:** 🔒 Binding · **Owner:** every client epic · **Last swept:** 2026-08-04 (after **W5's
+**Status:** 🔒 Binding · **Owner:** every client epic · **Last swept:** 2026-08-05 (after **W8's
+close-out** — the remaining AI surfaces. **§2 row 3 is now fully closed**: conversations, the prompt
+library and AI usage are all on web. The step-0 audit (**§3.12**, the first for the AF1/AF2 conversation
+and usage shapes) found mobile's client field-for-field correct on all seven routes and found five
+behaviour/a11y defects instead — **W8-1**, mobile's conversations list can never be populated, is the
+significant one, and it inverts the row: web is now the reference for that surface. **W8-5** is a
+pre-existing AA failure in the primary button's hover background, found by W8's own a11y scan. None of
+the five is fixed here; each is scoped to its own row.
+[Report](./52_WebAiSurfacesReadinessReport.md).) Previously swept 2026-08-04 (after **W5's
 close-out** — the AF4 discovery/search row. **§2 row 3 halves**: web now has semantic search + AI
 discovery, and the sweep found that **ask-book is owned by nobody** (§5). Three defects W5 introduced
 and fixed are §3.9 W5-6…W5-8, one the sweep itself found is **W5-11**, and four arrangement
@@ -48,17 +56,17 @@ epic now has to reconcile.
 Measured from `lib/features/**/presentation/screens` and `frontend/src/features/**/pages` plus route
 tables, not assumed.
 
-| #   | Area                  | Mobile has                                                                                                               | Web has                                                                                                                                           | Closed by                                                                                                                                                     |
-| --- | --------------------- | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | **Collaboration**     | 6 screens: collaborators, comments, invitations inbox, publishing workflow, restricted state, suggestions                | nothing                                                                                                                                           | **W3**                                                                                                                                                        |
-| 2   | ~~**Monetization**~~  | 5 screens: plans, subscription, billing history, credit dashboard, usage dashboard                                       | ✅ **all five** (W4) — **fully at parity since 2026-08-03**: the coupon field (M5-2) and the two missing history tabs (M5-6) are now on both      | **W4 ✅ closed 2026-07-29** — [report](./50_WebMonetizationReadinessReport.md)                                                                                |
-| 3   | **AI breadth**        | 8 screens: conversation, conversations list, discovery, usage, ask-book, prompt library, semantic search, story explorer | assistant + Craft Coach (W2), **semantic search + AI discovery shelves (W5 ✅ 2026-08-04)** — [report](./51_WebDiscoverySearchReadinessReport.md) | **W5 closed discovery + search**; **W6** (story explorer, held); conversations + prompt library + AI usage → **W8**; **ask-book is owned by NOBODY — see §5** |
-| 4   | **Social depth**      | collections, collection detail, comments, responses (+ followers, follow requests)                                       | follow requests; followers via a dialog                                                                                                           | **unassigned — see §5**                                                                                                                                       |
-| 5   | **Reader actions**    | clap (1..50 accumulating) and report, on the reader action bar                                                           | like, bookmark, copy-link share                                                                                                                   | **unassigned — see §5**                                                                                                                                       |
-| 6   | **Reading analytics** | `reading_analytics_screen` — the _reader's_ own stats                                                                    | writer + per-piece analytics only                                                                                                                 | **unassigned — see §5**                                                                                                                                       |
-| 7   | **Onboarding**        | `onboarding_screen` — first-run flow                                                                                     | nothing                                                                                                                                           | **unassigned — see §5**                                                                                                                                       |
-| 8   | **Privacy prefs**     | dedicated privacy screen: private account, **show bookmarks count**, **show reading-history count**                      | private-notebook toggle inside edit-profile                                                                                                       | **unassigned — small, see §5**                                                                                                                                |
-| 9   | **Offline behaviour** | engagement + follow taken offline are queued and reconciled by a unified `SyncEngine`                                    | no offline write queue                                                                                                                            | **see §4** (partly platform-inherent)                                                                                                                         |
+| #   | Area                  | Mobile has                                                                                                               | Web has                                                                                                                                                                                              | Closed by                                                                                                                                                                                                                                                                                                                     |
+| --- | --------------------- | ------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **Collaboration**     | 6 screens: collaborators, comments, invitations inbox, publishing workflow, restricted state, suggestions                | nothing                                                                                                                                                                                              | **W3**                                                                                                                                                                                                                                                                                                                        |
+| 2   | ~~**Monetization**~~  | 5 screens: plans, subscription, billing history, credit dashboard, usage dashboard                                       | ✅ **all five** (W4) — **fully at parity since 2026-08-03**: the coupon field (M5-2) and the two missing history tabs (M5-6) are now on both                                                         | **W4 ✅ closed 2026-07-29** — [report](./50_WebMonetizationReadinessReport.md)                                                                                                                                                                                                                                                |
+| 3   | ~~**AI breadth**~~    | 8 screens: conversation, conversations list, discovery, usage, ask-book, prompt library, semantic search, story explorer | ✅ **7 of 8** — assistant + Craft Coach (W2), semantic search + AI discovery (W5), **conversations + prompt library + AI usage (W8 ✅ 2026-08-05)** — [report](./52_WebAiSurfacesReadinessReport.md) | **W5 closed discovery + search; W8 closed the last three ✅.** Remaining: story explorer → **W6** (held); **ask-book is owned by NOBODY — see §5**. Note the direction reversed on conversations: mobile ships the screen and cannot populate it (§3.12 **W8-1**), so **web is the reference** and mobile needs the follow-up |
+| 4   | **Social depth**      | collections, collection detail, comments, responses (+ followers, follow requests)                                       | follow requests; followers via a dialog                                                                                                                                                              | **unassigned — see §5**                                                                                                                                                                                                                                                                                                       |
+| 5   | **Reader actions**    | clap (1..50 accumulating) and report, on the reader action bar                                                           | like, bookmark, copy-link share                                                                                                                                                                      | **unassigned — see §5**                                                                                                                                                                                                                                                                                                       |
+| 6   | **Reading analytics** | `reading_analytics_screen` — the _reader's_ own stats                                                                    | writer + per-piece analytics only                                                                                                                                                                    | **unassigned — see §5**                                                                                                                                                                                                                                                                                                       |
+| 7   | **Onboarding**        | `onboarding_screen` — first-run flow                                                                                     | nothing                                                                                                                                                                                              | **unassigned — see §5**                                                                                                                                                                                                                                                                                                       |
+| 8   | **Privacy prefs**     | dedicated privacy screen: private account, **show bookmarks count**, **show reading-history count**                      | private-notebook toggle inside edit-profile                                                                                                                                                          | **unassigned — small, see §5**                                                                                                                                                                                                                                                                                                |
+| 9   | **Offline behaviour** | engagement + follow taken offline are queued and reconciled by a unified `SyncEngine`                                    | no offline write queue                                                                                                                                                                               | **see §4** (partly platform-inherent)                                                                                                                                                                                                                                                                                         |
 
 ---
 
@@ -565,7 +573,7 @@ variable cannot be read. But they are two undeclared copies of a "single source 
 condition that produced W3c-4 one section above. Either delete them in favour of the CSS variable or add
 them to the mirror list in `tokens.css`.
 
-### T-6 · **medium** · `resolveFirst()` asserts on the wrong element, so resolving a comment is untested
+### T-6 · ~~**medium**~~ · **CLOSED 2026-08-05** · `resolveFirst()` asserts on the wrong element, so resolving a comment is untested
 
 Found while trying to render a `success` tag. `e2e/pages/frontend/story-comments-page.ts`:
 
@@ -588,6 +596,106 @@ green over a broken surface. Fix the assertion first (scope it to the comment it
 **Still open.** The 2026-07-29 recipe pass did not touch it: the tag it was blocking is now rendered by
 a dedicated spec instead (below), so nothing depended on getting this flow working. The weak assertion
 and whatever sits under it are unchanged.
+
+#### Resolution (2026-08-05) — (a) scope the assertion, then (b) the answer was "neither"
+
+**(a) The assertion.** `resolveFirst(body)` now scopes to the comment's own `<li>`
+(`getByRole('listitem').filter({ hasText: body })`) and asserts two things inside it: the `Resolved`
+tag is visible, and the `Resolve` button is **gone** — `comment-thread.tsx` drops Reply and Resolve
+once `status === Resolved`, so its absence is independent evidence the component re-rendered off a
+genuinely resolved DTO rather than painting a tag optimistically. The filter chip is a `<button>`
+outside every list item and can no longer be mistaken for the outcome.
+
+**(b) And then it did not fail — because the diagnosis on offer was the wrong pair.** The register
+posed "the resolve write may not land, or the `status=resolved` query may not return it". It is
+neither. **The Resolve button was never clicked.**
+
+```ts
+await this.page.getByRole('button', { name: 'Resolve' }).first().click();
+```
+
+Playwright's `getByRole` `name` option matches a **substring**, case-insensitively, unless
+`exact: true`. `"Resolved"` contains `"Resolve"`, so that locator matched **two** buttons — the
+thread's Resolve _and_ the status filter's Resolved chip — and the chip wins `.first()` because
+`QSectionHeader` renders before the `<ul>`. Confirmed by evaluating both locators against the page's
+real button structure:
+
+```
+OLD locator matches:    [ 'filter-resolved', 'thread-resolve' ]
+OLD .first() id:        filter-resolved
+OLD assertion target:   filter-resolved        ← the same chip it had just clicked
+OLD assertion visible with nothing resolved: true
+NEW locator matches:    [ 'thread-resolve' ]
+```
+
+So the helper clicked the **filter**, switching the list to resolved-only, and then asserted that the
+chip it had clicked was visible. Both halves pointed at the same wrong element, which is why it was
+self-consistently green. And it explains the observation exactly: "clicking Resolve and then filtering
+to Resolved shows _No comments yet_" is a resolved-only list on a story where nothing was ever
+resolved. There was never a backend defect here — the write path and the `status` query were both
+fine the whole time, and the note that they might not be was an artefact of the same broken locator.
+
+**Proven end to end against the live stack**, because "it passes now" is not evidence on its own:
+
+| check                                                        | result                                                                                                   |
+| ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- |
+| the scoped assertion, resolve clicked                        | passes — tag present, Resolve button gone                                                                |
+| **resolve, then filter to Resolved** (the exact observation) | the comment **is listed** — rules out both original hypotheses at once                                   |
+| the scoped assertion with the click removed                  | **fails** (`waiting for … .getByText('Resolved', { exact: true })`) — where the old page-wide one passed |
+| `inline-review.spec.ts`, whole file                          | 4/4 green                                                                                                |
+
+The spec now carries the round-trip itself (`filterResolved()` then assert the comment is listed), so
+the third verb is proven at the server rather than at a tag.
+
+**The transferable lesson, since this is the third of its class after W3c-4 and W5-10:** `getByRole`
+with a bare `name` is a **prefix/substring** match. Any label that is another label's prefix —
+Resolve/Resolved, Publish/Published, Follow/Following, Archive/Archived — silently matches both, and
+`.first()` then picks by DOM order, which is usually the page chrome rather than the item under test.
+Scope to the item first; reach for `exact: true` on names that are prefixes of one another.
+
+**Swept the rest of the suite for the same pair-shape; one latent case, no second live defect.**
+`editor-page.ts`'s `publishButton` is `getByRole('button', { name: 'Publish' })` and the publish
+drawer contains **"Publish now"**, which contains it. It is safe _today_ only because the click
+happens while the drawer is closed, so exactly one button matches — and if that ever stops being true
+Playwright's strict mode throws on two matches rather than silently picking one, which is the loud
+failure T-6 did not get. Left alone (scope-locked); noted so the next person does not have to
+re-derive it. No other button label in `pages/` is a prefix of a sibling.
+
+### T-9 · **medium** (harness) · `npm run build` silently disarms a running local E2E stack
+
+Opened 2026-08-05 while verifying T-6; **not fixed** (out of that pass's scope), and recorded because it
+cost an hour of chasing a defect that did not exist.
+
+Locally `REUSE_SERVER` is true, so Playwright **attaches** to whatever is already on :5173 rather than
+starting it — and the way the local stack is run, that is `vite preview`, which serves
+`frontend/dist` **from disk**. The E2E bundle is only correct because it was built with
+`VITE_ENABLE_COLLABORATION=true` + `VITE_ENABLE_MONETIZATION=true` (the `webServer.env` block here, and
+`web-e2e.yml:153/322` in CI). A plain root `npm run build` — which the release checklist asks for, and
+which builds with default flags — **overwrites that dist in place**. The long-lived `preview` process
+keeps serving, now returning the dark build.
+
+The symptom is maximally misleading: every collaboration and billing spec fails inside its page
+object's `goto()` on `expect(heading).toBeVisible()`, because the page really did render — as
+**"Collaboration is off"**. It reads as a broken selector or a broken route, and it reproduces on a
+clean tree, so a `git stash` bisect "confirms" the failure is pre-existing when in fact the build is
+the cause and the tree is irrelevant.
+
+**Turbo makes it worse, not better.** A second `npm run build` reports `>>> FULL TURBO` and finishes in
+177 ms — and still breaks the stack, because restoring `frontend/dist` from the cache writes the
+default-flag artefact back over the flagged one. So "I didn't actually rebuild anything" is not a
+defence, and the damage recurs on every cached build until the flagged one is re-run.
+
+Recovery is a rebuild with the flags:
+
+```bash
+VITE_API_URL=http://localhost:4000/api/v1 VITE_ENABLE_COLLABORATION=true \
+  VITE_ENABLE_MONETIZATION=true pnpm --filter frontend build
+```
+
+Worth a real fix rather than a note — candidates: have `stack-up.sh` own the flagged build, have the
+local stack run `dev` (which reads `webServer.env`) instead of `preview`, or have the page objects fail
+with "the app was built with collaboration off" when they see that empty state. Same family as the
+`tsc --noEmit`-instead-of-`build` trap: the verification step itself changed the thing being verified.
 
 ### T-2b · **CLOSED 2026-07-29** · the scan hole — why a token could fail with a green suite
 
@@ -779,6 +887,9 @@ uses it, so regional pricing was reachable from the API and invisible to every t
 
 The frontend's local override is now a plain alias of the package type.
 
+> **Class closed 2026-08-05** — this instance plus W4-5 and W5-1 are now held by a package-wide guard:
+> [§3.11](#311-w4-2--w4-5--w5-1--class-closed-2026-08-05--qalamapi-types-drifting-from-the-dtos).
+
 ### W4-3 · see [§5.2](#52-the-monetization-catalogue-sells-eight-features-and-the-backend-enforces-one-opened-2026-07-29-during-w4)
 
 The "eight sold, one enforced" hole was already opened during W4 scoping and is documented there. Two notes
@@ -874,6 +985,11 @@ resolve and the whole response half was inert. Fixed by adding the devDependency
 package source** for keys, the same technique the QTag contrast scan uses on `q-tag.tsx` (T-2b) and for the
 same reason: a test that restates what it checks drifts from it. The drift was re-injected afterwards, the
 suite failed as it should, and it was reverted.
+
+> **Class closed 2026-08-05.** The pin described above was module-scoped and hand-listed six pairs, so it
+> could not see W5-1 coming. It is superseded by a package-wide guard that discovers its own pairs and
+> refuses to let a new export arrive unpinned:
+> [§3.11](#311-w4-2--w4-5--w5-1--class-closed-2026-08-05--qalamapi-types-drifting-from-the-dtos).
 
 ---
 
@@ -1202,6 +1318,9 @@ get its filters silently ignored — it gets **400 `VALIDATION_FAILED`** on the 
 drifting from the DTO it mirrors. **This is FIX-THEN-PORT: api-types must be corrected before the web API
 layer is written**, or W5 ships a search whose filter path 400s.
 
+> **Closed 2026-08-03** (the flat shape, before the web API layer was written). The _class_ — W4-2 + W4-5 +
+> this — is closed by a guard as of 2026-08-05: [§3.11](#311-w4-2--w4-5--w5-1--class-closed-2026-08-05--qalamapi-types-drifting-from-the-dtos).
+
 ### W5-2 · **medium** · `pieceId` is documented on both sides of the wire and read by nothing
 
 `RecommendationQueryDto.pieceId` (`retrieval-request.dto.ts:125`) and `RecommendationRequest.pieceId`
@@ -1222,7 +1341,7 @@ backend enabler** (implement the parameter the contract already advertises: deri
 piece, reuse `SearchService` exactly as the `storyId` branch does) or the row drops the upgrade and keeps
 the tag search. **Decision required — recorded, not chosen.**
 
-### W5-3 · **medium** · mobile's Story Explorer has no entry point, and Ask My Book is reachable only through it
+### W5-3 · ~~**medium**~~ · **CLOSED 2026-08-05** · mobile's Story Explorer has no entry point, and Ask My Book is reachable only through it
 
 `app_router.dart:494` registers `/ai/explorer/:storyId`; **no `push`/`go` site for it exists anywhere in
 `lib/`** (grepped). `AskBookScreen` is pushed from exactly one place —
@@ -1235,6 +1354,42 @@ code that compiles, has tests, and cannot be opened by a user. Consequence for W
 been exercised by any client on any platform**, so the web cannot port it — it would be
 BUILD-FROM-CONTRACT against an unverified reference, which is a different (larger) task than the row's "an
 upgrade of the existing surfaces rather than a new one".
+
+#### Resolution (2026-08-05) — two entries in the menu the class already taught us to use
+
+Both surfaces now open from the **editor overflow menu**
+(`editor_screen.dart`), which is where the IA already puts every story-scoped AI and
+collaboration surface — no new navigation pattern, and the same menu R-1's fix used. Placement was
+forced rather than chosen: both routes take the **server piece id** and are owner-scoped server-side, so
+they need `st.draft.isRemote` exactly like the AF6 group, and the editor is the only place a user is
+holding one of their own stories.
+
+**The two gates differ, deliberately.** `GET /ai/explorer/:storyId/:view` is `ai.use` only
+(`story-explorer.controller.ts`) and renders straight from the AF3 graph with no LLM; `POST /ai/ask`
+additionally requires `feature.ai.askBook`. Gating the explorer behind `askBook` would have hidden a
+surface the server would happily serve — the mirror image of the defect being fixed, so the entries
+mirror the routes instead of sharing one flag.
+
+`test/features/ai/af4_entry_points_test.dart` (7 tests) asserts **reachability, not registration** —
+the distinction R-1 and M5-1 both missed. The router in the test serves the real `StoryExplorerScreen`
+and `AskBookScreen` rather than stub targets, so a tap has to survive the whole push; it checks the id
+handed over is the `remoteId` (a local route id would 404 the endpoint's `ParseUUIDPipe`), that the
+Explorer → Ask hop still works, and that each gate hides the right entry. **Verified by disabling the
+menu entries: the four reachability tests go red while the `namedLocation` test stays green** — which is
+precisely why route registration was never evidence of anything.
+
+**Parity consequence — does web now need the same two surfaces?**
+
+- **Story Explorer: no, not on W5's row.** It stays **OUT OF ROW** per the verdict table above — it is an
+  AF3 graph surface and **W6 owns it** (45 §4). Mobile having an entry point does not move the row; it
+  removes the excuse that mobile's explorer was unreachable when W6 comes to port it.
+- **Ask My Book: still BUILD-FROM-CONTRACT for web.** A reachable entry point is not an exercised
+  feature. What now exists is a user-openable path to the screen, proven by widget tests against a fake
+  repository — **no client has yet put a real question through `POST /ai/ask` against a real graph and
+  read the answer**, because W5-4 still holds: no client builds graphs, AF3's analyses are the producer,
+  and W6 is held. So the W5 decision stands unchanged (Ask deferred to W6), and when web does build it,
+  it builds from the DTO contract, not from a mobile reference — mobile is a reference for the
+  _navigation_, not for the _behaviour_.
 
 ### W5-4 · context, not a defect · story-scoped retrieval needs an owned story AND a built graph
 
@@ -1430,6 +1585,323 @@ Recorded because each is a pattern, not a one-off:
 
 ---
 
+## 3.11 W4-2 / W4-5 / W5-1 — **CLASS CLOSED 2026-08-05** — `@qalam/api-types` drifting from the DTOs
+
+Three separate findings, one defect. Each was closed on its own; nothing stopped a fourth, and a fourth
+was already sitting there (see "what it found on its first run" below).
+
+|                                                                                                                          | drift                                                                                                                                    | how it failed                                        | closed     |
+| ------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- | ---------- |
+| [W4-2](#w4-2--medium--closed-2026-07-29--qalamapi-types-declares-the-wrong-shape-for-purchasesrestore)                   | `RestorePurchasesResponse` declared `{restored, subscription, creditsGranted}`; the handler returns `{restored, providerRef, expiresAt}` | two fields read `undefined`, a third invisible       | 2026-07-29 |
+| [W4-5](#w4-5--medium--closed-2026-07-29--qalamapi-types-declares-a-couponcode-on-changeplanrequest-that-the-dto-rejects) | `ChangePlanRequest` declared `couponCode`; `ChangePlanDto` has no such property                                                          | **400 `VALIDATION_FAILED` on every plan change**     | 2026-07-29 |
+| [W5-1](#w5-1--high--qalamapi-types-declares-a-search-filter-shape-the-dto-rejects-outright)                              | `SemanticSearchRequest` declared a nested `filters` object; the DTO takes them flat with `tags` comma-separated                          | **400 `VALIDATION_FAILED` on every filtered search** | 2026-08-03 |
+
+**Why it kept happening.** The package is handwritten — its own `generate` script still exits 1
+(`"openapi.json not yet emitted by backend (Phase 1)"`) — while the DTOs are the SSOT. Nothing connected
+the two, in either direction, at any point in CI. Two of the three are 400s rather than type errors
+because `main.ts` runs `ValidationPipe({ whitelist: true, forbidNonWhitelisted: true })`: an undeclared
+key is not dropped, it rejects the whole request. And because this is a _package_, every consumer
+inherits the break — the same mistake made inside one client ships one broken button (mobile's M-1);
+made here it ships one to everyone who installs it.
+
+### The guard
+
+**`backend/src/common/contract/api-types.contract.spec.ts`** — 71 assertions, runs in the normal backend
+unit suite, no fixtures and no running stack.
+
+Survey that chose the shape: the package exports **85** types of its own; **67** mirror a backend DTO
+(18 requests, 49 responses) and **18** do not. (The backend has 337 DTO classes in total — `api-types`
+deliberately covers only the Phase-2 surfaces AF1/AF3/AF4/AF5, so most of them have no mirror and are not
+this package's business.) 18 + 49 request/response pairs + 4 meta-assertions = the 71.
+
+Two mechanisms, because the two directions fail differently:
+
+1. **Requests → class-validator metadata.** A key survives `whitelist: true` only if the DTO property
+   carries a validation decorator. `@ApiProperty()` alone does **not** count — precisely the trap, since
+   a field can look documented and still 400.
+2. **Responses → Swagger `@ApiProperty` metadata** (walking the prototype chain, so inherited DTO
+   properties count). A wrong response type does not throw; it reads `undefined`.
+
+Both compare **both directions**. A key the package has and the DTO does not is the breaking drift; a key
+the DTO has and the package does not is a shipped capability no typed client can reach — which is how
+`CreateSubscriptionRequest.region` went missing during W4-2's sweep.
+
+**Why it cannot go stale.** The declared keys are parsed out of the package's own source, not restated
+in the test — the technique `e2e/tests/frontend/a11y.spec.ts` already uses to read `QTag`'s colour map out
+of `q-tag.tsx`. And `MIRRORS` ∪ `UNMIRRORED` must account for **every** export in the package, with each
+unmirrored one carrying a written reason ("there is no DTO" being exactly the excuse that let
+`RestorePurchasesResponse` stay orphaned through W4-2). A new interface fails the suite until it is
+paired or exempted. That completeness check is the part that stops instance four; the pairs only close
+the first three.
+
+**Verified by reintroducing each historical shape, one at a time** — not by reasoning about it:
+
+| reintroduced                                      | result                                                                                                               |
+| ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| W4-2's `{restored, subscription, creditsGranted}` | 1 failed / 70 passed — named `subscription`, `creditsGranted` as never-sent and `providerRef`, `expiresAt` as hidden |
+| W4-5's `couponCode` on `ChangePlanRequest`        | 2 failed / 69 passed — named `couponCode` as rejected                                                                |
+| W5-1's nested `filters`                           | 1 failed / 70 passed — named `filters` as rejected and `language`, `genre`, `tags` as hidden                         |
+
+`monetization-contract.spec.ts` is reduced to the one assertion the package-wide guard cannot make: a
+compile-time pin of `RestorePurchasesResponse` to `MonetizationController['restore']`'s **own return
+type**. That closes W4-2's triangle — the Swagger DTO is only what the route _claims_ to return, and in
+W4-2 the DTO was wrong too (orphaned, carried by no `@ApiOkResponse`, agreeing with the package while
+both disagreed with the code). Its six hand-listed request pairs are gone; that list was itself a
+staleness mechanism.
+
+### What it found on its first run
+
+**`AiCompletionRequest` was missing `jsonMode`.** `AiCompletionRequestDto.jsonMode` has been accepted
+since AF1 and runs the whole way through — `ai.controller.ts:202` → `ai-completion.service.ts:292` → the
+OpenAI-compatible, Gemini and stub adapters, which reject it with a clear error when the model lacks
+`supportsJsonMode`. Only the wire package never mentioned it, so no typed client could reach a shipped
+capability. Same direction as `region`: invisible rather than breaking, same root cause. Added to the
+interface (a one-line type change against a backend that already accepts it — no product decision), which
+is also what makes the guard green rather than red-on-arrival.
+
+### Not covered, on purpose
+
+- **The five AF4 grounding blocks** (`RetrievalEvidence`, `RelatedEntity`, `NavigationTarget`,
+  `RankingExplanation`, `AskCitation`) and the **AF3 `*Data` payloads**. Response DTOs carry these as
+  `@ApiProperty({ type: Object })` / `Record<string, unknown>`, so Swagger records the containing property
+  and not their fields. The backend counterparts live in `retrieval.types.ts` — real mirrors, but of an
+  interface rather than a DTO, which would need a third (source-to-source) mechanism. Each is exempted
+  by name with this reason.
+- **Types, formats and optionality.** The guard compares key sets, which is what all three instances
+  drifted on. A field that exists on both sides with the wrong type still passes.
+- **Generating the package from the backend.** That is the real fix and it is a bigger change than a
+  guard — it needs its own row, not a smuggled-in rewrite. The guard is what holds the line until then.
+
+---
+
+## 3.12 W8 pre-flight — the AF1/AF2 conversation + usage contract audit (2026-08-05)
+
+The audit [docs/45 §4.4](./45_WebClientRoadmap.md) requires before a client line is written. AF5 and AF6
+were audited in §3.6 / §3.2, AF4 in §3.9; the **conversation and usage** shapes had never been. Every
+finding below is read off the code cited, not from `docs/47` and not from memory.
+
+**The contract, as the routes actually publish it** (all under `AiConversationsController`,
+`backend/src/modules/ai/controllers/ai-conversations.controller.ts`, all `@Permissions(PERMISSIONS.AiUse)`,
+all wrapped by `TransformInterceptor` → `{success, data}` unless the handler already returns an envelope):
+
+| Route                              | Line                     | Wire shape                                                                                       |
+| ---------------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------ |
+| `POST /ai/conversations`           | `:50-61`                 | body `CreateAiConversationDto{feature*, title?}` → `data: AiConversationSummaryDto`              |
+| `GET /ai/conversations`            | `:63-75`                 | query `{cursor?, limit? 1..50}` → `data: Summary[]`, `meta.pagination{limit,hasMore,nextCursor}` |
+| `GET /ai/conversations/:id`        | `:77-88`                 | → `data: AiConversationDetailDto` (= Summary + `messages: AiMessageDto[]`)                       |
+| `PATCH /ai/conversations/:id`      | `:90-108`                | body `UpdateAiConversationDto{title?, status?}` → `data: AiConversationSummaryDto`               |
+| `DELETE /ai/conversations/:id`     | `:110-121`               | **204, no body**                                                                                 |
+| `GET /ai/conversations/:id/export` | `:123-133`               | → `data:` the ad-hoc object built at `conversation.service.ts:127-140`                           |
+| `GET /ai/usage/me`                 | `ai.controller.ts:88-94` | → `data: AiUsageResponseDto` (`ai-response.dto.ts:158-163`)                                      |
+
+`AiConversationSummaryDto` = `ai-response.dto.ts:113-121`; `AiMessageDto` = `:104-110`;
+`AiUsageWindowSummaryDto` = `:140-148`. The list envelope is hand-built in the handler (`:70-74`), which is
+why it passes `TransformInterceptor` untouched (`transform.interceptor.ts:38-40`).
+
+**Mobile's client is a faithful mirror of all seven.** `ai_remote_data_source.dart:73-134` names the same
+seven paths (`api_paths.dart:44,47,48,49`); `ai_conversation.dart:92-102` decodes exactly the seven summary
+keys; `ai_usage.dart:39-47,70-74,91-106` decodes exactly the seven window keys, the three feature keys and
+the four top-level keys. `api_client.dart:387` unwraps `data`, `:392-395` reads `meta.pagination`, and
+`:386` returns `null` for 204 — each matching what the corresponding route sends. **No field-level
+mismatch exists on either resource.** The defects below are of a different kind: the client is right about
+the shapes and wrong about the _behaviour_.
+
+### W8-1 · **medium** · mobile can never create an AI conversation, so all six routes are unreachable in the product
+
+`createConversation` exists in all three mobile layers — `ai_remote_data_source.dart:92-101`,
+`ai_repository.dart:44`, `ai_repository_impl.dart:51-56` — and `grep -rn createConversation lib/` returns
+**those three lines and nothing else**. No screen, controller, or panel calls it.
+
+Nor does anything else create one. `POST /ai/conversations` (`:50-61` → `conversation.repository.ts:35`) is
+the **only** path in the backend that inserts a row: the completion orchestrator explicitly declines to,
+
+```ts
+// ai-completion.service.ts:331-341
+/** Persist the user turn + assistant reply when this is a conversation. */
+private async persist(input: CompletionInput, …) {
+  if (input.conversationId === undefined) {
+    return null;
+  }
+```
+
+so a completion sent without a `conversationId` is answered and **not stored**. Mobile's assistant never
+supplies one (`grep conversationId lib/features/ai/presentation lib/features/writing` finds it only on
+`ai_stream_controller`/`ask_book_controller` as an accepted-and-never-populated parameter, and on
+`conversation_detail_controller.dart:46`, which continues a conversation that must already exist).
+
+**Wire-level failure:** none — every request is well-formed. `GET /ai/conversations` returns
+`{success:true, data:[], meta:{pagination:{hasMore:false,nextCursor:null}}}` **forever**, so
+`ai_conversations_screen` shows its empty state permanently and the detail / rename / archive / delete /
+export paths behind it are dead code. Mobile ships the surface and cannot populate it.
+
+Same class as R-1, M5-1 and W5-3 (a built surface with no way in) but one layer deeper: there the
+_navigation_ was missing, here the _data_ cannot come into existence.
+
+**Confirmed live** against the month-old local database (1,371 users, oldest `2026-07-07`), as the
+seeded writer:
+
+```
+GET /api/v1/ai/conversations   → 200  {"success":true,"data":[],"meta":{"pagination":{…}}}
+GET /api/v1/ai/usage/me        → 200  …"total":{"requests":68,"totalTokens":24692}…
+```
+
+**68 AI requests recorded, and zero conversations in existence.** That is this defect in one line:
+the platform has been used, and nothing has ever created the row that would have kept any of it.
+
+> **W8 impact:** the client code is still **PORTABLE** — it is correct, merely unreachable. Web must build
+> the create path, which C1 already names, so W8's size does not change. Recorded here as a mobile
+> follow-up; **not fixed by W8** (mobile is a separate row).
+
+> **Web had the same disease one layer over, and W8 fixed that half.** Building the create path exposed
+> the sharper version of this finding: creating a conversation is not sufficient, because nothing was
+> sending `conversationId` on a completion either. Web's list would therefore have filled with rows that
+> could never gain a message. W8 added the binding — `/write?conversation=<id>`, opt-in via "Keep history"
+> in the assistant panel, and reachable as "Continue in the editor" from a conversation's detail view
+> (`frontend/src/features/ai/hooks/use-assistant-conversation.ts`). **Mobile still has neither half**, so
+> the mobile row now has two things to port, not one: the create entry point _and_ passing
+> `conversationId` from `ai_stream_controller`, which already accepts the parameter and is never given it.
+
+### W8-2 · **medium** · `PATCH status:"archived"` returns 200 and the row comes back on the next refresh
+
+Three places state that archiving hides a conversation:
+
+- `packages/shared/src/ai.ts:175` — `/** Conversation lifecycle (soft-delete tombstone = excluded, never returned). */`
+- `ai-conversations.controller.ts:38-41` — the controller docblock
+- `conversations_controller.dart:122-125` — `// Archived rows drop out of the default (active) list.`
+
+The query does not:
+
+```ts
+// conversation.repository.ts:53-67 — the whole WHERE
+.where('c.user_id = :userId', { userId })
+.orderBy('c.updated_at', 'DESC')
+```
+
+No status predicate. And `ConversationListQueryDto` (`ai-request.dto.ts:236-249`) accepts only `cursor` and
+`limit`, so a client **cannot** ask for active-only or archived-only either.
+
+**Wire-level failure:** `PATCH` 200s, `status` really is persisted as `archived`, mobile removes the row
+optimistically (`conversations_controller.dart:124`) — and the next `build()` refetches it and shows it
+again, still with no visual difference, because the list renders no status. The conversation is neither
+hidden nor findable-as-archived. Archiving is a no-op the user is told succeeded.
+
+**Confirmed live**, not inferred from the query:
+
+```
+POST  /api/v1/ai/conversations        {"feature":"writing_assistant","title":"W8-2 archive probe"}
+PATCH /api/v1/ai/conversations/:id    {"status":"archived"}   → 200, "status":"archived"
+GET   /api/v1/ai/conversations        → 200, 1 row:  'W8-2 archive probe' status=archived
+```
+
+The archived row comes straight back out of the **default** list.
+
+> **W8 impact:** **archive is not in W8's C1 scope** (list, detail, create, rename, delete, export), so web
+> deliberately does not offer it — a client cannot implement it correctly against this query anyway.
+> Fixing it needs a status filter on the list, which is a backend change and a different row.
+
+### W8-3 · **low** · the same conversation publishes its messages in two different shapes
+
+`GET /ai/conversations/:id` sends each message via `toMessageDto` (`ai.mappers.ts:11-24`) as
+`{id, role, content, usage: {inputTokens, outputTokens, totalTokens} | null, createdAt}`. `GET
+/ai/conversations/:id/export` builds its own (`conversation.service.ts:134-139`):
+
+```ts
+messages: messages.map((message) => ({
+  role: message.role,
+  content: message.content,
+  totalTokens: message.totalTokens,   // flat, and nullable
+  createdAt: message.createdAt.toISOString(),
+})),
+```
+
+No `id`, and token usage flattened to one nullable number. Mobile never notices because it decodes the
+export as opaque `Json` (`ai_remote_data_source.dart:131-135`). Recorded so no client reuses `AiMessageDto`
+for the export payload — W8's web layer types the two separately.
+
+### W8-4 · **low** · two conversation shapes sit outside the §3.11 guard
+
+The guard added on 2026-08-05 pins `AiConversationSummary`, `AiConversationDetail`, `AiMessageDto`,
+`CreateAiConversationRequest`, `AiUsageWindowSummary` and `AiUsageResponse` to their DTOs
+(`api-types.contract.spec.ts:264-272`). It cannot see:
+
+- **the `PATCH` body** — `@qalam/api-types` has no `UpdateAiConversationRequest` at all, so a typed client
+  has no type for `{title?, status?}`. Same direction as `CreateSubscriptionRequest.region` and `jsonMode`:
+  a shipped capability invisible to every typed consumer, rather than a break.
+- **the export payload** — the handler returns `Promise<Record<string, unknown>>`
+  (`ai-conversations.controller.ts:131`), so there is no DTO to pin and Swagger records nothing.
+
+Not a drift today. Recorded because both are exactly where a fourth instance would appear.
+
+### W8-5 · **medium** · a hovered `variant="primary"` button is 4.37:1 — W3c-3's colour, on the half nobody pinned
+
+**Found by W8's own a11y scan**, which failed the first time it ran because arranging the page clicked
+"New conversation" and left the cursor on it:
+
+```
+[serious] color-contrast — Elements must meet minimum color contrast ratio thresholds
+  Element has insufficient color contrast of 4.37 (foreground #ffffff, background #ab6846,
+  font size 10.5pt (14px), font weight normal). Expected contrast ratio of 4.5:1
+```
+
+`#ab6846` is AntD's derived `colorPrimaryHover`, and 4.37:1 is the **exact figure W3c-3 recorded**
+(§3.4). That fix pinned `Button: { defaultHoverColor: c.accent }` (`antd-theme.ts:113`) — the _default_
+variant's hover **label**. The _primary_ variant's hover **background** derives from the same lightened
+seed and was never touched, so white-on-`#ab6846` still fails AA wherever a primary button is hovered.
+
+Why it took until now to surface: a scan only sees it when the pointer happens to rest on a primary
+button, and no earlier scan's arrangement ended on one. `subscription-page.tsx:292` renders a solid
+danger button, but only for an _active_ subscription — the seeded writer is free, so it is never on
+screen when that page is scanned.
+
+**Not fixed here.** It is a shared design-system token, W8's scope lock is the three AI surfaces, and
+changing `colorPrimaryHover` affects every primary button in both apps — that needs its own row and its
+own baseline re-mint. What W8 did instead: the a11y and visual scans arrange their populated row over
+the API (`api.createAiConversationAs`) rather than by clicking, so neither measures an incidental hover.
+That is **not** pointer-parking — the suite deliberately removed that workaround (`a11y.spec.ts:176-179`)
+and this does not reintroduce it; the button is simply not clicked while arranging. The create flow is
+still driven through the real button in `ai-surfaces.spec.ts`.
+
+The likely fix, when it gets a row: pin the primary hover to a _darkened_ accent rather than AntD's
+lightened derivation — the same direction, and for the same reason, as W3c-3's note about hovering
+toward the ink instead of away from it.
+
+### The prompt library has no wire at all — verified, not assumed
+
+Stated explicitly because "no finding" and "not checked" look identical in a register:
+
+- `grep -in prompt lib/features/ai/data/datasources/ai_remote_data_source.dart` → **0 matches**.
+- `grep -in prompt lib/core/network/api_paths.dart` → **0 matches**.
+- The only prompt routes in the backend are `GET /admin/ai/prompts`, `GET /admin/ai/prompts/:key/versions`
+  and `POST /admin/ai/prompts/:key/preview` (`admin-ai.controller.ts:101,110,119`), each
+  `@Permissions(PERMISSIONS.AiManage)` under `@Controller('admin/ai')` (`:35`). They are the **admin
+  template registry** — server-side model behaviour — and are not this surface.
+
+Mobile's prompt library is entirely client-side: `prompt_preset.dart` (7 built-in presets at `:89-147`),
+`prompt_library_controller.dart` (favourites, custom presets, history), `prompt_library_store.dart`
+(on-device persistence, `historyCap = 30`). Its own docblock states the rule it exists to keep — presets
+are _saved user messages_, never system prompts. **There is nothing to audit and nothing to build from a
+contract; W8's C2 is a pure client-side port** with `localStorage` standing in for Hive.
+
+**One place the port went further than mobile, deliberately.** Mobile's only output is a clipboard write
+(`prompt_library_screen.dart:92,116`), and `navigator.clipboard` needs a secure context and can be refused
+outright — so a blocked clipboard leaves mobile's prompt library with no way to reach the assistant at all.
+Web keeps Copy and adds **Use in assistant**, which hands the instruction to the editor's Ask AI field
+directly. Filed here rather than as a defect because it is a genuine platform difference in capability, but
+it is a **candidate for the mobile row**: mobile could pass the instruction to `writing_assistant_panel`
+the same way instead of via the clipboard.
+
+### Verdicts
+
+| Surface              | Verdict                                                                                                                                                                                                                                                     |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **AI conversations** | **PORTABLE.** Seven routes, no field mismatch, and web's AF1 data layer already covers five of them. Web must add `PATCH` + export to `ai.api.ts`, and must build the create entry mobile lacks (W8-1). Archive stays out (W8-2).                           |
+| **Prompt library**   | **PORTABLE.** No wire, by design. A direct port of the preset shelf + favourites/custom/history.                                                                                                                                                            |
+| **AI usage**         | **PORTABLE.** `GET /ai/usage/me` already has an api method and a hook (`use-ai-meta.ts:26-32`) from AF1; every field is traceable to `AiUsageResponseDto` and pinned by §3.11. One open question about _placement_ — see the note in W8's readiness report. |
+
+None of the three verdicts changes W8's size.
+
+---
+
 ## 4. Divergences that are NOT gaps (platform-inherent)
 
 These are accepted permanently and need no epic. They exist because the platforms genuinely differ.
@@ -1463,6 +1935,9 @@ every known difference to live in §2, §3, or §4 — so a later epic comparing
 | **AI discovery** | Web: **two** recommendation shelves on `/discover` (for-you, pick-up-next). Mobile: **five** on a dedicated AI discovery screen (adds trending, authors, genres). | The other three run the same `TrendingService` / `getWriters` / `getTrendingGenres` the web's editorial sections on that page already render — the recommender's versions differ only by carrying a reason. Shipping them would print the same rows twice on one page. |
 | **AF4 results** | Web: a result whose navigation target is a `graph_node`, `chapter` or timeline cue renders as a **plain card**. Mobile: opens a **detail sheet**. | The web has no route for those types until `W6` (story explorer). A card that clearly does not claim to navigate beats a link to nowhere; when W6 lands, the target becomes a link with no change to the card. |
 | **Saved searches** | Web: the **server list only**. Mobile: a device-local mirror merged with the server list. | Mobile is offline-first (`SyncEngine`, §2 row 9); a browser has no offline reading story to serve, so a local mirror would be cache with no consumer. Both clients read and write the same `/ai/search/saved` rows, which is the parity that matters. |
+| **AI surfaces — entry point** | Web: a `/settings/ai` **hub**, one settings-nav section, four sub-pages. Mobile: all three hang off the **editor's AI menu** (`editor_screen.dart:442-446`). | Mobile's editor is the whole screen, so its AI menu is the natural home. Web's editor is one route of many, and web already has a home for account-scoped management surfaces — Billing set the one-entry-per-section + hub pattern. Copying mobile's shape would bury three routes in an editor menu and hide them from anyone not currently writing. Added by W8's sweep (2026-08-05). |
+| **Conversation export** | Web: downloads a **`.json` file**. Mobile: copies the JSON to the **clipboard** (`ai_conversation_screen.dart:186-199`). | The route returns plain JSON with no `Content-Disposition`, so making it a file is the client's job either way. A phone has nowhere useful to put a file; a browser does. Same document, same endpoint. Added by W8's sweep (2026-08-05). |
+| **Conversation detail** | Web: **read-only**. Mobile: can **continue** the conversation by sending a completion with its id. | Web's assistant lives in the editor (W2), where a completion has the selected prose to act on. A composer on a settings page would be an assistant with no manuscript in front of it — a second, weaker entry to a capability the editor already offers properly. Added by W8's sweep (2026-08-05). |
 
 **The bottom four rows were added by W5's sweep (2026-08-04), and they had to be.** The epic's own code
 comments said each of them was "recorded in 48 §4.1" — and none of them was. A claim in a comment is not
@@ -1600,3 +2075,26 @@ Added to the per-epic flow as step 7 ([45 §2](./45_WebClientRoadmap.md)):
 4. **Re-sweep §2** for the area touched, and update the "Last swept" date at the top.
 5. **Nothing is left unrecorded.** A known difference that is in neither §2, §3 nor §4 is a bug in
    this document.
+
+### 6.1 W8's sweep (2026-08-05)
+
+Recorded rather than merely performed, because step 5 admits no unrecorded difference and W5's sweep
+found four claimed-but-absent records in the epic before it.
+
+1. **Only what the row named?** Yes — the three surfaces, plus the hub that makes them reachable. Two
+   things W8 touched that were _not_ in its row, both consequences rather than additions: a cross-link
+   card on W4's `/settings/billing/usage` (the other half of the §3.12 usage decision — a one-way link
+   would have been the confusing option), and `UpdateAiConversationRequest` in `@qalam/api-types`, which
+   the PATCH route needed and which is now pinned by the §3.11 guard. **Archiving was deliberately left
+   out** even though the DTO accepts it (**W8-2**).
+2. **Does mobile actually have every part I built?** No, in one direction that matters: mobile has the
+   conversations _screen_ and no way to create a conversation, so its list is permanently empty
+   (**W8-1**, confirmed live). Web therefore has one control mobile lacks — "New conversation" — which is
+   a divergence _toward_ the contract, not away from it. Everything else was compared surface by surface
+   against the four mobile screens; three arrangement differences went to §4.1.
+3. **Does mobile need a follow-up?** Yes — **W8-1** (cannot create) and, once the backend can support it,
+   **W8-2** (archive is a no-op it reports as success). Both unowned; neither is W8's to fix.
+4. **§2 re-swept.** Row 3 (AI breadth) closed to 7 of 8 — only the story explorer (W6, held) remains, and
+   ask-book is still the §5 orphan.
+5. **Nothing left unrecorded.** Five defects in §3.12, three accepted differences in §4.1, and the ten
+   visual baselines needing a CI mint in [52 §4.2](./52_WebAiSurfacesReadinessReport.md).

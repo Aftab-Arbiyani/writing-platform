@@ -1,6 +1,7 @@
 import { freshLogin } from '../../fixtures/auth';
 import { AI_FLAG_TEST_TIMEOUT_MS, withAiFeatures, withAiFlags } from '../../fixtures/feature-flags';
 import { test, expect } from '../../fixtures/test';
+import { PromptLibraryPage } from '../../pages/frontend/ai-pages';
 import { AssistantPanel } from '../../pages/frontend/assistant-panel';
 import { EditorPage } from '../../pages/frontend/editor-page';
 
@@ -161,6 +162,56 @@ test.describe('@phase4 frontend AI assistant', () => {
           await autosaved;
           await editor.reload();
           await editor.expectBodyContains(STUB_SUGGESTION);
+        },
+      );
+    });
+
+    /**
+     * A Prompt Library preset arrives in the Ask AI field (W8 C2).
+     *
+     * **Here rather than in `ai-surfaces.spec.ts` because it needs the flag.** The prompt library
+     * itself is flag-independent, but the assistant tab renders a notice instead of its controls while
+     * `feature.ai.writingAssistant.enabled` is down — so the field to assert on does not exist at the
+     * seeded default. Keeping this one test in the serial block leaves that whole file parallel.
+     *
+     * What this closes: mobile can only copy a preset to the clipboard
+     * (`prompt_library_screen.dart:92,116`), which needs a secure context and can be denied outright.
+     * Web hands it over directly, and the hand-off is only real if the editor actually receives it —
+     * a spec that checked the store would pass while the panel ignored it.
+     *
+     * Nothing is sent: the box is filled, and the writer still edits and chooses when to run it.
+     */
+    test('a prompt-library preset lands in the assistant’s Ask AI field', async ({
+      page,
+      data,
+    }) => {
+      await withAiFeatures(
+        ['feature.ai.writingAssistant.enabled'],
+        'assistant: prompt library hand-off',
+        async () => {
+          const library = new PromptLibraryPage(page);
+          await library.goto();
+          await library.expectResolved();
+          await library.useInAssistant('Essay');
+
+          // Straight to the editor — the surface that has the manuscript the preset will act on.
+          await expect(page).toHaveURL(/\/write$/);
+
+          // The assistant disables its actions on an empty document, so give it something to work on
+          // before asserting the panel is live (the same precondition `expectAvailable` documents).
+          const editor = new EditorPage(page);
+          await editor.writePiece({
+            title: data.pieceTitle(),
+            body: 'The argument turns on a single unexamined assumption.',
+          });
+          await editor.waitForSaved();
+
+          const panel = new AssistantPanel(page);
+          await panel.open();
+          await panel.expectAvailable();
+          await expect(panel.activePanel.getByRole('textbox', { name: 'Ask AI' })).toHaveValue(
+            'Sharpen the argument in this passage and make the reasoning clearer.',
+          );
         },
       );
     });

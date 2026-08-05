@@ -17,6 +17,7 @@ import {
   type WritingAction,
 } from '../lib/writing-actions';
 import { useAiStream } from './use-ai-completion';
+import { useAssistantConversation } from './use-assistant-conversation';
 
 /**
  * One Writing Assistant turn (W2/AF2) — take an action, stream a suggestion, apply or discard it.
@@ -33,6 +34,7 @@ export function useAssistantSession() {
   const { start, cancel } = useAiStream();
   const target = useAiEditorTarget((s) => s.target);
   const reset = useAiStreamStore((s) => s.reset);
+  const { conversationId } = useAssistantConversation();
 
   /** The live context, read at call time — never cached, the writer keeps typing. */
   const readContext = useCallback(
@@ -66,6 +68,11 @@ export function useAssistantSession() {
 
       await start({
         feature: AiFeature.WritingAssistant,
+        // Only sent when the writer has opted into keeping history. Omitted, the server answers and
+        // stores nothing (`ai-completion.service.ts:338`); present, it appends the user turn and the
+        // reply to that conversation — which is the only way a conversation ever gains messages
+        // (docs/48 §3.12, W8-1).
+        ...(conversationId === null ? {} : { conversationId }),
         promptKey: promptKeyOf(action),
         promptVariables: promptVariablesOf(action),
         messages: [{ role: 'user', content: freeform ? (instruction ?? '') : operand }],
@@ -75,7 +82,7 @@ export function useAssistantSession() {
             : [metadata],
       });
     },
-    [readContext, start],
+    [readContext, start, conversationId],
   );
 
   /**

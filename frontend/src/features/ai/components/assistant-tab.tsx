@@ -1,8 +1,10 @@
 import { QButton, QSelect, QTextArea, useToast } from '@qalam/ui';
-import { Check, RefreshCw, Send, Square, X } from 'lucide-react';
-import { useState, type ReactElement } from 'react';
+import { Check, History, RefreshCw, Send, Square, X } from 'lucide-react';
+import { useEffect, useState, type ReactElement } from 'react';
+import { Link } from 'react-router';
 
 import type { AiSuggestionPlacement } from '@/stores/ai-editor-target.store';
+import { aiConversationPath } from '@/lib/routes';
 
 import {
   IMPROVE_ASPECTS,
@@ -14,6 +16,8 @@ import {
   type WritingTone,
 } from '../lib/writing-actions';
 import { useAiStreamStore } from '../stores/ai-stream.store';
+import { usePromptLibraryStore } from '../stores/prompt-library.store';
+import { useAssistantConversation } from '../hooks/use-assistant-conversation';
 import { useAssistantSession } from '../hooks/use-assistant-session';
 
 const PLACEMENT_LABELS: Record<AiSuggestionPlacement, string> = {
@@ -42,6 +46,19 @@ export function AssistantTab({ disabled }: { disabled: boolean }): ReactElement 
   const [aspect, setAspect] = useState<ImproveAspect>('flow');
   const [tone, setTone] = useState<WritingTone>('formal');
   const [lastAction, setLastAction] = useState<WritingAction | null>(null);
+
+  const takePendingInstruction = usePromptLibraryStore((s) => s.takePendingInstruction);
+
+  /**
+   * Pick up a preset the Prompt Library handed over (W8 C2) — "Use in assistant" stashes the
+   * instruction and navigates here. Consumed once and cleared, so a later visit starts blank rather
+   * than resurrecting a prompt chosen for a different draft. It fills the box rather than sending:
+   * the writer still edits and chooses when to run it.
+   */
+  useEffect(() => {
+    const pending = takePendingInstruction();
+    if (pending !== null) setInstruction(pending);
+  }, [takePendingInstruction]);
 
   const streaming = status === 'streaming';
   const busy = streaming || disabled;
@@ -79,6 +96,8 @@ export function AssistantTab({ disabled }: { disabled: boolean }): ReactElement 
           ? 'Working on your selection.'
           : 'Nothing selected — working on the whole draft.'}
       </p>
+
+      <KeepHistoryRow />
 
       <div className="flex flex-col gap-2">
         <span className="text-sm font-medium text-ink">Quick actions</span>
@@ -240,6 +259,61 @@ export function AssistantTab({ disabled }: { disabled: boolean }): ReactElement 
           ) : null}
         </section>
       ) : null}
+    </div>
+  );
+}
+
+/**
+ * The opt-in that makes this session survive it (W8).
+ *
+ * Without a bound conversation the server answers and stores nothing — `persist()` returns early when
+ * no `conversationId` was sent (`ai-completion.service.ts:338`). That is why mobile's conversations
+ * screen can never fill (docs/48 §3.12, W8-1), and why W8's conversations list needs this control to
+ * be worth having: it is the only thing on either client that causes a conversation to gain messages.
+ *
+ * Opt-in rather than automatic: persisting every turn by default would quietly build a server-side
+ * transcript of a writer's drafts.
+ */
+function KeepHistoryRow(): ReactElement {
+  const toast = useToast();
+  const { conversationId, isKeeping, isStarting, startKeeping, unbind } =
+    useAssistantConversation();
+
+  if (isKeeping && conversationId !== null) {
+    return (
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-ink-muted text-xs">Keeping this session’s history.</span>
+        <Link
+          to={aiConversationPath(conversationId)}
+          className="text-accent focus-visible:ring-accent rounded-md text-xs outline-none focus-visible:ring-2"
+        >
+          View conversation
+        </Link>
+        <QButton size="sm" variant="ghost" onClick={unbind}>
+          Stop keeping
+        </QButton>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <span className="text-ink-muted text-xs">This session isn’t being saved.</span>
+      <QButton
+        size="sm"
+        variant="ghost"
+        icon={History}
+        loading={isStarting}
+        onClick={() => {
+          void startKeeping().then((id) => {
+            if (id === null) {
+              toast.error('Couldn’t start keeping history');
+            }
+          });
+        }}
+      >
+        Keep history
+      </QButton>
     </div>
   );
 }

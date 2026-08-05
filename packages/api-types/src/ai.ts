@@ -171,6 +171,51 @@ export interface CreateAiConversationRequest {
   title?: string;
 }
 
+/**
+ * `PATCH /ai/conversations/:id` — rename and/or set lifecycle status.
+ *
+ * Added by W8 (docs/48 §3.12, W8-4): `UpdateAiConversationDto` has accepted both keys since AF1, but
+ * no interface here declared them, so no typed client had a type for the body. Same direction as
+ * `CreateSubscriptionRequest.region` and `jsonMode` — a shipped capability invisible to consumers
+ * rather than a break.
+ *
+ * Note what `status: 'archived'` does and does not do: it persists, and it does **not** hide the
+ * conversation, because the list query has no status predicate (W8-2). Do not build an archive
+ * affordance on this until that is fixed.
+ */
+export interface UpdateAiConversationRequest {
+  title?: string;
+  status?: AiConversationStatus;
+}
+
+/**
+ * One message inside an export document. NOT `AiMessageDto`: the export route builds its own shape
+ * (`conversation.service.ts:134-139`) with no `id` and token usage flattened to one nullable number
+ * (docs/48 §3.12, W8-3).
+ */
+export interface AiConversationExportMessage {
+  role: AiMessageRole;
+  content: string;
+  totalTokens: number | null;
+  createdAt: string;
+}
+
+/**
+ * `GET /ai/conversations/:id/export` — the portable JSON document.
+ *
+ * Hand-written from `conversation.service.ts:127-140` because the handler returns
+ * `Promise<Record<string, unknown>>`, so there is no DTO for the §3.11 guard to pin this against.
+ */
+export interface AiConversationExport {
+  id: string;
+  feature: AiFeature;
+  title: string | null;
+  status: AiConversationStatus;
+  createdAt: string;
+  updatedAt: string;
+  messages: AiConversationExportMessage[];
+}
+
 // ── Completion / streaming ────────────────────────────────────────────────────
 
 /** A caller-supplied message on a completion request. */
@@ -200,6 +245,17 @@ export interface AiCompletionRequest {
   context?: Array<{ type: string; params?: Record<string, unknown> }>;
   /** Per-call overrides on top of resolved config (clamped server-side). */
   params?: AiGenerationParams;
+  /**
+   * Ask the provider for a JSON-only response.
+   *
+   * Found by `api-types.contract.spec.ts` on its first run (docs/48 §3.11): `AiCompletionRequestDto`
+   * has accepted it since AF1 and it runs all the way through — controller → `ai-completion.service`
+   * → the OpenAI/Gemini/stub adapters, which reject it with a clear error when the model does not
+   * support it. Only this interface never mentioned it, so no typed client could reach a shipped
+   * capability. Same direction as `CreateSubscriptionRequest.region` (W4-2's sweep): invisible rather
+   * than breaking, and the same root cause.
+   */
+  jsonMode?: boolean;
 }
 
 /** Non-streaming completion result. */

@@ -1,10 +1,12 @@
 import { QCard, QEmptyState, QSpinner } from '@qalam/ui';
-import { Gauge } from 'lucide-react';
+import { ArrowRight, Gauge } from 'lucide-react';
 import type { ReactElement } from 'react';
+import { Link } from 'react-router';
 
 import { ApiError } from '@/lib/api-client';
 import { messageFor } from '@/lib/error-messages';
 import { usePageTitle } from '@/hooks/use-page-title';
+import { ROUTES } from '@/lib/routes';
 
 import { UsageWindowCard } from '../components/usage-window-card';
 import { useMonetizationUsage } from '../hooks/use-usage';
@@ -24,6 +26,10 @@ import { isMonetizationEnabled } from '../lib/monetization-enabled';
  * `GET /monetization/usage` — the AF5 rollup, with plan limits and credit cost attached. They count
  * the same requests through different lenses and the numbers can differ while a metering write is in
  * flight; neither is wrong, and neither is derived from the other.
+ *
+ * As of W8 that AF1 read has a page of its own (`/settings/ai/usage`), so the two are cross-linked:
+ * the overlap is visible enough that a reader comparing them needs to be told which is which, and a
+ * link is the difference between "these numbers disagree" and "these count different things".
  */
 export function UsagePage(): ReactElement {
   usePageTitle('AI usage');
@@ -109,6 +115,25 @@ export function UsagePage(): ReactElement {
               No AI requests yet — the breakdown appears once you use an AI feature.
             </p>
           )}
+
+          {/*
+           * The other lens on the same requests (W8 C3). Not a duplicate and not a replacement: this
+           * page shows the plan's allowance, that one shows the AI platform's own token ledger with
+           * the input/output split and the config caps. Linked so a reader who wants the second does
+           * not conclude the first is wrong.
+           */}
+          <QCard as="section" className="flex flex-col gap-1.5">
+            <p className="text-ink-secondary text-sm">
+              Looking for raw token counts rather than your plan’s allowance?
+            </p>
+            <Link
+              to={ROUTES.settingsAiUsage}
+              className="text-accent focus-visible:ring-accent inline-flex w-fit items-center gap-1.5 rounded-md text-sm outline-none focus-visible:ring-2"
+            >
+              AI token usage
+              <ArrowRight size={15} strokeWidth={1.5} aria-hidden />
+            </Link>
+          </QCard>
         </>
       ) : null}
     </div>
