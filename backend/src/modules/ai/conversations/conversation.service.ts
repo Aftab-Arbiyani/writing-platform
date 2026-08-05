@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { AI_CONVERSATION_MAX_MESSAGES, PAGE_SIZE_DEFAULT, PAGE_SIZE_MAX } from '@qalam/shared';
-import type { AiConversationStatus, AiFeature, AiTokenUsage } from '@qalam/shared';
+import {
+  AI_CONVERSATION_MAX_MESSAGES,
+  AiConversationStatus,
+  PAGE_SIZE_DEFAULT,
+  PAGE_SIZE_MAX,
+} from '@qalam/shared';
+import type { AiFeature, AiTokenUsage } from '@qalam/shared';
 
 import { decodeCursor, encodeCursor } from '../../../common/pagination/cursor.util';
 import { AiConversationNotFoundException } from '../ai.exceptions';
@@ -42,9 +47,11 @@ export class ConversationService {
     userId: string,
     rawCursor: string | undefined,
     rawLimit?: number,
+    rawStatus?: AiConversationStatus,
   ): Promise<ConversationPage> {
     const limit = Math.min(Math.max(rawLimit ?? PAGE_SIZE_DEFAULT, 1), PAGE_SIZE_MAX);
-    const rows = await this.repo.list(userId, decodeCursor(rawCursor), limit);
+    const status = rawStatus ?? AiConversationStatus.Active;
+    const rows = await this.repo.list(userId, decodeCursor(rawCursor), limit, status);
     const hasMore = rows.length > limit;
     const items = hasMore ? rows.slice(0, limit) : rows;
     const last = items.at(-1);

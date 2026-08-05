@@ -246,6 +246,11 @@ export class ConversationListQueryDto {
   @Min(1)
   @Max(50)
   limit?: number;
+
+  @ApiPropertyOptional({ enum: AiConversationStatus })
+  @IsOptional()
+  @IsEnum(AiConversationStatus)
+  status?: AiConversationStatus;
 }
 
 /** `POST /admin/ai/prompts/:key/preview`. */

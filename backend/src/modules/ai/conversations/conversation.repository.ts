@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import type { AiFeature, AiMessageRole, AiTokenUsage } from '@qalam/shared';
+import type { AiConversationStatus, AiFeature, AiMessageRole, AiTokenUsage } from '@qalam/shared';
 import { DataSource, Repository } from 'typeorm';
 
 import type { CursorPayload } from '../../../common/pagination/cursor.util';
@@ -49,11 +49,17 @@ export class ConversationRepository {
     });
   }
 
-  /** Cursor page (newest first) of a user's conversations; over-fetches limit+1. */
-  list(userId: string, cursor: CursorPayload | null, limit: number): Promise<AiConversation[]> {
+  /** Cursor page (newest first) of a user's conversations in one status; over-fetches limit+1. */
+  list(
+    userId: string,
+    cursor: CursorPayload | null,
+    limit: number,
+    status: AiConversationStatus,
+  ): Promise<AiConversation[]> {
     const qb = this.conversations
       .createQueryBuilder('c')
       .where('c.user_id = :userId', { userId })
+      .andWhere('c.status = :status', { status })
       .orderBy('c.updated_at', 'DESC')
       .addOrderBy('c.id', 'DESC')
       .limit(limit + 1);

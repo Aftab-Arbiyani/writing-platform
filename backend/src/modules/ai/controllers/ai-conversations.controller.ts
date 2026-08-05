@@ -66,7 +66,7 @@ export class AiConversationsController {
   @ApiOperation({ summary: 'Your AI conversations, newest first (cursor-paginated).' })
   @ApiOkResponse({ type: [AiConversationSummaryDto] })
   async list(@CurrentUser() user: AuthenticatedUser, @Query() query: ConversationListQueryDto) {
-    const page = await this.conversations.list(user.id, query.cursor, query.limit);
+    const page = await this.conversations.list(user.id, query.cursor, query.limit, query.status);
     return {
       success: true as const,
       data: page.items.map(toConversationSummary),
