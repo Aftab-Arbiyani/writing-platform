@@ -100,6 +100,10 @@ soft-deleted rows ([04 §1.5](./04_DatabaseDesign.md)), so it is a safe identity
 | **D3** | **Decision:** is the free tier meant to have AI writing, or only a token budget?                                     | S         | [48 §5.2](./48_PlatformParityRegister.md). `monetization.plans` grants `free` the `ai_budget` feature with a 20k/day, 200k/month allowance but **not** `ai_writing`. If the server ever enforced `ai_writing`, that allowance becomes unspendable. **Blocks scoping D4** — the contradiction has to be resolved before any row makes the server assert its declared features                                                                                     | D4                                 |
 | **D4** | **Decision:** do the seven unenforced premium feature codes get a backend row?                                       | M         | [48 §5.2](./48_PlatformParityRegister.md). The catalogue sells eight `PremiumFeature` codes and the backend asserts exactly **one** (`ai_budget`); `PolicyEngineService.isEntitled()` has zero callers, so a subscriber's plan is computed correctly and then ignored on every route but the AI meter's. Until answered, **no client may gate on the seven** — a client-only wall in front of a route the server serves. Depends on **D3**                       | B2 shares the enforcement path     |
 | **B3** | Profile lookup by **id** (both clients)                                                                              | S         | Recorded 2026-08-05 after being carried in three consecutive epics' "improvements not done" lists. Retrieval, collaboration and publishing DTOs all carry user **ids**, but `GET /users/:username` is keyed by username — so every W3c surface (reviewer, snapshot author, history actor, blocked person) shows a **truncated id to real users**. Three slices worked around it; it is a missing contract, not a nicety. Additive backend enabler + both clients | W7's reader-analytics rows         |
+| **B4** | **Piece limit per plan** — enabler + both clients                                                                    | S + S×2   | **New feature, requested and specified 2026-08-05.** A cap on how many pieces an author may have, by subscription tier. The first premium feature to gate the product's **core write path** rather than AI tooling. Full spec, including the three decisions already taken, in [§4.9](#49-b4--piece-limit-per-plan-detail)                                                                                                                                       | —                                  |
+| **B5** | **Per-account "turn AI off"** — enabler + both clients                                                               | S + XS×2  | **New feature, requested and specified 2026-08-05.** An author disables AI for their own account. Server-enforced; governs the user, not the story. Cheap because `GET /ai/features` already answers "which AI features are enabled **for you**" and both clients already consume it — see [§4.10](#410-b5--per-account-turn-ai-off-detail)                                                                                                                      | —                                  |
+| **B6** | **Collaborators per story, by plan** — enabler + both clients                                                        | S + S×2   | **New feature, specified 2026-08-05.** Free 0 · Plus 3 · Pro/Ent unlimited, counted against the **story owner's** plan. The seat lever — collaboration becomes a paid capability. Spec: [§4.11](#411-b6--collaborators-per-story-by-plan-detail)                                                                                                                                                                                                                 | —                                  |
+| **B7** | **Version-history depth, by plan** — enabler + both clients                                                          | S + XS×2  | **New feature, specified 2026-08-05.** Free 5 · Plus 25 · Pro/Ent unlimited. **Hidden, never deleted** — a read-time clamp, so upgrading restores history retroactively. Spec: [§4.12](#412-b7--version-history-depth-by-plan-detail)                                                                                                                                                                                                                            | —                                  |
 
 ### 4.1 W1 — Reader page (detail)
 
@@ -389,6 +393,208 @@ deliberately scoped clients out; nothing has scoped them back in.
 **Consequence for the roadmap.** W6 stays **held** — but only the analysis lifecycle is held. If the
 explorer views are wanted on web, that is a normal port and should be its own row rather than waiting
 behind an undefined epic. Deciding that is a roadmap call, not an engineering one.
+
+---
+
+### 4.9 B4 — piece limit per plan (detail)
+
+**Requested and specified 2026-08-05.** A cap on how many pieces an author may have, varying by
+subscription tier. Recorded here to be folded into a pending row rather than run as its own epic.
+
+**This is the first premium feature that gates the core write path.** Every other premium code gates
+AI tooling; this one gates the product's primary object. That is why the three questions below were
+settled before any work was scoped.
+
+**It is a LIMIT, not a feature code.** The eight `PremiumFeature` codes gate capabilities; a piece cap
+is a number, which is what `PlanLimits` is for. `PlanLimits` already carries an index signature
+(`[key: string]: number`) documented **"0 / absent = unlimited"** (`packages/shared/src/monetization.ts`),
+so a new `maxPieces` key needs **no type change and no migration**, and the uncapped tiers come free.
+It also sidesteps [D4](#4-track-w--the-web-app-sequential) entirely: a limit is either enforced or
+absent, so it cannot join the seven codes that are advertised and never checked
+([48 §5.2](./48_PlatformParityRegister.md)).
+
+**The three decisions, taken:**
+
+| Question                   | Answer                                                                                                                                                                                                                                                                                                |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| What does it count?        | **Pieces you may HAVE** — a stock cap on live pieces. Deleting one frees a slot. Rejected: a monthly create-quota (punitive on a writing platform — deleting would not help), and published-only (hard to explain, and unpublishing to make room is an odd interaction)                               |
+| What happens on downgrade? | **Keep everything, block new creation.** Existing pieces stay live, visible and editable; the author simply cannot create another until back under the limit. Rejected: hiding pieces over the cap (breaks live URLs and removes work from readers without the author acting) and hard-blocking edits |
+| Starting numbers           | **Free 25 · Plus 250 · Pro unlimited · Enterprise unlimited.** Generous enough that a real hobbyist never hits it, so the cap reads as an anti-abuse ceiling rather than a paywall. These live in `monetization.plans` as data and are tunable at runtime without a deploy                            |
+
+**Scope — the enabler (S).**
+
+- Add `maxPieces` to each tier's `limits` in the `monetization.plans` catalogue default
+  (`backend/src/modules/settings/settings.catalog.ts`). `0` for Pro and Enterprise.
+- Enforce on **`POST /pieces`** (`pieces.controller.ts:61`) by counting the author's pieces where
+  `deletedAt IS NULL`. **Pieces are soft-deleted** (`Piece extends QalamAuditEntity`), so a deleted
+  piece frees its slot even though the row and its reserved slug survive — that is the intended
+  reading of "pieces you may have", and it must be stated in the entity/service comment so nobody
+  later "fixes" the count to include tombstones.
+- Read the limit through the existing entitlement path (`EntitlementService.getLimits`), the same way
+  `UsageService.assertWithinQuota` reads the token caps — do **not** add a second source of plan data.
+- Honour `0 = unlimited` exactly as `usage.service.ts:57` already does.
+- A new domain exception + error code so clients can distinguish "you are at your plan's limit"
+  (remedy: **see plans**, or delete a piece) from every other 4xx. Do not reuse `QUOTA_EXCEEDED`,
+  whose remedy is "wait for reset" — the W4 lesson (48 §3.6) was that conflating those two tells a
+  blocked user to wait for something that will never help them.
+- **Do not enforce on publish or update.** Only creation is capped; an author at their limit must
+  still be able to edit and publish what they already have, which is what "keep everything" means.
+
+**Scope — the clients (S each, both platforms).** Parity is binding, so this is a pair.
+
+- Surface the count before it bites: "24 of 25 pieces" near the create action, not only an error after
+  the fact.
+- Handle the new error code with its own copy and a route to plans — reuse the `PremiumGate`/upsell
+  patterns W4 established rather than inventing a dialog.
+- An author over the limit after a downgrade needs an honest empty-slot state, since that is a real
+  and reachable condition under the chosen downgrade rule.
+
+**Where it lands:** fold the enabler into whichever pending row touches monetization next; the client
+halves sit with **W7** or a mobile parity pass. It is deliberately **not** its own epic — S + S×2.
+
+---
+
+### 4.10 B5 — per-account "turn AI off" (detail)
+
+**Requested and specified 2026-08-05.** An author switches AI off for their own account: no assistant
+panel, no Craft Coach, no AI discovery or search prompts.
+
+**What already exists, so this is not built from nothing:**
+
+| Already there                                                                                                                                                                                            | Not there                                      |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| A **platform-wide** kill switch — `feature.ai.enabled` plus per-feature flags, with an admin UI (`admin/src/features/ai/pages/ai-config-page.tsx`)                                                       | Any **per-account** control                    |
+| `GET /ai/features` — contract: _"which AI features are enabled **for you** (master + per-feature flags)"_, consumed by both clients (`frontend/src/features/ai/api/ai.api.ts`; mobile's `ai_repository`) | The user preference that endpoint would report |
+| `ai_personalization` consent — _"use of the user's content to improve AI features"_                                                                                                                      | —                                              |
+
+**The three decisions, taken:**
+
+| Question              | Answer                                                                                                                                                                                                                                                                                                                                                                          |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Whose switch?         | **The author's**, per account. The platform-wide one already ships                                                                                                                                                                                                                                                                                                              |
+| What does "off" mean? | **Server-enforced, UI follows.** Stored server-side; AI requests are refused for that user and the clients hide affordances _because the server says so_. A client-only hide is the exact defect class this project keeps finding — W3c-1 and the seven unenforced codes ([48 §5.2](./48_PlatformParityRegister.md)) are both "the UI claims something the server never checks" |
+| Shared stories?       | **Governs the user, not the story.** A co-author who has AI on may still use it on a story you co-author; your switch controls only your own affordances                                                                                                                                                                                                                        |
+
+**Keep it separate from `ai_personalization`, deliberately.** "Don't train on my work" and "don't offer
+me the tools" are different choices a user may want independently. Conflating them would mean a writer
+who wants the assistant but not the training has no way to say so. Document the distinction where both
+are surfaced.
+
+**Scope — the enabler (S).**
+
+- A per-user preference on the **existing `UserSettings` entity**
+  (`backend/src/modules/users/entities/user-settings.entity.ts` — PK = FK → `users`, already holds
+  `theme`). One additive nullable/defaulted column, one migration. **Do not add a column to `users` and
+  do not invent a preferences subsystem** — the precedent exists and this is it.
+- **Enforce in the AF1 orchestrator (`AiCompletionService`), not per controller.** [35](./35_StoryIntelligenceArchitecture.md)
+  establishes that every AI path runs through it, so one guard covers every current AI feature _and_
+  every future one. A per-controller check would be a second authz path — the W3c-1 mistake.
+- **Fold it into `listFeatureStates()`** so `GET /ai/features` reports everything off for an opted-out
+  user. Both clients already read that endpoint, which is why the client halves are XS: they largely
+  work already. Precedence is **admin off beats user on** — the master flag is the outer gate.
+- A distinct error code for "you have turned AI off", separate from a disabled platform flag and from
+  quota/entitlement denials. Its remedy is "turn it back on in settings" — not "see plans", not "wait
+  for reset". Conflating remedies was the W4 defect (48 §3.6).
+- **Metering:** an opted-out user issues no AI requests, so nothing meters. Confirm no credit or token
+  accounting fires on the refusal path.
+
+**Scope — the clients (XS each, both platforms).** Parity is binding, so this is a pair.
+
+- The switch itself, in settings, next to (not merged with) the `ai_personalization` consent.
+- Verify the AI surfaces already respect `GET /ai/features` rather than assuming they do — mobile's
+  reachability record (R-1, M5-1, W5-3, W8-1) is four instances of code that looked wired and was not.
+- Toggling off must not leave AI entry points stranded in menus that were built before the switch
+  existed.
+
+**Where it lands:** the enabler fits any pending row that touches the AI module; the client halves are
+small enough to ride with **W7** or a mobile parity pass. **Not its own epic** — S + XS×2.
+
+---
+
+### 4.11 B6 — collaborators per story, by plan (detail)
+
+**Specified 2026-08-05.** A cap on how many collaborators a story may have, by the plan of the author
+who owns it. Like [B4](#49-b4--piece-limit-per-plan-detail) this is a `PlanLimits` key, not a
+`PremiumFeature` code — a number, not a capability, so it cannot join the seven advertised-but-unchecked
+codes ([48 §5.2](./48_PlatformParityRegister.md)).
+
+**Decisions taken:**
+
+| Question                    | Answer                                                                                                                                                                                              |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Numbers                     | **Free 0 · Plus 3 · Pro unlimited · Enterprise unlimited** (`0` free means solo; unlimited is `0` in `PlanLimits` — see the collision note below). Collaboration becomes a paid capability outright |
+| Whose plan governs?         | **The story owner's.** A Free user invited to a Pro author's story consumes one of that story's seats and is not charged for it — seats belong to the story, billed to its owner                    |
+| Does the owner take a seat? | **No.** The cap counts collaborators, not participants                                                                                                                                              |
+| Downgrade                   | **Keep everyone, block new invites** — same rule as B4. Existing collaborators keep their access; the owner simply cannot invite another until back under the limit                                 |
+
+> ⚠️ **`0` is overloaded here and the existing code reads it as "unlimited"** (`usage.service.ts:57`,
+> `PlanLimits` doc comment: _"0 / absent = unlimited"_). Free needs **zero seats**, which is the exact
+> opposite. Do **not** encode Free as `0`. Pick an explicit representation — e.g. `-1` for unlimited
+> with `0` meaning none, or a separate `collaborationEnabled` check — and state the choice in the
+> catalogue comment. **This is the one place B6 can silently invert its own rule**, handing free users
+> unlimited collaborators.
+
+**Scope — the enabler (S).**
+
+- `maxCollaborators` in each tier's `limits` in `monetization.plans`
+  (`backend/src/modules/settings/settings.catalog.ts`), with the `0` semantics resolved as above.
+- **Enforce at invite time**, on `POST /stories/:storyId/invitations`
+  (`collaboration.controller.ts:162`) **and** on `POST /stories/:storyId/members`
+  (`:100`, the direct-add path) — both create a seat and both must be capped, or one becomes the
+  bypass.
+- **Count members + PENDING invitations**, not members alone. Counting only members lets an owner
+  issue unlimited invites that all land later and blow through the cap. `GET .../invitations` is
+  pending-only ([49 §6c](./49_WebCollaborationEpicDesign.md) recorded that), so the pending set is
+  already queryable.
+- Also re-check on `POST /invitations/:id/accept` (`:183`): an invite issued under Pro must not be
+  acceptable after the owner downgrades. Refusing at accept needs its own copy — the invitee did
+  nothing wrong.
+- Read the limit through `EntitlementService.getLimits(ownerId)` — **the owner's** id, not the actor's.
+  This is the one place the acting user and the governing plan differ, so it is the likeliest bug.
+- A distinct error code, separate from B4's and from the quota family. Remedy: **see plans**, or remove
+  a collaborator.
+
+**Scope — the clients (S each, both platforms).** Parity is binding.
+
+- Show seats used before the wall: "2 of 3 collaborators" on the collaborators screen.
+- Free authors need an honest upsell where the invite action is, not a dead button — `CapabilityGate`
+  hid affordances silently once already (mobile C-1) and that must not repeat here.
+- The accept-side refusal needs its own state on the invitations inbox.
+
+---
+
+### 4.12 B7 — version-history depth, by plan (detail)
+
+**Specified 2026-08-05.** How many story snapshots an author can _see_, by plan.
+
+**Decisions taken:**
+
+| Question          | Answer                                                                                                                                                                                                                                                      |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Numbers           | **Free 5 · Plus 25 · Pro unlimited · Enterprise unlimited**                                                                                                                                                                                                 |
+| Beyond the limit? | **Hidden, never deleted.** A read-time clamp — the rows stay and upgrading restores full history **retroactively**. No pruning job, no scheduled work, and consistent with B4's "never take away what someone made". Cost: storing history not being served |
+| Where enforced    | Read time only. Snapshot **capture is never blocked** — an author at their limit still gets new snapshots; they just cannot see the oldest                                                                                                                  |
+
+**Why capture must stay unblocked:** D1's accept path captures a `pre_edit` snapshot inside the same
+transaction that settles a suggestion (`f6827e0`). Blocking capture on a plan limit would make
+**accepting a suggestion fail** for a free author — turning a monetization limit into a correctness
+bug in the collaboration flow. Clamp the read; never the write.
+
+**Scope — the enabler (S).**
+
+- `maxSnapshotHistory` in each tier's `limits`.
+- Clamp `GET /stories/:id/snapshots` (`publishing.controller.ts:162`) to the N most recent for the
+  story owner's plan. Return the true total alongside the clamped list so clients can say "5 of 32
+  versions — see plans" rather than pretending 32 do not exist.
+- **`GET /snapshots/:id` (`:184`) and `POST /stories/:id/snapshots/:snapshotId/revert` (`:195`) must
+  also refuse a hidden snapshot**, with the same remedy. Clamping only the list view leaves revert as
+  an open door for anyone who kept an old id — the exact shape of an unenforced gate.
+- Reverting is the feature history exists for, so the refusal copy matters: this is "upgrade to reach
+  older versions", not an error.
+
+**Scope — the clients (XS each, both platforms).** Publishing surfaces already list snapshots on both
+platforms (mobile's `publishing_workflow_screen`, web's `snapshot-list`), so this is a count line plus
+an upsell state — no new screens.
 
 ---
 
