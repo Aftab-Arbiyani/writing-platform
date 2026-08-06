@@ -12,7 +12,7 @@
 # ─────────────────────────────────────────────────────────────────────────────
 
 # ── Stage 1: build — full monorepo install + turbo build ───────────────────
-FROM node:24-alpine AS build
+FROM node:25-alpine AS build
 RUN corepack enable
 WORKDIR /repo
 

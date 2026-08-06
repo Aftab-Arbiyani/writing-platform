@@ -20,7 +20,7 @@
 # ── Stage 1: base — Node 24 with the pinned pnpm activated via corepack ─────
 # .nvmrc pins the major (24). We keep the floating -alpine tag here; CI should
 # pin an immutable digest (e.g. node:24-alpine@sha256:…) for reproducible builds.
-FROM node:24-alpine AS base
+FROM node:25-alpine AS base
 # Pin pnpm to the repo's packageManager version (reproducible builds, no drift).
 RUN corepack enable && corepack prepare pnpm@9.12.0 --activate
 WORKDIR /repo
@@ -58,7 +58,7 @@ RUN pnpm turbo build --filter backend
 RUN pnpm deploy --filter backend --prod /prod/backend
 
 # ── Stage 3: runtime — minimal image, non-root ──────────────────────────────
-FROM node:24-alpine AS runtime
+FROM node:25-alpine AS runtime
 
 # Build identity — single source of truth for the image's provenance. Injected
 # at build time (--build-arg) and defaulted so a bare `docker build` still works.
