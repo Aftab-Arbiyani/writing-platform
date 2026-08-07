@@ -56,17 +56,17 @@ epic now has to reconcile.
 Measured from `lib/features/**/presentation/screens` and `frontend/src/features/**/pages` plus route
 tables, not assumed.
 
-| #   | Area                  | Mobile has                                                                                                               | Web has                                                                                                                                                                                              | Closed by                                                                                                                                                                                                                                                                                                                     |
-| --- | --------------------- | ------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | **Collaboration**     | 6 screens: collaborators, comments, invitations inbox, publishing workflow, restricted state, suggestions                | nothing                                                                                                                                                                                              | **W3**                                                                                                                                                                                                                                                                                                                        |
-| 2   | ~~**Monetization**~~  | 5 screens: plans, subscription, billing history, credit dashboard, usage dashboard                                       | ✅ **all five** (W4) — **fully at parity since 2026-08-03**: the coupon field (M5-2) and the two missing history tabs (M5-6) are now on both                                                         | **W4 ✅ closed 2026-07-29** — [report](./50_WebMonetizationReadinessReport.md)                                                                                                                                                                                                                                                |
-| 3   | ~~**AI breadth**~~    | 8 screens: conversation, conversations list, discovery, usage, ask-book, prompt library, semantic search, story explorer | ✅ **7 of 8** — assistant + Craft Coach (W2), semantic search + AI discovery (W5), **conversations + prompt library + AI usage (W8 ✅ 2026-08-05)** — [report](./52_WebAiSurfacesReadinessReport.md) | **W5 closed discovery + search; W8 closed the last three ✅.** Remaining: story explorer → **W6** (held); **ask-book is owned by NOBODY — see §5**. Note the direction reversed on conversations: mobile ships the screen and cannot populate it (§3.12 **W8-1**), so **web is the reference** and mobile needs the follow-up |
-| 4   | **Social depth**      | collections, collection detail, comments, responses (+ followers, follow requests)                                       | follow requests; followers via a dialog                                                                                                                                                              | **unassigned — see §5**                                                                                                                                                                                                                                                                                                       |
-| 5   | **Reader actions**    | clap (1..50 accumulating) and report, on the reader action bar                                                           | like, bookmark, copy-link share                                                                                                                                                                      | **unassigned — see §5**                                                                                                                                                                                                                                                                                                       |
-| 6   | **Reading analytics** | `reading_analytics_screen` — the _reader's_ own stats                                                                    | writer + per-piece analytics only                                                                                                                                                                    | **unassigned — see §5**                                                                                                                                                                                                                                                                                                       |
-| 7   | **Onboarding**        | `onboarding_screen` — first-run flow                                                                                     | nothing                                                                                                                                                                                              | **unassigned — see §5**                                                                                                                                                                                                                                                                                                       |
-| 8   | **Privacy prefs**     | dedicated privacy screen: private account, **show bookmarks count**, **show reading-history count**                      | private-notebook toggle inside edit-profile                                                                                                                                                          | **unassigned — small, see §5**                                                                                                                                                                                                                                                                                                |
-| 9   | **Offline behaviour** | engagement + follow taken offline are queued and reconciled by a unified `SyncEngine`                                    | no offline write queue                                                                                                                                                                               | **see §4** (partly platform-inherent)                                                                                                                                                                                                                                                                                         |
+| #   | Area                  | Mobile has                                                                                                               | Web has                                                                                                                                                                                              | Closed by                                                                                                                                                                                                                                                                                                              |
+| --- | --------------------- | ------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **Collaboration**     | 6 screens: collaborators, comments, invitations inbox, publishing workflow, restricted state, suggestions                | nothing                                                                                                                                                                                              | **W3**                                                                                                                                                                                                                                                                                                                 |
+| 2   | ~~**Monetization**~~  | 5 screens: plans, subscription, billing history, credit dashboard, usage dashboard                                       | ✅ **all five** (W4) — **fully at parity since 2026-08-03**: the coupon field (M5-2) and the two missing history tabs (M5-6) are now on both                                                         | **W4 ✅ closed 2026-07-29** — [report](./50_WebMonetizationReadinessReport.md)                                                                                                                                                                                                                                         |
+| 3   | ~~**AI breadth**~~    | 8 screens: conversation, conversations list, discovery, usage, ask-book, prompt library, semantic search, story explorer | ✅ **7 of 8** — assistant + Craft Coach (W2), semantic search + AI discovery (W5), **conversations + prompt library + AI usage (W8 ✅ 2026-08-05)** — [report](./52_WebAiSurfacesReadinessReport.md) | **W5 closed discovery + search; W8 closed the last three ✅.** Remaining: story explorer + ask-book → **W9** (new row, 2026-08-07 — see §5). Note the direction reversed on conversations: mobile ships the screen and cannot populate it (§3.12 **W8-1**), so **web is the reference** and mobile needs the follow-up |
+| 4   | **Social depth**      | collections, collection detail, comments, responses (+ followers, follow requests)                                       | follow requests; followers via a dialog                                                                                                                                                              | **unassigned — see §5**                                                                                                                                                                                                                                                                                                |
+| 5   | **Reader actions**    | clap (1..50 accumulating) and report, on the reader action bar                                                           | like, bookmark, copy-link share                                                                                                                                                                      | **unassigned — see §5**                                                                                                                                                                                                                                                                                                |
+| 6   | **Reading analytics** | `reading_analytics_screen` — the _reader's_ own stats                                                                    | writer + per-piece analytics only                                                                                                                                                                    | **unassigned — see §5**                                                                                                                                                                                                                                                                                                |
+| 7   | **Onboarding**        | `onboarding_screen` — first-run flow                                                                                     | nothing                                                                                                                                                                                              | **unassigned — see §5**                                                                                                                                                                                                                                                                                                |
+| 8   | **Privacy prefs**     | dedicated privacy screen: private account, **show bookmarks count**, **show reading-history count**                      | private-notebook toggle inside edit-profile                                                                                                                                                          | **unassigned — small, see §5**                                                                                                                                                                                                                                                                                         |
+| 9   | **Offline behaviour** | engagement + follow taken offline are queued and reconciled by a unified `SyncEngine`                                    | no offline write queue                                                                                                                                                                               | **see §4** (partly platform-inherent)                                                                                                                                                                                                                                                                                  |
 
 ---
 
@@ -1321,25 +1321,55 @@ layer is written**, or W5 ships a search whose filter path 400s.
 > **Closed 2026-08-03** (the flat shape, before the web API layer was written). The _class_ — W4-2 + W4-5 +
 > this — is closed by a guard as of 2026-08-05: [§3.11](#311-w4-2--w4-5--w5-1--class-closed-2026-08-05--qalamapi-types-drifting-from-the-dtos).
 
-### W5-2 · **medium** · `pieceId` is documented on both sides of the wire and read by nothing
+### W5-2 · ~~**medium**~~ · ✅ **CLOSED (backend + web + mobile)** · backend/web 2026-08-04 during W5, mobile 2026-08-07 · `pieceId` was documented on both sides of the wire and read by nothing
 
 `RecommendationQueryDto.pieceId` (`retrieval-request.dto.ts:125`) and `RecommendationRequest.pieceId`
 (`api-types/src/retrieval.ts:206`) both document "seed piece for related-stories / related-chapters".
-`grep -rn pieceId backend/src/modules/retrieval/` returns **exactly one hit — the DTO declaration**.
-`RecommendationService.byKind` reads `dto.kind` and `dto.storyId` only, so `related_stories` with a
-`pieceId` and no `storyId` takes the fallback at `recommendation.service.ts:167-172`:
-`trending.getFeed()` — literally reasoned as "Popular right now".
+As found (2026-08-03), `grep -rn pieceId backend/src/modules/retrieval/` returned **exactly one hit —
+the DTO declaration**. `RecommendationService.byKind` read `dto.kind` and `dto.storyId` only, so
+`related_stories` with a `pieceId` and no `storyId` took the fallback: `trending.getFeed()` — literally
+reasoned as "Popular right now".
 
-Nobody has ever noticed because nobody has ever sent it: mobile threads `pieceId` through its query object
-and its controller and passes **`pieceId: null`** at the only call site
-(`ai_discovery_screen.dart:105`).
+**Fixed the next day, inside W5 itself, not as a separate decision.** `relatedToPiece`
+(`recommendation.service.ts`, commit `acdd2e1`) now derives terms from the seed piece's tags + title
+(read through `PiecesService.getById` **as the caller**, so visibility rules apply) and runs them
+through `SearchService` with `recordHistory: false` (so machine-composed terms never pollute the
+reader's own search history — a second defect, W5-5, closed the same way). Web's reader consumes it via
+`useRelatedPieces` (`frontend/src/features/reading/hooks/use-related-pieces.ts`, commit `3919c7a`):
+recommender first for a signed-in reader with `ai.recommendations` on, tag search as the fallback
+otherwise or if the recommender comes back empty. **The register was never updated when this landed —
+confirmed live in the code 2026-08-07, not from this text.**
 
-**This is what blocks W5's reader row.** "Upgrade _more like this_ to the AF4 recommender" (45 §4.1, W1's
-deferral) cannot be piece-related against today's backend — it would replace a tag search that IS about the
-piece with community trending that is not, and call it a recommendation. Closing it is a small **additive
-backend enabler** (implement the parameter the contract already advertises: derive terms from the seed
-piece, reuse `SearchService` exactly as the `storyId` branch does) or the row drops the upgrade and keeps
-the tag search. **Decision required — recorded, not chosen.**
+**Mobile ported the same day it was found (2026-08-07), closing the row.** Mobile's reader "More like
+this" (W-1's port, `lib/features/reading/presentation/widgets/related_pieces.dart` +
+`related_pieces_controller.dart`) had called the plain tag search only, never adopting the recommender
+web uses as its primary source. Mobile's _unrelated_ AI discovery screen (`ai_discovery_screen.dart:105`)
+already called `RelatedStories`, but passed `pieceId: null` there, which is correct for that screen (it
+has no piece context) and was not the fix — the fix was wiring the **reader's** related-pieces widget the
+way web's `useRelatedPieces` does.
+
+`relatedSuggestionsProvider` now tries the recommender first (`kind=related_stories&pieceId=<piece>`) for
+a signed-in reader on a build with AI on and `feature.ai.recommendations` enabled, falling back to the
+original tag search when the recommender is unusable, empty, or errors — the two sources are never
+queried in parallel. A recommended item's `reason` renders under the title/author line; the tag-search
+fallback has none, matching web exactly (`related_pieces.dart`). `qalam-mobile` commit `ef40cdf`.
+
+Ported as a **synchronous** combinator over each upstream provider's `AsyncValue` rather than an async
+function chaining `.future` awaits, after the port surfaced two real defects along the way (neither
+specific to this feature — both are latent in any Riverpod provider here that watches another one
+reactively across an error):
+
+- A transient auth race: reading the session controller's raw `AsyncValue` synchronously treats "still
+  loading" as "signed out," which could fire the tag search for a reader a heartbeat from resolving to
+  authenticated — a real, if brief, parallel-query window.
+- Riverpod 3's default retry policy re-attempts a thrown `Failure` (it isn't a Dart `Error`, the one type
+  the policy exempts) for up to ~30s of exponential backoff, and represents each retry as `AsyncLoading`
+  that still carries the last error. Naively treating "loading" as "wait" would leave the section empty
+  for half a minute on a real failure instead of degrading immediately.
+
+Covered by `test/features/reading/related_pieces_recommender_test.dart` (recommender success with reason,
+empty/error fallback, no-tag-and-unusable renders nothing, signed-out uses tag search only) plus the
+pre-existing `related_pieces_test.dart`, unchanged.
 
 ### W5-3 · ~~**medium**~~ · **CLOSED 2026-08-05** · mobile's Story Explorer has no entry point, and Ask My Book is reachable only through it
 
@@ -1405,15 +1435,15 @@ bug — recorded so the W5 decision is made with it in view rather than discover
 
 **Verdict table for the row (audit output):**
 
-| Surface                                   | Verdict                 | Why                                                                 |
-| ----------------------------------------- | ----------------------- | ------------------------------------------------------------------- |
-| Semantic search (library) + suggestions   | **PORTABLE**            | Mobile's client matches the DTO field-for-field; no graph needed    |
-| Saved searches                            | **PORTABLE**            | Plain owner-scoped CRUD, cap enforced server-side                   |
-| Retrieval-backed discover (library kinds) | **PORTABLE**            | `trending`/`feed`/`authors`/`genres`/`related_topics` need no graph |
-| Search filters (language/genre/tags)      | **FIX-THEN-PORT**       | W5-1 — correct api-types first                                      |
-| Reader "more like this" → recommender     | **BLOCKED**             | W5-2 — needs the enabler, or keep the tag search                    |
-| Ask My Book                               | **BUILD-FROM-CONTRACT** | W5-3 (no verified reference) + W5-4 (no graph producer)             |
-| Story Explorer                            | **OUT OF ROW**          | AF3 surface; W6 owns it                                             |
+| Surface                                   | Verdict                   | Why                                                                 |
+| ----------------------------------------- | ------------------------- | ------------------------------------------------------------------- |
+| Semantic search (library) + suggestions   | **PORTABLE**              | Mobile's client matches the DTO field-for-field; no graph needed    |
+| Saved searches                            | **PORTABLE**              | Plain owner-scoped CRUD, cap enforced server-side                   |
+| Retrieval-backed discover (library kinds) | **PORTABLE**              | `trending`/`feed`/`authors`/`genres`/`related_topics` need no graph |
+| Search filters (language/genre/tags)      | **FIX-THEN-PORT**         | W5-1 — correct api-types first                                      |
+| Reader "more like this" → recommender     | ~~BLOCKED~~ ✅ **CLOSED** | W5-2 — enabler built 2026-08-04, both clients ported by 2026-08-07  |
+| Ask My Book                               | **BUILD-FROM-CONTRACT**   | W5-3 (no verified reference) + W5-4 (no graph producer)             |
+| Story Explorer                            | **OUT OF ROW**            | AF3 surface; W6 owns it                                             |
 
 **Decisions taken (2026-08-03), so the row is unambiguous:**
 
@@ -1967,12 +1997,14 @@ list** — it was closed by the 2026-07-28 port, §3.1.)
 - **Clap / report** — deliberately scoped out of W1, with no row that picks them up.
 - **Reader analytics, onboarding, privacy prefs, AI conversations + prompt library + usage** — all
   mobile-shipped, none in the W-track. (The last three are named by `W8`, which is unclaimed.)
-- **Ask My Book — found unowned by W5's sweep (2026-08-04).** §2 row 3 read "**W5** (discovery/search/ask)",
-  and W5 did not ship it: `POST /ai/ask[/stream]` is grounded Q&A over a **story's knowledge graph**, so it
-  needs an owned story AND a built AF3 graph (§3.9 W5-4) — the same prerequisite the story explorer has, and
-  the reason W5's row could not absorb it. Mobile has the screen; web has nothing; `W6` holds the graph
-  prerequisite but its row names the explorer only. **Either W6's row grows to include it or it needs a row
-  of its own** — a roadmap decision ([45](./45_WebClientRoadmap.md)), not something an epic takes in passing.
+- **Ask My Book — found unowned by W5's sweep (2026-08-04). Decided 2026-08-07: own row, not W6.**
+  `POST /ai/ask[/stream]` is grounded Q&A over a **story's knowledge graph**, so it needs an owned story
+  AND a built AF3 graph (§3.9 W5-4) — the same prerequisite the story explorer has, and the reason W5's
+  row could not absorb it. But `ask-book.controller.ts` sits in `retrieval/consumers/`, same as
+  `story-explorer.controller.ts` — it is the same AF4-consumer-of-the-AF3-graph shape that [45]'s
+  2026-08-05 correction (§4.8) already moved out of W6 for the explorer. Bundling it into W6 would
+  reintroduce the mislabel that correction fixed. **[45](./45_WebClientRoadmap.md) W9** now owns both as
+  one ordinary port against an exercised mobile reference; W6 stays scoped to the analysis lifecycle only.
 
 ### 5.1 Both-platform product gaps in inline review (opened 2026-07-28, after W3b)
 
