@@ -116,13 +116,48 @@ export class PublishingRepository {
     return this.snapshots.save(this.snapshots.create(input));
   }
 
-  /** All snapshots for a story, newest version first. */
-  listSnapshots(storyId: string): Promise<StorySnapshot[]> {
+  /**
+   * Snapshots for a story, newest version first — the whole history, or the `take` most recent.
+   *
+   * `take` is B7's read-time clamp (docs/45 §4.12) and is applied in SQL rather than by slicing the
+   * result: a snapshot row carries the full story body, so fetching 100 to show 5 would read the
+   * hidden versions into memory on every list. Nothing is deleted either way.
+   */
+  listSnapshots(storyId: string, take?: number): Promise<StorySnapshot[]> {
+    const query = this.snapshots
+      .createQueryBuilder('s')
+      .where('s.story_id = :storyId', { storyId })
+      .orderBy('s.version', 'DESC');
+    return take === undefined ? query.getMany() : query.take(take).getMany();
+  }
+
+  /** How many snapshots a story actually has — the TRUE total, before any plan clamp. */
+  countSnapshots(storyId: string): Promise<number> {
     return this.snapshots
       .createQueryBuilder('s')
       .where('s.story_id = :storyId', { storyId })
+      .getCount();
+  }
+
+  /**
+   * The `version` of the snapshot at `offset` counting back from the newest (0-based), or null if
+   * the story has no snapshot that far back.
+   *
+   * This is the floor of B7's visible window, and it is read as a POSITION rather than computed as
+   * `maxVersion - limit`: `pruneSnapshots` deletes older prunable rows while keeping pinned
+   * `publish`/`review` ones, so versions have gaps and arithmetic on them would hide rows that are
+   * inside the window and reveal rows that are outside it.
+   */
+  async snapshotVersionAtOffset(storyId: string, offset: number): Promise<number | null> {
+    const row = await this.snapshots
+      .createQueryBuilder('s')
+      .select('s.version', 'version')
+      .where('s.story_id = :storyId', { storyId })
       .orderBy('s.version', 'DESC')
-      .getMany();
+      .offset(offset)
+      .limit(1)
+      .getRawOne<{ version: string | number }>();
+    return row === undefined || row.version == null ? null : Number(row.version);
   }
 
   /** One snapshot by id, or null. */

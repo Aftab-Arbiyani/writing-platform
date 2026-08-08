@@ -104,7 +104,7 @@ soft-deleted rows ([04 §1.5](./04_DatabaseDesign.md)), so it is a safe identity
 | **B4** | **Piece limit per plan** — enabler + both clients ✅ **done 2026-08-08**                                                                                                                    | S + S×2   | **New feature, requested and specified 2026-08-05.** A cap on how many pieces an author may have, by subscription tier. The first premium feature to gate the product's **core write path** rather than AI tooling. Full spec, including the three decisions already taken, in [§4.9](#49-b4--piece-limit-per-plan-detail)                                                                                                                                                                                                                     | —                                  |
 | **B5** | **Per-account "turn AI off"** — enabler + both clients                                                                                                                                      | S + XS×2  | **New feature, requested and specified 2026-08-05.** An author disables AI for their own account. Server-enforced; governs the user, not the story. Cheap because `GET /ai/features` already answers "which AI features are enabled **for you**" and both clients already consume it — see [§4.10](#410-b5--per-account-turn-ai-off-detail)                                                                                                                                                                                                    | —                                  |
 | **B6** | **Collaborators per story, by plan** — enabler + both clients ✅ **done 2026-08-08**                                                                                                        | S + S×2   | **New feature, specified 2026-08-05.** Free 0 · Plus 3 · Pro/Ent unlimited, counted against the **story owner's** plan. The seat lever — collaboration becomes a paid capability. Shipped with the sentinel **inverted for this key alone** (`-1` unlimited, `0` none) because `0` already means unlimited everywhere else. Spec + what shipped: [§4.11](#411-b6--collaborators-per-story-by-plan-detail)                                                                                                                                      | —                                  |
-| **B7** | **Version-history depth, by plan** — enabler + both clients                                                                                                                                 | S + XS×2  | **New feature, specified 2026-08-05.** Free 5 · Plus 25 · Pro/Ent unlimited. **Hidden, never deleted** — a read-time clamp, so upgrading restores history retroactively. Spec: [§4.12](#412-b7--version-history-depth-by-plan-detail)                                                                                                                                                                                                                                                                                                          | —                                  |
+| **B7** | **Version-history depth, by plan** — enabler + both clients ✅ **DONE 2026-08-08**                                                                                                          | S + XS×2  | **New feature, specified 2026-08-05.** Free 5 · Plus 25 · Pro/Ent unlimited. **Hidden, never deleted** — a read-time clamp, so upgrading restores history retroactively. Spec: [§4.12](#412-b7--version-history-depth-by-plan-detail)                                                                                                                                                                                                                                                                                                          | —                                  |
 
 ### 4.1 W1 — Reader page (detail)
 
@@ -657,7 +657,7 @@ the plan cap is checked first because for every tier that can hit it, it binds f
 
 ---
 
-### 4.12 B7 — version-history depth, by plan (detail)
+### 4.12 B7 — version-history depth, by plan (detail) ✅ **DONE 2026-08-08**
 
 **Specified 2026-08-05.** How many story snapshots an author can _see_, by plan.
 
@@ -689,6 +689,76 @@ bug in the collaboration flow. Clamp the read; never the write.
 **Scope — the clients (XS each, both platforms).** Publishing surfaces already list snapshots on both
 platforms (mobile's `publishing_workflow_screen`, web's `snapshot-list`), so this is a count line plus
 an upsell state — no new screens.
+
+#### What shipped (2026-08-08)
+
+**The sentinel, stated because the neighbouring row inverts it.** `maxSnapshotHistory` uses the
+**ordinary** convention — `0` = unlimited, exactly like `maxPieces`. B6's `maxCollaborators` is the
+one inverted key in this codebase, and the two rows are easy to confuse because both resolve the
+**story owner's** plan; the difference is that B6 needs to express _zero seats_ and B7 never needs to
+express zero versions (Free is 5). So B7 stays out of `NEGATIVE_UNLIMITED_LIMIT_KEYS`, and that is
+said in four places rather than remembered: the catalogue comment, `PlanLimits`' doc, the
+`SnapshotHistoryService` doc, and a `monetization.config-service.spec.ts` case that asserts a single
+stored `{maxSnapshotHistory: 0, maxCollaborators: 0}` catalogue resolves to **unlimited history and
+zero seats**. Normalising the two conventions in either direction fails a test.
+
+**Capture is untouched, and a test keeps it that way.** `POST /stories/:id/snapshots` has no plan
+check, and neither does the private `write()` every capture path funnels through. Three tests hold
+the line: `snapshot.service.spec.ts` builds `SnapshotService` with a `SnapshotHistoryService` that
+**throws on contact**, so any plan check on the write fails there; `publishing.service.spec.ts` does
+the same for the pre-existing capture case; and `suggestion.service.spec.ts` wires a **real**
+`SnapshotService` into `SuggestionService.accept` with that same throwing stub, so the D1 path — the
+one that captures a `pre_edit` version inside the settling transaction (`f6827e0`) — is asserted
+across the two units rather than against a mock. Without that last one, every accept test stubs
+`SnapshotService` and none of them would notice capture starting to refuse.
+
+**Three doors, one decision.** `SnapshotHistoryService.window(storyId, ownerId)` resolves the visible
+range; `list` clamps to it, `get` and `revert` refuse below it. Revert mattered most: it is the whole
+reason a version history exists, so it is exactly the door someone holding an old id would try, and
+clamping only the list would have left it open — the unenforced-gate shape
+[48 §5.2](./48_PlatformParityRegister.md) catalogues seven instances of.
+
+**The window's floor is a POSITION, not arithmetic.** `snapshotVersionAtOffset(storyId, limit - 1)`
+reads the oldest visible version by offset rather than computing `maxVersion - limit`.
+`pruneSnapshots` deletes older prunable rows while keeping `publish`/`review` ones forever, so
+versions have gaps; the arithmetic would hide rows inside the window and reveal rows outside it. The
+clamp is also applied in SQL (`listSnapshots(storyId, take)`), because a snapshot row carries the
+whole story body and fetching 100 to show 5 would read the hidden versions into memory on every list.
+
+**The list response changed shape**, from `SnapshotDto[]` to `SnapshotHistoryDto`
+`{ items, total, visible, hidden, limit, unlimited }`. The true total has to ride with the clamped
+list: five rows out of thirty-two look exactly like five rows out of five, so a client reading only
+the array would report "5 versions" — false — and the hidden ones would be invisible rather than for
+sale. This is not a freeze amendment: `/stories/:id/snapshots` was added by AF6 on 2026-07-20, after
+the 2026-07-09 `v1` baseline of 102 paths ([25 §1](./25_BackendFreeze.md)), and its only consumers
+are the two clients this row also ships.
+
+**A distinct code, `SNAPSHOT_HISTORY_LIMITED` (402).** Not `QUOTA_EXCEEDED`, whose "wait, it resets"
+remedy would never arrive (the W4 defect, [48 §3.6](./48_PlatformParityRegister.md)). Not
+`PIECE_LIMIT_REACHED` or `COLLABORATOR_LIMIT_REACHED` either, even though both are 402 stock caps:
+those refuse to CREATE and their remedies are "delete a piece" / "remove a collaborator", and
+deleting things is precisely what does **not** make an older version visible here. And not a 404 —
+the row exists. The message is an upgrade sentence: _"Your plan shows the 5 most recent versions of a
+story. Version 3 is still saved — upgrade to open it."_
+
+**The clients** got a count line and an offer, no new screens:
+
+| Part    | Web (`snapshot-list.tsx`)                                                 | Mobile (`publishing_workflow_screen.dart`)  |
+| ------- | ------------------------------------------------------------------------- | ------------------------------------------- |
+| Count   | "5 of 32 versions" beside the "Versions" heading                          | same string, beside the "Snapshots" heading |
+| Offer   | tinted row at the **end of the list**, where the hidden versions would be | same, same copy, `QTokens` tint             |
+| Copy    | "27 older versions are saved but not shown." + "Nothing was deleted — …"  | identical                                   |
+| Action  | "See plans" → billing plans                                               | same                                        |
+| Capture | stays enabled, asserted by a test                                         | same                                        |
+
+Both are driven off `total`, never `items.length`, and both fall silent when nothing is withheld —
+"3 of 3 versions" is noise beside a list already showing three rows.
+
+**Verified.** Backend 1154 tests · `tsc` · `eslint` clean. Frontend 733 tests · `tsc` · `eslint` ·
+build clean. Mobile 714 tests · `flutter analyze` clean, with the a11y scan (contrast, labelled and
+iOS tap targets) run on the new surfaces in **light and dark**. The §3.11 api-types guard was checked
+and does not apply — the package carries no publishing namespace. Parity sweep:
+[48 §6.5](./48_PlatformParityRegister.md).
 
 ---
 

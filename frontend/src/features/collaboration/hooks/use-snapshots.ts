@@ -13,7 +13,14 @@ import { publishingApi } from '../api/publishing.api';
  */
 const SNAPSHOTS_STALE = 30 * 1000;
 
-/** Every version of this story, newest first. */
+/**
+ * This story's version history, newest first — `{ items, total, visible, hidden, limit, unlimited }`
+ * (B7, docs/45 §4.12), not a bare array.
+ *
+ * `items` is clamped to the depth the story OWNER's plan shows; `total` is what is really stored.
+ * Read the count from `total` and never from `items.length`, which is the clamped number and would
+ * report a thirty-two-version story as having five.
+ */
 export function useStorySnapshots(storyId: string | undefined) {
   return useQuery({
     queryKey: qk.stories.snapshots(storyId ?? ''),

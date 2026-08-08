@@ -263,6 +263,20 @@ export const ERROR_CODES = {
    * never come is the W4 defect recorded in docs/48 §3.6, so the codes stay separate.
    */
   PIECE_LIMIT_REACHED: 'PIECE_LIMIT_REACHED',
+  /**
+   * The requested story version is older than the plan shows, so reading or reverting to it is
+   * refused (402 — B7, `PlanLimits.maxSnapshotHistory`). `details` carries `{ version, limit }`.
+   *
+   * **Nothing was deleted.** The version is stored and hidden by a read-time clamp resolved from
+   * the STORY OWNER's plan; upgrading makes it readable again, retroactively. That is why this is
+   * neither a 404 (the row exists) nor `QUOTA_EXCEEDED` (nothing resets and nothing is spent), and
+   * why the message is an upgrade sentence rather than an error: reverting is the whole reason a
+   * version history exists, so telling someone to wait — the W4 defect, docs/48 §3.6 — would be
+   * both wrong and useless. It is also not `PIECE_LIMIT_REACHED` / `COLLABORATOR_LIMIT_REACHED`:
+   * those refuse to CREATE something new and their remedies are "delete one" / "remove one", while
+   * nothing an author deletes here makes an older version visible.
+   */
+  SNAPSHOT_HISTORY_LIMITED: 'SNAPSHOT_HISTORY_LIMITED',
   /** The user has insufficient AI credits for the request (402). */
   INSUFFICIENT_CREDITS: 'INSUFFICIENT_CREDITS',
   /** A payment attempt failed (card declined / provider rejected) (402). */

@@ -11,6 +11,7 @@ import { PublicationNotApprovedException } from './publishing.exceptions';
 import type { PublishingRepository } from './publishing.repository';
 import { PublishingService } from './publishing.service';
 import type { ReviewService } from './review.service';
+import type { SnapshotHistoryService } from './snapshot-history.service';
 import { SnapshotService } from './snapshot.service';
 import type { StoryContext } from './publishing.mappers';
 
@@ -168,7 +169,14 @@ describe('SnapshotService', () => {
       recordEvent,
     } as unknown as PublishingRepository;
 
-    const service = new SnapshotService(pieces, engine, audit, repo);
+    // B7's history clamp is READ-time. Wired here as a service that throws if it is consulted at
+    // all, so capture acquiring a plan check fails this test rather than a free author's accept.
+    const history = {
+      window: jest.fn().mockRejectedValue(new Error('capture must not resolve a plan window')),
+      assertVisible: jest.fn().mockRejectedValue(new Error('capture must not be plan-gated')),
+    } as unknown as SnapshotHistoryService;
+
+    const service = new SnapshotService(pieces, engine, audit, repo, history);
     const dto = await service.create(STORY_ID, ACTOR, SnapshotReason.Manual);
 
     expect(nextSnapshotVersion).toHaveBeenCalledWith(STORY_ID);

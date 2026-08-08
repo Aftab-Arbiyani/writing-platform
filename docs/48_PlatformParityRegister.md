@@ -1,6 +1,14 @@
 # 48 — Platform Parity Register (web ↔ mobile)
 
-**Status:** 🔒 Binding · **Owner:** every client epic · **Last swept:** 2026-08-08 (after **B6** — the per-story collaborator seat cap, and the first row in
+**Status:** 🔒 Binding · **Owner:** every client epic · **Last swept:** 2026-08-08 (after **B7** — version-history depth by plan, the third and last
+`PlanLimits` row, and the first cap in this codebase enforced **only at read time**: versions past the
+plan's depth are hidden and never deleted, so upgrading restores them retroactively and snapshot
+CAPTURE is never refused. That last part is the row's whole risk — the accept-a-suggestion path
+captures inside its settling transaction, so a gate on the write would have turned a paywall into a
+correctness bug — and three tests hold it, one wiring the real service into the accept path. Its
+sweep is **§6.5**: no new defect, no new arrangement difference, and `maxSnapshotHistory` deliberately
+stays on the ORDINARY `0` = unlimited convention so B6's exception list stays at one entry.
+Previously swept 2026-08-08 (after **B6** — the per-story collaborator seat cap, and the first row in
 this codebase to deliberately **invert a shared sentinel**: `0` means unlimited for every plan limit
 except `maxCollaborators`, where it means none. Its sweep is **§6.4**; no new defect, one accepted
 arrangement difference in §4.1, and the reconciliation is pinned by a test rather than a convention.
@@ -2464,3 +2472,98 @@ aiMonthlyCredits: 0}` to the compiled defaults **for the resolved tier**. That s
      `QTokens` pairs that are defined in both themes and is covered by the **existing** e2e a11y specs
      for `/write/:storyId/collaborators` and the invitations inbox; no new baseline was minted, and no
      live e2e run was part of this row (the suite's deferred state is unchanged).
+
+---
+
+### 6.5 B7's sweep (2026-08-08)
+
+Version-history depth — `PlanLimits.maxSnapshotHistory`, Free 5 · Plus 25 · Pro/Ent unlimited, read
+from the **story owner's** plan and applied at READ time only ([45 §4.12](./45_WebClientRoadmap.md)).
+
+1. **Only what the row named?** Yes. The catalogue key, the clamp on `GET /stories/:id/snapshots`,
+   refusals on `GET /snapshots/:id` and revert, one error code, and a count line + offer on each
+   client. Four things were touched that §4.12 does not spell out, each a consequence rather than an
+   addition, and each stated here because step 5 admits no unrecorded difference:
+
+   - **The list response shape** went from `SnapshotDto[]` to `SnapshotHistoryDto`. §4.12 asks for
+     "the true total alongside the clamped list", and there is nowhere else for it to ride: an array
+     cannot carry a count. Not a freeze amendment — `/stories/:id/snapshots` is AF6 (2026-07-20),
+     after the `v1` baseline of 102 paths ([25 §1](./25_BackendFreeze.md)) — and its only consumers
+     are the two clients this row also ships.
+   - **Two repository reads** (`countSnapshots`, `snapshotVersionAtOffset`) and a `take` on
+     `listSnapshots`. The clamp is applied in SQL because a snapshot row carries the whole story
+     body; slicing in memory would read every hidden version on every list.
+   - **The e2e a11y scan for the publishing page** now arranges six versions instead of one, so B7's
+     clamped state is actually on screen when the scan runs. A scan that never renders the new
+     markup is the "looked wired and was not" class this register exists to catch.
+   - **`ApiClient.storySnapshots` in the e2e fixtures** was retyped to the new shape (it had no
+     callers, but a fixture declaring a shape the server no longer sends is a trap), and
+     `captureSnapshot` was added to arrange the clamped state.
+
+   **B5 was not touched.**
+
+2. **Does the other platform have every part I built?** No reference platform — like B4 and B6 this
+   is a new capability landing on both clients at once, so the comparison is web against mobile.
+
+   | Part                       | Web                                                                      | Mobile                                                    |
+   | -------------------------- | ------------------------------------------------------------------------ | --------------------------------------------------------- |
+   | Count before the wall      | "5 of 32 versions" beside the "Versions" heading                         | same string, beside the "Snapshots" heading               |
+   | Source of the count        | `total` from the wire, never `items.length`                              | same, asserted by a test                                  |
+   | Offer                      | tinted row at the END of the list, `role="status"`, accent tint          | same position, `QTokens` `infoBg`/`infoText`, `Semantics` |
+   | Copy                       | "27 older versions are saved but not shown." + "Nothing was deleted — …" | identical, word for word                                  |
+   | Action                     | "See plans" → billing plans                                              | same                                                      |
+   | Capture when clamped       | stays enabled                                                            | stays enabled                                             |
+   | Silent when nothing hidden | no count, no offer                                                       | no count, no offer                                        |
+
+   **No arrangement difference to record.** Unlike B6's seat count — which had to anchor differently
+   because mobile's invite action is an app-bar icon — both platforms already had a "Versions" /
+   "Snapshots" section heading with room beside it, so the count sits in the same place on both and
+   §4.1 gains no new row.
+
+3. **Does either platform need a follow-up?** No. Admin is deferred for this row as for the rest of
+   the B-series; an administrator can still set `maxSnapshotHistory` through the existing
+   `monetization.plans` JSON editor, where the description already states that `0` means unlimited
+   for every key except `maxCollaborators`.
+
+4. **§2 re-swept.** No row moves. Third time this register records a capability landing on both
+   clients simultaneously, after B4 and B6.
+
+5. **Nothing left unrecorded.**
+
+   - **Capture is never plan-gated, and three tests hold that line.** This is the row's one way to
+     become a correctness bug rather than a paywall: `SuggestionService.accept` captures a `pre_edit`
+     version inside the transaction that settles a suggestion (`f6827e0`), so a refusal on the write
+     path would make **accepting a suggestion fail** for a free author. `snapshot.service.spec.ts`
+     and `publishing.service.spec.ts` build `SnapshotService` with a history service that throws on
+     contact; `suggestion.service.spec.ts` wires a **real** `SnapshotService` into the accept path
+     with the same stub, because every other accept test mocks `SnapshotService` and none of them
+     would notice.
+   - **The sentinel does NOT invert, and the exception list stays at one entry.**
+     `maxSnapshotHistory` is `0` = unlimited, the ordinary convention. B6 inverts only because Free
+     needs _zero_ seats; B7's Free is 5, so there is nothing for an inverted sentinel to express. The
+     likeliest future mistake is "fixing" B7 toward B6 — both read the story owner's plan — which
+     would turn Pro and Enterprise into zero-version tiers silently, so one spec asserts from a
+     single stored catalogue that `{maxSnapshotHistory: 0, maxCollaborators: 0}` means **unlimited
+     history and zero seats**, and another pins `NEGATIVE_UNLIMITED_LIMIT_KEYS` to exactly
+     `['maxCollaborators']`.
+   - **Revert and get-by-id are gated, not just the list.** Clamping only the list view would have
+     left revert an open door for anyone holding an old id — §5.2's shape exactly, and revert is the
+     door most worth trying since it is what a version history is FOR. Both refuse below the window's
+     floor, and a test asserts the piece is never written on a refused revert.
+   - **`MAX_SNAPSHOTS_PER_STORY` (100) still exists** alongside the plan depth, and the two are
+     different things: that one is an anti-abuse ceiling enforced by `pruneSnapshots` at capture
+     (and it really does delete, keeping `publish`/`review` rows forever), while B7 deletes nothing
+     and only decides what is shown. B7 adds **no** pruning, retention, or scheduled work — "hidden,
+     never deleted" is the decision, and the storage cost was accepted deliberately.
+   - **The api-types guard (§3.11) was checked and is not applicable** — `@qalam/api-types` has no
+     publishing namespace, so there is nothing for `SnapshotHistoryDto` to drift from. Same position
+     as B4's `PieceLimitDto` and B6's `CollaboratorLimitDto`. The guard's 72 assertions pass
+     untouched.
+   - **Dark mode.** Mobile asserts `textContrastGuideline` on the offer and the count in both
+     brightnesses, plus `labeledTapTargetGuideline` and `iOSTapTargetGuideline`; it hits the same
+     app-wide **T-10** 44 px tap height, which stays unowned and is not this row's to fix. Web's new
+     markup is `QTokens`-pair based (defined in both themes) and is covered by the existing e2e a11y
+     spec for `/write/:storyId/publishing`, which this row extended so the clamped state renders
+     during the scan. **No live e2e run was part of this row** — the local run needs Postgres on 5432
+     and Redis on 6379, both occupied here by unrelated stacks — so that scan is CI-gated and the
+     suite's deferred state is unchanged.

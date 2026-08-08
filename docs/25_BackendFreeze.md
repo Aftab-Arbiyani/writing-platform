@@ -167,10 +167,11 @@ Changing anything in §1–§3 (the contract) requires: (a) an ADR entry in `doc
 a new API version per §8. Additive changes update the relevant doc + `openapi.json`
 and are noted here.
 
-| Date       | Change                                                                            | By  |
-| ---------- | --------------------------------------------------------------------------------- | --- |
-| 2026-07-09 | Initial freeze at `v1` (post Epic 12)                                             | —   |
-| 2026-07-27 | **Additive:** `GET /pieces/by-slug/:slug` (B1, [45 §3](./45_WebClientRoadmap.md)) | —   |
+| Date       | Change                                                                                                         | By  |
+| ---------- | -------------------------------------------------------------------------------------------------------------- | --- |
+| 2026-07-09 | Initial freeze at `v1` (post Epic 12)                                                                          | —   |
+| 2026-07-27 | **Additive:** `GET /pieces/by-slug/:slug` (B1, [45 §3](./45_WebClientRoadmap.md))                              | —   |
+| 2026-08-08 | **Post-freeze surface, shape change:** `GET /stories/:id/snapshots` (B7, [45 §4.12](./45_WebClientRoadmap.md)) | —   |
 
 **2026-07-27 — `GET /pieces/by-slug/:slug`.** Additive per §8; no existing endpoint, DTO, or
 behaviour changed. **Why:** the web reader addresses pieces by slug (`/p/:slug` — already emitted by
@@ -181,3 +182,16 @@ moving the web to `/p/:id` (forfeits SEO, breaks shipped deep links) — were re
 mirrors `getById` exactly: `@Public()` + `OptionalAuthGuard`, identical visibility rules (published +
 visible; owner sees any status), identical `PieceResponseDto`, identical `PieceNotFoundException` on
 miss. Only the lookup key differs.
+
+**2026-08-08 — `GET /stories/:id/snapshots` answers `SnapshotHistoryDto`, not `SnapshotDto[]`.**
+Recorded here for discoverability, **not** as a freeze amendment: this route is AF6 (added 2026-07-20)
+and is therefore outside the `v1` baseline of 102 paths frozen on 2026-07-09, and its only consumers
+are the frontend and the Flutter app, both updated in the same commit. **Why:** B7 caps how many
+story versions a plan SHOWS, and §4.12 requires the true total to travel with the clamped list — an
+array has nowhere to carry it, and five rows out of thirty-two are indistinguishable from five rows
+out of five, so a client reading only the array would report a count that is false. The alternative,
+a second `GET /stories/:id/snapshots/limit` endpoint mirroring B4's and B6's, was rejected: the total
+is a property of the very list being clamped, and splitting them makes a torn read possible between
+the two requests. Nothing else changed — same route, same guard, same permission, same `SnapshotDto`
+for each item. `POST /stories/:id/snapshots` (capture) is untouched **by design**, and a test fails if
+that stops being true.

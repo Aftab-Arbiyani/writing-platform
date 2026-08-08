@@ -27,7 +27,12 @@ import {
   RequestChangesDto,
   SchedulePublicationDto,
 } from './dto/publishing-request.dto';
-import { PublicationEventDto, ReviewDto, SnapshotDto } from './dto/publishing-response.dto';
+import {
+  PublicationEventDto,
+  ReviewDto,
+  SnapshotDto,
+  SnapshotHistoryDto,
+} from './dto/publishing-response.dto';
 import { PublishingService } from './publishing.service';
 import { ReviewService } from './review.service';
 import { SnapshotService } from './snapshot.service';
@@ -159,17 +164,29 @@ export class PublishingController {
 
   // ── Snapshots ────────────────────────────────────────────────────────────────
 
+  /**
+   * Clamped to the story OWNER's plan depth, with the true total alongside (B7, docs/45 §4.12), so
+   * a client can say "5 of 32 versions" rather than pretending the other 27 do not exist.
+   */
   @Get('stories/:id/snapshots')
   @Permissions(PERMISSIONS.PiecePublish)
-  @ApiOperation({ summary: "List a story's content snapshots (newest version first)." })
-  @ApiOkResponse({ type: [SnapshotDto] })
+  @ApiOperation({
+    summary: "A story's content versions (newest first), clamped to the owner's plan depth.",
+  })
+  @ApiOkResponse({ type: SnapshotHistoryDto })
   listSnapshots(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id', ParseUUIDPipe) id: string,
-  ): Promise<SnapshotDto[]> {
+  ): Promise<SnapshotHistoryDto> {
     return this.snapshots.list(id, user);
   }
 
+  /**
+   * **Never plan-gated (B7).** Capture is a write and B7 clamps only reads: an author at their
+   * limit keeps getting versions and simply stops seeing the oldest. Gating here would also break
+   * `SuggestionService.accept`, which captures a `pre_edit` version inside the transaction that
+   * settles a suggestion — the limit would surface as a failed accept, not as an upsell.
+   */
   @Post('stories/:id/snapshots')
   @Permissions(PERMISSIONS.PiecePublish)
   @ApiOperation({ summary: 'Capture a manual content snapshot of a story.' })

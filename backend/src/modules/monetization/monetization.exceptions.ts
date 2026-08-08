@@ -169,6 +169,38 @@ export class CollaboratorSeatsUnavailableException extends AppException {
   }
 }
 
+/**
+ * The requested story version is older than the OWNER's plan shows (B7, docs/45 §4.12).
+ *
+ * Thrown at the two doors that reach a single version by id — `GET /snapshots/:id` and
+ * `POST /stories/:id/snapshots/:snapshotId/revert` — and never at capture. Clamping only the list
+ * would leave revert an open door for anyone who kept an old id, which is the unenforced-gate shape
+ * docs/48 §5.2 catalogues; blocking capture instead would make **accepting a suggestion fail** for a
+ * free author, because that path takes a `pre_edit` snapshot inside the settling transaction.
+ *
+ * ## Why the copy is an offer and not an error
+ *
+ * The version still exists — B7 hides, it never deletes — so upgrading brings it back retroactively
+ * and that is the only remedy there is. `QUOTA_EXCEEDED`'s "wait, it resets" is the W4 defect
+ * (docs/48 §3.6) and would never come true here. `PieceLimitReachedException` and
+ * `CollaboratorLimitReachedException` are both refusals to CREATE, answered by deleting a piece or
+ * removing a collaborator; deleting things is exactly what does NOT make an old version readable,
+ * so this needs its own code and its own sentence.
+ *
+ * 402 rather than 404: the row is there and the plan is what stands between the author and it.
+ */
+export class SnapshotHistoryLimitedException extends AppException {
+  constructor(version: number, limit: number) {
+    super(
+      ERROR_CODES.SNAPSHOT_HISTORY_LIMITED,
+      `Your plan shows the ${limit} most recent version${limit === 1 ? '' : 's'} of a story. ` +
+        `Version ${version} is still saved — upgrade to open it.`,
+      HttpStatus.PAYMENT_REQUIRED,
+      [{ version, limit }],
+    );
+  }
+}
+
 /** The user has insufficient AI credits. */
 export class InsufficientCreditsException extends AppException {
   constructor(required: number, available: number) {

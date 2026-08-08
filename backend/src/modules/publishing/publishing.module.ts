@@ -11,6 +11,7 @@ import { PublishingController } from './publishing.controller';
 import { PublishingRepository } from './publishing.repository';
 import { PublishingService } from './publishing.service';
 import { ReviewService } from './review.service';
+import { SnapshotHistoryService } from './snapshot-history.service';
 import { SnapshotService } from './snapshot.service';
 
 /**
@@ -36,7 +37,15 @@ import { SnapshotService } from './snapshot.service';
     NotificationsModule,
   ],
   controllers: [PublishingController],
-  providers: [PublishingRepository, PublishingService, ReviewService, SnapshotService],
+  providers: [
+    PublishingRepository,
+    PublishingService,
+    ReviewService,
+    // B7's read-time history clamp (docs/45 §4.12). Reaches AF5's `EntitlementService` through the
+    // @Global MonetizationModule, exactly as B4 and B6 do — no new module edge.
+    SnapshotHistoryService,
+    SnapshotService,
+  ],
   // `SnapshotService` is exported for collaboration: accepting an edit suggestion
   // rewrites the story body, and that revision is recorded with the SAME snapshot
   // mechanism the publish path uses (no second versioning scheme).

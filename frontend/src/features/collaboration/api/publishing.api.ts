@@ -7,6 +7,7 @@ import type {
   ReviewSession,
   StoryPublicationState,
   StorySnapshot,
+  StorySnapshotHistory,
 } from '../types/collaboration.types';
 
 /**
@@ -114,9 +115,16 @@ export const publishingApi = {
 
   // ── Snapshots ────────────────────────────────────────────────────────────────────────────
 
-  /** GET /stories/:id/snapshots — every version, newest first. */
-  snapshots: (storyId: string, signal?: AbortSignal): Promise<StorySnapshot[]> =>
-    get<StorySnapshot[]>(`${story(storyId)}/snapshots`, { signal }),
+  /**
+   * GET /stories/:id/snapshots — the versions the story OWNER's plan shows, newest first, with the
+   * TRUE total alongside them (B7, docs/45 §4.12).
+   *
+   * It answers an object, not an array. The clamp is invisible without `total`: five rows out of
+   * thirty-two look exactly like five rows out of five, so a client reading only the array would
+   * report "5 versions" — false — instead of "5 of 32".
+   */
+  snapshots: (storyId: string, signal?: AbortSignal): Promise<StorySnapshotHistory> =>
+    get<StorySnapshotHistory>(`${story(storyId)}/snapshots`, { signal }),
 
   /**
    * POST /stories/:id/snapshots — capture the current content. No body.

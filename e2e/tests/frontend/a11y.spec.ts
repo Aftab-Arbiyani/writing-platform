@@ -230,10 +230,15 @@ test.describe('@phase5 @a11y frontend accessibility (authenticated)', () => {
     // all on screen: four `region` landmarks named by their own headings, the notes field's
     // `aria-expanded` toggle, and the visibility group's `role="group"` + label.
     const story = await api.createPiece({ title: data.pieceTitle() });
+    // Six versions on a Free writer's story, so B7's clamped state is ON SCREEN for the scan: the
+    // "5 of 6 versions" count line and the tinted offer that replaces the hidden row (docs/45
+    // §4.12). Five would leave the page in its pre-B7 shape and the new markup unscanned — the
+    // "looked wired and was not" class this suite exists to catch. Capture is never plan-gated, so
+    // the sixth succeeds; that is the row's whole point.
+    for (let i = 0; i < 6; i += 1) await api.captureSnapshot(story.id);
     const publishing = new StoryPublishingPage(page);
     await publishing.goto(story.id);
     await publishing.requestReview();
-    await publishing.captureVersion();
     // Scanned with the cursor left wherever arranging put it — resting on the last button clicked.
     // This spec used to park the pointer at (0,0) first, because AntD's derived hover colour for a
     // default button was 4.37:1 (W3c-3). That token is now pinned in `antd-theme.ts`, so the

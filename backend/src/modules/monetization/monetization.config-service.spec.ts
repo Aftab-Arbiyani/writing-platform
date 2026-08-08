@@ -1,4 +1,9 @@
-import { PlanTier, UNLIMITED_SEATS, resolvePlanLimit } from '@qalam/shared';
+import {
+  NEGATIVE_UNLIMITED_LIMIT_KEYS,
+  PlanTier,
+  UNLIMITED_SEATS,
+  resolvePlanLimit,
+} from '@qalam/shared';
 
 import { MonetizationConfigService } from './monetization.config-service';
 import type { SettingsService } from '../settings/settings.service';
@@ -128,5 +133,51 @@ describe('MonetizationConfigService — plan catalogue merge', () => {
       expect(seats.unlimited).toBe(false);
       expect(seats.value).toBe(0);
     }
+  });
+
+  // ── B7 history depth, and the sentinel it does NOT invert (docs/45 §4.12) ────────────────────
+
+  it('ships the B7 history depths as compiled defaults (5 / 25 / unlimited / unlimited)', async () => {
+    const plans = await serviceReading(null).getPlans();
+    expect(plans[PlanTier.Free].limits.maxSnapshotHistory).toBe(5);
+    expect(plans[PlanTier.Plus].limits.maxSnapshotHistory).toBe(25);
+    expect(plans[PlanTier.Pro].limits.maxSnapshotHistory).toBe(0);
+    expect(plans[PlanTier.Enterprise].limits.maxSnapshotHistory).toBe(0);
+  });
+
+  it('reaches a catalogue stored before B7 existed — the per-key merge still holds', async () => {
+    const plans = await serviceReading(PRE_B4_CATALOGUE).getPlans();
+    expect(plans[PlanTier.Free].limits.maxSnapshotHistory).toBe(5);
+    expect(plans[PlanTier.Plus].limits.maxSnapshotHistory).toBe(25);
+  });
+
+  /**
+   * B7 rides the ORDINARY sentinel and B6 rides the inverted one, so the two are asserted from a
+   * single stored catalogue: "fixing" B7 toward B6 — the one plausible mistake, since both read the
+   * story owner's plan — turns Pro's unlimited history into a hard zero and fails here.
+   */
+  it("an admin's stored 0 means UNLIMITED history and ZERO seats", async () => {
+    const plans = await serviceReading({
+      pro: { limits: { maxSnapshotHistory: 0, maxCollaborators: 0 } },
+    }).getPlans();
+    const limits = plans[PlanTier.Pro].limits;
+
+    expect(resolvePlanLimit(limits, 'maxSnapshotHistory')).toEqual({ value: 0, unlimited: true });
+    expect(resolvePlanLimit(limits, 'maxCollaborators')).toEqual({ value: 0, unlimited: false });
+  });
+
+  it('the compiled Free tier reads as five visible versions, never as unlimited', async () => {
+    for (const stored of [null, PRE_B4_CATALOGUE, { free: { limits: { aiDailyTokens: 1 } } }]) {
+      const plans = await serviceReading(stored).getPlans();
+      const depth = resolvePlanLimit(plans[PlanTier.Free].limits, 'maxSnapshotHistory');
+      expect(depth).toEqual({ value: 5, unlimited: false });
+    }
+  });
+
+  it('keeps maxSnapshotHistory OUT of the inverted-sentinel list', async () => {
+    // The exception list is meant to stay at one entry. If B7's key is ever added to it, Pro and
+    // Enterprise (`0`) stop being unlimited and start showing zero versions — a silent inversion
+    // with no error anywhere, which is precisely how B6 warned this fails.
+    expect(NEGATIVE_UNLIMITED_LIMIT_KEYS).toEqual(['maxCollaborators']);
   });
 });

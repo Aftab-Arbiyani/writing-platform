@@ -364,6 +364,13 @@ export interface PlanLimits {
    *   OWNS it (B6, docs/45 §4.11). **Inverted sentinel: `-1` ({@link UNLIMITED_SEATS}) = unlimited,
    *   `0` = none.** Free is zero seats, and encoding that as `0` under the ordinary convention would
    *   hand every free author unlimited collaborators. See {@link NEGATIVE_UNLIMITED_LIMIT_KEYS}.
+   * - `maxSnapshotHistory` — how many story versions are VISIBLE, by the plan of the author who
+   *   OWNS the story (B7, docs/45 §4.12). **Ordinary convention: `0` = unlimited**, exactly like
+   *   `maxPieces`. It reads the owner's plan like B6 and is capped at read time, but it does NOT
+   *   share B6's inverted sentinel and must not be "fixed" toward it: B6 inverts only because Free
+   *   needs *zero* seats, and B7's Free tier is 5 versions, not 0. Nothing on this key needs to
+   *   express a hard zero, so it stays on the house convention and out of
+   *   {@link NEGATIVE_UNLIMITED_LIMIT_KEYS} — which is what stops the exception list growing.
    */
   [key: string]: number;
 }
@@ -584,6 +591,11 @@ export const ENTITLEMENT_CACHE_TTL_SECONDS = 60;
  * who OWNS the story. **Its sentinel is inverted:** `UNLIMITED_SEATS` (-1) is unlimited and `0` is
  * none, because Free genuinely gets zero seats and `0` would otherwise read as unlimited. Never
  * copy `maxPieces`'s `0` across to it — see {@link NEGATIVE_UNLIMITED_LIMIT_KEYS}.
+ *
+ * `maxSnapshotHistory` is B7's version-history depth (docs/45 §4.12), also read from the story
+ * OWNER's plan — and on the ORDINARY sentinel, `0` = unlimited, like `maxPieces` and unlike the key
+ * directly above it. B7 never needs to say "zero versions", so it has no reason to invert and does
+ * not. Beyond the depth, versions are HIDDEN and never deleted, so upgrading restores them.
  */
 export const DEFAULT_PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
   [PlanTier.Free]: {
@@ -592,6 +604,8 @@ export const DEFAULT_PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
     aiMonthlyCredits: 0,
     maxPieces: 25,
     maxCollaborators: 0, // zero seats — solo. NOT "unlimited": this key's sentinel is -1.
+    // B7. Ordinary sentinel: this is five visible versions, and `0` here would mean unlimited.
+    maxSnapshotHistory: 5,
   },
   [PlanTier.Plus]: {
     aiDailyTokens: 100_000,
@@ -599,6 +613,7 @@ export const DEFAULT_PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
     aiMonthlyCredits: 5_000,
     maxPieces: 250,
     maxCollaborators: 3,
+    maxSnapshotHistory: 25,
   },
   [PlanTier.Pro]: {
     aiDailyTokens: 500_000,
@@ -606,6 +621,7 @@ export const DEFAULT_PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
     aiMonthlyCredits: 25_000,
     maxPieces: 0,
     maxCollaborators: UNLIMITED_SEATS, // -1, not 0 — 0 would mean "no collaborators" here.
+    maxSnapshotHistory: 0, // unlimited — `0` is right on THIS key. Do not copy the -1 above.
   },
   [PlanTier.Enterprise]: {
     aiDailyTokens: 0,
@@ -613,6 +629,7 @@ export const DEFAULT_PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
     aiMonthlyCredits: 100_000,
     maxPieces: 0,
     maxCollaborators: UNLIMITED_SEATS,
+    maxSnapshotHistory: 0, // unlimited.
   },
 };
 

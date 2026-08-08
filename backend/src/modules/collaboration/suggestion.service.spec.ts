@@ -13,7 +13,9 @@ import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.in
 import type { AuditService } from '../audit/audit.service';
 import type { PiecesService } from '../pieces/pieces.service';
 import type { PolicyEngineService } from '../policy';
-import type { SnapshotService } from '../publishing';
+import { SnapshotService } from '../publishing';
+import type { PublishingRepository } from '../publishing/publishing.repository';
+import type { SnapshotHistoryService } from '../publishing/snapshot-history.service';
 import { anchorText } from './content-text.util';
 import type { ActivityService } from './activity.service';
 import type { CollaborationNotifier } from './collaboration-notifier.port';
@@ -178,6 +180,69 @@ describe('SuggestionService', () => {
       // `capture`, not `create`: the accept path must not be put through a second
       // (publish-level) authorization.
       expect(snapshots.capture).toHaveBeenCalledWith(STORY, user(OWNER), SnapshotReason.PreEdit);
+    });
+
+    /**
+     * B7's correctness guard, asserted across the two units rather than against a mock (docs/45
+     * §4.12). Every other test here stubs `SnapshotService`, so none of them would notice if
+     * capture started refusing on a plan limit — and this is the path where that refusal costs the
+     * most: the `pre_edit` version is taken as part of settling the suggestion, so a free author at
+     * their history depth would simply be unable to ACCEPT one. The real service is wired here with
+     * a history service that throws on contact, so a plan check anywhere on the write path fails
+     * this test instead of that author.
+     */
+    it('accepts for an author at their history limit — capture is never plan-gated', async () => {
+      const t = build();
+      t.repo.findSuggestionById.mockResolvedValue(suggestion());
+
+      const realSnapshots = new SnapshotService(
+        {
+          preview: jest.fn().mockResolvedValue({ title: 't', content: {}, wordCount: 3 }),
+          getStoryContext: jest
+            .fn()
+            .mockResolvedValue({ authorId: OWNER, visibility: Visibility.Private }),
+        } as unknown as PiecesService,
+        { assert: jest.fn().mockResolvedValue(allow()) } as unknown as PolicyEngineService,
+        { record: jest.fn().mockResolvedValue(undefined) } as unknown as AuditService,
+        {
+          nextSnapshotVersion: jest.fn().mockResolvedValue(99),
+          createSnapshot: jest.fn().mockResolvedValue({
+            id: 'snap-99',
+            storyId: STORY,
+            version: 99,
+            title: 't',
+            content: {},
+            wordCount: 3,
+            reason: SnapshotReason.PreEdit,
+            createdById: OWNER,
+            createdAt: new Date('2026-08-08T00:00:00Z'),
+          }),
+          pruneSnapshots: jest.fn().mockResolvedValue(0),
+          recordEvent: jest.fn().mockResolvedValue(undefined),
+        } as unknown as PublishingRepository,
+        {
+          window: jest.fn(() => {
+            throw new Error('accept must not resolve a plan window');
+          }),
+          assertVisible: jest.fn(() => {
+            throw new Error('accept must not be plan-gated');
+          }),
+        } as unknown as SnapshotHistoryService,
+      );
+      const service = new SuggestionService(
+        t.repo,
+        t.pieces,
+        t.engine,
+        t.audit,
+        t.activity,
+        realSnapshots,
+        t.notifier,
+      );
+
+      const dto = await service.accept('s-1', user(OWNER));
+
+      expect(dto.status).toBe(SuggestionStatus.Accepted);
+      expect(t.pieces.replaceContent).toHaveBeenCalled();
     });
 
     it('applies the rewrite and the resolution in ONE transaction', async () => {

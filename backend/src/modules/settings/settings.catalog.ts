@@ -516,6 +516,10 @@ export const SETTING_DEFINITIONS: readonly SettingDefinition[] = [
           maxPieces: 25,
           // B6 seats. 0 = NONE here, not unlimited — this key's sentinel is -1 (see description).
           maxCollaborators: 0,
+          // B7 version-history depth. Back on the ORDINARY sentinel: `0` would mean unlimited
+          // here, so five means five. It reads the story owner's plan the way B6 does, which is
+          // the only thing the two rows share — do not copy `maxCollaborators`'s -1 across.
+          maxSnapshotHistory: 5,
         },
         monthlyCredits: 0,
         prices: { none: { usd: 0 } },
@@ -532,6 +536,7 @@ export const SETTING_DEFINITIONS: readonly SettingDefinition[] = [
           aiMonthlyCredits: 5000,
           maxPieces: 250,
           maxCollaborators: 3,
+          maxSnapshotHistory: 25,
         },
         monthlyCredits: 5000,
         prices: { monthly: { usd: 499 }, yearly: { usd: 4990 } },
@@ -557,6 +562,7 @@ export const SETTING_DEFINITIONS: readonly SettingDefinition[] = [
           aiMonthlyCredits: 25000,
           maxPieces: 0,
           maxCollaborators: -1, // UNLIMITED_SEATS. `0` would mean no collaborators at all.
+          maxSnapshotHistory: 0, // Unlimited — and `0` IS how this key says so (B7, not B6).
         },
         monthlyCredits: 25000,
         prices: { monthly: { usd: 1499 }, yearly: { usd: 14990 } },
@@ -582,6 +588,7 @@ export const SETTING_DEFINITIONS: readonly SettingDefinition[] = [
           aiMonthlyCredits: 100000,
           maxPieces: 0,
           maxCollaborators: -1, // UNLIMITED_SEATS.
+          maxSnapshotHistory: 0, // Unlimited.
         },
         monthlyCredits: 100000,
         prices: { monthly: { usd: 4999 }, yearly: { usd: 49990 } },

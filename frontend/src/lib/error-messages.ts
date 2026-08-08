@@ -86,6 +86,11 @@ const MESSAGES: Record<string, string> = {
     'This story has no collaborator seats left on your plan. Remove a collaborator, or see plans.',
   [ERROR_CODES.COLLABORATOR_SEATS_UNAVAILABLE]:
     'This story is full. Ask the owner to free a collaborator seat.',
+  // B7 (docs/45 §4.12). The version still exists — this is a read-time clamp, not a deletion — so
+  // the only remedy is a larger plan, and saying so is the honest sentence. Not "delete something"
+  // (nothing an author removes reveals an older version) and not "it resets" (nothing does).
+  [ERROR_CODES.SNAPSHOT_HISTORY_LIMITED]:
+    'That version is older than your plan shows. It’s still saved — see plans to open it.',
   [ERROR_CODES.INSUFFICIENT_CREDITS]: 'You’re out of AI credits.',
   [ERROR_CODES.RECEIPT_VALIDATION_FAILED]: 'We couldn’t verify that purchase.',
   [ERROR_CODES.PURCHASE_NOT_FOUND]: 'There was nothing to restore.',

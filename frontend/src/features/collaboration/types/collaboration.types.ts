@@ -223,6 +223,29 @@ export interface StorySnapshot {
   createdAt: string;
 }
 
+/**
+ * A story's version history — `SnapshotHistoryDto` (B7, docs/45 §4.12).
+ *
+ * `items` is CLAMPED to the depth the story OWNER's plan shows; `total` counts every version
+ * stored, including the hidden ones. Both are needed to say "5 of 32 versions" — a clamped list on
+ * its own is indistinguishable from a short history, and rendering only `items.length` would state
+ * a number that is not true.
+ *
+ * The hidden versions are never deleted: upgrading makes them readable again, retroactively.
+ */
+export interface StorySnapshotHistory {
+  items: StorySnapshot[];
+  /** Every version stored, hidden ones included. */
+  total: number;
+  /** How many the response carries. */
+  visible: number;
+  /** Stored but not shown on this plan. */
+  hidden: number;
+  /** The owner's plan depth. **`0` = unlimited** — the ordinary sentinel, NOT B6's inverted `-1`. */
+  limit: number;
+  unlimited: boolean;
+}
+
 /** One entry of the immutable publishing history — `PublicationEventDto`. */
 export interface PublicationHistoryEvent {
   id: string;

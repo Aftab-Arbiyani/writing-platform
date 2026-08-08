@@ -366,14 +366,39 @@ export class ApiHelper {
     return this.data<{ id: string; state: string }>(res);
   }
 
-  /** A story's snapshots as the seeded writer (GET /stories/:id/snapshots). */
-  async storySnapshots(
-    storyId: string,
-  ): Promise<{ id: string; version: number; reason: string }[]> {
+  /**
+   * A story's version history as the seeded writer (GET /stories/:id/snapshots).
+   *
+   * Answers an OBJECT, not an array: B7 clamps `items` to the story owner's plan depth and sends
+   * the true `total` alongside (docs/45 §4.12).
+   */
+  async storySnapshots(storyId: string): Promise<{
+    items: { id: string; version: number; reason: string }[];
+    total: number;
+    visible: number;
+    hidden: number;
+    limit: number;
+    unlimited: boolean;
+  }> {
     const res = await this.request.get(this.url(`/stories/${storyId}/snapshots`), {
       headers: await this.writerHeaders(),
     });
-    return this.data<{ id: string; version: number; reason: string }[]>(res);
+    return this.data(res);
+  }
+
+  /**
+   * Capture one content version as the writer (POST /stories/:id/snapshots, no body).
+   *
+   * Deliberately arrangeable in a loop: B7's clamped state only appears once a story has more
+   * versions than the plan shows, and capture is never refused on a plan limit — so pushing a free
+   * writer's story past its depth is both possible and the only way to render that state.
+   */
+  async captureSnapshot(storyId: string): Promise<{ id: string; version: number }> {
+    const res = await this.request.post(this.url(`/stories/${storyId}/snapshots`), {
+      headers: await this.writerHeaders(),
+      data: {},
+    });
+    return this.data<{ id: string; version: number }>(res);
   }
 
   /** Follow a user as the bearer of `token` (POST /users/:id/follow, no body). */
