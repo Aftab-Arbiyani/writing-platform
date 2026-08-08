@@ -1,6 +1,9 @@
 # 48 — Platform Parity Register (web ↔ mobile)
 
-**Status:** 🔒 Binding · **Owner:** every client epic · **Last swept:** 2026-08-08 (after **W9's
+**Status:** 🔒 Binding · **Owner:** every client epic · **Last swept:** 2026-08-08 (after **B4** — the plan piece cap, the first row that is an enabler plus
+both client halves rather than a port, and the first capability to land on both clients at once. Its
+sweep is **§6.3**; two accepted arrangement differences went to §4.1 and one app-wide a11y finding to
+**T-10**. Previously swept 2026-08-08 (after **W9's
 close-out** — the two story-scoped AF4 consumers. **§2 row 3 is now CLOSED at 8 of 8**, and the §5
 Ask-My-Book orphan closed with it. The pre-flight audit (**§3.13**) found the contract sound on both
 routes and every wire type already mirrored AND pinned — the first audit in this register to find
@@ -2049,6 +2052,8 @@ every known difference to live in §2, §3, or §4 — so a later epic comparing
 | **Story Explorer + Ask — entry point** | Web: two **tabs on the in-editor AI drawer**. Mobile: two **full screens** pushed from the editor's AI overflow menu. | Note this is the OPPOSITE call to the "AI surfaces — entry point" row above, and deliberately so: those three are ACCOUNT-scoped (conversations, prompts, usage) and belong in settings; these two are **per-story** and belong where the story is. The drawer is the web's editor AI menu. Both clients reach both surfaces from the editor, gated identically on a synced draft. Added by W9's sweep (2026-08-08). |
 | **Graph node detail** | Web: the detail **replaces the list** inside the drawer, with a back control. Mobile: a **bottom sheet** over the list (`story_node_sheet.dart`). | A nested dialog inside an open drawer is the one arrangement neither AntD nor a screen reader handles well, and the drawer already provides the "layer over the editor" mobile's sheet is for. The interaction is identical either way — pick a neighbour, land on that node. Added by W9's sweep (2026-08-08). |
 | **Explorer → Ask** | Web: **no cross-link**; the two are adjacent tabs. Mobile: an "Ask about this story" **app-bar action** on the explorer (`story_explorer_screen.dart:54-59`). | Mobile needs the action because the two are separate routes and the explorer is where a question occurs to you. On web they are one click apart in the same drawer, so a link would navigate to the tab beside the one you are on. (Mobile's version of this action is also the entry point that skips the feature-flag check — **W9-2**, §6.2.) Added by W9's sweep (2026-08-08). |
+| **Piece limit — where the refusal lands** | Web: the editor creates the draft on **first autosave**, so a refused create surfaces as a distinct `limit-error` save status mid-typing. Mobile: "New piece" mints a **local** draft and the refusal arrives at **sync**, so it surfaces as an explanation on that draft's row. | Same server refusal, same copy. The two clients create a piece at different moments — web on the first keystroke that saves, mobile offline-first — so the honest place to say "this will not save" is different on each. Neither could adopt the other's placement without adopting its create model. |
+| **Piece limit — which controls block** | Web: **two** disabled controls (the header "New draft" and the empty state's "Write your first draft"), each `aria-describedby` the notice. Mobile: **one** disabled FAB, with the reason in its semantics label. | Web's dashboard has two create affordances because a browser page shows list and empty state in the same layout; mobile has exactly one. Both are disabled-and-explained rather than hidden (C-1) or live-and-refused (W3c-1). |
 
 **The bottom four rows were added by W5's sweep (2026-08-04), and they had to be.** The epic's own code
 comments said each of them was "recorded in 48 §4.1" — and none of them was. A claim in a comment is not
@@ -2333,3 +2338,54 @@ translation lost from a Dart subscription; W9-2 was a gate applied at one of thr
 a field parsed on one class and not its sibling. None was a misread of the contract — §3.13 found the
 contract sound. Each was a **correct rule applied in fewer places than it holds**, which is the class of
 defect a per-surface audit finds and a per-endpoint audit does not.
+
+---
+
+### 6.3 B4's sweep (2026-08-08)
+
+The first sweep for a row that is **not** a client port. B4 is an enabler plus two client halves
+built in the same pass, so step 2 has no reference platform to compare against — neither client had
+this feature. The comparison is therefore **web against mobile, both new**, which makes step 1 the
+load-bearing one.
+
+1. **Only what the row named?** Almost. [45 §4.9](./45_WebClientRoadmap.md#49-b4--piece-limit-per-plan-detail--done-2026-08-08)
+   named `POST /pieces`; **`POST /pieces/:id/duplicate` was capped as well**, decided explicitly
+   before the code was written rather than discovered afterwards. Duplicate calls `pieces.create`
+   and is a live button on the web dashboard, so an uncapped duplicate made the whole cap
+   bypassable in one tap. It is creation — not publish, not update — so the "keep everything on
+   downgrade" rule is untouched. Two additions were consequences rather than scope: the additive
+   `GET /me/pieces/limit` (nothing already returned the count both clients were required to show),
+   and a per-key merge of `limits` in `mergePlans` **without which the cap would have been inert on
+   every existing deployment** (`syncDefinitions` inserts with `orIgnore()`, so a stored catalogue
+   from before B4 replaced the compiled `limits` wholesale and `maxPieces` read as absent = unlimited).
+2. **Does the other platform have every part I built?** They were built together and compared
+   surface by surface: the count string, the blocked headline, the over-limit headline and the
+   remedy sentence are **word-for-word identical**, and a mobile test asserts the shared wording
+   precisely so a later edit to one client fails on the other. Two differences, both platform-inherent
+   and recorded in §4.1 below: **where the refusal lands** (web creates the draft lazily on first
+   autosave, so it needs a distinct `limit-error` save status; mobile mints locally and the refusal
+   arrives at sync, so it needs a per-row explanation), and **which controls exist** (web disables
+   two buttons — header and empty state; mobile disables one FAB).
+3. **Does either platform need a follow-up?** One, and it is not B4's: mobile's `QButton` clamps
+   every button in the app to a 44 px tap height, so `androidTapTargetGuideline` (48) fails app-wide.
+   B4's blocked state passes contrast, labelling and the iOS 44 guideline rendered in **both** themes;
+   the 48 gap is recorded as **T-10** below rather than patched with a one-off taller button.
+4. **§2 re-swept.** No row moves: piece limits are a new capability on both clients simultaneously,
+   which is the first time this register has recorded that.
+5. **Nothing left unrecorded.** The response-counting asymmetry (responses count toward the cap and
+   are not gated by it) is stated in 45 §4.9 and in the counting method's own comment; the api-types
+   guard was checked and found not applicable, which is also written down there.
+
+### T-10 · **low** · every `QButton` is 44 px tall, so the Android 48 px tap-target guideline fails app-wide
+
+**What.** `q_button.dart` sets `tapHeight = max(visualHeight, 44)`. 44 is the iOS HIG minimum;
+Android's is 48, and `meetsGuideline(androidTapTargetGuideline)` fails for any screen containing a
+`QButton` — not for anything a particular surface did.
+
+**Found by** B4's mobile a11y scan (2026-08-08), which asserts `textContrastGuideline`,
+`labeledTapTargetGuideline` and `iOSTapTargetGuideline` in light and dark and states in the test why
+the fourth is absent.
+
+**Not fixed here.** Raising the clamp to 48 changes the height of every button in the app and is a
+design decision with visual consequences on every screen — a token/UI row, not a piece-limit row.
+Unowned.

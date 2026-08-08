@@ -351,7 +351,13 @@ export interface PlanLimits {
   aiDailyTokens: number;
   aiMonthlyTokens: number;
   aiMonthlyCredits: number;
-  /** Reserved extensible per-feature caps (requests/day etc.). */
+  /**
+   * Reserved extensible per-feature caps (requests/day etc.). **0 / absent = unlimited.**
+   *
+   * Keys that ride this signature rather than being declared above (they are tunable data,
+   * so a new cap needs no type change and no migration):
+   * - `maxPieces` — how many live (non-deleted) pieces one author may hold (B4, docs/45 §4.9).
+   */
   [key: string]: number;
 }
 
@@ -488,12 +494,38 @@ export const DEFAULT_GRACE_PERIOD_DAYS = 7;
 /** How long an entitlement decision is cached before recomputation (seconds). */
 export const ENTITLEMENT_CACHE_TTL_SECONDS = 60;
 
-/** Default AI daily/monthly token allowances per tier (org default; admin-configurable). */
+/**
+ * Default per-tier plan limits (org default; admin-configurable at runtime through the
+ * `monetization.plans` setting, so these are the compiled fallback, not the law).
+ *
+ * `maxPieces` is B4's stock cap on live pieces (docs/45 §4.9) — generous enough to read as an
+ * anti-abuse ceiling rather than a paywall, and `0` (unlimited) on the two paid-through tiers.
+ */
 export const DEFAULT_PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
-  [PlanTier.Free]: { aiDailyTokens: 20_000, aiMonthlyTokens: 200_000, aiMonthlyCredits: 0 },
-  [PlanTier.Plus]: { aiDailyTokens: 100_000, aiMonthlyTokens: 2_000_000, aiMonthlyCredits: 5_000 },
-  [PlanTier.Pro]: { aiDailyTokens: 500_000, aiMonthlyTokens: 10_000_000, aiMonthlyCredits: 25_000 },
-  [PlanTier.Enterprise]: { aiDailyTokens: 0, aiMonthlyTokens: 0, aiMonthlyCredits: 100_000 },
+  [PlanTier.Free]: {
+    aiDailyTokens: 20_000,
+    aiMonthlyTokens: 200_000,
+    aiMonthlyCredits: 0,
+    maxPieces: 25,
+  },
+  [PlanTier.Plus]: {
+    aiDailyTokens: 100_000,
+    aiMonthlyTokens: 2_000_000,
+    aiMonthlyCredits: 5_000,
+    maxPieces: 250,
+  },
+  [PlanTier.Pro]: {
+    aiDailyTokens: 500_000,
+    aiMonthlyTokens: 10_000_000,
+    aiMonthlyCredits: 25_000,
+    maxPieces: 0,
+  },
+  [PlanTier.Enterprise]: {
+    aiDailyTokens: 0,
+    aiMonthlyTokens: 0,
+    aiMonthlyCredits: 100_000,
+    maxPieces: 0,
+  },
 };
 
 /** Which premium features each tier includes by default (admin config may override). */

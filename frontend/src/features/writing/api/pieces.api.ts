@@ -7,6 +7,7 @@ import { uploadWithProgress, type UploadOptions } from '@/lib/upload';
 import type {
   CreatePiecePayload,
   Piece,
+  PieceLimit,
   PieceListItem,
   UpdatePiecePayload,
 } from '../types/piece.types';
@@ -34,6 +35,9 @@ export const piecesApi = {
     getPage<PieceListItem>(`/me/pieces${buildQueryString({ status, cursor, limit: 20 })}`, {
       signal,
     }),
+
+  /** The author's plan piece allowance (B4) — used / limit / remaining. */
+  limit: (signal?: AbortSignal) => get<PieceLimit>('/me/pieces/limit', { signal }),
 
   publish: (id: string, idempotencyKey: string) =>
     post<Piece>(`/pieces/${id}/publish`, undefined, {

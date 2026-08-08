@@ -54,6 +54,39 @@ export class PieceListItemDto {
   @ApiProperty() updatedAt!: string;
 }
 
+/**
+ * How much of the author's plan piece allowance is used (B4, docs/45 §4.9).
+ *
+ * Exists so a client can say "24 of 25 pieces" *beside the create action* rather than only
+ * explaining the cap after a create has already been refused.
+ */
+export class PieceLimitDto {
+  @ApiProperty({ description: 'Live (non-deleted) pieces this author currently holds.' })
+  used!: number;
+
+  @ApiProperty({
+    description: 'The plan cap. 0 = unlimited, matching the PlanLimits convention.',
+    example: 25,
+  })
+  limit!: number;
+
+  @ApiProperty({
+    nullable: true,
+    description: 'Slots left (never negative). Null when the plan is unlimited.',
+  })
+  remaining!: number | null;
+
+  @ApiProperty({ description: 'True when the plan sets no cap (limit 0 / absent).' })
+  unlimited!: boolean;
+
+  @ApiProperty({
+    description:
+      'Whether creating another piece is allowed right now. False also covers the over-limit ' +
+      'case a downgrade can produce, where `used` exceeds `limit`.',
+  })
+  canCreate!: boolean;
+}
+
 /** `{ key }` from cover upload — clients build the CDN URL. */
 export class PieceCoverResponseDto {
   @ApiProperty({ example: 'pieces/<uuid>/cover-<uuid>.webp' }) key!: string;

@@ -134,6 +134,7 @@ export const qk = {
     all: ['me'] as const,
     drafts: () => ['me', 'drafts'] as const, // GET /me/drafts
     pieces: (status?: PieceStatus) => ['me', 'pieces', status ?? 'all'] as const, // GET /me/pieces?status=
+    pieceLimit: () => ['me', 'pieces', 'limit'] as const, // GET /me/pieces/limit — the B4 plan cap
     followRequests: () => ['me', 'follow-requests'] as const, // GET /me/follow-requests (infinite)
     settings: () => ['me', 'settings'] as const, // GET /settings
   },

@@ -37,6 +37,7 @@ import { CreatePieceDto } from './dto/create-piece.dto';
 import { PieceListQueryDto } from './dto/piece-list-query.dto';
 import {
   PieceCoverResponseDto,
+  PieceLimitDto,
   PieceListItemDto,
   PieceResponseDto,
 } from './dto/piece-response.dto';
@@ -61,13 +62,17 @@ export class PiecesController {
   @Post('pieces')
   @ApiBearerAuth()
   @Permissions(PERMISSIONS.PieceCreate)
-  @ApiOperation({ summary: 'Create a draft. Requires `piece.create`.' })
+  @ApiOperation({
+    summary:
+      'Create a draft. Requires `piece.create`. Errors: PIECE_LIMIT_REACHED when the author ' +
+      'already holds as many pieces as their plan allows (B4).',
+  })
   @ApiCreatedResponse({ type: PieceResponseDto })
   create(
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: CreatePieceDto,
   ): Promise<PieceResponseDto> {
-    return this.pieces.createDraft(user.id, dto);
+    return this.pieces.createOwnDraft(user.id, dto);
   }
 
   @Get('me/drafts')
@@ -80,6 +85,20 @@ export class PiecesController {
       status: 'draft',
     } as PieceListQueryDto);
     return { success: true as const, data: page.items, meta: { pagination: page.meta } };
+  }
+
+  /*
+   * Declared BEFORE `me/pieces` for readability only — three path segments against two, so the
+   * two routes cannot collide.
+   */
+  @Get('me/pieces/limit')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'My plan piece allowance — used / limit / remaining (B4). 0 limit = unlimited.',
+  })
+  @ApiOkResponse({ type: PieceLimitDto })
+  pieceLimit(@CurrentUser() user: AuthenticatedUser): Promise<PieceLimitDto> {
+    return this.pieces.getPieceAllowance(user.id);
   }
 
   @Get('me/pieces')
@@ -221,7 +240,11 @@ export class PiecesController {
   @Post('pieces/:id/duplicate')
   @ApiBearerAuth()
   @Permissions(PERMISSIONS.PieceCreate)
-  @ApiOperation({ summary: 'Duplicate a piece into a fresh draft. Requires `piece.create`.' })
+  @ApiOperation({
+    summary:
+      'Duplicate a piece into a fresh draft. Requires `piece.create`. Errors: ' +
+      'PIECE_LIMIT_REACHED — a copy is a new piece, so the plan cap applies here too (B4).',
+  })
   @ApiCreatedResponse({ type: PieceResponseDto })
   duplicate(
     @CurrentUser() user: AuthenticatedUser,

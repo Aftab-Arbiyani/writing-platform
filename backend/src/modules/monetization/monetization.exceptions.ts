@@ -104,6 +104,28 @@ export class QuotaExceededException extends AppException {
   }
 }
 
+/**
+ * The author already holds as many pieces as their plan allows (B4, docs/45 §4.9).
+ *
+ * A separate code from {@link QuotaExceededException} on purpose. That one is a FLOW cap — tokens
+ * or credits burned inside a window — and its honest remedy is "wait, it resets". This is a STOCK
+ * cap on live pieces: nothing resets, ever, so the only two things that help are deleting a piece
+ * and moving to a bigger plan. Conflating the two remedies is the W4 defect (docs/48 §3.6), and it
+ * ends with a blocked author waiting for a reset that never arrives.
+ *
+ * 402 rather than 429 for the same reason: this is an upgrade conversation, not a rate limit.
+ */
+export class PieceLimitReachedException extends AppException {
+  constructor(used: number, limit: number) {
+    super(
+      ERROR_CODES.PIECE_LIMIT_REACHED,
+      `Your plan allows ${limit} pieces and you have ${used}.`,
+      HttpStatus.PAYMENT_REQUIRED,
+      [{ used, limit }],
+    );
+  }
+}
+
 /** The user has insufficient AI credits. */
 export class InsufficientCreditsException extends AppException {
   constructor(required: number, available: number) {

@@ -75,6 +75,11 @@ const MESSAGES: Record<string, string> = {
   [ERROR_CODES.TRIAL_NOT_ELIGIBLE]: 'You’ve already used your free trial.',
   [ERROR_CODES.ENTITLEMENT_DENIED]: 'That feature needs a paid plan.',
   [ERROR_CODES.QUOTA_EXCEEDED]: 'You’ve used your allowance for now. It resets next period.',
+  // Sits next to QUOTA_EXCEEDED and says the opposite thing about time on purpose (B4, docs/45
+  // §4.9): that one resets, this one never does. Offering "it resets next period" to an author at
+  // their piece cap is the W4 remedy-conflation defect (docs/48 §3.6).
+  [ERROR_CODES.PIECE_LIMIT_REACHED]:
+    'You’ve used all the pieces your plan includes. Delete one to free a slot, or see plans.',
   [ERROR_CODES.INSUFFICIENT_CREDITS]: 'You’re out of AI credits.',
   [ERROR_CODES.RECEIPT_VALIDATION_FAILED]: 'We couldn’t verify that purchase.',
   [ERROR_CODES.PURCHASE_NOT_FOUND]: 'There was nothing to restore.',

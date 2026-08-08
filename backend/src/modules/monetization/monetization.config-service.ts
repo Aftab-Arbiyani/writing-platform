@@ -148,6 +148,18 @@ export function compiledPlans(): ResolvedPlanCatalogue {
   return catalogue;
 }
 
+/**
+ * Folds the stored catalogue over the compiled defaults, tier by tier.
+ *
+ * `limits` merges one level DEEPER than the rest of the definition, and that is load-bearing.
+ * `SettingsRepository.syncDefinitions` inserts with `orIgnore()`, so an existing deployment keeps
+ * whatever `monetization.plans` JSON it was first seeded with — forever. With a flat spread, a
+ * stored `limits` object replaces the compiled one wholesale, so a limit key added to the catalogue
+ * *after* that row was written (B4's `maxPieces`, docs/45 §4.9) would read as absent, absent means
+ * unlimited, and the new cap would be silently inert on every deployment except a fresh database.
+ * Merging per key means a new default reaches existing installs while an admin's explicit value for
+ * any key still wins (it is spread last; `0` is how an admin says "unlimited").
+ */
 function mergePlans(raw: unknown): ResolvedPlanCatalogue {
   const defaults = compiledPlans();
   if (raw === null || typeof raw !== 'object') {
@@ -156,7 +168,13 @@ function mergePlans(raw: unknown): ResolvedPlanCatalogue {
   const stored = raw as Partial<Record<PlanTier, Partial<PlanDefinition>>>;
   const merged = {} as ResolvedPlanCatalogue;
   for (const tier of PLAN_TIER_ORDER) {
-    merged[tier] = { ...defaults[tier], ...(stored[tier] ?? {}), tier };
+    const storedTier = stored[tier] ?? {};
+    merged[tier] = {
+      ...defaults[tier],
+      ...storedTier,
+      limits: { ...defaults[tier].limits, ...(storedTier.limits ?? {}) },
+      tier,
+    };
   }
   return merged;
 }

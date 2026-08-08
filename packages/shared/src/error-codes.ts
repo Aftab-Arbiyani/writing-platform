@@ -252,6 +252,17 @@ export const ERROR_CODES = {
   ENTITLEMENT_OVERRIDE_NOT_FOUND: 'ENTITLEMENT_OVERRIDE_NOT_FOUND',
   /** A per-user AI usage/credit quota (daily/monthly/per-feature) was hit (429). */
   QUOTA_EXCEEDED: 'QUOTA_EXCEEDED',
+  /**
+   * The author already holds as many pieces as their plan allows, so creating another is
+   * refused (402 — B4, `PlanLimits.maxPieces`). `details` carries `{ used, limit }`.
+   *
+   * **Deliberately NOT `QUOTA_EXCEEDED`,** which is the code above and means a *flow* cap
+   * (tokens/credits spent in a window) whose remedy is to WAIT for the window to reset. This
+   * is a *stock* cap on live pieces: waiting never helps, and the two remedies that do are
+   * "delete a piece" and "see plans". Telling a blocked author to wait for a reset that will
+   * never come is the W4 defect recorded in docs/48 §3.6, so the codes stay separate.
+   */
+  PIECE_LIMIT_REACHED: 'PIECE_LIMIT_REACHED',
   /** The user has insufficient AI credits for the request (402). */
   INSUFFICIENT_CREDITS: 'INSUFFICIENT_CREDITS',
   /** A payment attempt failed (card declined / provider rejected) (402). */

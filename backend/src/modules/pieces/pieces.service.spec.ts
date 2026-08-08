@@ -4,10 +4,13 @@ import type { EntityManager } from 'typeorm';
 import type { TransactionRunner } from '../../common/database/transaction-runner';
 import type { DomainEventBus } from '../../common/events/domain-event-bus';
 import type { MediaService } from '../../media/media.service';
+import type { EntitlementService } from '../monetization/entitlement.service';
+import { PieceLimitReachedException } from '../monetization/monetization.exceptions';
 import type { FollowService } from '../users/follow.service';
 import type { ProfileService } from '../users/profile.service';
 import type { UsersService } from '../users/users.service';
 import type { TaxonomyService } from '../taxonomy/taxonomy.service';
+import type { CreatePieceDto } from './dto/create-piece.dto';
 import { Piece } from './entities/piece.entity';
 import {
   PieceAlreadyPublishedException,
@@ -48,12 +51,27 @@ function piece(overrides: Partial<Piece> = {}): Piece {
   });
 }
 
-function build(current: Piece | null): {
+/** B4: what the author's plan allows and how many live pieces they already hold. */
+interface PlanState {
+  /** `PlanLimits.maxPieces`; omit the key entirely to test "absent = unlimited". */
+  maxPieces?: number;
+  /** What `countByAuthor` (non-deleted only) returns. */
+  owned: number;
+}
+
+function build(
+  current: Piece | null,
+  plan: PlanState = { maxPieces: 0, owned: 0 },
+): {
   service: PiecesService;
   repo: jest.Mocked<
-    Pick<PiecesRepository, 'findById' | 'findBySlug' | 'update' | 'slugExists' | 'getTagIds'>
+    Pick<
+      PiecesRepository,
+      'findById' | 'findBySlug' | 'update' | 'slugExists' | 'getTagIds' | 'countByAuthor' | 'create'
+    >
   >;
   profiles: { adjustPublishedCount: jest.Mock; getOrCreateByUserId: jest.Mock };
+  entitlements: { getLimits: jest.Mock };
 } {
   const repo = {
     findById: jest.fn().mockResolvedValue(current),
@@ -61,20 +79,38 @@ function build(current: Piece | null): {
     update: jest.fn().mockResolvedValue(undefined),
     slugExists: jest.fn().mockResolvedValue(false),
     getTagIds: jest.fn().mockResolvedValue([]),
+    countByAuthor: jest.fn().mockResolvedValue(plan.owned),
+    create: jest.fn().mockResolvedValue(piece({ id: 'new' })),
+    setTags: jest.fn().mockResolvedValue(undefined),
   } as unknown as jest.Mocked<
-    Pick<PiecesRepository, 'findById' | 'findBySlug' | 'update' | 'slugExists' | 'getTagIds'>
+    Pick<
+      PiecesRepository,
+      'findById' | 'findBySlug' | 'update' | 'slugExists' | 'getTagIds' | 'countByAuthor' | 'create'
+    >
   >;
   const profiles = {
     adjustPublishedCount: jest.fn().mockResolvedValue(undefined),
     getOrCreateByUserId: jest.fn().mockResolvedValue({ penName: 'Pen', isPrivate: false }),
   };
   const taxonomy = {
+    resolveLanguageCode: jest.fn().mockResolvedValue('lang'),
+    resolveGenreSlugs: jest.fn().mockResolvedValue(['genre']),
     getLanguage: jest.fn().mockResolvedValue(null),
     getTagsByIds: jest.fn().mockResolvedValue([]),
     getGenresByIds: jest.fn().mockResolvedValue([{ id: 'genre', slug: 'ghazal', name: 'Ghazal' }]),
   };
   const users = { findById: jest.fn().mockResolvedValue({ username: 'meera' }) };
   const follows = { isAcceptedFollower: jest.fn().mockResolvedValue(false) };
+  // Only `maxPieces` varies per test; the AI caps are along for the ride, as they are in a real
+  // PlanLimits. When `maxPieces` is omitted the key is genuinely absent, which is the
+  // "0 / absent = unlimited" case a tier that predates B4 produces.
+  const limits: Record<string, number> = {
+    aiDailyTokens: 0,
+    aiMonthlyTokens: 0,
+    aiMonthlyCredits: 0,
+    ...(plan.maxPieces === undefined ? {} : { maxPieces: plan.maxPieces }),
+  };
+  const entitlements = { getLimits: jest.fn().mockResolvedValue(limits) };
   const service = new PiecesService(
     repo as unknown as PiecesRepository,
     taxonomy as unknown as TaxonomyService,
@@ -84,8 +120,9 @@ function build(current: Piece | null): {
     {} as MediaService,
     tx as unknown as TransactionRunner,
     { emit: jest.fn().mockResolvedValue(undefined) } as unknown as DomainEventBus,
+    entitlements as unknown as EntitlementService,
   );
-  return { service, repo, profiles };
+  return { service, repo, profiles, entitlements };
 }
 
 describe('PiecesService lifecycle', () => {
@@ -187,6 +224,110 @@ describe('PiecesService lifecycle', () => {
     await expect(service.getBySlug('a-title', 'stranger')).rejects.toBeInstanceOf(
       PieceNotFoundException,
     );
+  });
+
+  // ── B4 — the plan piece cap (docs/45 §4.9). A stock cap on live pieces, enforced on creation
+  //    only. These assert the DECISIONS, not the wiring: that a create is actually refused, that a
+  //    downgraded author keeps full use of what they already have, and that deleting frees a slot.
+  const draftDto = { title: 'New', languageCode: 'ur' } as CreatePieceDto;
+
+  it('refuses a create once the author holds as many pieces as the plan allows', async () => {
+    const { service } = build(null, { maxPieces: 25, owned: 25 });
+    await expect(service.createOwnDraft('author', draftDto)).rejects.toBeInstanceOf(
+      PieceLimitReachedException,
+    );
+  });
+
+  it('reports used/limit on the refusal, so a client can say which cap was hit', async () => {
+    const { service } = build(null, { maxPieces: 25, owned: 25 });
+    const error = await service.createOwnDraft('author', draftDto).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(PieceLimitReachedException);
+    expect((error as PieceLimitReachedException).details).toEqual([{ used: 25, limit: 25 }]);
+    // NOT the AI quota code: this cap never resets, so "wait for reset" is the wrong remedy
+    // (docs/48 §3.6, the W4 defect).
+    expect((error as PieceLimitReachedException).code).toBe('PIECE_LIMIT_REACHED');
+  });
+
+  it('allows the create one slot below the cap', async () => {
+    const { service, repo } = build(null, { maxPieces: 25, owned: 24 });
+    await expect(service.createOwnDraft('author', draftDto)).resolves.toMatchObject({ id: 'new' });
+    expect(repo.create).toHaveBeenCalled();
+  });
+
+  it('treats limit 0 as unlimited, exactly as the token caps do', async () => {
+    const { service } = build(null, { maxPieces: 0, owned: 10_000 });
+    await expect(service.createOwnDraft('author', draftDto)).resolves.toMatchObject({ id: 'new' });
+  });
+
+  it('treats an absent maxPieces as unlimited (a tier configured before B4)', async () => {
+    const { service } = build(null, { owned: 10_000 });
+    await expect(service.createOwnDraft('author', draftDto)).resolves.toMatchObject({ id: 'new' });
+  });
+
+  it('counts only live pieces, so deleting one frees a slot', async () => {
+    const { service, repo } = build(null, { maxPieces: 25, owned: 24 });
+    await service.createOwnDraft('author', draftDto);
+    // countByAuthor filters `deleted_at IS NULL`; called with no status so every live piece counts.
+    expect(repo.countByAuthor).toHaveBeenCalledWith('author');
+  });
+
+  it('caps duplicate too — a copy is a new piece', async () => {
+    const { service } = build(piece(), { maxPieces: 25, owned: 25 });
+    await expect(service.duplicate('p1', 'author')).rejects.toBeInstanceOf(
+      PieceLimitReachedException,
+    );
+  });
+
+  // The downgrade case: Plus (250) → Free (25) with 100 pieces in hand. "Keep everything, block
+  // new creation" means every one of these must still work.
+  describe('over the cap after a downgrade', () => {
+    const overLimit = { maxPieces: 25, owned: 100 };
+
+    it('blocks a new create', async () => {
+      const { service } = build(null, overLimit);
+      await expect(service.createOwnDraft('author', draftDto)).rejects.toBeInstanceOf(
+        PieceLimitReachedException,
+      );
+    });
+
+    it('still publishes an existing piece', async () => {
+      const { service, repo } = build(piece(), overLimit);
+      await service.publish('p1', 'author');
+      expect((repo.update.mock.calls[0]?.[1] as Partial<Piece>).status).toBe(PieceStatus.Published);
+    });
+
+    it('still updates an existing piece', async () => {
+      const { service, repo } = build(piece(), overLimit);
+      await service.update('p1', 'author', { title: 'Edited' });
+      expect(repo.update).toHaveBeenCalled();
+    });
+
+    it('reports the honest allowance: over the cap, nothing remaining, cannot create', async () => {
+      const { service } = build(null, overLimit);
+      await expect(service.getPieceAllowance('author')).resolves.toEqual({
+        used: 100,
+        limit: 25,
+        remaining: 0, // never negative — "-75 remaining" is not a thing to show anyone
+        unlimited: false,
+        canCreate: false,
+      });
+    });
+
+    it('still lets a response through — the cap is on POST /pieces, not on replying', async () => {
+      const { service } = build(null, overLimit);
+      await expect(service.createDraft('author', draftDto)).resolves.toMatchObject({ id: 'new' });
+    });
+  });
+
+  it('reports the allowance an unlimited plan has (no number to count down)', async () => {
+    const { service } = build(null, { maxPieces: 0, owned: 900 });
+    await expect(service.getPieceAllowance('author')).resolves.toEqual({
+      used: 900,
+      limit: 0,
+      remaining: null,
+      unlimited: true,
+      canCreate: true,
+    });
   });
 
   it('keeps slug immutable across a re-publish (unarchive keeps existing slug/date)', async () => {

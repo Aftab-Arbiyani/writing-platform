@@ -76,6 +76,22 @@ export interface PieceListItem {
   updatedAt: string;
 }
 
+/**
+ * The author's plan piece allowance (B4, docs/45 §4.9) — `GET /me/pieces/limit`.
+ *
+ * `used` counts live (non-deleted) pieces, so deleting one frees a slot. `limit` of 0 means
+ * unlimited, matching the `PlanLimits` convention; `remaining` is null in that case rather than a
+ * meaningless number. `canCreate` is the server's own verdict, and it is false in the over-limit
+ * case a downgrade produces (`used` above `limit`), where `remaining` clamps at 0.
+ */
+export interface PieceLimit {
+  used: number;
+  limit: number;
+  remaining: number | null;
+  unlimited: boolean;
+  canCreate: boolean;
+}
+
 // ── Request payloads ──────────────────────────────────────────────────────────
 
 export interface CreatePiecePayload {

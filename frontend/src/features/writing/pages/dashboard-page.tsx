@@ -10,7 +10,14 @@ import { getErrorMessage, getRequestId } from '@/lib/errors';
 import { ROUTES } from '@/lib/routes';
 
 import { PieceRow } from '../components/piece-row';
+import {
+  PIECE_LIMIT_NOTICE_ID,
+  PieceAllowanceCount,
+  PieceLimitNotice,
+} from '../components/piece-limit-notice';
 import { useMyPieces } from '../hooks/use-my-pieces';
+import { usePieceLimit } from '../hooks/use-piece-limit';
+import { resolvePieceAllowanceNotice } from '../lib/piece-allowance';
 
 const TABS: readonly { status: PieceStatus; label: string }[] = [
   { status: PieceStatus.Draft, label: 'Drafts' },
@@ -52,6 +59,12 @@ export function DashboardPage(): ReactElement {
     : PieceStatus.Draft;
 
   const query = useMyPieces(status);
+  // B4 (docs/45 §4.9). The server decides; this only renders its verdict. While the read is in
+  // flight there is no notice and the create control stays live — the create itself is still
+  // checked server-side, so an optimistic moment costs a 402 at worst, whereas holding the button
+  // back on every page load costs everyone who is nowhere near their cap.
+  const allowance = usePieceLimit();
+  const notice = resolvePieceAllowanceNotice(allowance.data);
   const items = query.data?.pages.flatMap((page) => page.items) ?? [];
   const sentinelRef = useInfiniteScroll({
     hasMore: query.hasNextPage ?? false,
@@ -67,7 +80,8 @@ export function DashboardPage(): ReactElement {
     <div className="mx-auto flex w-full max-w-[760px] flex-col gap-4 px-4 py-6 sm:px-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-serif text-2xl font-semibold text-ink">Your writing</h1>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          <PieceAllowanceCount notice={notice} />
           {mostRecentDraft ? (
             <QButton
               variant="secondary"
@@ -84,6 +98,8 @@ export function DashboardPage(): ReactElement {
             variant="primary"
             size="sm"
             icon={PenLine}
+            disabled={notice.blocked}
+            aria-describedby={notice.blocked ? PIECE_LIMIT_NOTICE_ID : undefined}
             onClick={() => {
               void navigate(ROUTES.write);
             }}
@@ -92,6 +108,8 @@ export function DashboardPage(): ReactElement {
           </QButton>
         </div>
       </div>
+
+      <PieceLimitNotice notice={notice} />
 
       <nav aria-label="Your pieces by status" className="border-line border-b">
         <ul className="flex gap-1 overflow-x-auto">
@@ -170,8 +188,13 @@ export function DashboardPage(): ReactElement {
           description={EMPTY[status].description}
           action={
             status === PieceStatus.Draft ? (
+              // Reachable while blocked: a downgraded author with 100 published pieces and no
+              // drafts sees this tab empty. The notice above explains it; the button must not
+              // promise an editor that cannot save.
               <QButton
                 variant="primary"
+                disabled={notice.blocked}
+                aria-describedby={notice.blocked ? PIECE_LIMIT_NOTICE_ID : undefined}
                 onClick={() => {
                   void navigate(ROUTES.write);
                 }}

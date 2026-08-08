@@ -5,7 +5,13 @@ import { create } from 'zustand';
  * panel, and the publish sheet. It never holds the document (TipTap owns that) nor server data
  * (TanStack Query owns that). Reset when the editor unmounts.
  */
-export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error' | 'offline-error';
+/**
+ * `limit-error` is B4's plan piece cap (docs/45 §4.9), and it is separate from `error` because the
+ * two mean opposite things about the future: `error` retries and may succeed, while a create
+ * refused by the cap will be refused identically forever until the author frees a slot or changes
+ * plan. Telling them "will retry" would be a lie the indicator repeats every two seconds.
+ */
+export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error' | 'offline-error' | 'limit-error';
 export type PreviewMode = 'desktop' | 'mobile';
 
 interface EditorUiState {
@@ -20,6 +26,8 @@ interface EditorUiState {
   markSaving: () => void;
   markSaved: (at: number) => void;
   markError: (offline: boolean) => void;
+  /** The create was refused by the plan piece cap — a terminal state, not a retryable one. */
+  markLimitReached: () => void;
   setPreviewOpen: (open: boolean) => void;
   setPreviewMode: (mode: PreviewMode) => void;
   setPublishOpen: (open: boolean) => void;
@@ -48,6 +56,9 @@ export const useEditorUiStore = create<EditorUiState>((set) => ({
   },
   markError: (offline) => {
     set({ saveStatus: offline ? 'offline-error' : 'error' });
+  },
+  markLimitReached: () => {
+    set({ saveStatus: 'limit-error' });
   },
   setPreviewOpen: (previewOpen) => {
     set({ previewOpen });

@@ -14,6 +14,8 @@ import { buildCursorPage } from '../../common/pagination/pagination.helper';
 import type { CursorPage } from '../../common/types/paginated-result';
 import type { UploadedImage } from '../../media/image.service';
 import { MediaService } from '../../media/media.service';
+import { EntitlementService } from '../monetization/entitlement.service';
+import { PieceLimitReachedException } from '../monetization/monetization.exceptions';
 import { ProfileService } from '../users/profile.service';
 import { FollowService } from '../users/follow.service';
 import { UsersService } from '../users/users.service';
@@ -24,6 +26,7 @@ import type { CreatePieceDto } from './dto/create-piece.dto';
 import type { PieceListQueryDto } from './dto/piece-list-query.dto';
 import type {
   PieceCoverResponseDto,
+  PieceLimitDto,
   PieceListItemDto,
   PieceResponseDto,
 } from './dto/piece-response.dto';
@@ -60,6 +63,10 @@ export class PiecesService {
     private readonly media: MediaService,
     private readonly transactions: TransactionRunner,
     private readonly events: DomainEventBus,
+    // AF5's Entitlement Service, resolved from the @Global MonetizationModule — so the plan cap
+    // reads the ONE source of plan data (B4, docs/45 §4.9) and this module still imports no
+    // monetization module (no cycle).
+    private readonly entitlements: EntitlementService,
     // Optional so unit tests (and any worker-less context) construct without the
     // queue; when present, `schedule()` also enqueues a delayed publish job.
     @Optional() @Inject(JOB_ENQUEUER) private readonly jobs?: JobEnqueuer,
@@ -87,6 +94,58 @@ export class PiecesService {
       counts[row.authorId] = row.count;
     }
     return counts;
+  }
+
+  /**
+   * How much of the author's plan piece allowance is spent (B4, docs/45 §4.9) — what
+   * `GET /me/pieces/limit` returns and what {@link assertPieceAllowance} decides on.
+   *
+   * **The count deliberately excludes soft-deleted pieces.** `Piece extends QalamAuditEntity`, so a
+   * deleted piece keeps its row and keeps its slug reserved forever — but B4 caps *pieces you may
+   * have*, not pieces you have ever written, so deleting one frees its slot. That is the decided
+   * reading (docs/45 §4.9), not an oversight in the query: do not "fix" `countByAuthor` to include
+   * tombstones, or an author who cleared space would stay blocked with nothing they could do about
+   * it. Responses ARE counted — a response is an ordinary piece row this author owns — which is why
+   * the number shown to the author is this same count and not a narrower one.
+   */
+  async getPieceAllowance(authorId: string): Promise<PieceLimitDto> {
+    const [used, limits] = await Promise.all([
+      this.pieces.countByAuthor(authorId),
+      this.entitlements.getLimits(authorId),
+    ]);
+    // 0 / absent = unlimited — the PlanLimits convention, read exactly as UsageService does for
+    // the token caps (`usage.service.ts`), so one plan-data source drives both.
+    const limit = limits.maxPieces ?? 0;
+    const unlimited = limit <= 0;
+    return {
+      used,
+      limit,
+      remaining: unlimited ? null : Math.max(0, limit - used),
+      unlimited,
+      canCreate: unlimited || used < limit,
+    };
+  }
+
+  /** Throws PIECE_LIMIT_REACHED when the author has no slot left. */
+  private async assertPieceAllowance(authorId: string): Promise<void> {
+    const allowance = await this.getPieceAllowance(authorId);
+    if (!allowance.canCreate) {
+      throw new PieceLimitReachedException(allowance.used, allowance.limit);
+    }
+  }
+
+  /**
+   * The author creating a piece of their own — `POST /pieces`, and the ONLY create path the plan
+   * cap gates (B4, docs/45 §4.9).
+   *
+   * Separate from {@link createDraft} because that method is also the shared piece-construction
+   * path for responses (`ResponsesService.create`), and capping those would block a reader from
+   * replying, which B4 does not ask for. The cap is on creation only: publish, update, schedule and
+   * archive stay open at any count, because the decision on downgrade was *keep everything*.
+   */
+  async createOwnDraft(authorId: string, dto: CreatePieceDto): Promise<PieceResponseDto> {
+    await this.assertPieceAllowance(authorId);
+    return this.createDraft(authorId, dto);
   }
 
   async createDraft(authorId: string, dto: CreatePieceDto): Promise<PieceResponseDto> {
@@ -449,6 +508,10 @@ export class PiecesService {
   }
 
   async duplicate(id: string, ownerId: string): Promise<PieceResponseDto> {
+    // Duplicating is creating: it ends with one more live piece than before, so it answers to the
+    // same plan cap as `POST /pieces`. Skipping it would leave the cap bypassable through a button
+    // that already ships on the writer dashboard.
+    await this.assertPieceAllowance(ownerId);
     const source = await this.loadOwned(id, ownerId);
     const tagIds = await this.pieces.getTagIds(id);
     const copy = await this.transactions.run(async (manager) => {

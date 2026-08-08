@@ -30,6 +30,12 @@ export function SaveStatusIndicator(): ReactElement | null {
       text = 'Couldn’t save — will retry';
       tone = 'text-warning';
       break;
+    case 'limit-error':
+      // Deliberately does NOT say "will retry": the plan cap refuses this create every time, and
+      // the remedy is on the dashboard, not in waiting (B4, docs/45 §4.9).
+      text = 'Not saved — your plan’s piece limit is full';
+      tone = 'text-warning';
+      break;
     default:
       text = '';
   }

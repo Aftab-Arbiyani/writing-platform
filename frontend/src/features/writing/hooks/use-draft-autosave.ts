@@ -1,3 +1,4 @@
+import { ERROR_CODES } from '@qalam/shared';
 import { useCallback, useEffect, useRef } from 'react';
 
 import { ApiError } from '@/lib/api-client';
@@ -27,6 +28,11 @@ function isOfflineError(error: unknown): boolean {
   );
 }
 
+/** The plan piece cap refused the create (B4) — the one save failure that will never come good. */
+function isPieceLimitError(error: unknown): boolean {
+  return error instanceof ApiError && error.code === ERROR_CODES.PIECE_LIMIT_REACHED;
+}
+
 interface UseDraftAutosaveArgs {
   pieceId: string | undefined;
   /** Reads the current editor snapshot on demand — never per keystroke (docs/12 §5). */
@@ -53,6 +59,8 @@ export function useDraftAutosave({ pieceId, getSnapshot, onCreated }: UseDraftAu
   const updateRef = useRef(update);
   const savingRef = useRef(false);
   const pendingRef = useRef(false);
+  /** Set once the plan cap refuses the create, so keystrokes stop firing 402s (B4). */
+  const limitBlockedRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   snapshotRef.current = getSnapshot;
@@ -72,6 +80,11 @@ export function useDraftAutosave({ pieceId, getSnapshot, onCreated }: UseDraftAu
       pendingRef.current = true;
       return idRef.current;
     }
+    // The cap refused this draft's creation once; every further attempt is the same 402, so the
+    // editor asks once and then stops rather than retrying on every keystroke. An EXISTING draft
+    // is never blocked — the cap is on creation only.
+    if (!idRef.current && limitBlockedRef.current) return undefined;
+
     const snap = snapshotRef.current();
     // A brand-new draft cannot be created without a language — wait for one.
     if (!idRef.current && !snap.languageCode) return undefined;
@@ -96,7 +109,14 @@ export function useDraftAutosave({ pieceId, getSnapshot, onCreated }: UseDraftAu
       }
       useEditorUiStore.getState().markSaved(Date.now());
     } catch (error) {
-      useEditorUiStore.getState().markError(isOfflineError(error));
+      // A create refused by the plan cap is terminal: retrying produces the same 402, so it gets
+      // its own status and the editor stops claiming it will retry (docs/45 §4.9).
+      if (isPieceLimitError(error)) {
+        limitBlockedRef.current = true;
+        useEditorUiStore.getState().markLimitReached();
+      } else {
+        useEditorUiStore.getState().markError(isOfflineError(error));
+      }
     } finally {
       savingRef.current = false;
       if (pendingRef.current) {

@@ -15,6 +15,10 @@ import { PiecesService } from './pieces.service';
  * services — never its repositories, docs 16 §3.1), and the global `MediaModule`
  * (cover upload). Guards/decorators are file-imported from auth (no AuthModule
  * import → no circular dependency).
+ *
+ * `EntitlementService` (AF5) is injected for B4's plan piece cap without importing
+ * `MonetizationModule` — that module is `@Global` and exports it, which is also why adding the
+ * cap introduces no module cycle.
  */
 @Module({
   imports: [TypeOrmModule.forFeature([Piece, PieceTag]), TaxonomyModule, UsersModule],
