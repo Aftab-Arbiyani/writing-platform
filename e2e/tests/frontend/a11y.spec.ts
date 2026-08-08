@@ -85,6 +85,67 @@ test.describe('@phase5 @a11y frontend accessibility (authenticated)', () => {
     await expectNoSeriousA11yViolations(page, { label: 'frontend /write + AI panel' });
   });
 
+  /**
+   * W9's two story-scoped AF4 tabs (docs/45 §4, row W9). Both live on the SAME drawer the scan above
+   * covers, and both are absent from it until the draft has autosaved — so they need a draft with a
+   * server id, not a blank `/write`.
+   *
+   * Registered here rather than in a spec of their own so they run in the `frontend-dark` project
+   * too: this file is `UI_QUALITY_ONLY`, which is what makes "both themes" automatic rather than a
+   * thing to remember (docs/45 §2).
+   *
+   * **Both take the AI-flag lock, and the explorer's reason is the one this pair got wrong first.**
+   * `GET /ai/explorer/:storyId/:view` carries `ai.use` and no PER-FEATURE flag, which is true of the
+   * ROUTE and says nothing about the client: the tab resolves through
+   * `resolveAvailability({feature: null})`, which still reads `aiEnabled` — the **master** flag, and
+   * AF1 seeds that dark like every other. So a scan written without the lock found "AI is turned off"
+   * and no chips at all. `api.enableAiFeatures` says the same thing in its own comment ("a per-feature
+   * flag alone resolves to `off`, not `feature-off`"); the first version of these two tests believed
+   * "no feature flag" meant "no flag".
+   *
+   * **The flags go up BEFORE the panel opens, which is the other half of the same mistake.** The
+   * panel reads `/ai/features` through TanStack Query with a 60 s `staleTime`, so a panel opened first
+   * and flag-raised second keeps serving the flag-down answer for the rest of the test and renders the
+   * availability notice under a correctly-selected tab.
+   */
+  async function draftWithServerId(page: Parameters<typeof freshLogin>[0], title: string) {
+    const editor = new EditorPage(page);
+    await editor.goto();
+    await editor.writePiece({ title, body: 'A door opened onto the rain.' });
+    // The tabs appear only once autosave has CREATEd the piece and the URL carries its id.
+    await editor.waitForSaved();
+    const panel = new AssistantPanel(page);
+    await panel.open();
+    return panel;
+  }
+
+  test('the Story Explorer tab has no critical/serious a11y violations', async ({ page, data }) => {
+    test.setTimeout(AI_FLAG_TEST_TIMEOUT_MS);
+    // An EMPTY feature list: the explorer needs the master switch and nothing else, which is exactly
+    // the asymmetry with Ask below — and raising only the master is how this scan proves it.
+    await withAiFeatures([], 'a11y: Story Explorer', async () => {
+      // A group of eight pressed-state chips over a list of card buttons — two patterns whose entire
+      // accessible state lives in `aria-pressed` and in a name assembled from spans.
+      const panel = await draftWithServerId(page, data.pieceTitle());
+      await panel.selectTab('Explorer');
+      await panel.expectExplorerSettled();
+      await expectNoSeriousA11yViolations(page, { label: 'frontend /write + Story Explorer' });
+    });
+  });
+
+  test('the Ask My Book tab has no critical/serious a11y violations', async ({ page, data }) => {
+    test.setTimeout(AI_FLAG_TEST_TIMEOUT_MS);
+    await withAiFeatures(['feature.ai.askBook.enabled'], 'a11y: Ask My Book', async () => {
+      // Nine scope chips, a labelled textarea, and the live region the answer streams into. Scanned
+      // BEFORE asking: the flag decides whether these controls exist at all, and the streamed answer
+      // is a functional assertion, not an axe subject.
+      const panel = await draftWithServerId(page, data.pieceTitle());
+      await panel.selectTab('Ask');
+      await panel.expectAskSettled();
+      await expectNoSeriousA11yViolations(page, { label: 'frontend /write + Ask My Book' });
+    });
+  });
+
   test('the profile has no critical/serious a11y violations', async ({ page }) => {
     const profile = new ProfilePage(page);
     await profile.gotoOwn();

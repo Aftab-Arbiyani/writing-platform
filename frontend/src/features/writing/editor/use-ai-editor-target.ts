@@ -40,8 +40,14 @@ export function useRegisterAiEditorTarget(args: {
   editor: Editor | null;
   title: string;
   languageCode: string;
+  /**
+   * The draft's SERVER id, or undefined while it is unsaved (W9). Published as-is: the story-scoped
+   * AI surfaces need it and hide themselves without it, and a brand-new `/write` gains one the
+   * moment autosave creates the piece (the route becomes `/write/:id`, which re-runs this effect).
+   */
+  pieceId?: string;
 }): void {
-  const { editor, title, languageCode } = args;
+  const { editor, title, languageCode, pieceId } = args;
   const register = useAiEditorTarget((s) => s.register);
   const unregister = useAiEditorTarget((s) => s.unregister);
 
@@ -96,9 +102,9 @@ export function useRegisterAiEditorTarget(args: {
       },
     };
 
-    register(target);
+    register(target, pieceId ?? null);
     return () => {
       unregister();
     };
-  }, [editor, title, languageCode, register, unregister]);
+  }, [editor, title, languageCode, pieceId, register, unregister]);
 }

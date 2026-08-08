@@ -357,6 +357,8 @@ const UNMIRRORED: Readonly<Record<string, string>> = {
   NavigationTarget: 'Structural sub-block; backend counterpart is retrieval.types.ts, not a DTO.',
   RankingExplanation: 'Structural sub-block; backend counterpart is retrieval.types.ts, not a DTO.',
   AskCitation: 'Structural sub-block; backend counterpart is retrieval.types.ts, not a DTO.',
+  AskBookStreamEvent:
+    'The SSE `data:` payload on /ai/ask/stream, not a body: no DTO documents it (same as AiStreamEvent).',
 
   // AF3 per-kind payloads: `StoryAnalysisResultDto.structured` is `Record<string, unknown>` by design
   // (the shape varies by analysis kind), so there is no per-kind DTO to compare against.

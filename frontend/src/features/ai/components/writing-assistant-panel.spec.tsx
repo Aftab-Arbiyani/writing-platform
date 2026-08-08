@@ -8,6 +8,7 @@ import { renderWithProviders } from '@/test/render';
 
 import { useAiFeatures, useAiUsage } from '../hooks/use-ai-meta';
 import { useAiStreamStore } from '../stores/ai-stream.store';
+import { useAskBookStore } from '../stores/ask-book.store';
 import { WritingAssistantPanel } from './writing-assistant-panel';
 
 vi.mock('../hooks/use-ai-meta', () => ({ useAiFeatures: vi.fn(), useAiUsage: vi.fn() }));
@@ -49,9 +50,13 @@ function mockMeta(features: AiFeaturesResponse | undefined, usage: AiUsageRespon
   vi.mocked(useAiUsage).mockReturnValue({ data: usage } as ReturnType<typeof useAiUsage>);
 }
 
-function registerTarget(over: Partial<ReturnType<AiEditorTarget['getContext']>> = {}): void {
+function registerTarget(
+  over: Partial<ReturnType<AiEditorTarget['getContext']>> = {},
+  storyId: string | null = null,
+): void {
   useAiEditorTarget.setState({
     open: true,
+    storyId,
     target: {
       getContext: () => ({
         selectionText: '',
@@ -71,7 +76,8 @@ describe('WritingAssistantPanel', () => {
     vi.clearAllMocks();
     apply.mockReturnValue(true);
     useAiStreamStore.getState().reset();
-    useAiEditorTarget.setState({ target: null, open: false });
+    useAskBookStore.getState().reset();
+    useAiEditorTarget.setState({ target: null, storyId: null, open: false });
     mockMeta(FEATURES, USAGE);
   });
 
@@ -174,5 +180,113 @@ describe('WritingAssistantPanel', () => {
     registerTarget();
     renderWithProviders(<WritingAssistantPanel />);
     expect(screen.getByRole('tab', { name: 'Craft Coach' })).toBeInTheDocument();
+  });
+
+  /**
+   * W9's two story-scoped surfaces. Both take the SERVER piece id and are owner-scoped server-side,
+   * so a draft that has never synced has no story to explore — the web reading of mobile's
+   * `st.draft.isRemote` gate (`editor_screen.dart:245`).
+   */
+  it('hides the Explorer until the draft has a server id', () => {
+    registerTarget({}, null);
+    renderWithProviders(<WritingAssistantPanel />);
+    expect(screen.queryByRole('tab', { name: 'Explorer' })).not.toBeInTheDocument();
+  });
+
+  it('offers the Explorer once the draft has synced', () => {
+    registerTarget({}, 'piece-1');
+    renderWithProviders(<WritingAssistantPanel />);
+    expect(screen.getByRole('tab', { name: 'Explorer' })).toBeInTheDocument();
+  });
+
+  /**
+   * The explorer's route carries `ai.use` and no feature flag, and makes no model call. Gating it on
+   * a neighbouring flag would hide a surface the server would have served — the mistake mobile's
+   * editor calls out by name at `editor_screen.dart:241-244`.
+   */
+  it('offers the Explorer even when every AI feature flag is down', () => {
+    mockMeta({ aiEnabled: true, features: [] }, USAGE);
+    registerTarget({}, 'piece-1');
+    renderWithProviders(<WritingAssistantPanel />);
+    expect(screen.getByRole('tab', { name: 'Explorer' })).toBeInTheDocument();
+  });
+
+  /** It spends no tokens, so a spent allowance is not a reason to lock a writer out of it. */
+  it('offers the Explorer even when the allowance is spent', () => {
+    mockMeta(FEATURES, {
+      daily: { ...WINDOW, usedFraction: 1 },
+      monthly: WINDOW,
+    } as AiUsageResponse);
+    registerTarget({}, 'piece-1');
+    renderWithProviders(<WritingAssistantPanel />);
+    expect(screen.getByRole('tab', { name: 'Explorer' })).toBeInTheDocument();
+  });
+
+  it('walls off the Explorer when AI is off entirely', () => {
+    mockMeta({ aiEnabled: false, features: [] }, USAGE);
+    registerTarget({}, 'piece-1');
+    renderWithProviders(<WritingAssistantPanel />);
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Explorer' }));
+    expect(screen.getAllByText('AI is turned off').length).toBeGreaterThan(0);
+  });
+
+  it('hides Ask until the draft has a server id, then offers it', () => {
+    registerTarget({}, null);
+    const { unmount } = renderWithProviders(<WritingAssistantPanel />);
+    expect(screen.queryByRole('tab', { name: 'Ask' })).not.toBeInTheDocument();
+    unmount();
+
+    registerTarget({}, 'piece-1');
+    renderWithProviders(<WritingAssistantPanel />);
+    expect(screen.getByRole('tab', { name: 'Ask' })).toBeInTheDocument();
+  });
+
+  /**
+   * Unlike the explorer, `POST /ai/ask` IS flagged (`ai.use` + the AskBook feature), and AF1 seeds
+   * every feature flag disabled — so this dark state is the starting state of every deployment.
+   */
+  it('walls off Ask when the AskBook flag is down, while the Explorer stays open', () => {
+    mockMeta(
+      {
+        aiEnabled: true,
+        features: [
+          { feature: AiFeature.AskBook, flagKey: 'feature.ai.askBook.enabled', enabled: false },
+        ],
+      },
+      USAGE,
+    );
+    registerTarget({}, 'piece-1');
+    renderWithProviders(<WritingAssistantPanel />);
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Ask' }));
+    expect(screen.getAllByText('Not available yet').length).toBeGreaterThan(0);
+    // The explorer needs no flag, so the same response leaves it usable.
+    expect(screen.getByRole('tab', { name: 'Explorer' })).toBeInTheDocument();
+  });
+
+  /**
+   * The reason Ask streams into its own store: the two surfaces share a drawer, and a wall the
+   * assistant hit must not present as a wall on a request the writer never made.
+   */
+  it('keeps a mid-flight wall on one surface from walling the other', () => {
+    registerTarget({}, 'piece-1');
+    useAiStreamStore.setState({ status: 'error', errorCode: 'QUOTA_EXCEEDED' });
+    renderWithProviders(<WritingAssistantPanel />);
+
+    // The assistant is walled…
+    expect(screen.getByText('You’ve used your AI allowance')).toBeInTheDocument();
+    // …and Ask still offers its controls, because its own stream has not failed.
+    fireEvent.click(screen.getByRole('tab', { name: 'Ask' }));
+    expect(screen.getByRole('button', { name: 'Whole book' })).toBeInTheDocument();
+  });
+
+  it('walls off Ask when ITS stream comes back over quota', () => {
+    registerTarget({}, 'piece-1');
+    useAskBookStore.setState({ status: 'error', errorCode: 'ENTITLEMENT_DENIED' });
+    renderWithProviders(<WritingAssistantPanel />);
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Ask' }));
+    expect(screen.getAllByText('This needs a paid plan').length).toBeGreaterThan(0);
   });
 });

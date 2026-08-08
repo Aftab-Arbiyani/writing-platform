@@ -187,6 +187,36 @@ export interface AskCitation {
   nodeType?: string;
 }
 
+/**
+ * One Server-Sent Event on `POST /ai/ask/stream` — the `data:` JSON payload, whose `type` repeats
+ * the SSE `event:` name (`ai/streaming/sse.util.ts`).
+ *
+ * It is the AF1 stream protocol plus ONE leading frame: `sources` carries the citations and the
+ * aggregate confidence BEFORE any token, so a client can show what an answer will be grounded in
+ * while it is still being written. After that the sequence is the ordinary
+ * `start` → `delta`* → `done` | `error` (`ask-book.service.ts:13-23`).
+ *
+ * `progress` never appears here, and `provider`/`model`/`finishReason` are not forwarded — which is
+ * why this is its own type rather than a widened `AiStreamEvent`.
+ */
+export interface AskBookStreamEvent {
+  type: 'sources' | 'start' | 'delta' | 'done' | 'error';
+  /** Present on `sources`. */
+  citations?: AskCitation[];
+  /** Present on `sources` — the retrieval's aggregate confidence (0..1). */
+  confidence?: number;
+  /** Present on `start` and `done`. */
+  conversationId?: string | null;
+  /** Present on `delta`. */
+  text?: string;
+  /** Present on `done`. */
+  usage?: AiTokenUsage;
+  estimatedCostUsd?: number;
+  /** Present on `error` — a stable ERROR_CODES string. */
+  code?: string;
+  message?: string;
+}
+
 /** `POST /ai/ask` (non-streaming). Streaming reuses the AF1 SSE protocol. */
 export interface AskBookResponse {
   storyId: string;

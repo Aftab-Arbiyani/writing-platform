@@ -46,4 +46,16 @@ export {
   serializeExport,
 } from './lib/conversation-export';
 export { useAiCompletion, useAiStream } from './hooks/use-ai-completion';
+
+// W9 — the two STORY-scoped AF4 consumers (docs/45 §4, row W9), mounted as tabs on the in-editor
+// panel above. No route of their own: both are per-story and reached from the editor, matching
+// mobile's AI overflow menu (docs/48 §4.1).
+export { storyRetrievalApi } from './api/story-retrieval.api';
+export { useStoryExplorer, useExplorerAvailability } from './hooks/use-story-explorer';
+export { useAskBook } from './hooks/use-ask-book';
+export { useAskBookStore } from './stores/ask-book.store';
+export { EXPLORER_VIEWS, explorerViewSpec, nodeTypeLabel } from './lib/explorer-views';
+export type { ExplorerViewSpec } from './lib/explorer-views';
+export { ASK_SCOPES } from './lib/ask-scopes';
+
 export type * from './types/ai.types';

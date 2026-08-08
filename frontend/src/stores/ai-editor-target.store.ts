@@ -47,10 +47,22 @@ export interface AiEditorTarget {
 
 interface AiEditorTargetState {
   target: AiEditorTarget | null;
+  /**
+   * The SERVER piece id of the draft being edited, or null when it has never synced (W9).
+   *
+   * Story Explorer and Ask My Book are **per-story**: both take this id, both are owner-scoped
+   * server-side, and a draft that exists only in the browser has no story to explore or ask about
+   * — so surfaces that need it stay hidden until it is present. It rides the same seam rather than
+   * `AiEditorTarget` because it is a FACT about the document, not a capability of the editor:
+   * `getContext()` answers "what is the writer working on", and a target with no server id is still
+   * a perfectly good assistant target. This is the web analog of mobile's `st.draft.isRemote` gate
+   * (`editor_screen.dart:245`).
+   */
+  storyId: string | null;
   /** Whether the assistant panel is open. Part of the same seam: the toggle lives in the
    *  editor's header (writing) while the panel itself is rendered by the AI feature. */
   open: boolean;
-  register: (target: AiEditorTarget) => void;
+  register: (target: AiEditorTarget, storyId: string | null) => void;
   unregister: () => void;
   setOpen: (open: boolean) => void;
 }
@@ -67,14 +79,15 @@ export function hasSelection(context: AiWritingContext): boolean {
 
 export const useAiEditorTarget = create<AiEditorTargetState>((set) => ({
   target: null,
+  storyId: null,
   open: false,
-  register: (target) => {
-    set({ target });
+  register: (target, storyId) => {
+    set({ target, storyId });
   },
   // Closing on unregister matters: the panel must not linger over a screen with no editor
   // behind it (navigating away from /write while it is open).
   unregister: () => {
-    set({ target: null, open: false });
+    set({ target: null, storyId: null, open: false });
   },
   setOpen: (open) => {
     set({ open });

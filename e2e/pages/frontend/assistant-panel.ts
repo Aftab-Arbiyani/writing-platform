@@ -26,6 +26,20 @@ export class AssistantPanel {
     return this.page.getByRole('tab', { name: 'Craft Coach' });
   }
 
+  /**
+   * W9's two story-scoped tabs. **Both are absent until the draft has autosaved** — they take the
+   * server piece id and are owner-scoped server-side, so the panel hides them while there is none
+   * (the web reading of mobile's `isRemote` gate). A spec that opens the panel on a blank `/write`
+   * will not find them, and that is the contract, not a flake.
+   */
+  get explorerTab(): Locator {
+    return this.page.getByRole('tab', { name: 'Explorer' });
+  }
+
+  get askTab(): Locator {
+    return this.page.getByRole('tab', { name: 'Ask' });
+  }
+
   /** The visible tabpanel. Both stay in the DOM; only one is not `hidden`. */
   get activePanel(): Locator {
     return this.drawer.getByRole('tabpanel').locator('visible=true');
@@ -105,9 +119,31 @@ export class AssistantPanel {
   }
 
   /** Select a tab and wait for it to actually become the active one. */
-  async selectTab(tab: 'Assistant' | 'Craft Coach'): Promise<void> {
-    const target = tab === 'Assistant' ? this.assistantTab : this.coachTab;
+  async selectTab(tab: 'Assistant' | 'Craft Coach' | 'Explorer' | 'Ask'): Promise<void> {
+    const target = this.page.getByRole('tab', { name: tab });
     await target.click();
     await expect(target).toHaveAttribute('aria-selected', 'true');
+  }
+
+  /**
+   * The Story Explorer's view selector, settled (W9). The tab opens on Characters and fires a read,
+   * so waiting for the group to be visible AND the loading skeleton to be gone is what makes a scan
+   * measure the rendered surface rather than three grey rectangles.
+   */
+  async expectExplorerSettled(): Promise<void> {
+    await expect(this.activePanel.getByRole('group', { name: 'Explorer view' })).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(this.activePanel.getByLabel('Loading the story graph')).toHaveCount(0, {
+      timeout: 15_000,
+    });
+  }
+
+  /** Ask My Book's controls, ready to be driven or scanned (W9). Nothing here needs a request. */
+  async expectAskSettled(): Promise<void> {
+    await expect(this.activePanel.getByRole('group', { name: 'Ask about' })).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(this.activePanel.getByLabel('Your question')).toBeVisible();
   }
 }

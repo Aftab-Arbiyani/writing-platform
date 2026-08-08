@@ -61,8 +61,21 @@ function windowExhausted(
   return window.tokenLimit !== null && (window.usedFraction ?? 0) >= 1;
 }
 
+/**
+ * `feature: null` means **an AI surface with no feature flag and no LLM call** — gated by the master
+ * switch and `ai.use` alone. W9's Story Explorer is the first: `GET /ai/explorer/:storyId/:view`
+ * carries `@Permissions(AiUse)` and nothing else, and projects the AF3 graph with no model call
+ * (`story-explorer.controller.ts`, `story-explorer.service.ts`).
+ *
+ * Both skips are deliberate and follow the server. Picking a *neighbouring* feature's flag would hide
+ * a surface the server would have served — the mistake mobile's editor calls out by name
+ * (`editor_screen.dart:241-244`). Skipping the QUOTA gate follows the same rule from the other side:
+ * an allowance is spent by generations, this surface spends none, so a writer who has exhausted
+ * their tokens can still read their own story graph. A null feature can therefore never resolve to
+ * `feature-off` or `quota`.
+ */
 export function resolveAvailability(args: {
-  feature: AiFeature;
+  feature: AiFeature | null;
   features: AiFeaturesResponse | undefined;
   usage: AiUsageResponse | undefined;
 }): AiAvailability {
@@ -70,6 +83,7 @@ export function resolveAvailability(args: {
   // Nothing loaded yet — 'unknown' keeps the panel quiet rather than flashing a wall.
   if (!features) return 'unknown';
   if (!features.aiEnabled) return 'off';
+  if (feature === null) return 'available';
 
   const flag = features.features.find((entry) => entry.feature === feature);
   if (flag && !flag.enabled) return 'feature-off';

@@ -143,7 +143,7 @@ export function EditorPage({ assistant }: { assistant?: ReactNode } = {}): React
   );
 
   // Publish this editor to the AI panel (W2). Purely outbound: no AI code is imported here.
-  useRegisterAiEditorTarget({ editor, title, languageCode });
+  useRegisterAiEditorTarget({ editor, title, languageCode, pieceId: draftId });
 
   const direction = languages.data?.find((l) => l.code === languageCode)?.direction ?? 'ltr';
   const isRtl = direction === 'rtl';

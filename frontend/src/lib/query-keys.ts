@@ -167,6 +167,10 @@ export const qk = {
     // One key per surface — discover renders several kinds at once, and each is its own read.
     recommendations: (kind: string, seed?: string) =>
       ['retrieval', 'recommendations', kind, seed ?? ''] as const, // GET /ai/recommendations
+    // Story Explorer (W9). One key per story + view, because the server PROJECTS a different node
+    // set per view rather than filtering one payload — `relationships` drops unconnected characters
+    // and `timeline` arrives pre-sorted, so a single cached graph could not reproduce either.
+    explorer: (storyId: string, view: string) => ['retrieval', 'explorer', storyId, view] as const, // GET /ai/explorer/:storyId/:view
   },
 
   // Collaboration / publishing / trust (AF6, W3 — docs/49). A "story" IS a piece

@@ -1,7 +1,20 @@
 # 48 — Platform Parity Register (web ↔ mobile)
 
-**Status:** 🔒 Binding · **Owner:** every client epic · **Last swept:** 2026-08-05 (after **W8's
-close-out** — the remaining AI surfaces. **§2 row 3 is now fully closed**: conversations, the prompt
+**Status:** 🔒 Binding · **Owner:** every client epic · **Last swept:** 2026-08-08 (after **W9's
+close-out** — the two story-scoped AF4 consumers. **§2 row 3 is now CLOSED at 8 of 8**, and the §5
+Ask-My-Book orphan closed with it. The pre-flight audit (**§3.13**) found the contract sound on both
+routes and every wire type already mirrored AND pinned — the first audit in this register to find
+nothing wrong with what it checked — but it found four projection behaviours a roadmap paraphrase does
+not state, and one gap on the WEB side: the editor→AI seam had no story id at all. **Three defects, all
+closed 2026-08-08** — **W9-1** on web (a stream that closed without a terminal frame span forever, fixed
+in flight), plus **W9-2** (Ask My Book reachable with its feature flag down, through two of its three
+entry points) and **W9-3** (every graph edge's evidence dropped at the parse boundary) on mobile, both
+found by the sweep and fixed the same day at the user's direction. A **fourth**, **W9-4**, was found by
+actually running the two new a11y scans rather than reasoning about them — they asserted a surface the
+master AI flag had turned off. All four are the same shape: a correct rule applied in fewer places than
+it holds.
+[Detail](./45_WebClientRoadmap.md#412-w9--af4-story-consumers-detail-done-2026-08-08).) Previously swept
+2026-08-05 (after **W8's close-out** — the remaining AI surfaces. **§2 row 3 is now fully closed**: conversations, the prompt
 library and AI usage are all on web. The step-0 audit (**§3.12**, the first for the AF1/AF2 conversation
 and usage shapes) found mobile's client field-for-field correct on all seven routes and found five
 behaviour/a11y defects instead — **W8-1**, mobile's conversations list can never be populated, is the
@@ -56,17 +69,17 @@ epic now has to reconcile.
 Measured from `lib/features/**/presentation/screens` and `frontend/src/features/**/pages` plus route
 tables, not assumed.
 
-| #   | Area                  | Mobile has                                                                                                               | Web has                                                                                                                                                                                              | Closed by                                                                                                                                                                                                                                                                                                              |
-| --- | --------------------- | ------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | **Collaboration**     | 6 screens: collaborators, comments, invitations inbox, publishing workflow, restricted state, suggestions                | nothing                                                                                                                                                                                              | **W3**                                                                                                                                                                                                                                                                                                                 |
-| 2   | ~~**Monetization**~~  | 5 screens: plans, subscription, billing history, credit dashboard, usage dashboard                                       | ✅ **all five** (W4) — **fully at parity since 2026-08-03**: the coupon field (M5-2) and the two missing history tabs (M5-6) are now on both                                                         | **W4 ✅ closed 2026-07-29** — [report](./50_WebMonetizationReadinessReport.md)                                                                                                                                                                                                                                         |
-| 3   | ~~**AI breadth**~~    | 8 screens: conversation, conversations list, discovery, usage, ask-book, prompt library, semantic search, story explorer | ✅ **7 of 8** — assistant + Craft Coach (W2), semantic search + AI discovery (W5), **conversations + prompt library + AI usage (W8 ✅ 2026-08-05)** — [report](./52_WebAiSurfacesReadinessReport.md) | **W5 closed discovery + search; W8 closed the last three ✅.** Remaining: story explorer + ask-book → **W9** (new row, 2026-08-07 — see §5). Note the direction reversed on conversations: mobile ships the screen and cannot populate it (§3.12 **W8-1**), so **web is the reference** and mobile needs the follow-up |
-| 4   | **Social depth**      | collections, collection detail, comments, responses (+ followers, follow requests)                                       | follow requests; followers via a dialog                                                                                                                                                              | **unassigned — see §5**                                                                                                                                                                                                                                                                                                |
-| 5   | **Reader actions**    | clap (1..50 accumulating) and report, on the reader action bar                                                           | like, bookmark, copy-link share                                                                                                                                                                      | **unassigned — see §5**                                                                                                                                                                                                                                                                                                |
-| 6   | **Reading analytics** | `reading_analytics_screen` — the _reader's_ own stats                                                                    | writer + per-piece analytics only                                                                                                                                                                    | **unassigned — see §5**                                                                                                                                                                                                                                                                                                |
-| 7   | **Onboarding**        | `onboarding_screen` — first-run flow                                                                                     | nothing                                                                                                                                                                                              | **unassigned — see §5**                                                                                                                                                                                                                                                                                                |
-| 8   | **Privacy prefs**     | dedicated privacy screen: private account, **show bookmarks count**, **show reading-history count**                      | private-notebook toggle inside edit-profile                                                                                                                                                          | **unassigned — small, see §5**                                                                                                                                                                                                                                                                                         |
-| 9   | **Offline behaviour** | engagement + follow taken offline are queued and reconciled by a unified `SyncEngine`                                    | no offline write queue                                                                                                                                                                               | **see §4** (partly platform-inherent)                                                                                                                                                                                                                                                                                  |
+| #   | Area                  | Mobile has                                                                                                               | Web has                                                                                                                                                                                                                                                                     | Closed by                                                                                                                                                                                                                                          |
+| --- | --------------------- | ------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **Collaboration**     | 6 screens: collaborators, comments, invitations inbox, publishing workflow, restricted state, suggestions                | nothing                                                                                                                                                                                                                                                                     | **W3**                                                                                                                                                                                                                                             |
+| 2   | ~~**Monetization**~~  | 5 screens: plans, subscription, billing history, credit dashboard, usage dashboard                                       | ✅ **all five** (W4) — **fully at parity since 2026-08-03**: the coupon field (M5-2) and the two missing history tabs (M5-6) are now on both                                                                                                                                | **W4 ✅ closed 2026-07-29** — [report](./50_WebMonetizationReadinessReport.md)                                                                                                                                                                     |
+| 3   | ~~**AI breadth**~~    | 8 screens: conversation, conversations list, discovery, usage, ask-book, prompt library, semantic search, story explorer | ✅ **8 of 8 — CLOSED 2026-08-08.** Assistant + Craft Coach (W2), semantic search + AI discovery (W5), conversations + prompt library + AI usage (W8), **story explorer + ask-book (W9 ✅ 2026-08-08)** — the last two as tabs on the in-editor AI drawer, not routes (§4.1) | **W5 closed discovery + search; W8 the next three; W9 the last two ✅.** Note the direction reversed on conversations: mobile ships the screen and cannot populate it (§3.12 **W8-1**), so **web is the reference** and mobile needs the follow-up |
+| 4   | **Social depth**      | collections, collection detail, comments, responses (+ followers, follow requests)                                       | follow requests; followers via a dialog                                                                                                                                                                                                                                     | **unassigned — see §5**                                                                                                                                                                                                                            |
+| 5   | **Reader actions**    | clap (1..50 accumulating) and report, on the reader action bar                                                           | like, bookmark, copy-link share                                                                                                                                                                                                                                             | **unassigned — see §5**                                                                                                                                                                                                                            |
+| 6   | **Reading analytics** | `reading_analytics_screen` — the _reader's_ own stats                                                                    | writer + per-piece analytics only                                                                                                                                                                                                                                           | **unassigned — see §5**                                                                                                                                                                                                                            |
+| 7   | **Onboarding**        | `onboarding_screen` — first-run flow                                                                                     | nothing                                                                                                                                                                                                                                                                     | **unassigned — see §5**                                                                                                                                                                                                                            |
+| 8   | **Privacy prefs**     | dedicated privacy screen: private account, **show bookmarks count**, **show reading-history count**                      | private-notebook toggle inside edit-profile                                                                                                                                                                                                                                 | **unassigned — small, see §5**                                                                                                                                                                                                                     |
+| 9   | **Offline behaviour** | engagement + follow taken offline are queued and reconciled by a unified `SyncEngine`                                    | no offline write queue                                                                                                                                                                                                                                                      | **see §4** (partly platform-inherent)                                                                                                                                                                                                              |
 
 ---
 
@@ -1445,6 +1458,13 @@ bug — recorded so the W5 decision is made with it in view rather than discover
 | Ask My Book                               | **BUILD-FROM-CONTRACT**   | W5-3 (no verified reference) + W5-4 (no graph producer)             |
 | Story Explorer                            | **OUT OF ROW**            | AF3 surface; W6 owns it                                             |
 
+> **Superseded on the last two rows — kept as the record of what W5 decided, not as current fact.**
+> "W6 owns it" was corrected on 2026-08-05 ([45 §4.8](./45_WebClientRoadmap.md)): both are AF4
+> consumers of an existing graph, not the held analysis lifecycle. Both were then built by **W9**
+> (2026-08-08) — audit in [§3.13](#313-w9-pre-flight--the-af4-story-consumer-contract-audit-2026-08-08),
+> sweep in [§6.2](#62-w9s-sweep-2026-08-08). W5-3 (mobile's missing entry point) closed 2026-08-05, which
+> is what made "no verified reference" stop being true.
+
 **Decisions taken (2026-08-03), so the row is unambiguous:**
 
 - **W5-2 → build the enabler.** `pieceId` is implemented for `related_stories`, which is what makes the
@@ -1932,6 +1952,64 @@ None of the three verdicts changes W8's size.
 
 ---
 
+## 3.13 W9 pre-flight — the AF4 story-consumer contract audit (2026-08-08)
+
+Run before a line of client code, as [§6](#6-parity-check--run-at-the-end-of-every-client-epic) step 2
+requires. Subject: `GET /ai/explorer/:storyId/:view` and `POST /ai/ask[/stream]`, checked against the
+DTOs, the **service projections**, and the SSE writer — not against the screen list.
+
+**This is the first audit in this register that found nothing wrong with what it checked.** M-1/M-2/M-3
+found three broken AF6 surfaces, W4 found two wrong `api-types` shapes, W5 found one that 400'd every
+filtered search, W8 found a surface that can never be populated. Here the wire matched the summary
+exactly, and — checked rather than assumed, since the §3.11 guard's coverage is deliberately partial —
+`ExplorerViewResponse`, `AskBookRequest` and `AskBookResponse` were **already mirrored in
+`@qalam/api-types` and already pinned by the guard** (`api-types.contract.spec.ts:294-296`). That is
+what the §3.11 guard was built to produce, and it is the first row where it paid out.
+
+**What the audit did change: four projection behaviours no paraphrase states.** Each one would have
+produced a plausible-looking wrong client.
+
+| #   | Behaviour                                                                                                                                               | Where                             | What it changed in the port                                                                                                                                                                                                                                   |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **An unknown view is not an error.** `normalizeView` silently returns the whole graph.                                                                  | `story-explorer.service.ts:53-57` | The eight-view set is closed on the **client**; a typo would have rendered a plausible wrong answer, not failed. The api method takes an `ExplorerView`, not a string, and the client's fallback spec is the **map** — the same one the server falls back to. |
+| 2   | **`relationships` is not `characters`.** It drops every character with no relationship edge.                                                            | `story-explorer.service.ts:68-80` | Its empty state says "no relationships have been mapped", never "no characters" — a story with a full cast and no mapped relationships is legitimately empty there. Pinned by a test.                                                                         |
+| 3   | **`timeline` is server-sorted by `data.order`**; `events` is not. That sort is the _only_ difference between two views that project the same node type. | `story-explorer.service.ts:84-86` | The client never re-sorts, and the view selector **re-reads** rather than filtering a cached graph. Pinned by a test that feeds deliberately non-alphabetical events.                                                                                         |
+| 4   | **A typed view's edges are only those with both endpoints inside it.**                                                                                  | `story-explorer.service.ts:87-89` | The node-detail "walk the graph" is view-local. Mobile's sheet walks the same edge set (`story_node_sheet.dart:39-53`), so this is parity, not a limitation to fix.                                                                                           |
+
+**And one gap on the WEB side, which is where the audit's real value landed.** The `AiEditorTarget`
+seam carried `selectionText / documentText / title / language / wordCount` and **nothing identifying
+the piece** — while both new surfaces are per-story and must stay hidden until the draft has synced
+(mobile's `st.draft.isRemote`, `editor_screen.dart:245`). Closed by adding `storyId: string | null` to
+the seam. Small, but it is the kind of thing that is discovered as a compile error mid-build and then
+solved badly under pressure.
+
+### W9-1 · **medium** · **CLOSED 2026-08-08 (in flight)** · an ask stream that closed without a terminal frame span forever
+
+**What.** `useAskBook` mapped `done` and `error` frames onto terminal states, but a stream that simply
+**ended** — a dropped connection mid-answer — left the tab in `streaming`: spinner on the Ask button,
+no Try again offered, no way out but closing the drawer and losing the partial answer.
+
+**Why it is worth recording rather than just fixing.** Mobile does not have it, and not by accident:
+`AskBookController` settles the status in its subscription's `onDone`
+(`ask_book_controller.dart:98-101`) precisely because a Dart stream closing is a first-class event.
+The web's `for await` loop has the same closing event and the AF1 assistant never needed to handle it
+(a completion with no `done` also produced no partial text worth keeping), so the port inherited a gap
+the reference did not have. **The reference being right is not the same as the port being right**, and
+this is the second row where a for-await translation of a Dart subscription lost a terminal case.
+
+**Fixed** by settling to `done` on loop exit when the status is still `streaming`, keeping whatever
+arrived. Pinned by `ask-book-tab.spec.tsx` — "settles a stream that closes without a terminal frame
+instead of spinning forever".
+
+### Verdicts
+
+| Surface            | Verdict                                                                                                                                                                                                                        |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Story Explorer** | **PORTABLE, and cheaper than the row estimated.** One `GET`, eight views, no LLM, no feature flag, wire types already mirrored and pinned. The only real work was reading the four projections correctly.                      |
+| **Ask My Book**    | **PORTABLE.** The SSE transport is reused wholesale; the only AF4-specific handling is one extra leading `sources` frame. Its wire event needed a type (`AskBookStreamEvent`, added to `api-types` and exempted in the guard). |
+
+---
+
 ## 4. Divergences that are NOT gaps (platform-inherent)
 
 These are accepted permanently and need no epic. They exist because the platforms genuinely differ.
@@ -1963,11 +2041,14 @@ every known difference to live in §2, §3, or §4 — so a later epic comparing
 
 | **AI search** | Web: query suggestions are a "Try instead" **row beside the results**. Mobile: a **dropdown while typing**. | Same endpoint, same purpose. Mobile's search runs on submit, so a dropdown is the only place suggestions can go; the web field debounces straight into the URL, so results are already on screen and a dropdown would flicker on a 300 ms timer over the answer it duplicates. |
 | **AI discovery** | Web: **two** recommendation shelves on `/discover` (for-you, pick-up-next). Mobile: **five** on a dedicated AI discovery screen (adds trending, authors, genres). | The other three run the same `TrendingService` / `getWriters` / `getTrendingGenres` the web's editorial sections on that page already render — the recommender's versions differ only by carrying a reason. Shipping them would print the same rows twice on one page. |
-| **AF4 results** | Web: a result whose navigation target is a `graph_node`, `chapter` or timeline cue renders as a **plain card**. Mobile: opens a **detail sheet**. | The web has no route for those types until `W6` (story explorer). A card that clearly does not claim to navigate beats a link to nowhere; when W6 lands, the target becomes a link with no change to the card. |
+| **AF4 results** | Web: a result whose navigation target is a `graph_node`, `chapter` or timeline cue renders as a **plain card**. Mobile: opens a **detail sheet**. | **Reason revised 2026-08-08 by W9's sweep.** The original read "until W6 (story explorer)"; W9 shipped the story explorer and the row still stands, for a better reason. The explorer is **editor-scoped and owner-scoped** — it opens on your own draft, and `GET /ai/explorer/:storyId/:view` answers `STORY_NOT_FOUND` for anyone else's story. A search result's graph node generally belongs to a story the searcher does not own, so there is still nowhere to send them. A card that does not claim to navigate remains better than a link to a 404. |
 | **Saved searches** | Web: the **server list only**. Mobile: a device-local mirror merged with the server list. | Mobile is offline-first (`SyncEngine`, §2 row 9); a browser has no offline reading story to serve, so a local mirror would be cache with no consumer. Both clients read and write the same `/ai/search/saved` rows, which is the parity that matters. |
 | **AI surfaces — entry point** | Web: a `/settings/ai` **hub**, one settings-nav section, four sub-pages. Mobile: all three hang off the **editor's AI menu** (`editor_screen.dart:442-446`). | Mobile's editor is the whole screen, so its AI menu is the natural home. Web's editor is one route of many, and web already has a home for account-scoped management surfaces — Billing set the one-entry-per-section + hub pattern. Copying mobile's shape would bury three routes in an editor menu and hide them from anyone not currently writing. Added by W8's sweep (2026-08-05). |
 | **Conversation export** | Web: downloads a **`.json` file**. Mobile: copies the JSON to the **clipboard** (`ai_conversation_screen.dart:186-199`). | The route returns plain JSON with no `Content-Disposition`, so making it a file is the client's job either way. A phone has nowhere useful to put a file; a browser does. Same document, same endpoint. Added by W8's sweep (2026-08-05). |
 | **Conversation detail** | Web: **read-only**. Mobile: can **continue** the conversation by sending a completion with its id. | Web's assistant lives in the editor (W2), where a completion has the selected prose to act on. A composer on a settings page would be an assistant with no manuscript in front of it — a second, weaker entry to a capability the editor already offers properly. Added by W8's sweep (2026-08-05). |
+| **Story Explorer + Ask — entry point** | Web: two **tabs on the in-editor AI drawer**. Mobile: two **full screens** pushed from the editor's AI overflow menu. | Note this is the OPPOSITE call to the "AI surfaces — entry point" row above, and deliberately so: those three are ACCOUNT-scoped (conversations, prompts, usage) and belong in settings; these two are **per-story** and belong where the story is. The drawer is the web's editor AI menu. Both clients reach both surfaces from the editor, gated identically on a synced draft. Added by W9's sweep (2026-08-08). |
+| **Graph node detail** | Web: the detail **replaces the list** inside the drawer, with a back control. Mobile: a **bottom sheet** over the list (`story_node_sheet.dart`). | A nested dialog inside an open drawer is the one arrangement neither AntD nor a screen reader handles well, and the drawer already provides the "layer over the editor" mobile's sheet is for. The interaction is identical either way — pick a neighbour, land on that node. Added by W9's sweep (2026-08-08). |
+| **Explorer → Ask** | Web: **no cross-link**; the two are adjacent tabs. Mobile: an "Ask about this story" **app-bar action** on the explorer (`story_explorer_screen.dart:54-59`). | Mobile needs the action because the two are separate routes and the explorer is where a question occurs to you. On web they are one click apart in the same drawer, so a link would navigate to the tab beside the one you are on. (Mobile's version of this action is also the entry point that skips the feature-flag check — **W9-2**, §6.2.) Added by W9's sweep (2026-08-08). |
 
 **The bottom four rows were added by W5's sweep (2026-08-04), and they had to be.** The epic's own code
 comments said each of them was "recorded in 48 §4.1" — and none of them was. A claim in a comment is not
@@ -1997,7 +2078,10 @@ list** — it was closed by the 2026-07-28 port, §3.1.)
 - **Clap / report** — deliberately scoped out of W1, with no row that picks them up.
 - **Reader analytics, onboarding, privacy prefs, AI conversations + prompt library + usage** — all
   mobile-shipped, none in the W-track. (The last three are named by `W8`, which is unclaimed.)
-- **Ask My Book — found unowned by W5's sweep (2026-08-04). Decided 2026-08-07: own row, not W6.**
+- ~~**Ask My Book**~~ — **CLOSED 2026-08-08 by W9, together with the story explorer.** Found unowned by
+  W5's sweep (2026-08-04); decided 2026-08-07 to be its own row rather than W6's. The reasoning below
+  stands as the record of why, and both surfaces now ship on web ([45 §4.12](./45_WebClientRoadmap.md)).
+- **The original entry, for the record:**
   `POST /ai/ask[/stream]` is grounded Q&A over a **story's knowledge graph**, so it needs an owned story
   AND a built AF3 graph (§3.9 W5-4) — the same prerequisite the story explorer has, and the reason W5's
   row could not absorb it. But `ask-book.controller.ts` sits in `retrieval/consumers/`, same as
@@ -2130,3 +2214,122 @@ found four claimed-but-absent records in the epic before it.
    ask-book is still the §5 orphan.
 5. **Nothing left unrecorded.** Five defects in §3.12, three accepted differences in §4.1, and the ten
    visual baselines needing a CI mint in [52 §4.2](./52_WebAiSurfacesReadinessReport.md).
+
+### 6.2 W9's sweep (2026-08-08)
+
+1. **Only what the row named?** Yes — Story Explorer and Ask My Book, plus the two things each was
+   unbuildable without: `storyId` on the editor→AI seam (§3.13), and `AskBookStreamEvent` in
+   `@qalam/api-types`, now pinned by the §3.11 guard's completeness check. `resolveAvailability` was
+   widened to accept `feature: null` for the same reason — the explorer's route has no flag, and every
+   existing caller passes a feature, so the change is additive. **Nothing else was touched.** The
+   buffered `POST /ai/ask` got an api method it does not yet have a caller for; it is one line, it
+   mirrors the DTO, and it is named as unused in its own doc comment rather than left to look like a
+   live path.
+2. **Does mobile actually have every part I built?** Compared surface by surface against
+   `story_explorer_screen.dart`, `story_node_sheet.dart` and `ask_book_screen.dart`. Same parts, same
+   order, same vocabulary — eight views, nine scopes, node list → detail → neighbour walk, scope chips
+   → question → streamed answer → cited sources → stop/retry. **Three arrangement differences**, all
+   §4.1 territory and all recorded in §4.1 below: the detail replaces the list rather than opening a
+   sheet; the surfaces are drawer tabs rather than routes; and the explorer's "Ask about this story"
+   app-bar action has no web counterpart because the two are adjacent tabs rather than two screens.
+   **One capability web has and mobile does not**, and it is a consequence rather than an addition:
+   web resolves the `AskBook` flag on the surface itself and shows the availability notice, while
+   mobile resolved it only on the editor's menu entry. Recorded as **W9-2** and **fixed on mobile the
+   same day** — see below.
+3. **Does mobile need a follow-up?** Yes — two, and both were **taken and closed 2026-08-08**, which
+   is a departure from step 1 worth naming: they were opened as unowned mobile rows, the user read
+   them and said fix them, so they were done as a scoped follow-up rather than folded into W9's own
+   commit. Both are recorded here in full because the sweep is where they were found.
+
+   ### W9-2 · **low** · **CLOSED 2026-08-08 (mobile)** · Ask My Book was reachable with its feature flag down
+
+   **What.** `POST /ai/ask` is gated on `feature.ai.askBook` as well as `ai.use`
+   (`ask-book.service.ts:86` → `assertEnabled`, 403 `AI_FEATURE_DISABLED`), and AF1 seeds every AI flag
+   **dark** — so flag-down is the state every deployment starts in. `editor_screen.dart:246-247` computed
+   the right predicate for its menu entry. Nothing else did: `story_explorer_screen.dart:57` pushed
+   `Routes.aiAskPath` unconditionally, and the screen itself tested only `appConfig.enableAi`
+   (`ask_book_screen.dart:63`). So the surface the overflow correctly hid was one tap away from the
+   surface it did open — and `/ai/ask/:storyId` is a registered route, so a deep link was a third door.
+
+   **Consequence, stated precisely.** Not a crash and not a raw error: mobile already maps the code to
+   "Not available yet" and sets `canRetry: false` (`ai_error_copy.dart`), and the typed question is not
+   cleared. It is a wall met **after** the writer composes a question rather than before — the exact
+   failure mode this platform's own gating doc comment names as the thing to avoid ("shown **before**
+   the writer composes an instruction rather than after they lose it to a rejection").
+
+   **Fixed** by putting the gate where all three doors lead: `AskBookScreen` now resolves the flag
+   itself and renders the same `AiErrorCopy` a failed request would produce, so pre-flight and
+   post-flight read identically. Ordered as the server checks — `AI_DISABLED` before
+   `AI_FEATURE_DISABLED` — so a master switch that is down is not reported as this feature being
+   unavailable. Unresolved flags resolve to **usable**, not blocked: `GET /ai/features` is a courtesy
+   read, the ask itself is authoritative, and blocking on unknown would flash a wall on every open and
+   lock the surface out entirely whenever that read fails. The explorer's action is additionally hidden
+   when the flags say so — affordance, not enforcement.
+
+   **Guarded** by four tests in `af4_entry_points_test.dart`, the file that already owns this defect
+   class. Three of them were **confirmed to fail against the unfixed code** before the fix was restored.
+
+   ### W9-3 · **low** · **CLOSED 2026-08-08 (mobile)** · every graph edge's evidence was dropped at the parse boundary
+
+   **What.** `StoryGraphEdge.fromJson` read seven fields and skipped `evidence` — the quote grounding
+   the **relationship**, as distinct from the evidence on either endpoint — while `StoryGraphNode.fromJson`
+   parsed the identical field three classes above it. The backend populates it on every edge
+   (`story.mappers.ts:53`, `toEdgeDto`), so it arrived on the wire and was discarded before any widget
+   could ask.
+
+   **Severity, stated honestly.** **Neither client renders edge evidence today** — both node sheets show
+   node evidence only. So this was a latent model gap, not a live capability difference: on web the field
+   already survived into the parsed object, while on mobile it was gone. It earned a row because the
+   asymmetry is silent — anyone reading `story_graph.dart` sees `evidence` on the node class and would
+   reasonably assume the edge class has it, which is how a future "why is this relationship here?" feature
+   gets built against a field that arrives empty.
+
+   **Fixed** by parsing **and** serialising it, with the parameter `required` rather than defaulted so the
+   asymmetry cannot quietly return. Guarded by two tests in `retrieval_entities_test.dart`, asserted
+   through the `toJson` round trip as well as the parse — the offline explorer cache re-reads `toJson`, so
+   a field that parses but is not serialised comes back empty on the second open, which is the harder
+   version of the same bug to notice.
+
+4. **§2 re-swept.** Row 3 (AI breadth) **closes at 8 of 8** — the last row-3 gap. The §5 Ask My Book
+   orphan closes with it. No other row is affected: nothing here touches collaboration, monetization,
+   social depth, reader actions, analytics, onboarding, privacy or offline.
+5. **Nothing left unrecorded.** The audit is §3.13, its one web defect is **W9-1** (found and fixed in
+   flight), the two mobile defects are **W9-2** and **W9-3** above (both closed 2026-08-08, with the
+   mobile gates green: `flutter analyze` clean, 653 tests passing, changed files formatted), and the
+   three arrangement differences are in §4.1. **The one item this sweep first left unverified has since
+   been executed** against a live local stack: both axe scans pass in `frontend-chromium` and
+   `frontend-dark` (4/4, zero critical/serious), and the `frontend-ai-panel.png` baselines pass
+   unchanged in both themes. That run found **W9-4** below — which is precisely why [e2e/10 §8.4]
+   refuses reasoning as evidence for a rendered property.
+
+### W9-4 · **medium (harness)** · **CLOSED 2026-08-08** · both new a11y scans asserted a surface the flags had turned off
+
+**What.** The two scans failed 4/4 on their first execution. They were written on the belief that the
+Story Explorer "has no flag to raise" — true of the **route** (`story-explorer.controller.ts` carries
+`ai.use` alone, which is exactly what §3.13 established) and false of the **client**: the tab resolves
+through `resolveAvailability({feature: null})`, which still reads `aiEnabled`, the **master** flag, which
+AF1 seeds dark like every other. So both scans found "AI is turned off" and no chips at all.
+
+**It was already written down.** `api.enableAiFeatures` carries the correction in its own comment — "a
+per-feature flag alone resolves to `off`, not `feature-off`". The reasoning error was reading "no
+per-feature flag" as "no flag", which is the same collapse of two adjacent facts that produced W9-1,
+W9-2 and W9-3.
+
+**Second half of the same defect:** flags must be raised **before** the panel opens. `/ai/features` is
+read through TanStack Query with a 60 s `staleTime`, so a panel opened first and flag-raised second
+serves the flag-down answer for the rest of the test and renders the availability notice under a
+correctly-selected tab — a failure that looks like a broken selector and is not.
+
+**Fixed** by having both scans take the AI-flag lock, the explorer's with an **empty** feature list, so
+the asymmetry between the two surfaces is asserted rather than asserted-about. Both now pass in both
+themes.
+
+**One pre-existing failure was ruled out, not absorbed.** `assistant.spec.ts` "writes and autosaves"
+failed in the same loaded run. It is **T-7** (§3.5) — verified 3/3 green in isolation at 1 worker, which
+is that record's own established signature. Not W9's, and not fixed here.
+
+**All three W9 defects share one shape, and it is worth naming.** W9-1 was a terminal case a `for await`
+translation lost from a Dart subscription; W9-2 was a gate applied at one of three entry points; W9-3 was
+a field parsed on one class and not its sibling. None was a misread of the contract — §3.13 found the
+contract sound. Each was a **correct rule applied in fewer places than it holds**, which is the class of
+defect a per-surface audit finds and a per-endpoint audit does not.
