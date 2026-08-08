@@ -80,6 +80,12 @@ const MESSAGES: Record<string, string> = {
   // their piece cap is the W4 remedy-conflation defect (docs/48 §3.6).
   [ERROR_CODES.PIECE_LIMIT_REACHED]:
     'You’ve used all the pieces your plan includes. Delete one to free a slot, or see plans.',
+  // B6 (docs/45 §4.11). Two codes because two different people read them: the owner can upgrade
+  // or remove someone, the invitee can do neither. Neither says "it resets" — no seat ever does.
+  [ERROR_CODES.COLLABORATOR_LIMIT_REACHED]:
+    'This story has no collaborator seats left on your plan. Remove a collaborator, or see plans.',
+  [ERROR_CODES.COLLABORATOR_SEATS_UNAVAILABLE]:
+    'This story is full. Ask the owner to free a collaborator seat.',
   [ERROR_CODES.INSUFFICIENT_CREDITS]: 'You’re out of AI credits.',
   [ERROR_CODES.RECEIPT_VALIDATION_FAILED]: 'We couldn’t verify that purchase.',
   [ERROR_CODES.PURCHASE_NOT_FOUND]: 'There was nothing to restore.',

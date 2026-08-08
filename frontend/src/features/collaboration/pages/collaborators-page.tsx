@@ -8,14 +8,21 @@ import { usePageTitle } from '@/hooks/use-page-title';
 import { getErrorMessage, getRequestId } from '@/lib/errors';
 
 import { CapabilityGate } from '../components/capability-gate';
+import {
+  COLLABORATOR_SEAT_NOTICE_ID,
+  CollaboratorSeatCount,
+  CollaboratorSeatNotice,
+} from '../components/collaborator-seat-notice';
 import { InvitationList } from '../components/invitation-list';
 import { InviteDialog } from '../components/invite-dialog';
 import { MemberList } from '../components/member-list';
 import { PresenceBar } from '../components/presence-bar';
+import { useCollaboratorLimit } from '../hooks/use-collaborator-limit';
 import { useStoryInvitations } from '../hooks/use-invitations';
 import { useStoryMembers } from '../hooks/use-members';
 import { usePresenceHeartbeat, useStoryPresence } from '../hooks/use-presence';
 import { isCollaborationEnabled } from '../lib/collaboration-enabled';
+import { resolveCollaboratorAllowanceNotice } from '../lib/collaborator-allowance';
 
 /**
  * The collaborators page (`/write/:storyId/collaborators`, AF6 W3a) — the membership home for one
@@ -36,6 +43,11 @@ export function CollaboratorsPage(): ReactElement {
   const invitations = useStoryInvitations(enabled ? storyId : undefined);
   const presence = useStoryPresence(enabled ? storyId : undefined);
   usePresenceHeartbeat(storyId, enabled);
+  // B6 seats. The route is `story.invite`-authorized, so a viewer who cannot invite would only get
+  // a 403 — the query stays off for them and the notice never renders, which is correct: the seat
+  // count is the owner's business and the upsell is addressed to whoever pays.
+  const seats = useCollaboratorLimit(enabled ? storyId : undefined);
+  const seatNotice = resolveCollaboratorAllowanceNotice(seats.data);
 
   // The client kill switch, mirroring mobile's five self-gating screens (docs/49 §2.2). The server
   // has its own master flag; this one only keeps the surface out of reach while it is dark.
@@ -58,12 +70,32 @@ export function CollaboratorsPage(): ReactElement {
         description="Who can read, comment on, and edit this story."
         actions={
           <CapabilityGate storyId={storyId} action={POLICY_ACTIONS.StoryInvite}>
-            <QButton size="sm" icon={UserPlus} onClick={() => setInviteOpen(true)}>
-              Invite
-            </QButton>
+            <div className="flex items-center gap-3">
+              {/* "2 of 3 collaborators" — the count BEFORE the wall (docs/45 §4.11). */}
+              <CollaboratorSeatCount notice={seatNotice} />
+              <QButton
+                size="sm"
+                icon={UserPlus}
+                /*
+                 * Disabled, never hidden. A free author must be able to SEE that collaboration
+                 * exists and what it costs — hiding the affordance is mobile's C-1 defect, and
+                 * leaving it live to 402 is W3c-1. `aria-describedby` ties the button to the
+                 * notice, so a screen reader is told WHY it is off rather than just that it is.
+                 */
+                disabled={seatNotice.blocked}
+                aria-describedby={seatNotice.blocked ? COLLABORATOR_SEAT_NOTICE_ID : undefined}
+                onClick={() => setInviteOpen(true)}
+              >
+                Invite
+              </QButton>
+            </div>
           </CapabilityGate>
         }
       />
+
+      <CapabilityGate storyId={storyId} action={POLICY_ACTIONS.StoryInvite}>
+        <CollaboratorSeatNotice notice={seatNotice} />
+      </CapabilityGate>
 
       {presence.data && presence.data.length > 0 ? <PresenceBar presence={presence.data} /> : null}
 

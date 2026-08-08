@@ -103,7 +103,7 @@ soft-deleted rows ([04 §1.5](./04_DatabaseDesign.md)), so it is a safe identity
 | **B3** | Profile lookup by **id** (both clients)                                                                                                                                                     | S         | Recorded 2026-08-05 after being carried in three consecutive epics' "improvements not done" lists. Retrieval, collaboration and publishing DTOs all carry user **ids**, but `GET /users/:username` is keyed by username — so every W3c surface (reviewer, snapshot author, history actor, blocked person) shows a **truncated id to real users**. Three slices worked around it; it is a missing contract, not a nicety. Additive backend enabler + both clients                                                                               | W7's reader-analytics rows         |
 | **B4** | **Piece limit per plan** — enabler + both clients ✅ **done 2026-08-08**                                                                                                                    | S + S×2   | **New feature, requested and specified 2026-08-05.** A cap on how many pieces an author may have, by subscription tier. The first premium feature to gate the product's **core write path** rather than AI tooling. Full spec, including the three decisions already taken, in [§4.9](#49-b4--piece-limit-per-plan-detail)                                                                                                                                                                                                                     | —                                  |
 | **B5** | **Per-account "turn AI off"** — enabler + both clients                                                                                                                                      | S + XS×2  | **New feature, requested and specified 2026-08-05.** An author disables AI for their own account. Server-enforced; governs the user, not the story. Cheap because `GET /ai/features` already answers "which AI features are enabled **for you**" and both clients already consume it — see [§4.10](#410-b5--per-account-turn-ai-off-detail)                                                                                                                                                                                                    | —                                  |
-| **B6** | **Collaborators per story, by plan** — enabler + both clients                                                                                                                               | S + S×2   | **New feature, specified 2026-08-05.** Free 0 · Plus 3 · Pro/Ent unlimited, counted against the **story owner's** plan. The seat lever — collaboration becomes a paid capability. Spec: [§4.11](#411-b6--collaborators-per-story-by-plan-detail)                                                                                                                                                                                                                                                                                               | —                                  |
+| **B6** | **Collaborators per story, by plan** — enabler + both clients ✅ **done 2026-08-08**                                                                                                        | S + S×2   | **New feature, specified 2026-08-05.** Free 0 · Plus 3 · Pro/Ent unlimited, counted against the **story owner's** plan. The seat lever — collaboration becomes a paid capability. Shipped with the sentinel **inverted for this key alone** (`-1` unlimited, `0` none) because `0` already means unlimited everywhere else. Spec + what shipped: [§4.11](#411-b6--collaborators-per-story-by-plan-detail)                                                                                                                                      | —                                  |
 | **B7** | **Version-history depth, by plan** — enabler + both clients                                                                                                                                 | S + XS×2  | **New feature, specified 2026-08-05.** Free 5 · Plus 25 · Pro/Ent unlimited. **Hidden, never deleted** — a read-time clamp, so upgrading restores history retroactively. Spec: [§4.12](#412-b7--version-history-depth-by-plan-detail)                                                                                                                                                                                                                                                                                                          | —                                  |
 
 ### 4.1 W1 — Reader page (detail)
@@ -544,7 +544,7 @@ small enough to ride with **W7** or a mobile parity pass. **Not its own epic** �
 
 ---
 
-### 4.11 B6 — collaborators per story, by plan (detail)
+### 4.11 B6 — collaborators per story, by plan (detail) ✅ **DONE 2026-08-08**
 
 **Specified 2026-08-05.** A cap on how many collaborators a story may have, by the plan of the author
 who owns it. Like [B4](#49-b4--piece-limit-per-plan-detail) this is a `PlanLimits` key, not a
@@ -593,6 +593,67 @@ codes ([48 §5.2](./48_PlatformParityRegister.md)).
 - Free authors need an honest upsell where the invite action is, not a dead button — `CapabilityGate`
   hid affordances silently once already (mobile C-1) and that must not repeat here.
 - The accept-side refusal needs its own state on the invitations inbox.
+
+#### What shipped (2026-08-08)
+
+**The sentinel decision, and how it was reconciled.** `maxCollaborators` uses **`-1`
+(`UNLIMITED_SEATS`) for unlimited and `0` for none** — the inverse of every other `PlanLimits` key.
+The alternative (a separate `collaborationEnabled` flag) was rejected because it makes the cap two
+reads instead of one, and forgetting the second read reproduces exactly the bug the warning above is
+about. The deviation is not left implicit:
+
+| Where                                                                   | What it says                                                                                                                                                      |
+| ----------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `NEGATIVE_UNLIMITED_LIMIT_KEYS` (`packages/shared/src/monetization.ts`) | The explicit list of keys whose unlimited sentinel is negative. `maxCollaborators` is the only member                                                             |
+| `resolvePlanLimit(limits, key)`                                         | The ONE correct way to read any limit — it consults that list. Reading `limits.maxCollaborators` by hand is what re-creates the inversion                         |
+| `mergePlans` doc comment                                                | Names the exception directly under the "`0` is how an admin says unlimited" promise it breaks                                                                     |
+| The `monetization.plans` setting **description**                        | Admin-facing, rendered beside the JSON editor: "0 means UNLIMITED for every key EXCEPT `maxCollaborators`, where 0 means NO collaborators and -1 means unlimited" |
+
+**How an admin expresses "unlimited collaborators": `-1`.** Pinned by
+`monetization.config-service.spec.ts`, which asserts from **one** stored catalogue that an admin's
+`0` resolves to _unlimited pieces_ and _zero seats_ — so normalising the two conventions in either
+direction fails a test rather than silently inverting a tier.
+
+**Enforcement.** One `CollaboratorSeatService`, three doors, two gates:
+
+| Door                           | Gate                 | Counts                                                  | Refusal                                |
+| ------------------------------ | -------------------- | ------------------------------------------------------- | -------------------------------------- |
+| `POST .../invitations`         | `assertCanOfferSeat` | members **+ outstanding invitations**                   | `COLLABORATOR_LIMIT_REACHED` (402)     |
+| `POST .../members`             | `assertCanOfferSeat` | same — capping only one door makes the other the bypass | same                                   |
+| `POST /invitations/:id/accept` | `assertCanClaimSeat` | **members only**                                        | `COLLABORATOR_SEATS_UNAVAILABLE` (409) |
+
+Accept counts members alone on purpose: including the pending set would make an invitation block
+**its own** acceptance (2 members + this invitation = 3 against a limit of 3). Pending invitations
+exist to stop an owner _issuing_ more claims than they can honour; once someone is claiming one,
+what matters is whether the seat exists. A downgraded story therefore fills first-come-first-served.
+
+Every read is `getLimits(facts.authorId)` — the owner's, never the actor's. `getLimits`' fallback was
+also changed from a three-key stub to the compiled defaults **for that tier**, because that stub
+would have left `maxCollaborators` absent, and absent is the one state with no honest reading.
+
+**Two error codes, not one**, because two different people read them. The owner gets 402 with
+`{used, limit}` and "see plans, or remove a collaborator". The invitee gets 409, no plan size, and
+no upsell — they cannot buy a seat on someone else's plan, and quoting a stranger's plan at them
+both blames the wrong person and leaks what the owner pays. Neither is `QUOTA_EXCEEDED`: nothing
+about a seat resets, so that remedy would never arrive (the W4 defect, [48 §3.6](./48_PlatformParityRegister.md)).
+
+**Read endpoint.** `GET /stories/:storyId/collaborators/limit` → `CollaboratorLimitDto`, mirroring
+B4's `PieceLimitDto` field-for-field plus `members` / `pendingInvitations`, since the count is
+composite and "2 of 3" reads differently when one of the two has not accepted. Authorized as
+`story.invite`: the allowance is only meaningful to someone who could spend a seat, and it is a
+coarse signal of what the owner pays for.
+
+**Clients.** Both show the count beside the invite action, keep that action **visible and disabled**
+with the reason attached (`aria-describedby` on web, the tooltip on mobile), and render an offer —
+not an error — for a free author, so they can see the feature exists and what it costs. The
+accept-side refusal is its own persistent state on the invitations inbox, worded for the invitee.
+
+**Not covered by the §3.11 api-types guard**: `@qalam/api-types` has no collaboration namespace at
+all, so `CollaboratorLimitDto` has nothing to drift from — the same position B4's `PieceLimitDto` is
+in. Each client declares the type in its own feature layer.
+
+**The `MAX_STORY_COLLABORATORS` ceiling (20, 409) stays.** It is anti-abuse and no plan raises it;
+the plan cap is checked first because for every tier that can hit it, it binds far below 20.
 
 ---
 

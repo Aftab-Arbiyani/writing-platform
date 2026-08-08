@@ -54,6 +54,29 @@ export interface StoryInvitation {
   createdAt: string;
 }
 
+/**
+ * A story's collaborator seat allowance (B6, docs/45 §4.11) —
+ * `GET /stories/:id/collaborators/limit`.
+ *
+ * The allowance belongs to the STORY and is charged to whoever owns it: a Free author's story has
+ * zero seats no matter who is doing the inviting. `used` is members plus outstanding invitations,
+ * because an unanswered invitation is a claimed seat.
+ *
+ * **`limit` inverts the usual convention on purpose: `-1` is unlimited and `0` is none** (Free).
+ * Branch on `unlimited`, never on `limit === 0` — that test is exactly backwards here and would
+ * show a free story as uncapped.
+ */
+export interface CollaboratorLimit {
+  storyId: string;
+  members: number;
+  pendingInvitations: number;
+  used: number;
+  limit: number;
+  remaining: number | null;
+  unlimited: boolean;
+  canInvite: boolean;
+}
+
 /** A collaborator's live presence in the story workspace (polled, not pushed — docs/49 §6). */
 export interface StoryPresence {
   userId: string;

@@ -14,6 +14,7 @@ import { PieceNotFoundException } from '../pieces/exceptions/pieces.exceptions';
 import { PiecesService } from '../pieces/pieces.service';
 import { PolicyEngineService } from '../policy';
 import { ActivityService } from './activity.service';
+import { CollaboratorSeatService } from './collaborator-seat.service';
 import {
   COLLABORATION_AUDIT_ACTIONS,
   COLLABORATION_AUDIT_TARGET,
@@ -30,7 +31,11 @@ import { ownerMemberDto, toCapabilityDtos, toMemberDto } from './collaboration.m
 import { subjectOf, storyResource, type StoryFacts } from './collaboration.policy';
 import { CollaborationRepository } from './collaboration.repository';
 import type { AddMemberDto, ChangeRoleDto } from './dto/collaboration-request.dto';
-import type { CapabilitiesDto, MemberDto } from './dto/collaboration-response.dto';
+import type {
+  CapabilitiesDto,
+  CollaboratorLimitDto,
+  MemberDto,
+} from './dto/collaboration-response.dto';
 
 /**
  * Story membership + roles (AF6). Owns the roster and is the Policy Engine's
@@ -52,7 +57,24 @@ export class MembershipService {
     private readonly engine: PolicyEngineService,
     private readonly audit: AuditService,
     private readonly activity: ActivityService,
+    private readonly seats: CollaboratorSeatService,
   ) {}
+
+  /** The story's B6 seat allowance (`GET /stories/:storyId/collaborators/limit`). */
+  async getSeatAllowance(storyId: string, actor: AuthenticatedUser): Promise<CollaboratorLimitDto> {
+    const facts = await this.loadFacts(storyId);
+    /*
+     * Authorized as StoryInvite, matching `InvitationService.listForStory` — the allowance is only
+     * meaningful to the people who can spend a seat, and it is a (coarse) signal of what the owner
+     * pays for, so it is not part of the roster every member can read.
+     */
+    await this.engine.assert({
+      subject: subjectOf(actor),
+      action: POLICY_ACTIONS.StoryInvite,
+      resource: storyResource(storyId, facts),
+    });
+    return this.seats.getAllowance(storyId, facts.authorId);
+  }
 
   /**
    * The subject's effective story role, or null. The owner (piece author) has no
@@ -99,6 +121,13 @@ export class MembershipService {
     if ((await this.repo.findMembership(storyId, dto.userId)) !== null) {
       throw new StoryMemberExistsException();
     }
+    /*
+     * B6's plan seat cap, charged to `facts.authorId` — the story's OWNER, not `actor`. This is the
+     * direct-add door; `POST .../invitations` is the other one, and capping only that one would
+     * leave this as the bypass (docs/45 §4.11). Checked before the flat ceiling because it binds
+     * far below 20 on every tier that can hit it, so its refusal is the informative one.
+     */
+    await this.seats.assertCanOfferSeat(storyId, facts.authorId);
     if ((await this.repo.countMembers(storyId)) >= MAX_STORY_COLLABORATORS) {
       throw new StoryCollaboratorLimitException(MAX_STORY_COLLABORATORS);
     }

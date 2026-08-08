@@ -126,6 +126,49 @@ export class PieceLimitReachedException extends AppException {
   }
 }
 
+/**
+ * The story has no collaborator seat left on its OWNER's plan (B6, docs/45 §4.11).
+ *
+ * Thrown at the two doors that create a seat — inviting and adding a member directly — and read
+ * against `getLimits(ownerId)`, never the actor's own plan: a co-author with a Pro subscription
+ * inviting into a Free author's story is still spending the FREE author's seats.
+ *
+ * A separate code from {@link PieceLimitReachedException} even though both are 402 stock caps: B4
+ * counts the author's own library and its remedy is "delete a piece", while this counts one story's
+ * roster and its remedy is "remove a collaborator". It is also not `STORY_COLLABORATOR_LIMIT`, the
+ * flat anti-abuse ceiling that no plan can raise, and not `QUOTA_EXCEEDED`, whose "wait for the
+ * reset" remedy would never arrive (the W4 defect, docs/48 §3.6).
+ */
+export class CollaboratorLimitReachedException extends AppException {
+  constructor(used: number, limit: number) {
+    super(
+      ERROR_CODES.COLLABORATOR_LIMIT_REACHED,
+      `Your plan allows ${limit} collaborator${limit === 1 ? '' : 's'} per story and this story has ${used}.`,
+      HttpStatus.PAYMENT_REQUIRED,
+      [{ used, limit }],
+    );
+  }
+}
+
+/**
+ * The invitee cannot accept: the owner's plan has no seat left for them (B6, docs/45 §4.11).
+ *
+ * The same fact as {@link CollaboratorLimitReachedException} told to the other person, which is why
+ * it is a different code, a different status, and different words. The invite was valid when it was
+ * sent; the owner has since downgraded or filled the story. **No upsell and no `used`/`limit` in the
+ * message** — the invitee cannot buy a seat on someone else's plan, and quoting a stranger's plan
+ * size at them both blames the wrong person and leaks what the owner pays.
+ */
+export class CollaboratorSeatsUnavailableException extends AppException {
+  constructor() {
+    super(
+      ERROR_CODES.COLLABORATOR_SEATS_UNAVAILABLE,
+      'This story has no collaborator seats left. Ask the story owner to free one before accepting.',
+      HttpStatus.CONFLICT,
+    );
+  }
+}
+
 /** The user has insufficient AI credits. */
 export class InsufficientCreditsException extends AppException {
   constructor(required: number, available: number) {

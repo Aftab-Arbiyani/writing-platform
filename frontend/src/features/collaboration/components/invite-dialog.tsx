@@ -148,6 +148,14 @@ function inviteErrorMessage(error: unknown): string {
       return 'You cannot invite yourself.';
     case ERROR_CODES.STORY_COLLABORATOR_LIMIT:
       return `A story can have at most ${MAX_STORY_COLLABORATORS} collaborators.`;
+    /*
+     * B6's plan cap, and a different sentence from the flat ceiling above it: that one is a hard
+     * product limit nobody can raise, this one is the owner's plan and upgrading clears it. The
+     * page already carries the full notice and the "See plans" action, so this line stays short
+     * and does not repeat the upsell inside the dialog.
+     */
+    case ERROR_CODES.COLLABORATOR_LIMIT_REACHED:
+      return 'This story has no collaborator seats left on your plan.';
     case ERROR_CODES.STORY_ROLE_FORBIDDEN:
       return 'That role cannot be assigned.';
     default:

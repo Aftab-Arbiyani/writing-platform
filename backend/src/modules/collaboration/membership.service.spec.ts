@@ -9,10 +9,12 @@ import type { PolicyDecision } from '@qalam/shared';
 
 import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import type { AuditService } from '../audit/audit.service';
+import { CollaboratorLimitReachedException } from '../monetization/monetization.exceptions';
 import type { PiecesService } from '../pieces/pieces.service';
 import type { PolicyEngineService } from '../policy';
 import type { ActivityService } from './activity.service';
 import type { CollaborationRepository } from './collaboration.repository';
+import type { CollaboratorSeatService } from './collaborator-seat.service';
 import {
   StoryCollaboratorLimitException,
   StoryMemberExistsException,
@@ -87,8 +89,27 @@ function build() {
     record: jest.fn().mockResolvedValue(undefined),
   } as unknown as jest.Mocked<ActivityService>;
 
-  const service = new MembershipService(repo, pieces, engine, audit, activity);
-  return { service, repo, pieces, engine, audit, activity };
+  // B6's seat cap is unit-tested in `collaborator-seat.service.spec.ts`; here it is a collaborator,
+  // so these cases stay about membership rules. The specs below assert it IS consulted, and with
+  // the owner's id — a mock that is never called would otherwise make the cap look wired when the
+  // call site had been deleted (the R-1 / M5-1 / W5-3 defect class, docs/48).
+  const seats = {
+    assertCanOfferSeat: jest.fn().mockResolvedValue(undefined),
+    assertCanClaimSeat: jest.fn().mockResolvedValue(undefined),
+    getAllowance: jest.fn().mockResolvedValue({
+      storyId: STORY,
+      members: 1,
+      pendingInvitations: 1,
+      used: 2,
+      limit: 3,
+      remaining: 1,
+      unlimited: false,
+      canInvite: true,
+    }),
+  } as unknown as jest.Mocked<CollaboratorSeatService>;
+
+  const service = new MembershipService(repo, pieces, engine, audit, activity, seats);
+  return { service, repo, pieces, engine, audit, activity, seats };
 }
 
 describe('MembershipService', () => {
@@ -157,6 +178,58 @@ describe('MembershipService', () => {
       await expect(
         service.addMember(STORY, actor(), { userId: OWNER, role: StoryRole.Editor }),
       ).rejects.toBeInstanceOf(StoryMemberExistsException);
+    });
+
+    // ── B6: the direct-add door is capped too (docs/45 §4.11) ────────────────────────────────
+
+    it("spends a seat from the story OWNER's plan, not the acting co-author's", async () => {
+      // Reachability, not wire shape: the assertion is that the cap is actually consulted, with
+      // the owner's id, on THIS path. Capping only the invitation route would leave this the
+      // bypass, and a call site that had been deleted would still look wired from the outside.
+      const { service, seats } = build();
+
+      await service.addMember(STORY, actor('co-author-9'), {
+        userId: 'collab-9',
+        role: StoryRole.Editor,
+      });
+
+      expect(seats.assertCanOfferSeat).toHaveBeenCalledWith(STORY, OWNER);
+      expect(seats.assertCanOfferSeat).not.toHaveBeenCalledWith(STORY, 'co-author-9');
+    });
+
+    it('writes nothing when the plan has no seat left', async () => {
+      const { service, repo, seats, activity } = build();
+      seats.assertCanOfferSeat.mockRejectedValue(new CollaboratorLimitReachedException(3, 3));
+
+      await expect(
+        service.addMember(STORY, actor(), { userId: 'collab-9', role: StoryRole.Editor }),
+      ).rejects.toBeInstanceOf(CollaboratorLimitReachedException);
+      expect(repo.createMembership).not.toHaveBeenCalled();
+      expect(activity.record).not.toHaveBeenCalled();
+    });
+
+    it('checks the plan cap AFTER authorizing — a stranger gets 403, not a paywall', async () => {
+      const { service, engine, seats } = build();
+      engine.assert.mockRejectedValue(new Error('policy denied'));
+
+      await expect(
+        service.addMember(STORY, actor('stranger'), { userId: 'x', role: StoryRole.Editor }),
+      ).rejects.toThrow('policy denied');
+      expect(seats.assertCanOfferSeat).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getSeatAllowance', () => {
+    it("asserts StoryInvite and reports the OWNER's allowance", async () => {
+      const { service, engine, seats } = build();
+
+      const allowance = await service.getSeatAllowance(STORY, actor('co-author-9'));
+
+      expect(engine.assert).toHaveBeenCalledWith(
+        expect.objectContaining({ action: POLICY_ACTIONS.StoryInvite }),
+      );
+      expect(seats.getAllowance).toHaveBeenCalledWith(STORY, OWNER);
+      expect(allowance).toMatchObject({ used: 2, limit: 3, remaining: 1 });
     });
   });
 

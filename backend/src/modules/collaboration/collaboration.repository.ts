@@ -109,6 +109,30 @@ export class CollaborationRepository {
     return this.invitations().findOne({ where: { storyId, inviteeId, status: pending } });
   }
 
+  /**
+   * How many invitations on this story are still outstanding — B6's seat count includes them
+   * (docs/45 §4.11). Counting only members would let an owner issue any number of invitations that
+   * all land later and walk the story straight past the cap.
+   *
+   * Expired-but-unswept rows are excluded by the `expiresAt` predicate rather than by status:
+   * expiry is applied lazily when an invitation is *read* (`InvitationService.loadPending`), so a
+   * row can sit at `pending` long after it stopped being acceptable, and holding a seat for one
+   * would block the owner over an invitation nobody can act on.
+   */
+  countPendingInvitations(
+    storyId: string,
+    pending: InvitationStatus,
+    now: Date,
+    manager?: EntityManager,
+  ): Promise<number> {
+    return this.invitations(manager)
+      .createQueryBuilder('i')
+      .where('i.story_id = :storyId', { storyId })
+      .andWhere('i.status = :pending', { pending })
+      .andWhere('i.expires_at > :now', { now })
+      .getCount();
+  }
+
   listInvitationsForStory(storyId: string): Promise<StoryInvitation[]> {
     return this.invitations()
       .createQueryBuilder('i')

@@ -184,6 +184,9 @@ export const qk = {
     detail: (id: string) => ['stories', id] as const,
     capabilities: (id: string) => ['stories', id, 'capabilities'] as const, // GET …/capabilities
     members: (id: string) => ['stories', id, 'members'] as const, // GET …/members
+    // B6. Under the `['stories', id]` prefix so every membership/invitation mutation already
+    // invalidates it — adding or revoking either one moves the seat count.
+    collaboratorLimit: (id: string) => ['stories', id, 'collaborator-limit'] as const,
     invitations: (id: string) => ['stories', id, 'invitations'] as const, // GET …/invitations
     presence: (id: string) => ['stories', id, 'presence'] as const, // GET …/presence
     // W3b. Root comments and suggestions are cursor-paginated and filterable by status, so the

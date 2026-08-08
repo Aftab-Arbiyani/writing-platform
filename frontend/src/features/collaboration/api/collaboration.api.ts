@@ -11,6 +11,7 @@ import { buildQueryString } from '@/lib/http';
 
 import type {
   CollaborationComment,
+  CollaboratorLimit,
   CommentAnchor,
   CommentThread,
   EditSuggestion,
@@ -39,6 +40,13 @@ export const collaborationApi = {
     get<StoryCapabilities>(`${story(storyId)}/capabilities`, { signal }),
 
   // ── Members ──────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * GET /stories/:id/collaborators/limit — the story's B6 seat allowance, charged to its owner.
+   * Authorized as `story.invite`, so only a viewer who could spend a seat may read it.
+   */
+  collaboratorLimit: (storyId: string, signal?: AbortSignal): Promise<CollaboratorLimit> =>
+    get<CollaboratorLimit>(`${story(storyId)}/collaborators/limit`, { signal }),
 
   /** GET /stories/:id/members — includes the owner, synthesised from the piece author. */
   members: (storyId: string, signal?: AbortSignal): Promise<StoryMember[]> =>

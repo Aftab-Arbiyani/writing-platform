@@ -514,6 +514,8 @@ export const SETTING_DEFINITIONS: readonly SettingDefinition[] = [
           aiMonthlyTokens: 200000,
           aiMonthlyCredits: 0,
           maxPieces: 25,
+          // B6 seats. 0 = NONE here, not unlimited — this key's sentinel is -1 (see description).
+          maxCollaborators: 0,
         },
         monthlyCredits: 0,
         prices: { none: { usd: 0 } },
@@ -529,6 +531,7 @@ export const SETTING_DEFINITIONS: readonly SettingDefinition[] = [
           aiMonthlyTokens: 2000000,
           aiMonthlyCredits: 5000,
           maxPieces: 250,
+          maxCollaborators: 3,
         },
         monthlyCredits: 5000,
         prices: { monthly: { usd: 499 }, yearly: { usd: 4990 } },
@@ -553,6 +556,7 @@ export const SETTING_DEFINITIONS: readonly SettingDefinition[] = [
           aiMonthlyTokens: 10000000,
           aiMonthlyCredits: 25000,
           maxPieces: 0,
+          maxCollaborators: -1, // UNLIMITED_SEATS. `0` would mean no collaborators at all.
         },
         monthlyCredits: 25000,
         prices: { monthly: { usd: 1499 }, yearly: { usd: 14990 } },
@@ -577,13 +581,23 @@ export const SETTING_DEFINITIONS: readonly SettingDefinition[] = [
           aiMonthlyTokens: 0,
           aiMonthlyCredits: 100000,
           maxPieces: 0,
+          maxCollaborators: -1, // UNLIMITED_SEATS.
         },
         monthlyCredits: 100000,
         prices: { monthly: { usd: 4999 }, yearly: { usd: 49990 } },
         trialDays: 14,
       },
     },
-    description: 'Monetization plan catalogue: tiers, features, limits, prices, trials (AF5).',
+    /*
+     * Admin-facing text — this string is what the admin Settings UI renders beside the JSON editor,
+     * so the sentinel warning belongs HERE and not only in a code comment. `maxCollaborators` (B6)
+     * is the one limit key where `0` does not mean unlimited, and an admin who assumes it does would
+     * hand every author on that tier unlimited seats.
+     */
+    description:
+      'Monetization plan catalogue: tiers, features, limits, prices, trials (AF5). ' +
+      'In `limits`, 0 means UNLIMITED for every key EXCEPT `maxCollaborators` (B6 seats per story), ' +
+      'where 0 means NO collaborators and -1 means unlimited.',
     validationRules: {},
   }),
   def({

@@ -302,6 +302,34 @@ export const ERROR_CODES = {
   STORY_MEMBER_EXISTS: 'STORY_MEMBER_EXISTS',
   /** Adding a collaborator would exceed MAX_STORY_COLLABORATORS (409). */
   STORY_COLLABORATOR_LIMIT: 'STORY_COLLABORATOR_LIMIT',
+  /**
+   * The story has no collaborator seat left on its OWNER's plan, so the owner cannot invite or add
+   * another (402 — B6, `PlanLimits.maxCollaborators`). `details` carries `{ used, limit }`.
+   *
+   * Three codes it is deliberately not:
+   *
+   * - **`STORY_COLLABORATOR_LIMIT`** (directly above) is the absolute anti-abuse ceiling —
+   *   `MAX_STORY_COLLABORATORS`, the same 20 for every plan, a 409 with no remedy but "remove
+   *   someone". This one is plan-driven and upgrading clears it, which is a different conversation
+   *   and a different status.
+   * - **`PIECE_LIMIT_REACHED`** is B4's cap and its remedies ("delete a piece", "see plans") apply
+   *   to the author's own library. This cap is per STORY and can bind an author who is nowhere near
+   *   their piece limit.
+   * - **`QUOTA_EXCEEDED`** is a flow cap whose remedy is to wait for a window to reset. Nothing
+   *   about a seat resets, so that remedy is a lie here — the W4 defect, docs/48 §3.6.
+   *
+   * Remedy: see plans, or remove a collaborator.
+   */
+  COLLABORATOR_LIMIT_REACHED: 'COLLABORATOR_LIMIT_REACHED',
+  /**
+   * The invitee tried to accept an invitation to a story whose owner has no seat left (409 — B6).
+   *
+   * Separate from `COLLABORATOR_LIMIT_REACHED` because the person reading it is not the person who
+   * can fix it: the invite was valid when it was sent and the owner has since downgraded or filled
+   * the story. A 402 and an upsell would bill the wrong human for someone else's plan, so this is a
+   * state conflict with no remedy the invitee can act on beyond telling the owner.
+   */
+  COLLABORATOR_SEATS_UNAVAILABLE: 'COLLABORATOR_SEATS_UNAVAILABLE',
   /** The caller's story role is insufficient for this action (403). */
   STORY_ROLE_FORBIDDEN: 'STORY_ROLE_FORBIDDEN',
   /** The owner role cannot be reassigned/removed via membership APIs. */

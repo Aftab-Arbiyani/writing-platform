@@ -12,11 +12,16 @@ import type { PolicyDecision } from '@qalam/shared';
 
 import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import type { AuditService } from '../audit/audit.service';
+import {
+  CollaboratorLimitReachedException,
+  CollaboratorSeatsUnavailableException,
+} from '../monetization/monetization.exceptions';
 import type { PiecesService } from '../pieces/pieces.service';
 import type { PolicyEngineService } from '../policy';
 import type { ActivityService } from './activity.service';
 import type { CollaborationNotifier } from './collaboration-notifier.port';
 import type { CollaborationRepository } from './collaboration.repository';
+import type { CollaboratorSeatService } from './collaborator-seat.service';
 import {
   InvitationAlreadyRespondedException,
   InvitationExpiredException,
@@ -107,8 +112,16 @@ function build() {
     notify: jest.fn().mockResolvedValue(undefined),
   } as jest.Mocked<CollaborationNotifier>;
 
-  const service = new InvitationService(repo, pieces, engine, audit, activity, notifier);
-  return { service, repo, pieces, engine, audit, activity, notifier };
+  // B6's seat cap is unit-tested in `collaborator-seat.service.spec.ts`; here it is a collaborator.
+  // The specs below assert it IS called, and with the story OWNER's id.
+  const seats = {
+    assertCanOfferSeat: jest.fn().mockResolvedValue(undefined),
+    assertCanClaimSeat: jest.fn().mockResolvedValue(undefined),
+    getAllowance: jest.fn(),
+  } as unknown as jest.Mocked<CollaboratorSeatService>;
+
+  const service = new InvitationService(repo, pieces, engine, audit, activity, seats, notifier);
+  return { service, repo, pieces, engine, audit, activity, notifier, seats };
 }
 
 describe('InvitationService', () => {
@@ -161,6 +174,31 @@ describe('InvitationService', () => {
     });
   });
 
+  describe('invite — B6 seat cap', () => {
+    it("spends a seat from the story OWNER's plan, not the inviting co-author's", async () => {
+      const { service, seats } = build();
+
+      await service.invite(STORY, user('co-author-9'), {
+        inviteeId: INVITEE,
+        role: StoryRole.Editor,
+      });
+
+      expect(seats.assertCanOfferSeat).toHaveBeenCalledWith(STORY, OWNER);
+      expect(seats.assertCanOfferSeat).not.toHaveBeenCalledWith(STORY, 'co-author-9');
+    });
+
+    it('issues nothing when the plan has no seat left', async () => {
+      const { service, repo, seats, notifier } = build();
+      seats.assertCanOfferSeat.mockRejectedValue(new CollaboratorLimitReachedException(3, 3));
+
+      await expect(
+        service.invite(STORY, user(INVITER), { inviteeId: INVITEE, role: StoryRole.Editor }),
+      ).rejects.toBeInstanceOf(CollaboratorLimitReachedException);
+      expect(repo.createInvitation).not.toHaveBeenCalled();
+      expect(notifier.notify).not.toHaveBeenCalled();
+    });
+  });
+
   describe('accept', () => {
     it('creates the membership, marks accepted, invalidates the invitee, and notifies the inviter', async () => {
       const { service, repo, engine, notifier } = build();
@@ -182,6 +220,34 @@ describe('InvitationService', () => {
         }),
       );
       expect(member.role).toBe(StoryRole.Editor);
+    });
+
+    // ── B6: the accept-side re-check (docs/45 §4.11) ───────────────────────────────────────
+
+    it("re-checks the OWNER's seats at accept time, so a downgrade closes an issued invitation", async () => {
+      const { service, repo, seats, engine } = build();
+      repo.findInvitationById.mockResolvedValue(invitation());
+      seats.assertCanClaimSeat.mockRejectedValue(new CollaboratorSeatsUnavailableException());
+
+      await expect(service.accept('inv-1', user(INVITEE))).rejects.toBeInstanceOf(
+        CollaboratorSeatsUnavailableException,
+      );
+      expect(seats.assertCanClaimSeat).toHaveBeenCalledWith(STORY, OWNER);
+      // Nothing is written and the invitation stays pending — the invitee can retry once the
+      // owner frees a seat, rather than having burned their only invitation on a refusal.
+      expect(repo.createMembership).not.toHaveBeenCalled();
+      expect(repo.saveInvitation).not.toHaveBeenCalled();
+      expect(engine.invalidateUser).not.toHaveBeenCalled();
+    });
+
+    it('uses the invitee gate at accept, never the owner-facing 402 upsell', async () => {
+      const { service, repo, seats } = build();
+      repo.findInvitationById.mockResolvedValue(invitation());
+
+      await service.accept('inv-1', user(INVITEE));
+
+      expect(seats.assertCanClaimSeat).toHaveBeenCalledWith(STORY, OWNER);
+      expect(seats.assertCanOfferSeat).not.toHaveBeenCalled();
     });
 
     it('rejects a non-invitee (INVITATION_NOT_INVITEE)', async () => {

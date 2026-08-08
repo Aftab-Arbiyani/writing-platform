@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   ACCESS_GRANTING_SUBSCRIPTION_STATUSES,
+  DEFAULT_PLAN_LIMITS,
   ENTITLEMENT_CACHE_TTL_SECONDS,
   EntitlementReason,
   EntitlementStatus,
@@ -89,11 +90,20 @@ export class EntitlementService {
     return decision;
   }
 
-  /** The user's effective AI usage limits (plan limits; enterprise 0 = unlimited). */
+  /**
+   * The user's effective plan limits. Read a value out of the result with `resolvePlanLimit`, never
+   * by hand: `0` means unlimited for most keys and NONE for `maxCollaborators` (B6, docs/45 §4.11).
+   *
+   * The fallback is the compiled defaults **for that tier**, not a bare stub. It used to be
+   * `{ aiDailyTokens: 0, aiMonthlyTokens: 0, aiMonthlyCredits: 0 }`, which answers "unlimited
+   * everything" for the token caps and — once B6 landed — left `maxCollaborators` *absent*. Absent
+   * is exactly the state that has no honest reading, so it is closed here at the source rather than
+   * guessed at by every caller.
+   */
   async getLimits(userId: string): Promise<PlanLimits> {
     const plan = await this.effectivePlan(userId);
     const definition = await this.config.getPlan(plan.tier);
-    return definition?.limits ?? { aiDailyTokens: 0, aiMonthlyTokens: 0, aiMonthlyCredits: 0 };
+    return definition?.limits ?? { ...DEFAULT_PLAN_LIMITS[plan.tier] };
   }
 
   /** The user's current tier (for display + limits). */

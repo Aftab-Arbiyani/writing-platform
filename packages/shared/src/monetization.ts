@@ -352,13 +352,92 @@ export interface PlanLimits {
   aiMonthlyTokens: number;
   aiMonthlyCredits: number;
   /**
-   * Reserved extensible per-feature caps (requests/day etc.). **0 / absent = unlimited.**
+   * Reserved extensible per-feature caps (requests/day etc.). **0 / absent = unlimited**, EXCEPT
+   * for the keys listed in {@link NEGATIVE_UNLIMITED_LIMIT_KEYS} — read that list before adding a
+   * cap, and read {@link resolvePlanLimit} before reading one.
    *
    * Keys that ride this signature rather than being declared above (they are tunable data,
    * so a new cap needs no type change and no migration):
    * - `maxPieces` — how many live (non-deleted) pieces one author may hold (B4, docs/45 §4.9).
+   *   Ordinary convention: `0` = unlimited.
+   * - `maxCollaborators` — how many collaborators one story may have, by the plan of the author who
+   *   OWNS it (B6, docs/45 §4.11). **Inverted sentinel: `-1` ({@link UNLIMITED_SEATS}) = unlimited,
+   *   `0` = none.** Free is zero seats, and encoding that as `0` under the ordinary convention would
+   *   hand every free author unlimited collaborators. See {@link NEGATIVE_UNLIMITED_LIMIT_KEYS}.
    */
   [key: string]: number;
+}
+
+/**
+ * The value that means "no cap" for a key in {@link NEGATIVE_UNLIMITED_LIMIT_KEYS}.
+ *
+ * Named rather than written as a bare `-1` so an admin editing `monetization.plans`, a test, and a
+ * client all reach for the same token, and so grepping it finds every site that depends on the
+ * inverted reading.
+ */
+export const UNLIMITED_SEATS = -1;
+
+/**
+ * Limit keys whose "unlimited" sentinel is NEGATIVE instead of `0`.
+ *
+ * ## Why one key breaks the house convention
+ *
+ * Everywhere else in this codebase `0` means unlimited — `PlanLimits` says so above,
+ * `usage.service.ts` enforces `if (limit > 0)`, and `mergePlans` tells administrators that "`0` is
+ * how an admin says 'unlimited'". That works because every other cap's zero-value is meaningless:
+ * an author allowed `0` pieces could not use the product at all, so nobody would ever configure it.
+ *
+ * `maxCollaborators` is the first cap where **zero is a real, shipped tier**: B6 sells collaboration
+ * outright, so Free gets zero seats (docs/45 §4.11). Under the ordinary convention that tier would
+ * read as *unlimited* — the exact inverse of the decision, with green tests and no error anywhere.
+ * So this key, and only this key, uses `-1` for unlimited.
+ *
+ * ## How an admin expresses "unlimited collaborators"
+ *
+ * By setting `maxCollaborators: -1` — NOT `0`, which means "no collaborators at all". This is the
+ * one deviation from the merge contract's promise, it is stated in the admin-facing description of
+ * the `monetization.plans` setting, and it is pinned by
+ * `monetization.config-service.spec.ts` ("an admin's 0 means the opposite for the two keys").
+ *
+ * ## Adding to this list
+ *
+ * Only for a cap where zero is a legitimate configured tier. Reading a key through
+ * {@link resolvePlanLimit} is what makes the distinction take effect; reading `limits.someKey`
+ * directly bypasses it.
+ */
+export const NEGATIVE_UNLIMITED_LIMIT_KEYS: readonly string[] = ['maxCollaborators'];
+
+/** A plan limit read through the convention that governs its key. */
+export interface ResolvedPlanLimit {
+  /** The configured number, as stored. */
+  value: number;
+  /** True when the plan sets no cap at all. */
+  unlimited: boolean;
+}
+
+/**
+ * Reads one `PlanLimits` key under the convention that governs it — the ONLY correct way to
+ * interpret a limit, and the single place the two sentinel conventions are reconciled.
+ *
+ * - Ordinary keys: `0` / absent / negative = unlimited (what `usage.service.ts` has always done).
+ * - {@link NEGATIVE_UNLIMITED_LIMIT_KEYS}: only a negative value is unlimited; `0` is a hard zero.
+ *
+ * **Absent, on an inverted key, resolves to zero — not unlimited.** It should be unreachable:
+ * `mergePlans` folds catalogue defaults in per key so a newly-added key reaches existing
+ * deployments, and `EntitlementService.getLimits` falls back to the compiled tier defaults rather
+ * than a bare stub. If it happens anyway, refusing is the recoverable failure — a wrongly-refused
+ * invite is a support ticket someone reports, a wrongly-granted seat is revenue leaking silently.
+ */
+export function resolvePlanLimit(
+  limits: Partial<PlanLimits> | undefined,
+  key: string,
+): ResolvedPlanLimit {
+  const inverted = NEGATIVE_UNLIMITED_LIMIT_KEYS.includes(key);
+  const raw = limits?.[key];
+  if (raw === undefined || Number.isNaN(raw)) {
+    return inverted ? { value: 0, unlimited: false } : { value: 0, unlimited: true };
+  }
+  return inverted ? { value: raw, unlimited: raw < 0 } : { value: raw, unlimited: raw <= 0 };
 }
 
 /** The Entitlement Service's decision for one feature — what a client gates on. */
@@ -500,6 +579,11 @@ export const ENTITLEMENT_CACHE_TTL_SECONDS = 60;
  *
  * `maxPieces` is B4's stock cap on live pieces (docs/45 §4.9) — generous enough to read as an
  * anti-abuse ceiling rather than a paywall, and `0` (unlimited) on the two paid-through tiers.
+ *
+ * `maxCollaborators` is B6's seat cap per story (docs/45 §4.11), charged to the plan of the author
+ * who OWNS the story. **Its sentinel is inverted:** `UNLIMITED_SEATS` (-1) is unlimited and `0` is
+ * none, because Free genuinely gets zero seats and `0` would otherwise read as unlimited. Never
+ * copy `maxPieces`'s `0` across to it — see {@link NEGATIVE_UNLIMITED_LIMIT_KEYS}.
  */
 export const DEFAULT_PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
   [PlanTier.Free]: {
@@ -507,24 +591,28 @@ export const DEFAULT_PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
     aiMonthlyTokens: 200_000,
     aiMonthlyCredits: 0,
     maxPieces: 25,
+    maxCollaborators: 0, // zero seats — solo. NOT "unlimited": this key's sentinel is -1.
   },
   [PlanTier.Plus]: {
     aiDailyTokens: 100_000,
     aiMonthlyTokens: 2_000_000,
     aiMonthlyCredits: 5_000,
     maxPieces: 250,
+    maxCollaborators: 3,
   },
   [PlanTier.Pro]: {
     aiDailyTokens: 500_000,
     aiMonthlyTokens: 10_000_000,
     aiMonthlyCredits: 25_000,
     maxPieces: 0,
+    maxCollaborators: UNLIMITED_SEATS, // -1, not 0 — 0 would mean "no collaborators" here.
   },
   [PlanTier.Enterprise]: {
     aiDailyTokens: 0,
     aiMonthlyTokens: 0,
     aiMonthlyCredits: 100_000,
     maxPieces: 0,
+    maxCollaborators: UNLIMITED_SEATS,
   },
 };
 

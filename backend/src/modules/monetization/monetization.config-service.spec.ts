@@ -1,4 +1,4 @@
-import { PlanTier } from '@qalam/shared';
+import { PlanTier, UNLIMITED_SEATS, resolvePlanLimit } from '@qalam/shared';
 
 import { MonetizationConfigService } from './monetization.config-service';
 import type { SettingsService } from '../settings/settings.service';
@@ -72,5 +72,61 @@ describe('MonetizationConfigService — plan catalogue merge', () => {
       settings as unknown as SettingsService,
     ).getPlans();
     expect(plans[PlanTier.Free].limits.maxPieces).toBe(25);
+  });
+
+  // ── B6 seats, and the sentinel it inverts (docs/45 §4.11) ───────────────────────────────────
+
+  it('ships the B6 seat caps as compiled defaults (0 / 3 / unlimited / unlimited)', async () => {
+    const plans = await serviceReading(null).getPlans();
+    expect(plans[PlanTier.Free].limits.maxCollaborators).toBe(0);
+    expect(plans[PlanTier.Plus].limits.maxCollaborators).toBe(3);
+    expect(plans[PlanTier.Pro].limits.maxCollaborators).toBe(UNLIMITED_SEATS);
+    expect(plans[PlanTier.Enterprise].limits.maxCollaborators).toBe(UNLIMITED_SEATS);
+  });
+
+  it('reaches a catalogue stored before B6 existed — the per-key merge still holds', async () => {
+    // B4's guarantee, re-checked for B6's key: without the one-level-deeper spread of `limits`,
+    // `maxCollaborators` would be absent on every existing deployment.
+    const plans = await serviceReading(PRE_B4_CATALOGUE).getPlans();
+    expect(plans[PlanTier.Free].limits.maxCollaborators).toBe(0);
+    expect(plans[PlanTier.Plus].limits.maxCollaborators).toBe(3);
+  });
+
+  /**
+   * THE reconciliation this row turns on. `mergePlans` promises admins that "`0` is how an admin
+   * says unlimited", and that promise is false for exactly one key. Both halves are asserted from
+   * ONE stored catalogue so the asymmetry is visible in a single expectation block: someone who
+   * "normalises" the two conventions breaks this test whichever direction they normalise in.
+   */
+  it("an admin's stored 0 means unlimited pieces and ZERO seats — the two keys read opposite", async () => {
+    const plans = await serviceReading({
+      pro: { limits: { maxPieces: 0, maxCollaborators: 0 } },
+    }).getPlans();
+    const limits = plans[PlanTier.Pro].limits;
+
+    expect(resolvePlanLimit(limits, 'maxPieces')).toEqual({ value: 0, unlimited: true });
+    expect(resolvePlanLimit(limits, 'maxCollaborators')).toEqual({ value: 0, unlimited: false });
+  });
+
+  it('an admin says "unlimited collaborators" with -1, and it survives the merge', async () => {
+    const plans = await serviceReading({
+      free: { limits: { maxCollaborators: UNLIMITED_SEATS } },
+    }).getPlans();
+    expect(resolvePlanLimit(plans[PlanTier.Free].limits, 'maxCollaborators')).toEqual({
+      value: -1,
+      unlimited: true,
+    });
+  });
+
+  it('the compiled Free tier is never read as unlimited seats', async () => {
+    // The inversion regression, stated at the data layer: if `maxCollaborators` ever loses its
+    // place in NEGATIVE_UNLIMITED_LIMIT_KEYS, or Free's 0 is "fixed" to match maxPieces, every free
+    // author silently gets unlimited collaborators and no other test in this repo would notice.
+    for (const stored of [null, PRE_B4_CATALOGUE, { free: { limits: { maxCollaborators: 0 } } }]) {
+      const plans = await serviceReading(stored).getPlans();
+      const seats = resolvePlanLimit(plans[PlanTier.Free].limits, 'maxCollaborators');
+      expect(seats.unlimited).toBe(false);
+      expect(seats.value).toBe(0);
+    }
   });
 });

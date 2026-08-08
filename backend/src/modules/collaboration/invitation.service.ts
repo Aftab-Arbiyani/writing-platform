@@ -23,6 +23,7 @@ import {
   type CollaborationNotifier,
 } from './collaboration-notifier.port';
 import { COLLABORATION_AUDIT_ACTIONS, COLLABORATION_AUDIT_TARGET } from './collaboration.constants';
+import { CollaboratorSeatService } from './collaborator-seat.service';
 import {
   InvitationAlreadyRespondedException,
   InvitationExpiredException,
@@ -61,6 +62,7 @@ export class InvitationService {
     private readonly engine: PolicyEngineService,
     private readonly audit: AuditService,
     private readonly activity: ActivityService,
+    private readonly seats: CollaboratorSeatService,
     @Optional()
     @Inject(COLLABORATION_NOTIFIER)
     private readonly notifier?: CollaborationNotifier,
@@ -90,6 +92,13 @@ export class InvitationService {
     if ((await this.repo.findMembership(storyId, dto.inviteeId)) !== null) {
       throw new StoryMemberExistsException();
     }
+    /*
+     * B6's plan seat cap, charged to `facts.authorId` — the story's OWNER, not `inviter`. A Pro
+     * co-author inviting into a Free author's story is spending the free author's (zero) seats.
+     * The count includes invitations already outstanding, so issuing them is what consumes the
+     * allowance; without that an owner could queue any number and blow past the cap on landing.
+     */
+    await this.seats.assertCanOfferSeat(storyId, facts.authorId);
 
     const token = randomBytes(TOKEN_BYTES).toString('hex');
     const expiresAt = new Date(Date.now() + INVITATION_TTL_HOURS * 3_600_000);
@@ -170,6 +179,13 @@ export class InvitationService {
     if ((await this.repo.findMembership(invitation.storyId, invitation.inviteeId)) !== null) {
       throw new StoryMemberExistsException();
     }
+    /*
+     * B6 re-check (docs/45 §4.11). An invitation issued while the owner was on Pro must not stay
+     * acceptable after they downgrade — the cap is enforced when the seat is actually taken, not
+     * only when it was offered. Its own exception, and its own copy: the invitee did nothing wrong,
+     * cannot buy a seat on someone else's plan, and must not be shown an upsell for one.
+     */
+    await this.seats.assertCanClaimSeat(invitation.storyId, facts.authorId);
     if ((await this.repo.countMembers(invitation.storyId)) >= MAX_STORY_COLLABORATORS) {
       throw new StoryCollaboratorLimitException(MAX_STORY_COLLABORATORS);
     }

@@ -41,6 +41,7 @@ import {
 import {
   ActivityDto,
   CapabilitiesDto,
+  CollaboratorLimitDto,
   CommentDto,
   CommentThreadDto,
   InvitationDto,
@@ -97,9 +98,31 @@ export class CollaborationController {
     return this.members.listMembers(storyId, user);
   }
 
+  /*
+   * Declared BEFORE `stories/:storyId/members` for readability only — four path segments against
+   * three, so the two routes cannot collide.
+   */
+  @Get('stories/:storyId/collaborators/limit')
+  @ApiOperation({
+    summary:
+      "This story's collaborator seat allowance — used / limit / remaining (B6). " +
+      "Charged to the story OWNER's plan. limit -1 = unlimited, 0 = none (this key inverts the " +
+      'usual PlanLimits sentinel).',
+  })
+  @ApiOkResponse({ type: CollaboratorLimitDto })
+  collaboratorLimit(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('storyId', ParseUUIDPipe) storyId: string,
+  ): Promise<CollaboratorLimitDto> {
+    return this.members.getSeatAllowance(storyId, user);
+  }
+
   @Post('stories/:storyId/members')
   @ApiOperation({
     summary: 'Add a collaborator directly (owner). Authorized by the Policy Engine.',
+    description:
+      "Errors: COLLABORATOR_LIMIT_REACHED (402) when the story owner's plan has no seat left — " +
+      'this door and POST .../invitations both create a seat and both are capped (B6).',
   })
   @ApiCreatedResponse({ type: MemberDto })
   addMember(
@@ -160,7 +183,12 @@ export class CollaborationController {
   // ── Invitations ──────────────────────────────────────────────────────────────
 
   @Post('stories/:storyId/invitations')
-  @ApiOperation({ summary: 'Invite a user to collaborate. Authorized by the Policy Engine.' })
+  @ApiOperation({
+    summary: 'Invite a user to collaborate. Authorized by the Policy Engine.',
+    description:
+      "Errors: COLLABORATOR_LIMIT_REACHED (402) when the story owner's plan has no seat left. " +
+      'Outstanding invitations count against the allowance, so issuing one spends a seat (B6).',
+  })
   @ApiCreatedResponse({ type: InvitationDto })
   invite(
     @CurrentUser() user: AuthenticatedUser,
@@ -182,7 +210,13 @@ export class CollaborationController {
 
   @Post('invitations/:id/accept')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Accept an invitation → become a collaborator (invitee).' })
+  @ApiOperation({
+    summary: 'Accept an invitation → become a collaborator (invitee).',
+    description:
+      'Errors: COLLABORATOR_SEATS_UNAVAILABLE (409) when the owner has downgraded or filled the ' +
+      'story since the invitation was sent. Not a 402 and not an upsell: the invitee cannot buy a ' +
+      "seat on the owner's plan (B6).",
+  })
   @ApiOkResponse({ type: MemberDto })
   acceptInvitation(
     @CurrentUser() user: AuthenticatedUser,

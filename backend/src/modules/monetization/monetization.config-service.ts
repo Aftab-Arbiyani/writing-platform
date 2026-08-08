@@ -159,6 +159,15 @@ export function compiledPlans(): ResolvedPlanCatalogue {
  * unlimited, and the new cap would be silently inert on every deployment except a fresh database.
  * Merging per key means a new default reaches existing installs while an admin's explicit value for
  * any key still wins (it is spread last; `0` is how an admin says "unlimited").
+ *
+ * **One key does not obey that last sentence: `maxCollaborators` (B6, docs/45 §4.11).** Free is
+ * genuinely zero seats, so for that key `0` means NONE and `UNLIMITED_SEATS` (-1) means unlimited —
+ * the inverse of what the promise above would lead an admin to expect. The deviation is stated in
+ * the admin-facing `description` of the `monetization.plans` setting (which the admin Settings UI
+ * renders), declared in `NEGATIVE_UNLIMITED_LIMIT_KEYS`, applied by `resolvePlanLimit` (the only
+ * correct way to read a limit), and pinned below by the spec that asserts an admin's stored `0`
+ * resolves to *unlimited pieces* and *zero seats* from the same merge. Do not "normalise" the two
+ * conventions into one: doing so silently either bricks paid collaboration or gives it away free.
  */
 function mergePlans(raw: unknown): ResolvedPlanCatalogue {
   const defaults = compiledPlans();

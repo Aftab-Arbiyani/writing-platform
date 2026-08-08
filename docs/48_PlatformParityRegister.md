@@ -1,6 +1,10 @@
 # 48 — Platform Parity Register (web ↔ mobile)
 
-**Status:** 🔒 Binding · **Owner:** every client epic · **Last swept:** 2026-08-08 (after **B4** — the plan piece cap, the first row that is an enabler plus
+**Status:** 🔒 Binding · **Owner:** every client epic · **Last swept:** 2026-08-08 (after **B6** — the per-story collaborator seat cap, and the first row in
+this codebase to deliberately **invert a shared sentinel**: `0` means unlimited for every plan limit
+except `maxCollaborators`, where it means none. Its sweep is **§6.4**; no new defect, one accepted
+arrangement difference in §4.1, and the reconciliation is pinned by a test rather than a convention.
+Previously swept 2026-08-08 (after **B4** — the plan piece cap, the first row that is an enabler plus
 both client halves rather than a port, and the first capability to land on both clients at once. Its
 sweep is **§6.3**; two accepted arrangement differences went to §4.1 and one app-wide a11y finding to
 **T-10**. Previously swept 2026-08-08 (after **W9's
@@ -2044,6 +2048,7 @@ every known difference to live in §2, §3, or §4 — so a later epic comparing
 
 | **AI search** | Web: query suggestions are a "Try instead" **row beside the results**. Mobile: a **dropdown while typing**. | Same endpoint, same purpose. Mobile's search runs on submit, so a dropdown is the only place suggestions can go; the web field debounces straight into the URL, so results are already on screen and a dropdown would flicker on a 300 ms timer over the answer it duplicates. |
 | **AI discovery** | Web: **two** recommendation shelves on `/discover` (for-you, pick-up-next). Mobile: **five** on a dedicated AI discovery screen (adds trending, authors, genres). | The other three run the same `TrendingService` / `getWriters` / `getTrendingGenres` the web's editorial sections on that page already render — the recommender's versions differ only by carrying a reason. Shipping them would print the same rows twice on one page. |
+| **Collaborator seats (B6)** | Web: "2 of 3 collaborators" sits in the **page header**, beside the Invite button. Mobile: in the **"Members" section header**, above the roster. | Mobile's invite action is an app-bar `IconButton` with no room for a count beside it, so the count anchors to the thing it counts instead. Same string, same moment (before the wall, not after the refusal), same upsell card directly above the roster on both. Recorded by **§6.4**. |
 | **AF4 results** | Web: a result whose navigation target is a `graph_node`, `chapter` or timeline cue renders as a **plain card**. Mobile: opens a **detail sheet**. | **Reason revised 2026-08-08 by W9's sweep.** The original read "until W6 (story explorer)"; W9 shipped the story explorer and the row still stands, for a better reason. The explorer is **editor-scoped and owner-scoped** — it opens on your own draft, and `GET /ai/explorer/:storyId/:view` answers `STORY_NOT_FOUND` for anyone else's story. A search result's graph node generally belongs to a story the searcher does not own, so there is still nowhere to send them. A card that does not claim to navigate remains better than a link to a 404. |
 | **Saved searches** | Web: the **server list only**. Mobile: a device-local mirror merged with the server list. | Mobile is offline-first (`SyncEngine`, §2 row 9); a browser has no offline reading story to serve, so a local mirror would be cache with no consumer. Both clients read and write the same `/ai/search/saved` rows, which is the parity that matters. |
 | **AI surfaces — entry point** | Web: a `/settings/ai` **hub**, one settings-nav section, four sub-pages. Mobile: all three hang off the **editor's AI menu** (`editor_screen.dart:442-446`). | Mobile's editor is the whole screen, so its AI menu is the natural home. Web's editor is one route of many, and web already has a home for account-scoped management surfaces — Billing set the one-entry-per-section + hub pattern. Copying mobile's shape would bury three routes in an editor menu and hide them from anyone not currently writing. Added by W8's sweep (2026-08-05). |
@@ -2389,3 +2394,73 @@ the fourth is absent.
 **Not fixed here.** Raising the clamp to 48 changes the height of every button in the app and is a
 design decision with visual consequences on every screen — a token/UI row, not a piece-limit row.
 Unowned.
+
+### 6.4 B6's sweep (2026-08-08)
+
+The per-story collaborator seat cap — `PlanLimits.maxCollaborators`, Free 0 · Plus 3 · Pro/Ent
+unlimited, charged to the **story owner's** plan ([45 §4.11](./45_WebClientRoadmap.md)).
+
+1. **Only what the row named?** Yes. The catalogue key, enforcement at the three doors that create a
+   seat, one read endpoint, and the three client surfaces §4.11 lists. Three things were touched that
+   the row does not name, each a consequence rather than an addition, and each stated here because
+   step 5 admits no unrecorded difference:
+
+   - **`EntitlementService.getLimits`' fallback** changed from `{aiDailyTokens: 0, aiMonthlyTokens: 0,
+aiMonthlyCredits: 0}` to the compiled defaults **for the resolved tier**. That stub predates B4
+     and answers "unlimited everything" for the token caps; once B6 existed it also left
+     `maxCollaborators` _absent_, and absent is the single state with no honest reading. Closing it at
+     the source beat having every caller guess.
+   - **`resolvePlanLimit` + `NEGATIVE_UNLIMITED_LIMIT_KEYS`** in `@qalam/shared`. B6 could have been
+     built with a bare `if (limit < 0)` at its two call sites; the registry exists so the _next_ cap
+     with a meaningful zero has somewhere to declare itself instead of quietly copying whichever
+     neighbour it was pasted from.
+   - **The `monetization.plans` setting description**, extended to state the exception. This is the
+     admin-facing string the Settings UI renders, and the deviation is only real to an administrator
+     if it is written where they will read it.
+
+   **B5 and B7 were not touched.**
+
+2. **Does the other platform have every part I built?** This row has no reference platform — like B4,
+   it is a new capability landing on both clients at once, so the comparison is web against mobile
+   rather than either against a predecessor. Compared surface by surface:
+
+   | Part                           | Web                                                                   | Mobile                                            |
+   | ------------------------------ | --------------------------------------------------------------------- | ------------------------------------------------- |
+   | Seat count before the wall     | `CollaboratorSeatCount` beside the Invite button                      | `CollaboratorSeatCount` in the Members header row |
+   | Pending called out separately  | "3 of 3 collaborators · 1 invitation pending"                         | identical string                                  |
+   | Free upsell                    | `CollaboratorSeatNotice`, accent tint, "See plans"                    | same copy, `infoBg`/`infoText` tint, same action  |
+   | Invite affordance when blocked | visible, `disabled`, `aria-describedby` → the notice                  | visible, `onPressed: null`, reason in the tooltip |
+   | Accept-side refusal            | per-row `role="alert"` on the inbox                                   | per-row persistent state, `liveRegion`            |
+   | Gating                         | both hide the whole seat surface from a viewer without `story.invite` | same                                              |
+
+   **One accepted arrangement difference** — recorded in §4.1: web puts the seat count in the page
+   header beside the Invite button, mobile puts it in the "Members" section header, because mobile's
+   invite action lives in the app bar where there is no room for a count. Same information, same
+   moment, different anchor.
+
+3. **Does either platform need a follow-up?** No. Neither client is missing a part the other has, and
+   the row introduced no unowned gap. Admin is deferred for this row as it is for the rest of the
+   B-series; an administrator can still set `maxCollaborators` through the existing
+   `monetization.plans` JSON editor, and the description now tells them what `0` means there.
+
+4. **§2 re-swept.** No row moves. Seat caps are a new capability on both clients simultaneously — the
+   second time this register has recorded that, after B4.
+
+5. **Nothing left unrecorded.**
+
+   - The **accept gate counts members only** while the offer gates count members + pending. That
+     asymmetry is deliberate (an invitation must not block its own acceptance), and it is stated in
+     `CollaboratorSeatService`'s doc comment, in 45 §4.11, and in a test named for it.
+   - The **`MAX_STORY_COLLABORATORS` ceiling (20, 409) still exists** alongside the plan cap. Two caps
+     on one action is worth writing down: the flat one is anti-abuse and no plan raises it, the plan
+     one is a paywall and upgrading clears it. The plan cap is checked first.
+   - The **api-types guard (§3.11) was checked and is not applicable** — `@qalam/api-types` has no
+     collaboration namespace, so there is nothing for `CollaboratorLimitDto` to drift from. Same
+     position as B4's `PieceLimitDto`. If a collaboration namespace is ever added, these types are
+     what it starts with.
+   - **Dark mode.** Mobile asserts `textContrastGuideline` on both notice states in both brightnesses,
+     plus `labeledTapTargetGuideline` and `iOSTapTargetGuideline` — the same scan B4 ran, and it hits
+     the same **T-10** app-wide 44 px tap height, which stays unowned. Web's new markup is built from
+     `QTokens` pairs that are defined in both themes and is covered by the **existing** e2e a11y specs
+     for `/write/:storyId/collaborators` and the invitations inbox; no new baseline was minted, and no
+     live e2e run was part of this row (the suite's deferred state is unchanged).

@@ -9,6 +9,7 @@ import { ActivityService } from './activity.service';
 import { COLLABORATION_NOTIFIER } from './collaboration-notifier.port';
 import { CollaborationController } from './collaboration.controller';
 import { CollaborationRepository } from './collaboration.repository';
+import { CollaboratorSeatService } from './collaborator-seat.service';
 import { CommentService } from './comment.service';
 import { NotificationsCollaborationNotifier } from './notifications-collaboration-notifier.adapter';
 import { CollaborationActivity } from './entities/collaboration-activity.entity';
@@ -56,6 +57,9 @@ import { SuggestionService } from './suggestion.service';
   controllers: [CollaborationController],
   providers: [
     CollaborationRepository,
+    // B6's plan seat cap. `EntitlementService` is injected from the @Global MonetizationModule,
+    // exactly as PiecesModule does for B4 — no new module edge, so no cycle.
+    CollaboratorSeatService,
     MembershipService,
     InvitationService,
     CommentService,

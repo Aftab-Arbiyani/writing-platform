@@ -32,6 +32,51 @@ export class InvitationDto {
   @ApiProperty() createdAt!: string;
 }
 
+/**
+ * How much of a story's collaborator seat allowance is spent (B6, docs/45 §4.11).
+ *
+ * Mirrors B4's `PieceLimitDto` field-for-field (`used` / `limit` / `remaining` / `unlimited` /
+ * a `can…` verb) so the two allowance surfaces read the same on both clients, with one addition:
+ * the count is composite, so the parts are published too. It is scoped to the STORY, not the user —
+ * the allowance belongs to the story and is charged to whoever owns it.
+ */
+export class CollaboratorLimitDto {
+  @ApiProperty() storyId!: string;
+
+  @ApiProperty({ description: 'Accepted collaborators (the owner is not one).' })
+  members!: number;
+
+  @ApiProperty({ description: 'Invitations still outstanding — each holds a seat until answered.' })
+  pendingInvitations!: number;
+
+  @ApiProperty({ description: 'Seats spent: members + pendingInvitations.' })
+  used!: number;
+
+  @ApiProperty({
+    description:
+      "The owner's plan cap. -1 = unlimited and 0 = none — B6 INVERTS the usual PlanLimits " +
+      'sentinel, because a free story genuinely gets zero seats. Read `unlimited`, not `limit === 0`.',
+    example: 3,
+  })
+  limit!: number;
+
+  @ApiProperty({
+    nullable: true,
+    description: 'Seats left (never negative). Null when the plan is unlimited.',
+  })
+  remaining!: number | null;
+
+  @ApiProperty({ description: 'True when the plan sets no seat cap (limit -1).' })
+  unlimited!: boolean;
+
+  @ApiProperty({
+    description:
+      'True when another seat can be offered. False for every free story — the invite affordance ' +
+      'stays visible and becomes an upsell, it is never hidden.',
+  })
+  canInvite!: boolean;
+}
+
 /** Inline-comment anchor (echoed back on the wire). */
 export class CommentAnchorViewDto {
   @ApiProperty() from!: number;
