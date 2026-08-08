@@ -23,8 +23,13 @@ import { useAuthStore } from '@/stores/auth.store';
  * `staleTime` is generous because these change when an admin flips a flag, not per interaction; the
  * authoritative answer for a REQUEST always comes back from the request itself
  * ({@link import('@/lib/ai-availability').availabilityFromErrorCode}).
+ *
+ * **`feature: null` asks the master-switch-only question** — "is AI on for me at all?" — with no
+ * per-feature flag and no quota gate (see `resolveAvailability`). B5 needs it: a control that
+ * fronts SEVERAL AI features, like the editor's assistant button, must not be hidden by any one
+ * feature's flag, but must disappear when the account has AI switched off.
  */
-export function useAiAvailability(feature: AiFeature): AiAvailability {
+export function useAiAvailability(feature: AiFeature | null): AiAvailability {
   // Both reads require a session, and W5 put this hook on PUBLIC pages (`/search`, `/p/:slug`), so
   // whether there is one decides whether they may be made at all — see below.
   const authed = useAuthStore((state) => state.status) === 'authenticated';

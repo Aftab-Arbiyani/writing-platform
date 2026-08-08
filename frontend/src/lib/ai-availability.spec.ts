@@ -1,4 +1,4 @@
-import { AiFeature } from '@qalam/shared';
+import { AiFeature, ERROR_CODES } from '@qalam/shared';
 import type { AiFeaturesResponse, AiUsageResponse } from '@qalam/api-types';
 import { describe, expect, it } from 'vitest';
 
@@ -11,6 +11,7 @@ import {
 function features(over: Partial<AiFeaturesResponse> = {}): AiFeaturesResponse {
   return {
     aiEnabled: true,
+    userAiEnabled: true,
     features: [
       {
         feature: AiFeature.WritingAssistant,
@@ -57,6 +58,67 @@ describe('resolveAvailability', () => {
     expect(
       resolveAvailability({ feature, features: features({ aiEnabled: false }), usage: usage() }),
     ).toBe('off');
+  });
+
+  /**
+   * B5 (docs/45 §4.10). Both causes of "AI is off for you" arrive as `aiEnabled: false`; only
+   * `userAiEnabled` separates them, and they need different copy and different remedies.
+   */
+  describe('the account\u2019s own AI switch (B5)', () => {
+    it('reports self-off when the reader turned AI off themselves', () => {
+      expect(
+        resolveAvailability({
+          feature,
+          features: features({ aiEnabled: false, userAiEnabled: false }),
+          usage: usage(),
+        }),
+      ).toBe('self-off');
+    });
+
+    it('still reports plain off when it is the PLATFORM switch, not the reader', () => {
+      // Admin off beats user on: blaming the reader here would send them to a switch that is
+      // already on and would change nothing.
+      expect(
+        resolveAvailability({
+          feature,
+          features: features({ aiEnabled: false, userAiEnabled: true }),
+          usage: usage(),
+        }),
+      ).toBe('off');
+    });
+
+    it('hides a master-switch-only surface too (feature: null skips flags, not this)', () => {
+      // W9's Story Explorer and the editor's assistant button ask the `null` question. A reader
+      // who switched AI off must lose those as well, or they are stranded entry points.
+      expect(
+        resolveAvailability({
+          feature: null,
+          features: features({ aiEnabled: false, userAiEnabled: false }),
+          usage: usage(),
+        }),
+      ).toBe('self-off');
+    });
+
+    it('leaves an ordinary reader entirely unaffected — the default is on', () => {
+      expect(resolveAvailability({ feature, features: features(), usage: usage() })).toBe(
+        'available',
+      );
+    });
+
+    it('maps AI_DISABLED_BY_USER, and never onto the platform or quota states', () => {
+      expect(availabilityFromErrorCode(ERROR_CODES.AI_DISABLED_BY_USER)).toBe('self-off');
+      // The distinctness that matters: three neighbouring codes, three different remedies.
+      expect(availabilityFromErrorCode(ERROR_CODES.AI_DISABLED)).toBe('off');
+      expect(availabilityFromErrorCode(ERROR_CODES.QUOTA_EXCEEDED)).toBe('quota');
+      expect(availabilityFromErrorCode(ERROR_CODES.ENTITLEMENT_DENIED)).toBe('upgrade');
+    });
+
+    it('has copy that points at settings — not at plans and not at waiting', () => {
+      const copy = AVAILABILITY_COPY['self-off'];
+      expect(copy.description).toMatch(/settings/i);
+      expect(copy.description).not.toMatch(/plan/i);
+      expect(copy.description).not.toMatch(/reset/i);
+    });
   });
 
   it('distinguishes this feature being dark-launched from AI being off entirely', () => {

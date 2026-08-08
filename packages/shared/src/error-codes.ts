@@ -166,6 +166,19 @@ export const ERROR_CODES = {
   AI_DISABLED: 'AI_DISABLED',
   /** The specific AI feature's flag is off. */
   AI_FEATURE_DISABLED: 'AI_FEATURE_DISABLED',
+  /**
+   * B5 (docs/45 §4.10) — the CALLER turned AI off for their own account (403).
+   *
+   * Deliberately its own code, and the remedy is why. `AI_DISABLED` is an
+   * administrator's platform-wide switch (the user can do nothing but wait);
+   * `AI_FEATURE_DISABLED` is one feature's flag (same). `QUOTA_EXCEEDED` /
+   * `AI_USAGE_LIMIT_EXCEEDED` reset on their own, and `ENTITLEMENT_DENIED` /
+   * `INSUFFICIENT_CREDITS` end in a plan. This one ends in a switch the caller
+   * already owns: **turn it back on in settings** — never "see plans", never
+   * "wait for reset". Collapsing distinct remedies into one code was the W4
+   * defect (docs/48 §3.6), which is why B4/B6/B7 each minted their own too.
+   */
+  AI_DISABLED_BY_USER: 'AI_DISABLED_BY_USER',
   /** The selected provider has no credentials / is not configured (503). */
   AI_PROVIDER_NOT_CONFIGURED: 'AI_PROVIDER_NOT_CONFIGURED',
   /** The upstream provider returned an error (502 — provider's fault, not ours). */

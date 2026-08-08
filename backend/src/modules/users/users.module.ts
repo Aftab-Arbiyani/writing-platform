@@ -48,6 +48,12 @@ import { UsersService } from './users.service';
     UserSettingsRepository,
     SettingsService,
   ],
-  exports: [UsersService, RolesService, ProfileService, FollowService],
+  /**
+   * `SettingsService` is exported for B5 (docs/45 §4.10): the AI gate
+   * (`AiFeatureService`) reads the caller's own "turn AI off" preference through it.
+   * The service, never `UserSettingsRepository` — other modules integrate through
+   * services only (docs 16 §3.1).
+   */
+  exports: [UsersService, RolesService, ProfileService, FollowService, SettingsService],
 })
 export class UsersModule {}

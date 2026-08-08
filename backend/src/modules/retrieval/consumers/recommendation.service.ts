@@ -49,7 +49,7 @@ export class RecommendationService {
   ) {}
 
   async recommend(userId: string, dto: RecommendationQueryDto): Promise<RecommendationResponseDto> {
-    await this.features.assertEnabled(AiFeature.Recommendations);
+    await this.features.assertEnabled(AiFeature.Recommendations, userId);
     const start = Date.now();
     const limit = Math.min(Math.max(dto.limit ?? DEFAULT_LIMIT, 1), 50);
 

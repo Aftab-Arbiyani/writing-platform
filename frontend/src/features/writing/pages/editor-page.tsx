@@ -7,6 +7,7 @@ import { useNavigate, useParams } from 'react-router';
 import { usePageTitle } from '@/hooks/use-page-title';
 import { getErrorMessage } from '@/lib/errors';
 import { ROUTES } from '@/lib/routes';
+import { useAiAvailability } from '@/hooks/use-ai-availability';
 import { useAiEditorTarget } from '@/stores/ai-editor-target.store';
 
 import { EditorMetrics } from '../editor/editor-metrics';
@@ -49,6 +50,8 @@ export function EditorPage({ assistant }: { assistant?: ReactNode } = {}): React
   const publishOpen = useEditorUiStore((s) => s.publishOpen);
   const assistantOpen = useAiEditorTarget((s) => s.open);
   const setAssistantOpen = useAiEditorTarget((s) => s.setOpen);
+  // Master-switch-only read (B5) — see the button below for why it is not per-feature.
+  const aiAvailability = useAiAvailability(null);
 
   const [title, setTitle] = useState('');
   const [languageCode, setLanguageCode] = useState('');
@@ -211,7 +214,18 @@ export function EditorPage({ assistant }: { assistant?: ReactNode } = {}): React
               setShowMetrics((v) => !v);
             }}
           />
-          {assistant ? (
+          {/*
+            B5 (docs/45 §4.10): the slot alone is not enough to show this. A writer who has
+            turned AI off for their account — or a deployment with the master flag down — would
+            otherwise keep a Sparkles button that opens a drawer of four "AI is off" notices,
+            which is exactly the stranded entry point §4.10 forbids.
+
+            Gated on the MASTER question (`null` feature), not on `writing_assistant`: the drawer
+            fronts four surfaces (assistant, coach, explorer, ask), so hiding it whenever one
+            feature's flag is down would take the other three with it — the mistake mobile's
+            editor calls out by name. Each tab still resolves its own availability inside.
+          */}
+          {assistant && aiAvailability !== 'off' && aiAvailability !== 'self-off' ? (
             <QButton
               variant="ghost"
               size="sm"

@@ -179,7 +179,24 @@ export class AiCompletionService {
   // ── Pipeline steps ─────────────────────────────────────────────────────────
 
   private async prepare(input: CompletionInput): Promise<PreparedCall> {
-    await this.features.assertEnabled(input.feature);
+    /**
+     * The gate — platform flags AND, since B5 (docs/45 §4.10), the caller's own
+     * "turn AI off" preference. It is deliberately the FIRST thing `prepare` does,
+     * and specifically ahead of the AF5 meter below:
+     *
+     * - `meter.checkQuota` (further down this method) and `meter.recordConsumption`
+     *   (in `recordUsage`) are the only two places an AI request touches the credit
+     *   and quota ledgers. Refusing here means an opted-out user's request costs them
+     *   no allowance and no credits — §4.10 requires that nothing meters, since a user
+     *   who has switched AI off should not be able to be charged for a refusal.
+     * - It also precedes every provider call, every prompt render and every context
+     *   assembly, so a refusal spends no tokens and no upstream request either.
+     *
+     * Both `complete()` and `stream()` route through `prepare`, so neither can bypass
+     * it, and it is the orchestrator's single gate rather than a per-controller check
+     * (docs/35: every AI path runs through here).
+     */
+    await this.features.assertEnabled(input.feature, input.userId);
     await this.usage.assertWithinLimits(input.userId);
 
     const resolved = await this.config.resolveForUser(input.userId, input.params);

@@ -53,7 +53,24 @@ export class AiFeatureFlagInfoDto {
 
 /** `GET /ai/features`. */
 export class AiFeaturesResponseDto {
+  /**
+   * AI is usable by this caller: the platform master flag AND their own B5 switch.
+   * When `false`, every entry in `features` is `false` too — this is the one value a
+   * client needs in order to hide its AI affordances.
+   */
   @ApiProperty() aiEnabled!: boolean;
+
+  /**
+   * B5 (docs/45 §4.10) — the caller's OWN "turn AI off" switch, reported separately so
+   * a client can tell the two causes of `aiEnabled: false` apart and offer the right
+   * remedy: "you turned AI off — turn it back on in settings" versus an administrator's
+   * platform switch, which the reader cannot do anything about. Precedence is
+   * admin-off-beats-user-on, so `userAiEnabled: true` with `aiEnabled: false` simply
+   * means the platform flag is down.
+   */
+  @ApiProperty({ description: 'Whether the caller has AI turned on for their own account.' })
+  userAiEnabled!: boolean;
+
   @ApiProperty({ type: [AiFeatureFlagInfoDto] }) features!: AiFeatureFlagInfoDto[];
 }
 

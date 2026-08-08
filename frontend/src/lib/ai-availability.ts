@@ -14,6 +14,12 @@ import type { AiFeature, AiFeaturesResponse, AiUsageResponse } from '@qalam/api-
  * different remedies:
  *
  * - **off** — the master `feature.ai.enabled` switch is down. Nothing AI works; say so plainly.
+ * - **self-off** — B5 (docs/45 §4.10): the READER turned AI off for their own account. Identical
+ *   to **off** in what it blocks and completely different in what to say about it, which is the
+ *   whole reason it is its own state: **off** is an administrator's decision and the reader can
+ *   only wait, while this one is theirs and one switch away. Merging the two would tell a writer
+ *   who turned AI off that "AI isn't enabled on this instance" — the wrong remedy, which is the
+ *   W4 defect ([48 §3.6](./48_PlatformParityRegister.md)) repeated.
  * - **feature-off** — AI is on but this feature's flag is down (dark-launched, or disabled for
  *   this account). Neighbouring AI surfaces may still work.
  * - **quota** — the writer has spent their daily or monthly token allowance. This is the state
@@ -43,7 +49,7 @@ import type { AiFeature, AiFeaturesResponse, AiUsageResponse } from '@qalam/api-
  * the reader came for with it. Naming the state is what lets the hook skip the requests entirely.
  */
 export type AiAvailability =
-  'available' | 'off' | 'feature-off' | 'quota' | 'upgrade' | 'signed-out' | 'unknown';
+  'available' | 'off' | 'self-off' | 'feature-off' | 'quota' | 'upgrade' | 'signed-out' | 'unknown';
 
 /**
  * A window is exhausted when it has a cap and has reached it. Unlimited windows never are.
@@ -82,7 +88,14 @@ export function resolveAvailability(args: {
   const { feature, features, usage } = args;
   // Nothing loaded yet — 'unknown' keeps the panel quiet rather than flashing a wall.
   if (!features) return 'unknown';
-  if (!features.aiEnabled) return 'off';
+  /**
+   * B5: both causes of "AI is off for you" arrive in the same payload, and the ORDER here
+   * encodes the server's precedence — admin off beats user on. `aiEnabled` is already the
+   * AND of the two, so a false `aiEnabled` with `userAiEnabled: true` is the platform
+   * switch and must read as **off**; only when the reader's own switch is down do we blame
+   * them for it.
+   */
+  if (!features.aiEnabled) return features.userAiEnabled === false ? 'self-off' : 'off';
   if (feature === null) return 'available';
 
   const flag = features.features.find((entry) => entry.feature === feature);
@@ -116,6 +129,10 @@ export function availabilityFromErrorCode(code: string | null): AiAvailability |
       return 'upgrade';
     case ERROR_CODES.AI_DISABLED:
       return 'off';
+    // B5. Its own code precisely so the remedy is not the platform switch's ("wait for an
+    // admin") nor the quota family's ("wait for reset") nor the plan's ("see plans").
+    case ERROR_CODES.AI_DISABLED_BY_USER:
+      return 'self-off';
     case ERROR_CODES.AI_FEATURE_DISABLED:
       return 'feature-off';
     default:
@@ -131,6 +148,14 @@ export const AVAILABILITY_COPY: Record<
   off: {
     title: 'AI is turned off',
     description: 'AI features aren’t enabled on this instance yet.',
+  },
+  // B5. The second state that carries an action (after `upgrade` and `signed-out`), and the
+  // only one where the reader is the one who caused it — so the copy says so plainly and
+  // sends them to the switch rather than implying someone else has to act.
+  'self-off': {
+    title: 'You turned AI off',
+    description:
+      'AI is off for your account. You can turn it back on in settings — your writing is unaffected.',
   },
   'feature-off': {
     title: 'Not available yet',

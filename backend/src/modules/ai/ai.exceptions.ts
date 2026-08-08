@@ -28,6 +28,27 @@ export class AiFeatureDisabledException extends AppException {
   }
 }
 
+/**
+ * B5 (docs/45 §4.10) — the caller turned AI off for their own account.
+ *
+ * Separate from {@link AiDisabledException} and {@link AiFeatureDisabledException}
+ * because the remedy is the caller's own, not an administrator's: this message
+ * points at their settings, and it must never be conflated with the quota
+ * ("wait for reset") or entitlement ("see plans") families either.
+ *
+ * It governs the USER, not the story — a co-author who has AI on may still use it
+ * on a story this caller co-authors.
+ */
+export class AiDisabledByUserException extends AppException {
+  constructor() {
+    super(
+      ERROR_CODES.AI_DISABLED_BY_USER,
+      'You have turned AI off for your account. You can turn it back on in settings.',
+      HttpStatus.FORBIDDEN,
+    );
+  }
+}
+
 /** The selected provider has no credentials / is not configured. */
 export class AiProviderNotConfiguredException extends AppException {
   constructor(provider: AiProvider) {

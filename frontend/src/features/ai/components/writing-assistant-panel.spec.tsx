@@ -22,6 +22,7 @@ vi.mock('../hooks/use-ai-completion', () => ({
 
 const FEATURES: AiFeaturesResponse = {
   aiEnabled: true,
+  userAiEnabled: true,
   features: [
     {
       feature: AiFeature.WritingAssistant,
@@ -134,6 +135,7 @@ describe('WritingAssistantPanel', () => {
     mockMeta(
       {
         aiEnabled: true,
+        userAiEnabled: true,
         features: [
           {
             feature: AiFeature.WritingAssistant,
@@ -205,7 +207,7 @@ describe('WritingAssistantPanel', () => {
    * editor calls out by name at `editor_screen.dart:241-244`.
    */
   it('offers the Explorer even when every AI feature flag is down', () => {
-    mockMeta({ aiEnabled: true, features: [] }, USAGE);
+    mockMeta({ aiEnabled: true, userAiEnabled: true, features: [] }, USAGE);
     registerTarget({}, 'piece-1');
     renderWithProviders(<WritingAssistantPanel />);
     expect(screen.getByRole('tab', { name: 'Explorer' })).toBeInTheDocument();
@@ -223,12 +225,31 @@ describe('WritingAssistantPanel', () => {
   });
 
   it('walls off the Explorer when AI is off entirely', () => {
-    mockMeta({ aiEnabled: false, features: [] }, USAGE);
+    mockMeta({ aiEnabled: false, userAiEnabled: true, features: [] }, USAGE);
     registerTarget({}, 'piece-1');
     renderWithProviders(<WritingAssistantPanel />);
 
     fireEvent.click(screen.getByRole('tab', { name: 'Explorer' }));
     expect(screen.getAllByText('AI is turned off').length).toBeGreaterThan(0);
+  });
+
+  /**
+   * B5 (docs/45 §4.10) — the same payload shape, one field different, and every tab has to
+   * say something else. This is the reachability check the spec asks for: not "does the
+   * resolver return self-off" (that is unit-tested) but "does a writer who turned AI off
+   * actually see their own switch named on the surface they were using".
+   */
+  it('tells a writer who turned AI off that it was THEM, on every tab', () => {
+    mockMeta({ aiEnabled: false, userAiEnabled: false, features: [] }, USAGE);
+    registerTarget({}, 'piece-1');
+    renderWithProviders(<WritingAssistantPanel />);
+
+    for (const tab of ['Assistant', 'Craft Coach', 'Explorer', 'Ask']) {
+      fireEvent.click(screen.getByRole('tab', { name: tab }));
+      expect(screen.getAllByText('You turned AI off').length).toBeGreaterThan(0);
+      // Never the platform copy — the remedy would be wrong (docs/48 §3.6).
+      expect(screen.queryByText('AI is turned off')).not.toBeInTheDocument();
+    }
   });
 
   it('hides Ask until the draft has a server id, then offers it', () => {
@@ -250,6 +271,7 @@ describe('WritingAssistantPanel', () => {
     mockMeta(
       {
         aiEnabled: true,
+        userAiEnabled: true,
         features: [
           { feature: AiFeature.AskBook, flagKey: 'feature.ai.askBook.enabled', enabled: false },
         ],

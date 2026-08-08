@@ -40,7 +40,7 @@ export class AskBookService {
   ) {}
 
   async ask(userId: string, dto: AskBookDto): Promise<AskBookResponseDto> {
-    await this.features.assertEnabled(AiFeature.AskBook);
+    await this.features.assertEnabled(AiFeature.AskBook, userId);
     const start = Date.now();
     const scope = dto.scope ?? AskScope.Book;
     const { result, citations } = await this.retrieveForAsk(userId, dto, scope);
@@ -83,7 +83,7 @@ export class AskBookService {
     dto: AskBookDto,
     signal?: AbortSignal,
   ): AsyncGenerator<AskStreamEvent> {
-    await this.features.assertEnabled(AiFeature.AskBook);
+    await this.features.assertEnabled(AiFeature.AskBook, userId);
     const start = Date.now();
     const scope = dto.scope ?? AskScope.Book;
     const { result, citations } = await this.retrieveForAsk(userId, dto, scope);

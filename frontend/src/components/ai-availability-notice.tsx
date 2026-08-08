@@ -1,5 +1,5 @@
 import { QButton, QEmptyState } from '@qalam/ui';
-import { Ban, Gauge, LogIn, Sparkles } from 'lucide-react';
+import { Ban, Gauge, LogIn, Settings, Sparkles } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 
@@ -9,6 +9,9 @@ import { AVAILABILITY_COPY, type AiAvailability } from '@/lib/ai-availability';
 
 const ICONS = {
   off: Sparkles,
+  // B5: a settings cog, not the AI sparkle — the reader is being pointed at their own
+  // switch, and the icon should say "this is a setting" rather than "this is AI".
+  'self-off': Settings,
   'feature-off': Ban,
   quota: Gauge,
   upgrade: Sparkles,
@@ -66,6 +69,22 @@ export function AiAvailabilityNotice({
             }}
           >
             See plans
+          </QButton>
+        ) : /**
+         * B5 (docs/45 §4.10). The third state with an action, and the only one the reader
+         * can undo in one click — so it goes to the AI settings hub where the switch lives,
+         * NOT to plans and NOT to a "try again". Sending them to plans would be the W4
+         * defect (docs/48 §3.6): the right-shaped wall with the wrong remedy attached.
+         */
+        availability === 'self-off' ? (
+          <QButton
+            variant="primary"
+            size="sm"
+            onClick={() => {
+              void navigate(ROUTES.settingsAi);
+            }}
+          >
+            AI settings
           </QButton>
         ) : availability === 'signed-out' ? (
           <QButton

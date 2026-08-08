@@ -25,7 +25,23 @@ export class SettingsService {
       theme: ThemePreference.System,
       defaultPieceVisibility: Visibility.Public,
       notificationPreferences: {},
+      // B5: AI on by default — a user who has never opened settings has not opted out.
+      aiEnabled: true,
     });
+  }
+
+  /**
+   * B5 (docs/45 §4.10) — has this user turned AI off for their own account?
+   *
+   * **Read-only on purpose: it must not `getOrCreate`.** This runs on the AI gate
+   * path (`AiFeatureService`), i.e. on every AI request and every `GET /ai/features`,
+   * and a lazy INSERT there would turn a read into a write on the hot path — and
+   * would write rows for users who never touched a setting. A missing row means
+   * "never chose", which is `true`, the same answer the column default gives.
+   */
+  async isAiEnabledFor(userId: string): Promise<boolean> {
+    const settings = await this.repository.findByUserId(userId);
+    return settings?.aiEnabled ?? true;
   }
 
   async get(userId: string): Promise<SettingsResponseDto> {
@@ -42,6 +58,7 @@ export class SettingsService {
         dto.notificationPreferences === undefined
           ? current.notificationPreferences
           : { ...current.notificationPreferences, ...dto.notificationPreferences },
+      aiEnabled: dto.aiEnabled ?? current.aiEnabled,
     });
     return this.get(userId);
   }
@@ -52,5 +69,6 @@ function toDto(s: UserSettings): SettingsResponseDto {
     theme: s.theme,
     defaultPieceVisibility: s.defaultPieceVisibility,
     notificationPreferences: s.notificationPreferences,
+    aiEnabled: s.aiEnabled,
   };
 }

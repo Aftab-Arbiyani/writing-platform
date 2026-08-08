@@ -102,8 +102,14 @@ export interface AiFeatureFlagInfo {
 
 /** `GET /ai/features` — which AI features are on for the caller. */
 export interface AiFeaturesResponse {
-  /** Master switch (`feature.ai.enabled`). */
+  /** Master switch (`feature.ai.enabled`) AND the caller's own B5 switch. */
   aiEnabled: boolean;
+  /**
+   * B5 (docs/45 §4.10) — the caller's OWN "turn AI off" preference, so a client can
+   * distinguish "you turned AI off" (remedy: settings) from an administrator's
+   * platform switch (remedy: none). Precedence is admin-off-beats-user-on.
+   */
+  userAiEnabled: boolean;
   features: AiFeatureFlagInfo[];
 }
 

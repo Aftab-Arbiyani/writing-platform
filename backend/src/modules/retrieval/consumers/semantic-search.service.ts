@@ -32,7 +32,7 @@ export class SemanticSearchService {
   ) {}
 
   async search(userId: string, dto: SemanticSearchDto): Promise<SemanticSearchResponseDto> {
-    await this.features.assertEnabled(AiFeature.SemanticSearch);
+    await this.features.assertEnabled(AiFeature.SemanticSearch, userId);
     const start = Date.now();
 
     const request: RetrievalRequest = {
@@ -125,7 +125,7 @@ export class SemanticSearchService {
 
   /** Query suggestions: the top result titles for a short prefix (cheap, no LLM). */
   async suggestions(userId: string, q: string, storyId?: string): Promise<string[]> {
-    await this.features.assertEnabled(AiFeature.SemanticSearch);
+    await this.features.assertEnabled(AiFeature.SemanticSearch, userId);
     const result = await this.retrieval.retrieve({
       userId,
       query: q,

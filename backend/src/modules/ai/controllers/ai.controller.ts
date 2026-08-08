@@ -48,10 +48,16 @@ export class AiController {
   @Get('features')
   @Permissions(PERMISSIONS.AiUse)
   @RateLimit('read')
-  @ApiOperation({ summary: 'Which AI features are enabled for you (master + per-feature flags).' })
+  @ApiOperation({
+    summary:
+      'Which AI features are enabled for you (master flag + your own AI switch + per-feature flags).',
+  })
   @ApiOkResponse({ type: AiFeaturesResponseDto })
-  getFeatures(): Promise<AiFeaturesResponseDto> {
-    return this.features.listFeatureStates();
+  // B5 (docs/45 §4.10): the route's contract has always been "enabled **for you**", but until
+  // B5 nothing about it was per-caller, so it took no user. It does now — the caller's own
+  // "turn AI off" preference is ANDed into `aiEnabled` and every feature's state.
+  getFeatures(@CurrentUser() user: AuthenticatedUser): Promise<AiFeaturesResponseDto> {
+    return this.features.listFeatureStates(user.id);
   }
 
   @Get('models')

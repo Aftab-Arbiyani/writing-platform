@@ -119,7 +119,8 @@ describe('AiCompletionService.complete', () => {
     const { service, features, usage } = build(AiProvider.OpenAI);
     const out = await service.complete(input);
 
-    expect(features.assertEnabled).toHaveBeenCalledWith(AiFeature.Playground);
+    // B5: the gate is called WITH the caller's id — it is the per-user switch's only input.
+    expect(features.assertEnabled).toHaveBeenCalledWith(AiFeature.Playground, 'u1');
     expect(usage.assertWithinLimits).toHaveBeenCalledWith('u1');
     expect(usage.record).toHaveBeenCalledTimes(1);
     expect(out.content).toBe('hello');

@@ -91,7 +91,8 @@ describe('AskBookService', () => {
     );
     const res = await service.ask('u1', { storyId: 'piece-1', question: 'who is aria?' });
 
-    expect(assertEnabled).toHaveBeenCalledWith(AiFeature.AskBook);
+    // B5: the gate is called WITH the caller's id — it is the per-user switch's only input.
+    expect(assertEnabled).toHaveBeenCalledWith(AiFeature.AskBook, 'u1');
     const input = (complete.mock.calls[0] as unknown[])[0] as {
       feature: string;
       promptKey: string;

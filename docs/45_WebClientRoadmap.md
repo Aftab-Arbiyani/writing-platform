@@ -102,7 +102,7 @@ soft-deleted rows ([04 §1.5](./04_DatabaseDesign.md)), so it is a safe identity
 | **D4** | **Decision:** do the seven unenforced premium feature codes get a backend row?                                                                                                              | M         | [48 §5.2](./48_PlatformParityRegister.md). The catalogue sells eight `PremiumFeature` codes and the backend asserts exactly **one** (`ai_budget`); `PolicyEngineService.isEntitled()` has zero callers, so a subscriber's plan is computed correctly and then ignored on every route but the AI meter's. Until answered, **no client may gate on the seven** — a client-only wall in front of a route the server serves. Depends on **D3**                                                                                                     | B2 shares the enforcement path     |
 | **B3** | Profile lookup by **id** (both clients)                                                                                                                                                     | S         | Recorded 2026-08-05 after being carried in three consecutive epics' "improvements not done" lists. Retrieval, collaboration and publishing DTOs all carry user **ids**, but `GET /users/:username` is keyed by username — so every W3c surface (reviewer, snapshot author, history actor, blocked person) shows a **truncated id to real users**. Three slices worked around it; it is a missing contract, not a nicety. Additive backend enabler + both clients                                                                               | W7's reader-analytics rows         |
 | **B4** | **Piece limit per plan** — enabler + both clients ✅ **done 2026-08-08**                                                                                                                    | S + S×2   | **New feature, requested and specified 2026-08-05.** A cap on how many pieces an author may have, by subscription tier. The first premium feature to gate the product's **core write path** rather than AI tooling. Full spec, including the three decisions already taken, in [§4.9](#49-b4--piece-limit-per-plan-detail)                                                                                                                                                                                                                     | —                                  |
-| **B5** | **Per-account "turn AI off"** — enabler + both clients                                                                                                                                      | S + XS×2  | **New feature, requested and specified 2026-08-05.** An author disables AI for their own account. Server-enforced; governs the user, not the story. Cheap because `GET /ai/features` already answers "which AI features are enabled **for you**" and both clients already consume it — see [§4.10](#410-b5--per-account-turn-ai-off-detail)                                                                                                                                                                                                    | —                                  |
+| **B5** | **Per-account "turn AI off"** — enabler + both clients ✅ **DONE 2026-08-08**                                                                                                              | S + XS×2  | **New feature, requested and specified 2026-08-05.** An author disables AI for their own account. Server-enforced; governs the user, not the story. Cheap because `GET /ai/features` already answers "which AI features are enabled **for you**" and both clients already consume it — see [§4.10](#410-b5--per-account-turn-ai-off-detail)                                                                                                                                                                                                    | —                                  |
 | **B6** | **Collaborators per story, by plan** — enabler + both clients ✅ **done 2026-08-08**                                                                                                        | S + S×2   | **New feature, specified 2026-08-05.** Free 0 · Plus 3 · Pro/Ent unlimited, counted against the **story owner's** plan. The seat lever — collaboration becomes a paid capability. Shipped with the sentinel **inverted for this key alone** (`-1` unlimited, `0` none) because `0` already means unlimited everywhere else. Spec + what shipped: [§4.11](#411-b6--collaborators-per-story-by-plan-detail)                                                                                                                                      | —                                  |
 | **B7** | **Version-history depth, by plan** — enabler + both clients ✅ **DONE 2026-08-08**                                                                                                          | S + XS×2  | **New feature, specified 2026-08-05.** Free 5 · Plus 25 · Pro/Ent unlimited. **Hidden, never deleted** — a read-time clamp, so upgrading restores history retroactively. Spec: [§4.12](#412-b7--version-history-depth-by-plan-detail)                                                                                                                                                                                                                                                                                                          | —                                  |
 
@@ -487,7 +487,7 @@ halves sit with **W7** or a mobile parity pass. It is deliberately **not** its o
 
 ---
 
-### 4.10 B5 — per-account "turn AI off" (detail)
+### 4.10 B5 — per-account "turn AI off" (detail) ✅ **DONE 2026-08-08**
 
 **Requested and specified 2026-08-05.** An author switches AI off for their own account: no assistant
 panel, no Craft Coach, no AI discovery or search prompts.
@@ -541,6 +541,88 @@ are surfaced.
 
 **Where it lands:** the enabler fits any pending row that touches the AI module; the client halves are
 small enough to ride with **W7** or a mobile parity pass. **Not its own epic** — S + XS×2.
+
+#### What shipped (2026-08-08)
+
+**The column, and why nothing changed on deploy.** `user_settings.ai_enabled boolean NOT NULL
+DEFAULT true` — one additive column on the existing satellite, migration
+`1786181711060-UserAiPreference`, generated (not hand-written) and verified to run **and** revert.
+Postgres records a non-volatile default in the catalogue rather than rewriting the heap, so it is a
+metadata-only `ALTER` on a table every authenticated session reads. Every existing row, and every
+user with no settings row at all, reads as AI-on. The read path defaults a missing row the same way
+(`SettingsService.isAiEnabledFor` → `?? true`), which is deliberate: it also means the gate never
+lazily INSERTs a row on the hot path.
+
+> ⚠️ **The generator emitted far more than this change, and the rest of it is pre-existing drift.**
+> `migration:generate` produced ~110 statements: dropping every FK, both `search_vector` generated
+> columns, and the trigram/partial indexes — the accumulated gap between entity metadata and the
+> hand-tuned SQL of earlier migrations. Applying it would have been destructive. The body was
+> reduced to the one intended statement, keeping the generated filename and timestamp. **The drift
+> is real and unowned**; it will bite the next person who generates a migration, and it deserves its
+> own row.
+
+**One guard, in the orchestrator, ahead of the meter.** The check lives in
+`AiFeatureService.assertEnabled` — the single function docs/35 already routes every AI path through
+— and the orchestrator calls it as the first statement of `AiCompletionService.prepare()`
+(`ai-completion.service.ts`). That places it before `meter.checkQuota` and far before
+`meter.recordConsumption`, which is what makes §4.10's metering requirement true rather than
+assumed; `ai-completion.user-switch.spec.ts` asserts it with a **real** `AiFeatureService` in front
+of a spy meter, for `complete()` **and** `stream()` (both share `prepare()`, so an unguarded stream
+would have been the bypass). No per-controller check was added anywhere.
+
+**Precedence, and the signature change.** Order inside `assertEnabled` **is** the rule: platform
+flag → user switch → feature flag, so admin-off-beats-user-on falls out of it and an opted-out user
+on a dark deployment gets `AI_DISABLED`, not a remedy that would not help. `listFeatureStates()`
+gained a `userId` (the route's contract was always "enabled **for you**"; nothing about it had been
+per-caller until now) and `assertEnabled` gained one too — **five call sites** updated: the
+orchestrator plus `ask-book` ×2, `semantic-search` ×2 and `recommendation`, all of which already had
+the caller's id in hand.
+
+**A distinct code.** `AI_DISABLED_BY_USER` (403), because the remedy is the caller's own switch —
+not "wait for an admin" (`AI_DISABLED`), not "wait for reset" (`AI_USAGE_LIMIT_EXCEEDED` /
+`QUOTA_EXCEEDED`), not "see plans" (`ENTITLEMENT_DENIED`). Four walls, four sentences; collapsing any
+pair is the W4 defect ([48 §3.6](./48_PlatformParityRegister.md)).
+
+**One field added to the contract**, and it earns its place. `AiFeaturesResponse.userAiEnabled`
+reports the caller's own switch alongside the ANDed `aiEnabled`, because otherwise no client can tell
+"you turned AI off" from "an administrator did" — and the two need different copy and different
+actions. Pinned by the §3.11 `@qalam/api-types` guard, which covers this DTO. `SettingsResponseDto` /
+`UpdateSettingsDto` also gained `aiEnabled`; neither is in that package, so no pin was needed there.
+
+**Both clients, and what the sweep actually found.** The client halves were XS *for the surfaces that
+already gated on `GET /ai/features`* — and four did not:
+
+| surface                                  | before                                                       | now                            |
+| ---------------------------------------- | ------------------------------------------------------------ | ------------------------------ |
+| mobile AI Discovery hub                  | compile-time `enableAi` **only** — never asked the server    | ANDs `aiFeatures.aiEnabled`    |
+| mobile AI Search screen                  | **no runtime gate at all**                                   | refuses, names the writer's switch |
+| mobile Story Explorer (screen + overflow) | `enableAi && isRemote` — the route has no flag, so no server read | ANDs `aiFeatures.aiEnabled` |
+| web editor's AI button                   | rendered on a slot check alone → a drawer of four notices    | hidden when AI is off for you  |
+
+Everything else followed for free, which was the bet §4.10 made: mobile's `AiFeatures.isEnabled()`
+already ANDs the master value, and web's `resolveAvailability` already reads it, so one server field
+turned off the assistant, the coach, Ask My Book, recommendations and "More like this" on both
+clients with no change. Web gained a `self-off` availability state (its own copy, its own action —
+"AI settings"); mobile gained the matching `AI_DISABLED_BY_USER` copy and `AiFeatures.disabledByUser`.
+
+**The switch itself** is on `/settings/ai` (web: the W8 hub; mobile: a new screen + hub tile),
+rendered unconditionally — including while AI is off, since it is the one control that turns it back
+on. Mobile had **no `/settings` client at all** (its notification toggles use the separate
+`/notification-preferences` route), so B5 added the minimal one: entity, datasource, repository,
+provider, controller.
+
+> ⚠️ **§4.10 says "next to the `ai_personalization` consent". There is nothing to sit next to.**
+> `GET/PUT /privacy/consent` ships with **no client surface on either platform** (verified
+> 2026-08-08) — the consent model exists server-side and no screen reaches it. So the "not merged"
+> requirement was met the only way available: the switch states the distinction in its own copy
+> ("this is separate from whether your work may be used to improve AI features"), asserted by a test
+> on both clients, and the privacy module was not touched. **Surfacing the consent is unowned work**
+> — it belongs with W7's privacy-prefs row, and when it lands it belongs on this same screen.
+
+**Verified:** backend 1178 tests green, `tsc --noEmit` + eslint clean, migration up **and** down
+against a live database. Web 745 tests green, typecheck + lint + build clean. Mobile 731 tests green,
+`dart analyze lib test` clean (3 pre-existing infos, none new), settings screen asserted in light
+**and** dark.
 
 ---
 

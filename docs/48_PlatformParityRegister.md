@@ -1,6 +1,12 @@
 # 48 — Platform Parity Register (web ↔ mobile)
 
-**Status:** 🔒 Binding · **Owner:** every client epic · **Last swept:** 2026-08-08 (after **B7** — version-history depth by plan, the third and last
+**Status:** 🔒 Binding · **Owner:** every client epic · **Last swept:** 2026-08-08 (after **B5** — the per-account
+"turn AI off" switch, the odd one out of the four subscriber features: a USER PREFERENCE rather than a
+`PlanLimits` key, and so the only one of them needing a schema change. One guard, in the AF1 orchestrator
+ahead of the AF5 meter, so an opted-out user's refusal meters nothing. Its sweep is **§6.6**, and it found
+**four AI entry points that never consulted the server at all** — three on mobile, one on web — plus the
+fact that the `ai_personalization` consent §4.10 told it to sit "next to" **has no client surface on either
+platform**. Previously swept after **B7** — version-history depth by plan, the third and last
 `PlanLimits` row, and the first cap in this codebase enforced **only at read time**: versions past the
 plan's depth are hidden and never deleted, so upgrading restores them retroactively and snapshot
 CAPTURE is never refused. That last part is the row's whole risk — the accept-a-suggestion path
@@ -2567,3 +2573,77 @@ from the **story owner's** plan and applied at READ time only ([45 §4.12](./45_
      during the scan. **No live e2e run was part of this row** — the local run needs Postgres on 5432
      and Redis on 6379, both occupied here by unrelated stacks — so that scan is CI-gated and the
      suite's deferred state is unchanged.
+
+### 6.6 B5's sweep (2026-08-08)
+
+**B5 is the odd one out of the four subscriber features.** B4, B6 and B7 are `PlanLimits` catalogue keys —
+numbers, no schema change. B5 is a user preference: one column, one migration, one guard. It is also the
+only one of the four whose enforcement point is the AI orchestrator rather than a business service.
+
+1. **Only what the row named?** Yes — the column, the guard, `listFeatureStates`' `userId`, the error code,
+   and the switch on both clients. Four things it touched that the row did not name, all consequences
+   rather than additions, and all recorded below: `AiFeaturesResponse.userAiEnabled` (without it no client
+   can tell the two causes of "off" apart, so the remedy would be wrong — the W4 defect); `resolveAvailability`
+   / `useAiAvailability` widened to the `feature: null` question web already had (the editor's AI button
+   fronts four surfaces, so gating it on any one flag would hide the other three); a minimal `/settings`
+   client on mobile, which had **none** (B5-3 below); and the four unwired gates in step 3, which are the
+   substance of this sweep. The privacy module was **not** touched, and no per-controller AI check was
+   added anywhere.
+
+2. **Does the other platform have every part I built?** Both were built together, so this is a
+   surface-by-surface comparison rather than a port. Same switch, same copy, same distinction line, same
+   error vocabulary. **Two arrangement differences**, both §4.1 territory:
+
+   - **Web puts the switch on the existing W8 `/settings/ai` hub; mobile got a new `/settings/ai` screen
+     plus a hub tile.** Web already had an account-scoped AI page and mobile did not.
+   - **Web renders the AI-search engine toggle even when AI is off** (a documented W5 decision — the
+     control renders and the notice behind it explains why), while mobile's AI Search screen now refuses
+     outright. Both give the same remedy; only web offers the door first. Left as-is deliberately: web's
+     posture is deliberate and documented, and reversing it here would be an unrelated change.
+
+3. **Does the other platform need a follow-up?** No — but only because the sweep's real finding was fixed
+   inside this row rather than deferred. **Four AI entry points were gated on something other than the
+   server**, so a writer who turned AI off would have kept live affordances into surfaces the server had
+   already begun refusing:
+
+   | id       | platform | surface                        | what it was gated on                                            |
+   | -------- | -------- | ------------------------------ | --------------------------------------------------------------- |
+   | **B5-1** | mobile   | AI Discovery hub               | the COMPILE-TIME `AppConfig.enableAi` alone — never asked the server |
+   | **B5-2** | mobile   | AI Search screen               | **nothing** — it had no runtime gate at all                      |
+   | **B5-3** | mobile   | Story Explorer (screen + editor overflow) | `enableAi && isRemote`; the route carries no feature flag, so nothing read the server |
+   | **B5-4** | web      | the editor's AI drawer button  | the presence of the panel SLOT — opening a drawer of four notices |
+
+   All four are the same class as **R-1 / M5-1 / W5-3 / W8-1**: code that looked wired and was not. They
+   were found by opening each entry point, not by reading the gate, which is what §4.10 asked for — and
+   B5-2 in particular could not have been found any other way, since there was no gate to read. All four
+   are fixed and covered: mobile's editor-overflow and Story-Explorer cases by two new tests in
+   `af4_entry_points_test.dart` (affordance **and** deep-link destination), web's by
+   `writing-assistant-panel.spec.tsx`.
+
+   Everything else followed with no change, which was §4.10's bet and it held: mobile's
+   `AiFeatures.isEnabled()` already ANDs the master value and web's `resolveAvailability` already reads it,
+   so one server field turned off the assistant, the coach, Ask My Book, recommendations and "More like
+   this" on both clients at once.
+
+4. **§2 re-swept** for the AI area. No row moves: B5 adds a control to both platforms simultaneously, so it
+   creates no asymmetry. Row 3 (AI breadth) is unchanged at 7 of 8.
+
+5. **Nothing left unrecorded.** Four defects above, two arrangement differences in step 2, and **three
+   unowned findings** this row surfaced but is not fixing:
+
+   - **The `ai_personalization` consent has no client surface on either platform.** `GET/PUT /privacy/consent`
+     ships and no screen reaches it — so §4.10's "put the switch next to it" was unachievable as written.
+     The "not merged" half was met the only way available: both switches state the distinction in their own
+     copy, asserted by a test on each client. Surfacing the consent belongs to **W7**'s privacy-prefs row,
+     and when it lands it belongs on the same screen. This is §5.2's shape one layer up — a server capability
+     no client can reach — and is recorded here so it is not rediscovered a fourth time.
+   - **`migration:generate` emits ~110 statements of pre-existing drift** between entity metadata and the
+     hand-tuned SQL of earlier migrations: every FK dropped, both `search_vector` generated columns dropped,
+     the trigram and partial indexes dropped. B5's migration was reduced to its one intended statement, but
+     the drift is real, it is destructive if applied, and it will meet whoever generates the next migration.
+     Unowned; deserves its own row.
+   - **Mobile's `/settings` client did not exist** before B5 and is now minimal by design — it reads and
+     writes `aiEnabled` and ignores `theme` / `defaultPieceVisibility`, which mobile keeps on-device. Not a
+     defect (the on-device choices are deliberate), but it means the preference bag is **not** synced
+     cross-device on mobile the way it is on web. Worth knowing before someone assumes `GET /settings` is
+     fully consumed there.

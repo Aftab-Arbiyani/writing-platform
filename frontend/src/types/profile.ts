@@ -102,6 +102,15 @@ export interface SettingsResponse {
   theme: ThemePreference;
   defaultPieceVisibility: Visibility;
   notificationPreferences: Record<string, boolean>;
+  /**
+   * B5 (docs/45 §4.10) — the reader's own "AI is on for me" switch. `true` unless they
+   * turned it off. Server-enforced: with it off, AI requests answer `AI_DISABLED_BY_USER`
+   * and `GET /ai/features` reports everything off.
+   *
+   * NOT the `ai_personalization` consent (`/privacy/consent`), which is "train on my
+   * work". This is "offer me the tools".
+   */
+  aiEnabled: boolean;
 }
 
 /** `PATCH /me` body — all fields optional (partial update). `username` is permanent (omitted). */
@@ -121,4 +130,6 @@ export interface UpdateSettingsPayload {
   theme?: ThemePreference;
   defaultPieceVisibility?: Visibility;
   notificationPreferences?: Record<string, boolean>;
+  /** B5 — turn AI on/off for this account. See {@link SettingsResponse.aiEnabled}. */
+  aiEnabled?: boolean;
 }

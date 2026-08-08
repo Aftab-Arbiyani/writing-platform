@@ -36,6 +36,28 @@ export class UserSettings {
   @Column({ type: 'jsonb', default: {} })
   notificationPreferences!: Record<string, boolean>;
 
+  /**
+   * B5 (docs/45 §4.10) — the author's own "turn AI off" switch. When `false` the
+   * server REFUSES every AI request this user makes (`AI_DISABLED_BY_USER`) and
+   * `GET /ai/features` reports everything off, so the clients hide their AI
+   * affordances *because the server says so* rather than by a local guess.
+   *
+   * **Defaults to `true`, and that is load-bearing:** the column is additive with
+   * `DEFAULT true`, so every existing row — and every user who has no settings row
+   * at all — keeps AI exactly as it was on deploy.
+   *
+   * **Not the same thing as the `ai_personalization` consent** (`privacy.constants.ts`),
+   * and deliberately not merged with it: that consent governs whether the user's work
+   * may be used to IMPROVE AI, this switch governs whether the tools are OFFERED to
+   * them. A writer may want the assistant without the training, or the reverse, so the
+   * two stay independently settable.
+   *
+   * It governs the USER, not the story: a co-author whose own switch is on may still
+   * use AI on a story this user co-authors.
+   */
+  @Column({ type: 'boolean', default: true })
+  aiEnabled!: boolean;
+
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt!: Date;
 

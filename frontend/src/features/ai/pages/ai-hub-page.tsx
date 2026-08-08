@@ -7,6 +7,7 @@ import { Link } from 'react-router';
 import { usePageTitle } from '@/hooks/use-page-title';
 import { ROUTES } from '@/lib/routes';
 
+import { AiAccountSwitch } from '../components/ai-account-switch';
 import { useAiFeatures } from '../hooks/use-ai-meta';
 
 /**
@@ -32,6 +33,7 @@ export function AiHubPage(): ReactElement {
   usePageTitle('AI');
   const features = useAiFeatures();
   const disabled = features.data?.aiEnabled === false;
+  const selfDisabled = features.data?.userAiEnabled === false;
 
   return (
     <div className="flex flex-col gap-6">
@@ -42,10 +44,27 @@ export function AiHubPage(): ReactElement {
         </p>
       </section>
 
+      {/*
+        B5 (docs/45 §4.10): the account's own AI switch, above the sections it governs. It sits
+        here rather than on Appearance or Privacy because this is the page a writer opens looking
+        for "my AI settings", and W8 already made this hub the home of the account-scoped AI
+        surfaces. It renders unconditionally — including while AI is off — since it is the one
+        control that turns it back on.
+      */}
+      <AiAccountSwitch />
+
+      {/*
+        Two distinct causes of "off" need two different sentences: the platform switch is an
+        administrator's and the reader can only wait, while their own switch is one tap above.
+        `userAiEnabled` is what tells them apart (`GET /ai/features`), the same distinction
+        `resolveAvailability` makes for every other AI surface.
+      */}
       {disabled ? (
         <QCard as="section">
           <p role="status" className="text-ink-secondary text-sm">
-            AI is switched off for this account right now. These pages will fill in once it is on.
+            {selfDisabled
+              ? 'AI is off because you turned it off for this account. Switch it back on above and these pages will fill in.'
+              : 'AI is switched off for this account right now. These pages will fill in once it is on.'}
           </p>
         </QCard>
       ) : null}

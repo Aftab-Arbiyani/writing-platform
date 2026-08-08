@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { AuthModule } from '../auth/auth.module';
 import { SettingsModule } from '../settings/settings.module';
+import { UsersModule } from '../users/users.module';
 
 import { AiFeatureService } from './ai-feature.service';
 import { AiConfigService } from './config/ai-config.service';
@@ -65,6 +66,10 @@ import { UsageService } from './tokens/usage.service';
     ]),
     AuthModule,
     SettingsModule,
+    // B5 (docs/45 §4.10): the AI gate reads the caller's own "turn AI off" preference
+    // from the users module's `SettingsService`. One-directional — `UsersModule`
+    // imports only `TaxonomyModule`, so this adds no cycle.
+    UsersModule,
   ],
   controllers: [AiController, AiConversationsController, AdminAiController],
   providers: [
