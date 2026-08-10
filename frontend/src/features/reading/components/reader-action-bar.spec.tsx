@@ -48,6 +48,7 @@ function render(engagement: PieceEngagement | undefined = ENGAGEMENT, isLoading 
         element={
           <ReaderActionBar
             pieceId="p1"
+            pieceTitle="A door never opened"
             engagement={engagement}
             isLoading={isLoading}
             shareUrl="https://qalam.test/p/a-door"
@@ -116,9 +117,23 @@ describe('ReaderActionBar', () => {
     });
   });
 
-  it('shows claps and responses as read-only counts', () => {
+  /**
+   * W7b turned the clap from a read-only stat into a gesture, so this assertion is the inverse of
+   * what it used to be: the clap is a real BUTTON now, and only the responses count is still a stat
+   * (and only because W7a put the responses themselves on the same page).
+   */
+  it('renders the clap as an action and the responses count as a stat', () => {
     render();
-    expect(screen.getByLabelText('300 claps')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Clap for this piece' })).toBeInTheDocument();
     expect(screen.getByLabelText('2 responses')).toBeInTheDocument();
+    // The clap total is on the button, not in a separate read-only label.
+    expect(screen.queryByLabelText('300 claps')).not.toBeInTheDocument();
+  });
+
+  it('offers save-to-collection and report behind the More menu', async () => {
+    render();
+    fireEvent.click(screen.getByRole('button', { name: 'More actions on this piece' }));
+    expect(await screen.findByText('Save to a collection')).toBeInTheDocument();
+    expect(screen.getByText('Report this piece')).toBeInTheDocument();
   });
 });

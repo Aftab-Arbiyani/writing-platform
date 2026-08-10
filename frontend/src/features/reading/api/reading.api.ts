@@ -4,6 +4,7 @@ import { del, get, getPage, post, type CursorPage } from '@/lib/api-client';
 import { buildQueryString } from '@/lib/http';
 
 import type {
+  ClapResult,
   LikeResult,
   PieceDetail,
   PieceEngagement,
@@ -44,6 +45,29 @@ export const readingApi = {
 
   /** DELETE /pieces/:id/likes — idempotent. */
   unlike: (pieceId: string): Promise<void> => del(`/pieces/${encodeURIComponent(pieceId)}/likes`),
+
+  /**
+   * POST /pieces/:id/claps — adds `count` claps and returns the authoritative
+   * `{ viewerClaps, totalClaps }` (W7b).
+   *
+   * **`count` is why a burst is one request.** The endpoint accumulates rather than toggling, so the
+   * client batches a burst of clicks and flushes once (see `use-claps`). The server applies
+   * `min(count, MAX - current)`, so it also clamps — but the client caps first, because a request
+   * sent when already at the cap answers `CLAP_LIMIT_REACHED` and a reader tapping a maxed-out
+   * button should meet nothing at all, not an error.
+   *
+   * 200, not 201: this is an accumulation on an existing relationship, not a creation.
+   */
+  clap: (pieceId: string, count: number): Promise<ClapResult> =>
+    post<ClapResult>(`/pieces/${encodeURIComponent(pieceId)}/claps`, { count }),
+
+  /**
+   * DELETE /pieces/:id/claps — removes ALL of this viewer's claps on the piece (204).
+   *
+   * There is no decrement endpoint and this is not one. Any affordance built on it has to say
+   * "remove my claps", never "-1".
+   */
+  unclap: (pieceId: string): Promise<void> => del(`/pieces/${encodeURIComponent(pieceId)}/claps`),
 
   bookmark: (pieceId: string): Promise<unknown> =>
     post(`/pieces/${encodeURIComponent(pieceId)}/bookmarks`),

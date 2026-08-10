@@ -9,7 +9,9 @@ import { UsagePage } from '../../pages/frontend/billing-detail-pages';
 import { AiConversationsPage, AiUsagePage, PromptLibraryPage } from '../../pages/frontend/ai-pages';
 import { PlansPage } from '../../pages/frontend/plans-page';
 import { CollaboratorsPage } from '../../pages/frontend/collaborators-page';
+import { CollectionsPage } from '../../pages/frontend/collections-page';
 import { PieceConversation } from '../../pages/frontend/conversation';
+import { EngagementBar, ReportDialog } from '../../pages/frontend/engagement';
 import { ReaderPage } from '../../pages/frontend/reader-page';
 import { SearchPage } from '../../pages/frontend/search-page';
 import { SettingsBlocksPage } from '../../pages/frontend/settings-blocks-page';
@@ -204,6 +206,54 @@ test.describe('@phase5 @visual frontend (authenticated)', () => {
       // the comment BODIES are pinned literals above precisely so the boxes do not move with them.
       mask: [page.getByRole('time'), conversation.comments.locator('.ant-avatar')],
     });
+  });
+
+  /**
+   * The report dialog (W7b) — the reason it gets a baseline rather than only an a11y scan is the
+   * reason-chip radiogroup: its SELECTED state is carried entirely by colour and border, in both
+   * themes, and a token regression there is invisible to a role/name selector. One of the chips is
+   * picked so the shot pins the selected treatment, not just the resting one.
+   */
+  test('the report dialog matches its visual baseline', async ({ page, api, data }) => {
+    const title = data.pieceTitle();
+    const piece = await api.createPublishedPiece({ title });
+
+    const reader = new ReaderPage(page);
+    await reader.gotoSlug(piece.slug as string);
+    await reader.expectRendered(title);
+
+    await new EngagementBar(page).openReport();
+    const dialog = new ReportDialog(page);
+    await expect(dialog.dialog).toBeVisible({ timeout: 15_000 });
+    await dialog.reason('Harassment or bullying').click();
+    await settleToasts(page);
+
+    // Viewport, not fullPage: the dialog is fixed over the article, and the article behind it
+    // carries a per-run title whose wrapping would move the page height (see the reader note above).
+    await expect(page).toHaveScreenshot('frontend-report-dialog.png');
+  });
+
+  /**
+   * The collections list (W7b). Its card is the only place `isDefault` and `Private` are expressed
+   * visually — a star vs. a bookmark glyph and a tinted tag — so this pins both.
+   */
+  test('the collections page matches its visual baseline', async ({ page, api, data }) => {
+    const collection = await api.createCollection({ title: 'E2E Collection — visual baseline' });
+    const piece = await api.createPublishedPiece({ title: data.pieceTitle() });
+    await api.addPieceToCollection(collection.id, piece.id);
+
+    const collections = new CollectionsPage(page);
+    await collections.goto();
+    await collections.expectLoaded();
+    await settleToasts(page);
+
+    await expect(page).toHaveScreenshot('frontend-collections.png', {
+      fullPage: true,
+      // The seeded writer accumulates collections across runs, so only the FIRST card is stable.
+      // Masking the rest keeps the shot about the card design rather than the account's history.
+      mask: [page.getByRole('listitem').nth(1)],
+    });
+    await api.deleteCollection(collection.id);
   });
 
   test('the collaborators page matches its visual baseline', async ({ page, api, data }) => {

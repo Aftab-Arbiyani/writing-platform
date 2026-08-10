@@ -145,9 +145,12 @@ describe('PiecePage', () => {
     renderAt('a-door-never-opened');
 
     await screen.findByRole('heading', { level: 1 });
+    // Claps became an ACTION in W7b, so the count now rides on the clap button rather than a
+    // read-only label; likes and responses are still the plain counts they always were.
     await waitFor(() => {
-      expect(screen.getByLabelText('1200 claps')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Clap for this piece' })).toBeInTheDocument();
     });
+    expect(screen.getByLabelText('3 responses')).toBeInTheDocument();
     expect(readingApi.engagement).toHaveBeenCalledWith(PIECE_ID, expect.anything());
   });
 

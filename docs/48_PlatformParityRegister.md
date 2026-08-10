@@ -1,6 +1,14 @@
 # 48 — Platform Parity Register (web ↔ mobile)
 
-**Status:** 🔒 Binding · **Owner:** every client epic · **Last swept:** 2026-08-10 (after **W7a** — the
+**Status:** 🔒 Binding · **Owner:** every client epic · **Last swept:** 2026-08-10 (after **W7b** —
+collections, claps and report on web, closing §2 rows 4 and 5 and the last of §5's social orphans. Its
+sweep is **§6.9**, three arrangement differences are in **§4.1**, and it found the thing this document
+most needed to hear: **§2 row 5 was wrong**. It credited mobile with a "clap (1..50 accumulating)" on its
+reader action bar; mobile has **no clap control at all** — no gesture, no accumulator, no
+`POST /pieces/:id/claps` caller anywhere in the app (**M7-3**, §3.15). That is the SECOND time a §2 cell
+has over-credited mobile (**W8-1** was the first), so the direction on claps reversed and web is now the
+reference. Also **W7b-1**: `POST /reports` refuses a self-report with `422 REPORT_SELF`, which is correct
+and is documented nowhere. Previously swept after **W7a** — the
 **conversation layer** on web, the first slice of W7 and the row that finally owns piece comments +
 responses, which §5 had listed as unowned since this document was written. Its sweep is **§6.8**, the
 inline-vs-pushed arrangement is **§4.1**, and it found the harness defect that matters most here:
@@ -107,17 +115,17 @@ epic now has to reconcile.
 Measured from `lib/features/**/presentation/screens` and `frontend/src/features/**/pages` plus route
 tables, not assumed.
 
-| #   | Area                  | Mobile has                                                                                                               | Web has                                                                                                                                                                                                                                                                               | Closed by                                                                                                                                                                                                                                          |
-| --- | --------------------- | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | **Collaboration**     | 6 screens: collaborators, comments, invitations inbox, publishing workflow, restricted state, suggestions                | nothing                                                                                                                                                                                                                                                                               | **W3**                                                                                                                                                                                                                                             |
-| 2   | ~~**Monetization**~~  | 5 screens: plans, subscription, billing history, credit dashboard, usage dashboard                                       | ✅ **all five** (W4) — **fully at parity since 2026-08-03**: the coupon field (M5-2) and the two missing history tabs (M5-6) are now on both                                                                                                                                          | **W4 ✅ closed 2026-07-29** — [report](./50_WebMonetizationReadinessReport.md)                                                                                                                                                                     |
-| 3   | ~~**AI breadth**~~    | 8 screens: conversation, conversations list, discovery, usage, ask-book, prompt library, semantic search, story explorer | ✅ **8 of 8 — CLOSED 2026-08-08.** Assistant + Craft Coach (W2), semantic search + AI discovery (W5), conversations + prompt library + AI usage (W8), **story explorer + ask-book (W9 ✅ 2026-08-08)** — the last two as tabs on the in-editor AI drawer, not routes (§4.1)           | **W5 closed discovery + search; W8 the next three; W9 the last two ✅.** Note the direction reversed on conversations: mobile ships the screen and cannot populate it (§3.12 **W8-1**), so **web is the reference** and mobile needs the follow-up |
-| 4   | **Social depth**      | collections, collection detail, comments, responses (+ followers, follow requests)                                       | ✅ **comments + responses — CLOSED 2026-08-10 by W7a** (the conversation layer, inline on the reader — [§4.1](#41-accepted-layout-differences--same-feature-different-arrangement)). Still missing: **collections** + collection detail. Plus follow requests; followers via a dialog | **W7** — [45 §4.4](./45_WebClientRoadmap.md). **W7a ✅ closed** rows 1–2 (conversation); collections is W7b, together with clap/report                                                                                                             |
-| 5   | **Reader actions**    | clap (1..50 accumulating) and report, on the reader action bar                                                           | like, bookmark, copy-link share                                                                                                                                                                                                                                                       | **unassigned — see §5**                                                                                                                                                                                                                            |
-| 6   | **Reading analytics** | `reading_analytics_screen` — the _reader's_ own stats                                                                    | writer + per-piece analytics only                                                                                                                                                                                                                                                     | **unassigned — see §5**                                                                                                                                                                                                                            |
-| 7   | **Onboarding**        | `onboarding_screen` — first-run flow                                                                                     | nothing                                                                                                                                                                                                                                                                               | **unassigned — see §5**                                                                                                                                                                                                                            |
-| 8   | **Privacy prefs**     | dedicated privacy screen: private account, **show bookmarks count**, **show reading-history count**                      | private-notebook toggle inside edit-profile                                                                                                                                                                                                                                           | **unassigned — small, see §5**                                                                                                                                                                                                                     |
-| 9   | **Offline behaviour** | engagement + follow taken offline are queued and reconciled by a unified `SyncEngine`                                    | no offline write queue                                                                                                                                                                                                                                                                | **see §4** (partly platform-inherent)                                                                                                                                                                                                              |
+| #   | Area                   | Mobile has                                                                                                                                                                                                                                 | Web has                                                                                                                                                                                                                                                                               | Closed by                                                                                                                                                                                                                                          |
+| --- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **Collaboration**      | 6 screens: collaborators, comments, invitations inbox, publishing workflow, restricted state, suggestions                                                                                                                                  | nothing                                                                                                                                                                                                                                                                               | **W3**                                                                                                                                                                                                                                             |
+| 2   | ~~**Monetization**~~   | 5 screens: plans, subscription, billing history, credit dashboard, usage dashboard                                                                                                                                                         | ✅ **all five** (W4) — **fully at parity since 2026-08-03**: the coupon field (M5-2) and the two missing history tabs (M5-6) are now on both                                                                                                                                          | **W4 ✅ closed 2026-07-29** — [report](./50_WebMonetizationReadinessReport.md)                                                                                                                                                                     |
+| 3   | ~~**AI breadth**~~     | 8 screens: conversation, conversations list, discovery, usage, ask-book, prompt library, semantic search, story explorer                                                                                                                   | ✅ **8 of 8 — CLOSED 2026-08-08.** Assistant + Craft Coach (W2), semantic search + AI discovery (W5), conversations + prompt library + AI usage (W8), **story explorer + ask-book (W9 ✅ 2026-08-08)** — the last two as tabs on the in-editor AI drawer, not routes (§4.1)           | **W5 closed discovery + search; W8 the next three; W9 the last two ✅.** Note the direction reversed on conversations: mobile ships the screen and cannot populate it (§3.12 **W8-1**), so **web is the reference** and mobile needs the follow-up |
+| 4   | **Social depth**       | collections, collection detail, comments, responses (+ followers, follow requests)                                                                                                                                                         | ✅ **comments + responses — CLOSED 2026-08-10 by W7a** (the conversation layer, inline on the reader — [§4.1](#41-accepted-layout-differences--same-feature-different-arrangement)). Still missing: **collections** + collection detail. Plus follow requests; followers via a dialog | **W7** — [45 §4.4](./45_WebClientRoadmap.md). **W7a ✅ closed** rows 1–2 (conversation); collections is W7b, together with clap/report                                                                                                             |
+| 5   | ~~**Reader actions**~~ | **CORRECTED 2026-08-10 — this row was wrong.** Mobile has **report** on its action bar (behind "More"), and **no clap control at all**: no gesture, no accumulator, no `POST /pieces/:id/claps` caller anywhere in the app. See **§3.15**. | ✅ **clap (1..50, accumulating, batched, capped) + report + save-to-collection — W7b, 2026-08-10.** Report is a port; **clap is web-first**, so the direction on it reversed                                                                                                          | **W7b ✅**. Mobile now needs the clap FOLLOW-UP (**M7-3**, §3.15) — the second row in this track where the register credited mobile with a surface it does not have (cf. **W8-1**)                                                                 |
+| 6   | **Reading analytics**  | `reading_analytics_screen` — the _reader's_ own stats                                                                                                                                                                                      | writer + per-piece analytics only                                                                                                                                                                                                                                                     | **unassigned — see §5**                                                                                                                                                                                                                            |
+| 7   | **Onboarding**         | `onboarding_screen` — first-run flow                                                                                                                                                                                                       | nothing                                                                                                                                                                                                                                                                               | **unassigned — see §5**                                                                                                                                                                                                                            |
+| 8   | **Privacy prefs**      | dedicated privacy screen: private account, **show bookmarks count**, **show reading-history count**                                                                                                                                        | private-notebook toggle inside edit-profile                                                                                                                                                                                                                                           | **unassigned — small, see §5**                                                                                                                                                                                                                     |
+| 9   | **Offline behaviour**  | engagement + follow taken offline are queued and reconciled by a unified `SyncEngine`                                                                                                                                                      | no offline write queue                                                                                                                                                                                                                                                                | **see §4** (partly platform-inherent)                                                                                                                                                                                                              |
 
 ---
 
@@ -2116,6 +2124,63 @@ responses at all.
 
 ---
 
+## 3.15 W7b pre-flight + run — the clap that does not exist, and a rule nobody wrote down (2026-08-10)
+
+### M7-3 · **medium** · mobile has NO clap interaction, and §2 said it did (opened 2026-08-10)
+
+**What.** [§2 row 5](#2-current-divergences-mobile--web-web-is-behind) claimed mobile shipped "clap
+(1..50 accumulating) and report, on the reader action bar". Report is true. **Clap is not.** W7b's
+pre-flight audit went looking for the accumulation-and-batching model to port and found nothing:
+
+| Looked for                                 | Found                                                                                               |
+| ------------------------------------------ | --------------------------------------------------------------------------------------------------- |
+| a clap control on `reader_action_bar.dart` | **Like · Bookmark · Share · More** only (More = save-to-collection + report)                        |
+| a clap method on `EngagementRepository`    | like/unlike, bookmark/unbookmark, share, follow/unfollow, report — **no clap**                      |
+| `POST /pieces/:id/claps` anywhere          | **no caller**; `ApiPaths` has `pieceLikes`, `pieceBookmarks`, `pieceShares` and **no `pieceClaps`** |
+| an accumulator / press-and-hold gesture    | none                                                                                                |
+
+Every one of the 25 mobile files mentioning "clap" is read-only: analytics totals, DTO mappers, the
+`Limits.maxClapsPerUserPerPiece` mirror, enum/error-code mirrors, a clap _notification_ type.
+`ClapDto`'s own comment describes an intended client design ("accumulated client-side
+(press-and-hold) then flushed") that **neither client had ever built**.
+
+**Consequence for W7b.** The row said `mobile → web` for all three items; for claps there was no
+reference to port and — more importantly — building it on web alone is precisely the failure mode
+[§1](#1-why-this-document-exists) names as the W-track's one way to go wrong. So it was **escalated
+before any code was written** rather than resolved unilaterally. The decision was to build it: web
+becomes the reference for the clap interaction, the same reversal **W8-1** produced when mobile
+shipped a conversations screen it could not populate. The design therefore came from the contract
+(`ClapDto.count`, `MAX_CLAPS_PER_USER_PER_PIECE`, the all-or-nothing `DELETE`) rather than from a
+counterpart — see [54 §3](./54_WebEngagementReadinessReport.md).
+
+**Open, and it is mobile's to take:** mobile has a clap COUNT on its analytics screens and no way for
+a reader to give one. Web's `use-claps` is the reference implementation (accumulate → debounce →
+one batched `POST` with `count` → adopt the server's two numbers; cap client-side; remove-all).
+
+**The class matters more than the row.** This is the second time the register has credited mobile
+with a surface it does not have (W8-1 was the first). Both were caught by [§6 step 2](#6-parity-check--run-at-the-end-of-every-client-epic)
+— "do not trust a roadmap paraphrase" — which is now also "do not trust §2's own cells". A cell in
+this document is a claim like any other, and §6.4's re-sweep is what keeps it honest.
+
+### W7b-1 · **low** (contract, undocumented) · `POST /reports` refuses a self-report, and nothing said so
+
+**What.** Reporting your own content or account is `422 REPORT_SELF` ("You cannot report your own
+content or account"). It is correct behaviour. It is also absent from `CreateReportDto`, from the
+controller's `@ApiOperation`, and from the W7 row — so a client written from the contract alone does
+not know it exists.
+
+**How it surfaced.** W7b's first browser run: two of five report cases filed against the shared
+seeded writer's own piece, got the 422, and failed. The tests were wrong, not the code — but the
+dialog sat on a spinner because the assertion only looked for the success path, which is exactly how
+a real user would meet it if the refusal were not surfaced.
+
+**Resolved in the client and in the suite**, not in the contract: the dialog surfaces the refusal
+with the reader's text intact, and a dedicated spec asserts that (`engagement.spec.ts`, "a
+self-report is refused, and the refusal is shown"). **Open** only as documentation — the
+`@ApiOperation` on `POST /reports` should name the 422, which is a backend edit and not W7b's.
+
+---
+
 ## 4. Divergences that are NOT gaps (platform-inherent)
 
 These are accepted permanently and need no epic. They exist because the platforms genuinely differ.
@@ -2158,6 +2223,9 @@ every known difference to live in §2, §3, or §4 — so a later epic comparing
 | **Explorer → Ask** | Web: **no cross-link**; the two are adjacent tabs. Mobile: an "Ask about this story" **app-bar action** on the explorer (`story_explorer_screen.dart:54-59`). | Mobile needs the action because the two are separate routes and the explorer is where a question occurs to you. On web they are one click apart in the same drawer, so a link would navigate to the tab beside the one you are on. (Mobile's version of this action is also the entry point that skips the feature-flag check — **W9-2**, §6.2.) Added by W9's sweep (2026-08-08). |
 | **Piece limit — where the refusal lands** | Web: the editor creates the draft on **first autosave**, so a refused create surfaces as a distinct `limit-error` save status mid-typing. Mobile: "New piece" mints a **local** draft and the refusal arrives at **sync**, so it surfaces as an explanation on that draft's row. | Same server refusal, same copy. The two clients create a piece at different moments — web on the first keystroke that saves, mobile offline-first — so the honest place to say "this will not save" is different on each. Neither could adopt the other's placement without adopting its create model. |
 | **Piece limit — which controls block** | Web: **two** disabled controls (the header "New draft" and the empty state's "Write your first draft"), each `aria-describedby` the notice. Mobile: **one** disabled FAB, with the reason in its semantics label. | Web's dashboard has two create affordances because a browser page shows list and empty state in the same layout; mobile has exactly one. Both are disabled-and-explained rather than hidden (C-1) or live-and-refused (W3c-1). |
+| **Collections — entry point** | Web: reached from the **account menu** ("Your collections"), beside Your writing / Your stats / Follow requests. Mobile: a row on the **my-profile screen** (`my_profile_screen.dart:130`). | Same two routes on the same paths (`/me/collections`, `/me/collections/:id`), so a link works on either client. Web already keeps every account-scoped surface in that menu and mobile keeps them on its own-profile screen — this follows each platform's existing convention rather than inventing a third. Added by W7b's sweep (2026-08-10). |
+| **Save-to-collection + Report — how they are reached on the reader** | Web: a **"More" dropdown** on the engagement bar. Mobile: a **"More" bottom sheet** on the action bar (`reader_action_bar.dart:_more`). | The same split for the same reason — both clients keep the reflexive actions (like, bookmark, share, clap) on the bar and put the deliberate, low-frequency ones one tap behind it. Dropdown vs. sheet is the platform's own idiom for the identical menu. Added by W7b's sweep (2026-08-10). |
+| **Clap — web only, for now** | Web: an accumulating, batched, capped clap control on the engagement bar. Mobile: **nothing**. | NOT an accepted difference — a tracked gap the other way round, recorded as **M7-3** in [§3.15](#315-w7b-pre-flight--run--the-clap-that-does-not-exist-and-a-rule-nobody-wrote-down-2026-08-10). Listed here only so a later epic comparing the two bars finds it named rather than unexplained. |
 | **Conversation layer — where it lives** | Web: comments and responses are **two inline sections at the end of the reading page** (`/p/:slug`), under the author card and above "More like this". Mobile: a **footer of two rows** on the reader that PUSH two dedicated screens (`comments_screen.dart`, `responses_screen.dart`). | A phone has no room for a thread under an article, so mobile's footer is a navigation affordance standing in for the surface itself; a browser page scrolls and has the room. Keeping the conversation on the piece's **own canonical URL** is what makes it shareable and deep-linkable (`#conversation`) — a separate web route would mint a second URL for the same piece and take the prose away from the reply being written. **Same two surfaces, same order as mobile's footer** (comments first, responses second, "More like this" last), same states, same endpoints. Added by W7a's sweep (2026-08-10) — **§6.8**. |
 
 **The bottom four rows were added by W5's sweep (2026-08-04), and they had to be.** The epic's own code
@@ -2188,8 +2256,13 @@ list** — it was closed by the 2026-07-28 port, §3.1.)
   is monetization — **neither owned comments/responses**. W7 is the row that finally did, and it was
   sliced (W7a = conversation) by the W3/W5 precedent. Web now ships both surfaces inline on the
   reader; the arrangement difference is recorded in §4.1 and the sweep is **§6.8**.
-- **Collections** — mobile has a collections list + detail; web has neither, and no row covers it.
-- **Clap / report** — deliberately scoped out of W1, with no row that picks them up.
+- ~~**Collections**~~ — **CLOSED 2026-08-10 by W7b** ([45 §4.4](./45_WebClientRoadmap.md); report
+  [54](./54_WebEngagementReadinessReport.md)). The original entry: mobile had a collections list +
+  detail, web had neither, and no row covered it. W7b ships both on the same paths mobile uses.
+- ~~**Clap / report**~~ — **CLOSED 2026-08-10 by W7b**, with a correction the entry itself needed:
+  "deliberately scoped out of W1, with no row that picks them up" was right about web, but §2 row 5
+  also claimed **mobile** had the clap. It does not (**M7-3**, §3.15). Report was a straight port;
+  clap is web-first and mobile now owns the follow-up.
 - **Reader analytics, onboarding, privacy prefs, AI conversations + prompt library + usage** — all
   mobile-shipped, none in the W-track. (The last three are named by `W8`, which is unclaimed.)
 - ~~**Ask My Book**~~ — **CLOSED 2026-08-08 by W9, together with the story explorer.** Found unowned by
@@ -2854,3 +2927,61 @@ rows 1–2; report [53](./53_WebConversationLayerReadinessReport.md)).
    **four visual baselines** `frontend-conversation-*` needing a CI mint —
    [53 §5](./53_WebConversationLayerReadinessReport.md). The local run confirmed the config still
    **refuses** to mint them (T-8 holds); a red spec asking for a baseline is the correct state.
+
+### 6.9 W7b's sweep (2026-08-10)
+
+Collections, claps and report on web ([45 §4.4](./45_WebClientRoadmap.md), W7 rows 2–3; report
+[54](./54_WebEngagementReadinessReport.md)).
+
+1. **Only what the row named?** Yes — the three items, and nothing from W7c or P-2. Named because
+   each was adjacent: **reader analytics** and **privacy prefs** are W7c; **@mentions** are P-2 and
+   touch both clients; and **report appeals** (`POST /reports/:id/appeal`) were left alone
+   deliberately even though the endpoint sits two lines below the one this row uses — it is
+   subject-only, the W7 row says "report", and `reportsApi` therefore has no `appeal` method at all
+   rather than an unused one that reads like a live path (the W9 lesson).
+
+   Three consequences rather than additions:
+
+   - **`collectionPath()` + two routes** in `lib/routes.ts` and the router, on the same paths mobile
+     uses (`/me/collections`, `/me/collections/:id`), inside `RequireAuth` because every collections
+     endpoint is permission-gated and caller-scoped.
+   - **An account-menu entry** ("Your collections"), because a route nobody can reach is the R-1 /
+     M5-1 defect. Recorded in §4.1 alongside mobile's my-profile placement.
+   - **Two W7a tests updated, and one W1 docblock.** `reader-action-bar.tsx`'s comment described
+     claps and responses as deferred read-only counts; both deferrals are now discharged, so the
+     comment says what is true instead. The two specs asserting "claps render as a read-only count"
+     were inverted to assert the button, and the W7a spec asserting a reply carries no buttons now
+     distinguishes _no reply affordance_ from _no Report_ (a reply is a comment, so it is reportable).
+
+2. **Does mobile actually have every part I built?** Compared surface by surface against
+   `collections_screen.dart`, `collection_detail_screen.dart`, `save_to_collection_sheet.dart`,
+   `collection_form_sheet.dart`, `report_sheet.dart` and `reader_action_bar.dart`.
+
+   - **Collections: same parts.** List with per-card rename/delete, the default collection's menu
+     hidden, detail with per-piece remove, the save sheet with an inline "New collection" that chains
+     create → save, and the create/rename form with name + description + a private toggle.
+   - **Report: same parts, same reason catalogue in the same order** (`other` last), one generalized
+     control over `ReportEntityType` — which is the whole point, and is why web mounts it in four
+     places rather than writing four dialogs.
+   - **Clap: mobile has nothing.** The big finding, escalated before any code was written and
+     recorded as **M7-3** (§3.15).
+
+   **Two things web has that mobile does not**, both consequences: the clap interaction (above), and
+   a `usePermission`-free path — collections gate on the session rather than on a permission hint,
+   because the whole controller is permission-gated and a 401 there would bounce a browsing visitor
+   (the W5-6 shape, arrived at from the other side).
+
+3. **Does mobile need a follow-up?** Yes — **M7-3** (no clap interaction at all). Unowned, and
+   deliberately not taken here: the row's constraint was "do not touch mobile", and unlike W9's two
+   follow-ups this one is a feature to build rather than a gate to move. **M7-1** (from W7a's sweep —
+   the hardcoded 2000 in mobile's comment composer) is still open too.
+
+4. **§2 re-swept, and one cell CORRECTED.** Row 4 (social depth) closed completely. Row 5 (reader
+   actions) was **factually wrong** and now says so: mobile's bar has report and no clap. That is the
+   second §2 cell to over-credit mobile (**W8-1** was the first), which makes "do not trust a roadmap
+   paraphrase" also "do not trust this document's own cells".
+
+5. **Nothing left unrecorded.** Three accepted differences in §4.1, two defects in §3.15 (**M7-3**
+   open on mobile, **W7b-1** open as backend documentation), and **eight visual baselines** needing a
+   CI mint — [54 §5](./54_WebEngagementReadinessReport.md). The local run confirmed the config still
+   refuses to mint them (T-8 holds).

@@ -81,6 +81,19 @@ export interface LikeResult {
   totalLikes: number;
 }
 
+/**
+ * `POST /pieces/:id/claps` → `ClapResponseDto` (W7b).
+ *
+ * Two numbers, and the distinction matters: `viewerClaps` is THIS reader's running total (1..50,
+ * what the cap applies to) while `totalClaps` is the piece's total across everyone. A batched flush
+ * reconciles both — the viewer's because the server clamped it, the piece's because other readers
+ * moved it while the page was open.
+ */
+export interface ClapResult {
+  viewerClaps: number;
+  totalClaps: number;
+}
+
 /** `GET /pieces/:id/engagement` — counts from `piece_stats` plus this viewer's own state. */
 export interface PieceEngagement {
   stats: {

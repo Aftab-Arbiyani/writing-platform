@@ -1,3 +1,4 @@
+import { ReportEntityType } from '@qalam/shared';
 import { QAvatar, QButton, useConfirm, useToast } from '@qalam/ui';
 import { type ReactElement, useState } from 'react';
 import { Link } from 'react-router';
@@ -11,6 +12,7 @@ import { profilePath } from '@/lib/routes';
 import { useAuthStore } from '@/stores/auth.store';
 import type { PieceComment } from '@/types/conversation';
 
+import { ReportAction } from '../report-action';
 import { CommentComposer } from './comment-composer';
 
 /**
@@ -32,8 +34,10 @@ import { CommentComposer } from './comment-composer';
  * to a reply is rendered flat under the same top-level parent rather than indented again — the
  * same flattening mobile's `comment_tile.dart` does, for the same readability reason.
  *
- * **No report action** — that is W7b, deliberately not this slice, even though mobile's report
- * sheet sits beside its comment widgets.
+ * **Report** was held back from W7a and wired here by W7b, through the one generalized report
+ * dialog (`components/report-dialog`) that also serves pieces, responses and users. It is offered on
+ * someone ELSE's live comment only: there is nothing to report about your own, and a tombstone has
+ * no author left to report.
  */
 export interface CommentItemProps {
   pieceId: string;
@@ -173,6 +177,15 @@ export function CommentItem({ pieceId, comment, isReply = false }: CommentItemPr
               Delete
             </QButton>
           ) : null}
+          {/* Someone else's comment only — reporting your own is meaningless, and the composer's
+              own author has edit/delete instead. */}
+          {isOwn || comment.author === null ? null : (
+            <ReportAction
+              entityType={ReportEntityType.Comment}
+              entityId={comment.id}
+              subject={`${displayName}’s comment`}
+            />
+          )}
         </footer>
       )}
 

@@ -41,6 +41,13 @@ const router = createBrowserRouter([
           { path: 'me', lazy: () => import('@/app/routes/me') },
           { path: 'me/drafts', lazy: () => import('@/app/routes/drafts') },
           { path: 'me/follow-requests', lazy: () => import('@/app/routes/follow-requests') },
+          // Reading lists (W7b, docs/45 §4.4). Inside RequireAuth: every collections route is
+          // owner-scoped and permission-gated, so there is nothing here for a visitor to see.
+          { path: 'me/collections', lazy: () => import('@/app/routes/collections') },
+          {
+            path: 'me/collections/:collectionId',
+            lazy: () => import('@/app/routes/collection-detail'),
+          },
           // Collaboration inbox (AF6 W3a, docs/49) — story invitations addressed to the viewer.
           { path: 'me/invitations', lazy: () => import('@/app/routes/invitations') },
           // A story's collaborator roster. Its PATH sits under /write (it is a writing-side

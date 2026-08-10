@@ -25,7 +25,9 @@ import { StoryPublishingPage } from '../../pages/frontend/story-publishing-page'
 import { StorySuggestionsPage } from '../../pages/frontend/story-suggestions-page';
 import { DiscoverPage } from '../../pages/frontend/discover-page';
 import { ProfilePage } from '../../pages/frontend/profile-page';
+import { CollectionsPage } from '../../pages/frontend/collections-page';
 import { PieceConversation } from '../../pages/frontend/conversation';
+import { EngagementBar, ReportDialog } from '../../pages/frontend/engagement';
 import { ReaderPage } from '../../pages/frontend/reader-page';
 import { ResiliencePage } from '../../pages/frontend/resilience-page';
 import { SearchPage } from '../../pages/frontend/search-page';
@@ -212,6 +214,54 @@ test.describe('@phase5 @a11y frontend accessibility (authenticated)', () => {
     });
 
     await expectNoSeriousA11yViolations(page, { label: 'frontend /p/:slug conversation' });
+  });
+
+  /**
+   * The report dialog (W7b) — a ten-option radiogroup built from plain buttons plus a bounded
+   * textarea, scanned OPEN over the reader.
+   *
+   * Worth its own scan for two reasons: a custom radiogroup is where `aria-checked` /
+   * `role="radio"` mistakes live and axe is the only thing that would catch them, and the same
+   * dialog serves all four entity types — so one scan covers four surfaces.
+   *
+   * Dismissed by navigating away rather than closing: after a scan every animation on the page is
+   * frozen at 0s, and rc-motion removes an exiting element on `animationend`, which never fires
+   * ([fixtures/a11y.ts]).
+   */
+  test('the report dialog has no critical/serious a11y violations', async ({ page, api, data }) => {
+    const title = data.pieceTitle();
+    const piece = await api.createPublishedPiece({ title });
+
+    const reader = new ReaderPage(page);
+    await reader.gotoSlug(piece.slug as string);
+    await reader.expectRendered(title);
+
+    await new EngagementBar(page).openReport();
+    await expect(new ReportDialog(page).dialog).toBeVisible({ timeout: 15_000 });
+
+    await expectNoSeriousA11yViolations(page, { label: 'frontend report dialog' });
+  });
+
+  /**
+   * The collections list (W7b) — cards whose per-row overflow menu must be distinguishable by name
+   * ("Actions for X", not a bare "Actions"), which is the row-disambiguation defect class the
+   * collaborators scan below was written for.
+   */
+  test('the collections page has no critical/serious a11y violations', async ({
+    page,
+    api,
+    data,
+  }) => {
+    const collection = await api.createCollection({ title: `E2E A11y ${data.username()}` });
+    const piece = await api.createPublishedPiece({ title: data.pieceTitle() });
+    await api.addPieceToCollection(collection.id, piece.id);
+
+    const collections = new CollectionsPage(page);
+    await collections.goto();
+    await collections.expectLoaded();
+
+    await expectNoSeriousA11yViolations(page, { label: 'frontend /me/collections' });
+    await api.deleteCollection(collection.id);
   });
 
   test('the collaborators page has no critical/serious a11y violations', async ({

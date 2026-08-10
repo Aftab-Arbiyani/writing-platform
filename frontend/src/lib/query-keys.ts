@@ -273,6 +273,20 @@ export const qk = {
     purchases: () => ['monetization', 'purchases'] as const, // GET /monetization/purchases
   },
 
+  // Reading lists / collections (W7b — `modules/engagement`). Owner-only in Phase 1: every route
+  // carries `@Permissions(collection.manage)` and reads are scoped to the caller, so there is no
+  // "someone else's collections" key to have. `mine` and `pieces` are cursor-paginated.
+  //
+  // A piece being saved or removed moves `piecesCount` on the collection AND the membership of its
+  // piece list, so both mutations invalidate the `detail(id)` prefix that covers the two.
+  collections: {
+    all: ['collections'] as const,
+    mine: () => ['collections', 'mine'] as const, // GET /collections (infinite)
+    /** Prefix for one collection — its header and its pieces. */
+    detail: (id: string) => ['collections', id] as const, // GET /collections/:id
+    pieces: (id: string) => ['collections', id, 'pieces'] as const, // GET /collections/:id/pieces (infinite)
+  },
+
   // Taxonomy catalogues — NO /taxonomy endpoints exist (§2.1.1); sourced from search (browse).
   taxonomy: {
     genres: () => ['taxonomy', 'genres'] as const, // → GET /search/genres (q omitted)

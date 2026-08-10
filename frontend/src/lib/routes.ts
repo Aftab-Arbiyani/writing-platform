@@ -15,6 +15,10 @@ export const ROUTES = {
   // Own-profile redirect target (resolves the signed-in user's handle, docs/11 §10) + requests inbox.
   me: '/me',
   followRequests: '/me/follow-requests',
+  // Reading lists (W7b, docs/45 §4.4). Owner-only — `GET /collections` is scoped to the caller —
+  // and on the SAME paths mobile uses (`/me/collections`, `/me/collections/:id`), so a link shared
+  // between the two clients resolves on both.
+  collections: '/me/collections',
   // Writer analytics (docs/06 §3.10) — the dashboard + per-piece detail.
   stats: '/me/stats',
   // Settings is a nested surface (docs/11 §1): index redirects to /settings/profile.
@@ -106,6 +110,11 @@ export function searchPath(params: Record<string, string | undefined> = {}): str
  */
 export function aiConversationPath(conversationId: string): string {
   return `${ROUTES.settingsAiConversations}/${encodeURIComponent(conversationId)}`;
+}
+
+/** One collection's detail path (W7b) — keyed by UUID, as `ParseUUIDPipe` on the route requires. */
+export function collectionPath(collectionId: string): string {
+  return `${ROUTES.collections}/${encodeURIComponent(collectionId)}`;
 }
 
 /** Per-piece analytics detail path (docs/06 §3.10) — the writer's own piece, keyed by UUID. */

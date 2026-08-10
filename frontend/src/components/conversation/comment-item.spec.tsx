@@ -171,9 +171,13 @@ describe('CommentItem', () => {
     fireEvent.click(screen.getByRole('button', { name: '1 reply' }));
 
     expect(await screen.findByText('Agreed — the ending is the whole piece.')).toBeInTheDocument();
-    // A reply carries no reply affordance of its own — replies are flattened to one indent level.
+    // A reply carries no REPLY affordance of its own — replies are flattened to one indent level,
+    // so there is nothing to reply to a reply with. (It does carry Report, mounted by W7b: reporting
+    // is per-comment and a reply is a comment.)
     const nested = screen.getByLabelText('Comment by Zara');
-    expect(nested.querySelector('button')).toBeNull();
+    expect(within(nested).queryByRole('button', { name: 'Reply' })).not.toBeInTheDocument();
+    expect(within(nested).queryByRole('button', { name: /repl(y|ies)$/ })).not.toBeInTheDocument();
+    expect(within(nested).getByRole('button', { name: 'Report' })).toBeInTheDocument();
   });
 
   it('posts a reply to the reply endpoint, with the parent in the URL and only a body', async () => {

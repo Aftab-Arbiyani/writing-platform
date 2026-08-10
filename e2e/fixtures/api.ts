@@ -80,6 +80,21 @@ export interface CommentSummary {
   readonly editedAt: string | null;
 }
 
+/** A collection as `CollectionResponseDto` returns it (W7b). Owner-scoped; private by default. */
+export interface CollectionSummary {
+  readonly id: string;
+  readonly title: string;
+  readonly slug: string;
+  readonly isDefault: boolean;
+  readonly piecesCount: number;
+}
+
+/** `ClapResponseDto` — this viewer's running count and the piece total. */
+export interface ClapSummary {
+  readonly viewerClaps: number;
+  readonly totalClaps: number;
+}
+
 export class ApiHelper {
   private adminTokenCache: string | null = null;
   private writerTokenCache: string | null = null;
@@ -827,6 +842,141 @@ export class ApiHelper {
     });
     await this.data(patched);
     return this.publishPiece(draft.id);
+  }
+
+  /**
+   * Publish a piece as an arbitrary user (`POST /pieces/:id/publish` as the bearer of `token`).
+   *
+   * Needed because reporting is the one flow that CANNOT use the shared writer's own content:
+   * `POST /reports` refuses a self-report with `422 REPORT_SELF`, so a reportable piece has to
+   * belong to somebody else.
+   */
+  async publishPieceAs(token: string, id: string): Promise<PieceSummary> {
+    const res = await this.request.post(this.url(`/pieces/${id}/publish`), {
+      headers: { Authorization: `Bearer ${token}` },
+      data: {},
+    });
+    return this.data<PieceSummary>(res);
+  }
+
+  /** Arrange a published piece owned by someone OTHER than the seeded writer, in one call. */
+  async createPublishedPieceAs(token: string, input: { title: string }): Promise<PieceSummary> {
+    const draft = await this.createPieceAs(token, input);
+    const patched = await this.request.patch(this.url(`/pieces/${draft.id}`), {
+      headers: { Authorization: `Bearer ${token}` },
+      data: { genreSlug: 'short-story' },
+    });
+    await this.data(patched);
+    return this.publishPieceAs(token, draft.id);
+  }
+
+  /**
+   * Write a response to a piece as an arbitrary user, published — so the response has an author who
+   * is not the viewer, which reporting requires.
+   */
+  async createPublishedResponseAs(
+    token: string,
+    pieceId: string,
+    title: string,
+  ): Promise<PieceSummary> {
+    const res = await this.request.post(this.url(`/pieces/${pieceId}/responses`), {
+      headers: { Authorization: `Bearer ${token}` },
+      data: { title, languageCode: 'en' },
+    });
+    const draft = await this.data<PieceSummary>(res);
+    const patched = await this.request.patch(this.url(`/pieces/${draft.id}`), {
+      headers: { Authorization: `Bearer ${token}` },
+      data: {
+        genreSlug: 'short-story',
+        content: this.tiptapDoc(`${title} — a response seeded by the E2E suite.`),
+      },
+    });
+    await this.data(patched);
+    return this.publishPieceAs(token, draft.id);
+  }
+
+  // ── Collections · claps · reports (W7b, docs/45 §4.4) ────────────────────────────────────
+
+  /**
+   * Create a collection as the seeded writer (`POST /collections`).
+   *
+   * Every collections route carries a class-level `@Permissions(collection.manage)` and is scoped to
+   * the caller, so there is no public read to arrange against — a collection only exists for the
+   * account that made it.
+   */
+  async createCollection(input: {
+    title: string;
+    description?: string;
+  }): Promise<CollectionSummary> {
+    const res = await this.request.post(this.url('/collections'), {
+      headers: await this.writerHeaders(),
+      data: input,
+    });
+    return this.data<CollectionSummary>(res);
+  }
+
+  /** The seeded writer's collections (`GET /collections`) — for asserting a save landed. */
+  async myCollections(): Promise<CollectionSummary[]> {
+    const res = await this.request.get(this.url('/collections'), {
+      headers: await this.writerHeaders(),
+    });
+    return this.data<CollectionSummary[]>(res);
+  }
+
+  /** Save a piece into a collection (`POST /collections/:id/pieces`). */
+  async addPieceToCollection(collectionId: string, pieceId: string): Promise<void> {
+    const res = await this.request.post(this.url(`/collections/${collectionId}/pieces`), {
+      headers: await this.writerHeaders(),
+      data: { pieceId },
+    });
+    await this.data(res);
+  }
+
+  /** A collection's pieces (`GET /collections/:id/pieces`) — the server-side assert for a save. */
+  async collectionPieces(collectionId: string): Promise<Array<{ pieceId: string; title: string }>> {
+    const res = await this.request.get(this.url(`/collections/${collectionId}/pieces`), {
+      headers: await this.writerHeaders(),
+    });
+    return this.data<Array<{ pieceId: string; title: string }>>(res);
+  }
+
+  /** Delete a collection (`DELETE /collections/:id`) — teardown, and never touches the pieces. */
+  async deleteCollection(collectionId: string): Promise<void> {
+    const res = await this.request.delete(this.url(`/collections/${collectionId}`), {
+      headers: await this.writerHeaders(),
+    });
+    expect(res.ok(), `delete collection ${collectionId} → ${res.status()}`).toBeTruthy();
+  }
+
+  /**
+   * Add claps as the seeded writer (`POST /pieces/:id/claps`), returning the authoritative
+   * `{ viewerClaps, totalClaps }`.
+   *
+   * The `count` is the whole reason a client can batch a burst into one request, so arranging
+   * through it is arranging through the shape the UI actually sends. Used to pre-spend the cap for
+   * the "hammering a maxed-out button does nothing" assertion.
+   */
+  async clapPiece(pieceId: string, count: number): Promise<ClapSummary> {
+    const res = await this.request.post(this.url(`/pieces/${pieceId}/claps`), {
+      headers: await this.writerHeaders(),
+      data: { count },
+    });
+    return this.data<ClapSummary>(res);
+  }
+
+  /** This viewer's clap + engagement state (`GET /pieces/:id/engagement`) — public, optional auth. */
+  async pieceEngagement(
+    pieceId: string,
+    token?: string,
+  ): Promise<{
+    stats: { claps: number; likes: number };
+    viewer: { clapCount: number };
+  }> {
+    const res = await this.request.get(this.url(`/pieces/${pieceId}/engagement`), {
+      headers:
+        token === undefined ? await this.writerHeaders() : { Authorization: `Bearer ${token}` },
+    });
+    return this.data(res);
   }
 
   /** Read admin audit-log entries (admin+). Assert an admin action was recorded. */

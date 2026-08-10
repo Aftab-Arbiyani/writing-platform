@@ -1,8 +1,9 @@
-import { PERMISSIONS } from '@qalam/shared';
+import { PERMISSIONS, ReportEntityType } from '@qalam/shared';
 import { QButton, QCard, QErrorState, QSkeleton, useToast } from '@qalam/ui';
 import type { ReactElement } from 'react';
 import { Link, useNavigate } from 'react-router';
 
+import { ReportAction } from '@/components/report-action';
 import { useInfiniteScroll } from '@/hooks/use-infinite-scroll';
 import { usePermission } from '@/hooks/use-permission';
 import { usePieceResponses, useWriteResponse } from '@/hooks/use-piece-responses';
@@ -175,6 +176,16 @@ function ResponseRow({ response }: { response: PieceResponse }): ReactElement {
           {' · '}
           <time dateTime={response.respondedAt}>{formatRelativeTime(response.respondedAt)}</time>
         </p>
+        {/* A response is a piece, but it is reported as a RESPONSE: `ReportEntityType` distinguishes
+            the two, and a moderator triaging "reported response" is looking at a reply to something,
+            not a standalone submission. */}
+        <div>
+          <ReportAction
+            entityType={ReportEntityType.Response}
+            entityId={response.pieceId}
+            subject={`“${response.title}”`}
+          />
+        </div>
       </div>
     </QCard>
   );

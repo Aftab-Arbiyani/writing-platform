@@ -203,6 +203,7 @@ export function PiecePage(): ReactElement {
       <Column maxWidth={maxWidth} className="mt-12">
         <ReaderActionBar
           pieceId={piece.id}
+          pieceTitle={piece.title}
           engagement={engagement.data}
           isLoading={engagement.isLoading}
           shareUrl={canonicalUrl}

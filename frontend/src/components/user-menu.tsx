@@ -1,7 +1,15 @@
 import { QAvatar } from '@qalam/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { Dropdown, type MenuProps } from 'antd';
-import { BarChart3, FileText, LogOut, Settings, UserPlus, UserRound } from 'lucide-react';
+import {
+  BarChart3,
+  BookMarked,
+  FileText,
+  LogOut,
+  Settings,
+  UserPlus,
+  UserRound,
+} from 'lucide-react';
 import type { ReactElement } from 'react';
 import { useNavigate } from 'react-router';
 
@@ -65,6 +73,15 @@ export function UserMenu(): ReactElement {
       icon: <BarChart3 size={16} strokeWidth={1.5} />,
       label: 'Your stats',
       onClick: () => void navigate(ROUTES.stats),
+    },
+    // W7b. The menu is web's home for account-scoped surfaces — the same place drafts, stats and
+    // follow requests already live. Mobile reaches its collections from the my-profile screen
+    // instead; recorded as an accepted arrangement difference (docs/48 §4.1).
+    {
+      key: 'collections',
+      icon: <BookMarked size={16} strokeWidth={1.5} />,
+      label: 'Your collections',
+      onClick: () => void navigate(ROUTES.collections),
     },
     {
       key: 'requests',

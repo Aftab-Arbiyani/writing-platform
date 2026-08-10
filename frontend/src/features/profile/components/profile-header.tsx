@@ -1,9 +1,11 @@
+import { ReportEntityType } from '@qalam/shared';
 import { QAvatar, QButton } from '@qalam/ui';
 import { FileText, MapPin, Pencil } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { Link } from 'react-router';
 
 import { FollowButton } from '@/components/follow-button';
+import { ReportAction } from '@/components/report-action';
 import { mediaUrl } from '@/lib/media';
 import { ROUTES } from '@/lib/routes';
 import type { ProfileResponse } from '@/types/profile';
@@ -76,7 +78,18 @@ export function ProfileHeader({
                 </Link>
               </>
             ) : (
-              <FollowButton profile={profile} />
+              <>
+                <FollowButton profile={profile} />
+                {/* Reporting a PERSON, the fourth `ReportEntityType`. Keyed by the profile's user
+                    **id** — `CreateReportDto.entityId` is a uuid, and the handle in the URL is not
+                    one. Self never sees it: you cannot report yourself. */}
+                <ReportAction
+                  entityType={ReportEntityType.User}
+                  entityId={profile.id}
+                  subject={`@${profile.username}`}
+                  label="Report"
+                />
+              </>
             )}
           </div>
         </div>
