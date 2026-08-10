@@ -1,6 +1,13 @@
 # 48 — Platform Parity Register (web ↔ mobile)
 
-**Status:** 🔒 Binding · **Owner:** every client epic · **Last swept:** 2026-08-08 (after **B5** — the per-account
+**Status:** 🔒 Binding · **Owner:** every client epic · **Last swept:** 2026-08-08 (after **B3** — profile lookup
+by **id**, the enabler three consecutive epics deferred, and the first row where **mobile** was the platform
+missing the client half rather than web. `GET /users/by-id/:id` is the same view as the username route under a
+different key, both delegating to one `buildPublicView` so the visibility rules cannot drift. Its sweep is
+**§6.7**, and it found **four call sites the row's own list did not name** — a presence bar that announced the **full raw
+uuid** to a screen reader, and a publication history that parsed an `actorName` the wire has never sent
+and so named nobody at all. It also names the one genuinely bad lookup cost:
+`me/blocks` is unpaginated, so its identity cost is the block count, unbounded. Previously swept after **B5** — the per-account
 "turn AI off" switch, the odd one out of the four subscriber features: a USER PREFERENCE rather than a
 `PlanLimits` key, and so the only one of them needing a schema change. One guard, in the AF1 orchestrator
 ahead of the AF5 meter, so an opted-out user's refusal meters nothing. Its sweep is **§6.6**, and it found
@@ -2606,12 +2613,12 @@ only one of the four whose enforcement point is the AI orchestrator rather than 
    server**, so a writer who turned AI off would have kept live affordances into surfaces the server had
    already begun refusing:
 
-   | id       | platform | surface                        | what it was gated on                                            |
-   | -------- | -------- | ------------------------------ | --------------------------------------------------------------- |
-   | **B5-1** | mobile   | AI Discovery hub               | the COMPILE-TIME `AppConfig.enableAi` alone — never asked the server |
-   | **B5-2** | mobile   | AI Search screen               | **nothing** — it had no runtime gate at all                      |
+   | id       | platform | surface                                   | what it was gated on                                                                  |
+   | -------- | -------- | ----------------------------------------- | ------------------------------------------------------------------------------------- |
+   | **B5-1** | mobile   | AI Discovery hub                          | the COMPILE-TIME `AppConfig.enableAi` alone — never asked the server                  |
+   | **B5-2** | mobile   | AI Search screen                          | **nothing** — it had no runtime gate at all                                           |
    | **B5-3** | mobile   | Story Explorer (screen + editor overflow) | `enableAi && isRemote`; the route carries no feature flag, so nothing read the server |
-   | **B5-4** | web      | the editor's AI drawer button  | the presence of the panel SLOT — opening a drawer of four notices |
+   | **B5-4** | web      | the editor's AI drawer button             | the presence of the panel SLOT — opening a drawer of four notices                     |
 
    All four are the same class as **R-1 / M5-1 / W5-3 / W8-1**: code that looked wired and was not. They
    were found by opening each entry point, not by reading the gate, which is what §4.10 asked for — and
@@ -2647,3 +2654,50 @@ only one of the four whose enforcement point is the AI orchestrator rather than 
      defect (the on-device choices are deliberate), but it means the preference bag is **not** synced
      cross-device on mobile the way it is on web. Worth knowing before someone assumes `GET /settings` is
      fully consumed there.
+
+### 6.7 B3's sweep (2026-08-08)
+
+1. **Only what the row named?** Yes — the by-id lookup and its adoption on both clients. Two things
+   the row did not spell out but could not be delivered without: `shortActorId` moved to mobile's
+   `shared/util/` (it lived in a collaboration _entity_ file, which the profile-side widget must not
+   import), and web's resolution moved out of `collaborator-identity.tsx` into
+   `hooks/use-collaborator-identity.ts` so the presence bar could share it without importing a
+   component. No DTO was widened — the alternative fix the row explicitly did not choose.
+
+2. **Does the other platform have every part I built?** Now, yes — and this row is the first where
+   **mobile was the platform missing the part**. Web had `CollaboratorIdentity` (a workaround that
+   upgraded to a real name only when a username happened to be in context); mobile had nothing and
+   printed the id at every site. Comparing surface by surface found **four call sites the row's list
+   did not name**: the collaborators member row, its remove/change-role snackbars, the presence bar,
+   and publication history. Two were worse than a short id. `PresenceEntry.label` is
+   `displayName ?? userId` and `PresenceDto` carries no `displayName`, so a screen reader announced
+   the **full raw uuid**. And `PublicationEvent` parsed an **`actorName` the wire has never sent**
+   (`PublicationEventDto` carries `actorId` only), so every history row rendered **no actor at all** —
+   the C-4 / C-5 / M-1 defect class again, found only because a per-surface comparison was run against
+   web, where `publication-history.tsx` already resolved `actorId`. All ten sites now route through
+   one provider, and the phantom field is gone.
+
+3. **Does the other platform need a follow-up?** No new client asymmetry. Two unowned findings below.
+
+4. **§2 re-swept** for the collaboration/identity area. No row moves: B3 adds the same capability to
+   both platforms at once, so it creates no asymmetry — it closes one that three consecutive epics had
+   carried in their "improvements not done" lists.
+
+5. **Nothing left unrecorded.** No new defect. Three things this row surfaced but is not fixing:
+
+   - **`me/blocks` is unpaginated** (`TrustRepository.listBlocks` has no limit), and it is the one
+     identity surface whose rows are arbitrary distinct users rather than a story's roster. So its
+     lookup cost is the block count, unbounded — 200 blocks, 200 lookups on one screen. Pre-existing
+     and not made worse in kind by B3, but B3 is what makes it visible. Deserves its own row, together
+     with the batch lookup (`GET /users/by-ids`) the constraint on B3 correctly refused to build
+     inside it. Measured numbers and the bounded cases are in
+     [45 §4.13](./45_WebClientRoadmap.md#413-b3--profile-lookup-by-id-detail-done-2026-08-08).
+   - **A private account's teaser still carries `penName`**, so a stranger resolving a collaborator's
+     id learns their display name. That is the _existing_ username-route rule applied unchanged — B3
+     deliberately did not touch visibility — but it is now reachable from an id, which is a wider
+     surface than before. Not a leak (the same fact was always one `GET /users/:username` away), and
+     recorded so it is a decision rather than an accident.
+   - **The visual baselines needed a determinism fix before they could be minted.** Resolved names
+     replaced fixed-length ids in five baselines; four show the seeded `e2e_writer`, but the blocked
+     list showed throwaway users whose pen name defaults to a per-run variable-LENGTH username. Mask
+     hides pixels, not boxes. Pinned via `api.setPenName`; the 20 baselines still need a CI mint.

@@ -38,11 +38,9 @@ const ROLE_OPTIONS = ASSIGNABLE_STORY_ROLES.map((role) => ({
 export interface MemberListProps {
   storyId: string;
   members: StoryMember[];
-  /** The story author's username, when known — lets the owner row show a real name. */
-  ownerUsername?: string;
 }
 
-export function MemberList({ storyId, members, ownerUsername }: MemberListProps): ReactElement {
+export function MemberList({ storyId, members }: MemberListProps): ReactElement {
   const { data: me } = useMe();
   const { changeRole, removeMember, leave } = useMemberActions(storyId);
 
@@ -56,11 +54,7 @@ export function MemberList({ storyId, members, ownerUsername }: MemberListProps)
           <li key={member.userId}>
             <QCard>
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <CollaboratorIdentity
-                  userId={member.userId}
-                  username={isOwner ? ownerUsername : undefined}
-                  isSelf={isSelf}
-                />
+                <CollaboratorIdentity userId={member.userId} isSelf={isSelf} />
 
                 <div className="flex flex-wrap items-center gap-2">
                   <RoleBadge role={member.role} />

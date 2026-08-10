@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { get } from '@/lib/api-client';
 import { qk } from '@/lib/query-keys';
@@ -22,5 +22,43 @@ export function useProfile(username: string | null) {
       get<ProfileResponse>(`/users/${encodeURIComponent(username ?? '')}`, { signal }),
     enabled: Boolean(username),
     staleTime: 60_000,
+  });
+}
+
+/**
+ * The same public profile by user **id** (`GET /users/by-id/:id`, optional-auth — B3, docs/45 §4).
+ *
+ * Why it exists: collaboration, retrieval and publishing DTOs carry ids only, so every surface that
+ * names a person from one of them (comment author, reviewer, snapshot author, history actor, blocked
+ * person, presence entry) had nothing to resolve *from* and showed a truncated UUID.
+ *
+ * Cost: TanStack dedups by query key, so a view costs one request per DISTINCT user, not per row —
+ * a 20-comment thread between 3 people is 3 requests, not 20. Identity tier staleTime (1 min) as
+ * the username hook, so re-renders and sibling surfaces reuse the same entry.
+ *
+ * On success it seeds `qk.profiles.detail(username)`, so a profile page or author card opened
+ * afterwards is a cache hit — the two lookup keys share one cached profile rather than racing.
+ */
+export function useProfileById(userId: string | null) {
+  const queryClient = useQueryClient();
+
+  return useQuery({
+    queryKey: qk.profiles.byId(userId ?? ''),
+    queryFn: async ({ signal }) => {
+      const profile = await get<ProfileResponse>(
+        `/users/by-id/${encodeURIComponent(userId ?? '')}`,
+        { signal },
+      );
+      // A restricted (teaser) response is still a real profile — seeding it is correct; the
+      // username route would have returned exactly the same body for the same viewer.
+      if (profile.username) {
+        queryClient.setQueryData(qk.profiles.detail(profile.username), profile);
+      }
+      return profile;
+    },
+    enabled: Boolean(userId),
+    staleTime: 60_000,
+    // A deleted account 404s. Retrying cannot change that, and the caller has an honest fallback.
+    retry: false,
   });
 }

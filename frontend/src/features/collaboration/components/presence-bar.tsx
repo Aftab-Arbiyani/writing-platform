@@ -2,6 +2,9 @@ import { PresenceState } from '@qalam/shared';
 import { QAvatar } from '@qalam/ui';
 import type { ReactElement } from 'react';
 
+import { mediaUrl } from '@/lib/media';
+
+import { useCollaboratorIdentity } from '../hooks/use-collaborator-identity';
 import type { StoryPresence } from '../types/collaboration.types';
 
 /**
@@ -26,12 +29,32 @@ const STATE_DOT: Record<PresenceState, string> = {
   [PresenceState.Typing]: 'bg-accent',
 };
 
-function shortId(userId: string): string {
-  return userId.length > 12 ? `${userId.slice(0, 4)}…${userId.slice(-4)}` : userId;
-}
-
 export interface PresenceBarProps {
   presence: StoryPresence[];
+}
+
+/**
+ * One roster entry. A component rather than an inline branch because the identity resolution is a
+ * hook (B3, `useCollaboratorIdentity`) and the roster is a list — one hook call per entry, sharing
+ * the same cache as every other surface that names this person.
+ */
+function PresenceEntry({ entry }: { entry: StoryPresence }): ReactElement {
+  const { label: name, profile } = useCollaboratorIdentity(entry.userId);
+  const state = STATE_LABEL[entry.state] ?? entry.state;
+  const label = `${name} — ${state}`;
+
+  return (
+    <li className="relative" title={label}>
+      <QAvatar size={32} name={name} src={mediaUrl(profile?.avatarKey)} />
+      <span
+        aria-hidden
+        className={`border-canvas absolute -end-0.5 -bottom-0.5 size-2.5 rounded-full border ${
+          STATE_DOT[entry.state] ?? 'bg-ink-muted'
+        }`}
+      />
+      <span className="sr-only">{label}</span>
+    </li>
+  );
 }
 
 export function PresenceBar({ presence }: PresenceBarProps): ReactElement | null {
@@ -43,22 +66,9 @@ export function PresenceBar({ presence }: PresenceBarProps): ReactElement | null
         In this story
       </h2>
       <ul className="flex items-center gap-2">
-        {presence.map((entry) => {
-          const state = STATE_LABEL[entry.state] ?? entry.state;
-          const label = `${shortId(entry.userId)} — ${state}`;
-          return (
-            <li key={entry.userId} className="relative" title={label}>
-              <QAvatar size={32} name={shortId(entry.userId)} />
-              <span
-                aria-hidden
-                className={`border-canvas absolute -end-0.5 -bottom-0.5 size-2.5 rounded-full border ${
-                  STATE_DOT[entry.state] ?? 'bg-ink-muted'
-                }`}
-              />
-              <span className="sr-only">{label}</span>
-            </li>
-          );
-        })}
+        {presence.map((entry) => (
+          <PresenceEntry key={entry.userId} entry={entry} />
+        ))}
       </ul>
     </section>
   );

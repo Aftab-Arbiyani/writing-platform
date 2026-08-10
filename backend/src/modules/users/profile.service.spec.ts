@@ -90,3 +90,35 @@ describe('ProfileService.getPublicProfile (visibility, docs 13 §4.2)', () => {
     expect(dto.viewerRelation.isSelf).toBe(true);
   });
 });
+
+/**
+ * B3 — the by-id lookup is the same view under a different key. These assert the two paths cannot
+ * drift: every visibility case above must produce an identical DTO through `getPublicProfileById`.
+ */
+describe('ProfileService.getPublicProfileById (B3, docs 45 §4)', () => {
+  const CASES: Array<[string, boolean, { status: FollowStatus } | null, string]> = [
+    ['public profile / stranger', false, null, 'stranger'],
+    ['private profile / stranger (teaser)', true, null, 'stranger'],
+    ['private profile / accepted follower', true, { status: FollowStatus.Accepted }, 'follower'],
+    ['private profile / pending requester', true, { status: FollowStatus.Pending }, 'requester'],
+    ['private profile / owner', true, null, OWNER],
+    ['public profile / signed-out viewer', false, null, ''],
+  ];
+
+  it.each(CASES)('matches the username route: %s', async (_name, isPrivate, edge, viewer) => {
+    const viewerId = viewer === '' ? null : viewer;
+    const byUsername = await build(isPrivate, edge).getPublicProfile('owner', viewerId);
+    const byId = await build(isPrivate, edge).getPublicProfileById(OWNER, viewerId);
+    expect(byId).toEqual(byUsername);
+  });
+
+  it('throws USER_NOT_FOUND for an unknown id, as the username route does', async () => {
+    const service = build(false, null);
+    (service as unknown as { users: { findById: jest.Mock } }).users.findById = jest
+      .fn()
+      .mockResolvedValue(null);
+    await expect(service.getPublicProfileById(OWNER, null)).rejects.toMatchObject({
+      code: 'USER_NOT_FOUND',
+    });
+  });
+});

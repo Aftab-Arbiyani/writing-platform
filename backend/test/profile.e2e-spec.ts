@@ -208,4 +208,75 @@ describe('Profile & Follow (e2e)', () => {
       .attach('file', Buffer.from('not an image'), { filename: 'x.png', contentType: 'image/png' })
       .expect(415);
   });
+
+  /**
+   * B3 — `GET /users/by-id/:id`. Reachability, not just shape: every case hits the real route
+   * through the real guard stack. State at this point: A is PRIVATE with B and C as accepted
+   * followers; B is public.
+   */
+  describe('GET /users/by-id/:id (B3)', () => {
+    it('returns the same profile as the username route for the same user', async () => {
+      const byId = await request(app.getHttpServer())
+        .get(`/api/v1/users/by-id/${A.id}`)
+        .set(...bearer(C.token))
+        .expect(200);
+      const byUsername = await request(app.getHttpServer())
+        .get(`/api/v1/users/${A.username}`)
+        .set(...bearer(C.token))
+        .expect(200);
+      expect(byId.body.data).toEqual(byUsername.body.data);
+      expect(byId.body.data.restricted).toBe(false);
+      expect(byId.body.data.penName).toBeTruthy();
+    });
+
+    it('shows a stranger the SAME private teaser through both routes', async () => {
+      const byId = await request(app.getHttpServer())
+        .get(`/api/v1/users/by-id/${A.id}`)
+        .set(...bearer(B.token))
+        .expect(200);
+      // B unfollows first so it is a stranger to the now-private A.
+      await request(app.getHttpServer())
+        .delete(`/api/v1/users/${A.id}/follow`)
+        .set(...bearer(B.token))
+        .expect(204);
+      const teaserById = await request(app.getHttpServer())
+        .get(`/api/v1/users/by-id/${A.id}`)
+        .set(...bearer(B.token))
+        .expect(200);
+      const teaserByUsername = await request(app.getHttpServer())
+        .get(`/api/v1/users/${A.username}`)
+        .set(...bearer(B.token))
+        .expect(200);
+      expect(byId.body.data.restricted).toBe(false); // was a follower a moment ago
+      expect(teaserById.body.data.restricted).toBe(true);
+      expect(teaserById.body.data.bio).toBeUndefined();
+      expect(teaserById.body.data).toEqual(teaserByUsername.body.data);
+    });
+
+    it('serves a signed-out viewer the public view (OptionalAuthGuard path)', async () => {
+      const res = await request(app.getHttpServer()).get(`/api/v1/users/by-id/${B.id}`).expect(200);
+      expect(res.body.data.restricted).toBe(false);
+      expect(res.body.data.username).toBe(B.username);
+      expect(res.body.data.viewerRelation.isSelf).toBe(false);
+    });
+
+    it('404s an unknown id with the same error code as the username route', async () => {
+      const unknownId = '00000000-0000-4000-8000-000000000000';
+      const byId = await request(app.getHttpServer())
+        .get(`/api/v1/users/by-id/${unknownId}`)
+        .expect(404);
+      const byUsername = await request(app.getHttpServer())
+        .get('/api/v1/users/definitely-no-such-user')
+        .expect(404);
+      expect(byId.body.error.code).toBe('USER_NOT_FOUND');
+      expect(byId.body.error.code).toBe(byUsername.body.error.code);
+    });
+
+    it('rejects a non-UUID id with 400 (ParseUUIDPipe), not a 500', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/api/v1/users/by-id/not-a-uuid')
+        .expect(400);
+      expect(res.body.success).toBe(false);
+    });
+  });
 });

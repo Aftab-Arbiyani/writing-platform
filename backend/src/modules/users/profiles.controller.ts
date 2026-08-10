@@ -5,6 +5,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   Req,
@@ -41,6 +42,7 @@ const UPLOAD_MAX_BYTES = 15 * 1024 * 1024;
  * authenticated (global JwtAuthGuard); `/users/:username` is `@Public()` with
  * `OptionalAuthGuard` so anonymous viewers see public profiles and the service
  * receives the viewer (or null) to apply the private-account teaser rule.
+ * `/users/by-id/:id` (B3) is the same view under a different lookup key.
  */
 @ApiTags('profiles')
 @Controller()
@@ -106,6 +108,31 @@ export class ProfilesController {
     @UploadedFile() file: Express.Multer.File,
   ): Promise<MediaKeyResponseDto> {
     return this.profileService.updateCover(user.id, toUploaded(file));
+  }
+
+  /*
+   * Declared BEFORE `users/:username` for readability only — the two cannot collide, since this
+   * route has three path segments and that one has two.
+   *
+   * Additive to the frozen v1 contract (docs 25 §Amendments, docs 45 §3): retrieval, collaboration
+   * and publishing DTOs carry user **ids** (reviewer, snapshot author, history actor, blocked
+   * person, commenter, presence entry), but `users/:username` is username-only — so those surfaces
+   * had no way to turn an id into a profile and showed a truncated UUID. Same guards, same
+   * visibility rules, same DTO, same 404 — only the lookup key differs.
+   */
+  @Get('users/by-id/:id')
+  @Public()
+  @UseGuards(OptionalAuthGuard)
+  @ApiOperation({
+    summary: 'View a public profile by user id (private accounts show a teaser to strangers).',
+  })
+  @ApiOkResponse({ type: ProfileResponseDto })
+  getById(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Req() req: Request,
+  ): Promise<ProfileResponseDto> {
+    const viewer = (req as Request & { user?: AuthenticatedUser }).user;
+    return this.profileService.getPublicProfileById(id, viewer?.id ?? null);
   }
 
   @Get('users/:username')

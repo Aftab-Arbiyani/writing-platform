@@ -229,6 +229,23 @@ export class ApiHelper {
     return (await this.login(email, password)).accessToken;
   }
 
+  /**
+   * Set a user's display name as themselves (`PATCH /me`).
+   *
+   * Exists for the visual baselines (B3, docs/45 §4). Since every id-bearing surface resolves a
+   * real profile, the rendered label is now the PEN NAME — and a throwaway user's pen name defaults
+   * to `data.username()`, whose LENGTH varies per run (`e2e_<seed>-<worker>-<n>`). Masking hides a
+   * row's pixels but not its box, so a variable-length name is a variable-width baseline. Pinning
+   * the name is what keeps a re-mint reproducible.
+   */
+  async setPenName(token: string, penName: string): Promise<void> {
+    const res = await this.request.patch(this.url('/me'), {
+      headers: { Authorization: `Bearer ${token}` },
+      data: { penName },
+    });
+    await this.data(res);
+  }
+
   /** The seeded writer's user id (e.g. the followee target for a notification arrange). */
   async writerId(): Promise<string> {
     return (await this.login(WRITER_EMAIL, WRITER_PASSWORD)).user.id;

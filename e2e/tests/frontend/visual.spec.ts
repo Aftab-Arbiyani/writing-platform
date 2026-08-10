@@ -171,8 +171,8 @@ test.describe('@phase5 @visual frontend (authenticated)', () => {
     await collaborators.expectResolved();
     await expect(page).toHaveScreenshot('frontend-collaborators.png', {
       fullPage: true,
-      // The owner row renders a truncated user id (no by-id profile lookup exists — docs/49 §5),
-      // and that id differs per environment.
+      // Rows carry identity resolved by id (B3): the seeded writer's pen name is stable, but the
+      // avatar and the presence dot are not, so the rows stay masked.
       mask: [page.getByRole('listitem')],
     });
   });
@@ -219,6 +219,17 @@ test.describe('@phase5 @visual frontend (authenticated)', () => {
       username: data.username(),
       password: 'ChangeMe!VisualMuted1',
     });
+    // FIXED pen names. Since B3 these rows resolve a real profile, so the label is the pen name —
+    // which defaults to `data.username()`, a per-run variable-LENGTH string. Masking hides the
+    // pixels, not the box, so an unpinned name is an unpinned baseline width.
+    await api.setPenName(
+      await api.loginToken(blocked.email, 'ChangeMe!VisualBlocked1'),
+      'Visual Blocked',
+    );
+    await api.setPenName(
+      await api.loginToken(muted.email, 'ChangeMe!VisualMuted1'),
+      'Visual Muted',
+    );
     await api.blockUser(blocked.id, blockerToken);
     await api.muteUser(muted.id, blockerToken);
 
@@ -254,8 +265,8 @@ test.describe('@phase5 @visual frontend (authenticated)', () => {
       // the sticky element at a different offset per run. The reader baseline drifted the same way
       // (11px). Viewport captures one paint with no stitching, so the offset cannot vary.
       //
-      // The card carries a relative timestamp and a truncated author id (`CommentDto` sends no
-      // display name — docs/48 §3.2 M-3), both environment-dependent.
+      // The card carries a relative timestamp, and an author resolved by id (B3) whose avatar is
+      // environment-dependent — `CommentDto` still sends no display name, it is looked up now.
       mask: [page.getByRole('listitem')],
     });
   });

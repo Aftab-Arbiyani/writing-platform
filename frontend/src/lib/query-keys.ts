@@ -57,6 +57,10 @@ export const qk = {
   profiles: {
     all: ['profiles'] as const,
     detail: (username: string) => ['profiles', username] as const, // GET /users/:username
+    // B3 — the same profile under its OTHER lookup key. A distinct key is unavoidable: the id is
+    // all a collaboration/retrieval DTO carries, so the username is not known until the response
+    // arrives. `useProfileById` seeds `detail(username)` from the result, so the two converge.
+    byId: (userId: string) => ['profiles', 'by-id', userId] as const, // GET /users/by-id/:id
     followers: (username: string) => ['profiles', username, 'followers'] as const, // GET …/followers
     following: (username: string) => ['profiles', username, 'following'] as const, // GET …/following
   },

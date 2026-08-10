@@ -17,6 +17,7 @@ import {
   ViewerRelationDto,
 } from './dto/profile-response.dto';
 import type { Profile } from './entities/profile.entity';
+import type { User } from './entities/user.entity';
 import { UserNotFoundException } from './exceptions/users.exceptions';
 import { FollowRepository } from './follow.repository';
 import { ProfileRepository } from './profile.repository';
@@ -70,12 +71,34 @@ export class ProfileService {
     });
   }
 
-  /** Public profile view; applies the private-account teaser rule for strangers. */
+  /** Public profile view by username; applies the private-account teaser rule for strangers. */
   async getPublicProfile(
     username: string,
     viewerUserId: string | null,
   ): Promise<ProfileResponseDto> {
-    const user = await this.users.findByUsername(username);
+    return this.buildPublicView(await this.users.findByUsername(username), viewerUserId);
+  }
+
+  /**
+   * The same public profile view, keyed by user id (B3, docs 45 §4).
+   *
+   * Retrieval, collaboration and publishing DTOs carry user **ids**; only this lookup turns one
+   * into a profile. Deliberately a sibling of {@link getPublicProfile} that differs *only* in the
+   * lookup key — both delegate to {@link buildPublicView}, so the docs 13 §4.2 visibility rules
+   * cannot drift between the two routes.
+   */
+  async getPublicProfileById(
+    userId: string,
+    viewerUserId: string | null,
+  ): Promise<ProfileResponseDto> {
+    return this.buildPublicView(await this.users.findById(userId), viewerUserId);
+  }
+
+  /** The one implementation of the public-profile view, shared by both lookup keys. */
+  private async buildPublicView(
+    user: User | null,
+    viewerUserId: string | null,
+  ): Promise<ProfileResponseDto> {
     if (user === null) {
       throw new UserNotFoundException();
     }
