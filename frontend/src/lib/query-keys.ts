@@ -100,6 +100,8 @@ export const qk = {
     growth: (period: AnalyticsPeriod, points: number) =>
       ['analytics', 'growth', period, points] as const, // GET /analytics/me/growth
     readers: () => ['analytics', 'readers'] as const, // GET /analytics/readers/me
+    /** The viewer's BOUNDED bookmarks count (one page of GET /me/bookmarks) — W7c. */
+    bookmarksCount: () => ['analytics', 'bookmarks-count'] as const,
     piece: (id: string) => ['analytics', 'piece', id] as const, // GET /analytics/pieces/:id
     pieceMeta: (id: string) => ['analytics', 'piece-meta', id] as const, // GET /pieces/:id (title/dates)
     myPieces: (status?: PieceStatus) => ['analytics', 'my-pieces', status ?? 'all'] as const, // GET /me/pieces

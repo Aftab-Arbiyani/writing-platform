@@ -81,14 +81,31 @@ describe('AnalyticsDashboardPage', () => {
     seed();
   });
 
-  it('renders the overview, reader insights, and top performer', async () => {
+  it('renders the writer overview and top performer', async () => {
     renderWithProviders(<AnalyticsDashboardPage />, { route: '/me/stats' });
     expect(await screen.findByRole('heading', { name: 'Your stats' })).toBeInTheDocument();
     expect(await screen.findByText('12K')).toBeInTheDocument();
     expect(screen.getByText('Total views')).toBeInTheDocument();
-    expect(screen.getByText('Your reading')).toBeInTheDocument();
     expect(screen.getByText('Top performer')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Export' })).toBeInTheDocument();
+  });
+
+  /**
+   * W7c moved the reader aggregate to `/me/reading`. These assert the MOVE, not just the new page:
+   * a reader surface that still renders here would leave the audience confusion in place.
+   */
+  it('no longer renders the reader aggregate, and links to where it went', async () => {
+    renderWithProviders(<AnalyticsDashboardPage />, { route: '/me/stats' });
+    await screen.findByText('12K');
+
+    // The ReaderInsights cards are gone from this page.
+    expect(screen.queryByText('Reading habits')).not.toBeInTheDocument();
+    expect(screen.queryByText('What you read most')).not.toBeInTheDocument();
+    expect(screen.queryByText('Pieces read')).not.toBeInTheDocument();
+    expect(screen.queryByText('Longest streak')).not.toBeInTheDocument();
+
+    // And the reader surface is reachable from here.
+    expect(screen.getByRole('button', { name: /Your reading/ })).toBeInTheDocument();
   });
 
   it('shows the "no published pieces" empty state', async () => {

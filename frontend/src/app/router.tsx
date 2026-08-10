@@ -75,6 +75,10 @@ const router = createBrowserRouter([
           },
           { path: 'me/stats', lazy: () => import('@/app/routes/stats') },
           { path: 'me/stats/pieces/:id', lazy: () => import('@/app/routes/piece-stats') },
+          // Reader analytics (W7c, docs/45 §4.4). Inside RequireAuth: `/analytics/readers/me`
+          // identifies the reader from the JWT, so there is nothing here for a visitor to see.
+          // A sibling of `me/stats`, not a child — different audience, different surface.
+          { path: 'me/reading', lazy: () => import('@/app/routes/reading') },
           { path: 'notifications', lazy: () => import('@/app/routes/notifications') },
           // Settings is a nested layout surface (docs/11 §1); index → /settings/profile.
           {

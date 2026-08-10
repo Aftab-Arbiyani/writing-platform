@@ -21,6 +21,12 @@ export const ROUTES = {
   collections: '/me/collections',
   // Writer analytics (docs/06 §3.10) — the dashboard + per-piece detail.
   stats: '/me/stats',
+  // Reader analytics (W7c, docs/45 §4.4). A SEPARATE top-level path from `stats`, not a child of
+  // it: the two measure different things for different audiences (what you read vs. what your
+  // writing reached), and nesting the reader surface under a writer path is the confusion the row
+  // exists to fix. Sits beside `collections` — both are the reader's own account-scoped surfaces,
+  // both reached from the account menu.
+  reading: '/me/reading',
   // Settings is a nested surface (docs/11 §1): index redirects to /settings/profile.
   settings: '/settings',
   settingsProfile: '/settings/profile',

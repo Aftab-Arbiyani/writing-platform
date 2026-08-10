@@ -29,6 +29,7 @@ import { CollectionsPage } from '../../pages/frontend/collections-page';
 import { PieceConversation } from '../../pages/frontend/conversation';
 import { EngagementBar, ReportDialog } from '../../pages/frontend/engagement';
 import { ReaderPage } from '../../pages/frontend/reader-page';
+import { ReadingStatsPage } from '../../pages/frontend/reading-stats-page';
 import { ResiliencePage } from '../../pages/frontend/resilience-page';
 import { SearchPage } from '../../pages/frontend/search-page';
 import { EditProfilePage } from '../../pages/frontend/settings-page';
@@ -262,6 +263,29 @@ test.describe('@phase5 @a11y frontend accessibility (authenticated)', () => {
 
     await expectNoSeriousA11yViolations(page, { label: 'frontend /me/collections' });
     await api.deleteCollection(collection.id);
+  });
+
+  /**
+   * Reader analytics (W7c, `/me/reading`). Scanned with POPULATED data on purpose: the ranked lists
+   * render as echarts canvases paired with a visually-hidden data table, and an empty chart would
+   * scan the empty-message path instead of the real one. This spec matches `UI_QUALITY_ONLY`, so it
+   * runs under `frontend-chromium` AND `frontend-dark` — both themes, per the row's requirement.
+   */
+  test('the reader analytics page has no critical/serious a11y violations', async ({
+    page,
+    api,
+    data,
+  }) => {
+    const piece = await api.createPublishedPiece({ title: data.pieceTitle() });
+    await api.trackRead(piece.id);
+    await api.bookmarkPiece(piece.id);
+
+    const reading = new ReadingStatsPage(page);
+    await reading.goto();
+    await reading.expectResolved();
+
+    await expectNoSeriousA11yViolations(page, { label: 'frontend /me/reading' });
+    await api.unbookmarkPiece(piece.id);
   });
 
   test('the collaborators page has no critical/serious a11y violations', async ({

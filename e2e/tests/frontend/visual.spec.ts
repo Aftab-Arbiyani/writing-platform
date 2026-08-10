@@ -13,6 +13,7 @@ import { CollectionsPage } from '../../pages/frontend/collections-page';
 import { PieceConversation } from '../../pages/frontend/conversation';
 import { EngagementBar, ReportDialog } from '../../pages/frontend/engagement';
 import { ReaderPage } from '../../pages/frontend/reader-page';
+import { ReadingStatsPage } from '../../pages/frontend/reading-stats-page';
 import { SearchPage } from '../../pages/frontend/search-page';
 import { SettingsBlocksPage } from '../../pages/frontend/settings-blocks-page';
 import { StoryCommentsPage } from '../../pages/frontend/story-comments-page';
@@ -231,6 +232,34 @@ test.describe('@phase5 @visual frontend (authenticated)', () => {
     // Viewport, not fullPage: the dialog is fixed over the article, and the article behind it
     // carries a per-run title whose wrapping would move the page height (see the reader note above).
     await expect(page).toHaveScreenshot('frontend-report-dialog.png');
+  });
+
+  /**
+   * Reader analytics (W7c, `/me/reading`). Pins the reader tile grid + the two ranked-list charts —
+   * the layout that distinguishes this surface from the writer dashboard's KPI grid.
+   *
+   * The TILE VALUES are masked: the seeded writer's reading history grows every run (each
+   * `trackRead` above adds to it), so the numbers are not stable across mints while the layout is.
+   * Masking values rather than the whole card keeps the shot about the design.
+   *
+   * NO BASELINE IS COMMITTED WITH THIS SPEC. Only the `web-e2e` workflow's visual job may mint one,
+   * in the pinned Playwright image (docs/e2e/10 §8.3, docs/48 §3.5 T-8) — a local mint would bake
+   * in host font rendering. "A snapshot doesn't exist" is the CORRECT result until that job runs.
+   */
+  test('the reader analytics page matches its visual baseline', async ({ page, api, data }) => {
+    const piece = await api.createPublishedPiece({ title: data.pieceTitle() });
+    await api.trackRead(piece.id);
+
+    const reading = new ReadingStatsPage(page);
+    await reading.goto();
+    await reading.expectResolved();
+    await settleToasts(page);
+
+    await expect(page).toHaveScreenshot('frontend-reading-stats.png', {
+      fullPage: true,
+      // Every metric value + both charts are history-dependent; the labels and layout are not.
+      mask: [page.locator('.tabular-nums'), page.getByRole('img')],
+    });
   });
 
   /**

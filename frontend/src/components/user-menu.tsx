@@ -4,6 +4,7 @@ import { Dropdown, type MenuProps } from 'antd';
 import {
   BarChart3,
   BookMarked,
+  BookOpen,
   FileText,
   LogOut,
   Settings,
@@ -68,11 +69,20 @@ export function UserMenu(): ReactElement {
       label: 'Your writing',
       onClick: () => void navigate(ROUTES.drafts),
     },
+    // Two analytics surfaces, two audiences (W7c). The labels carry the distinction — "writing"
+    // vs "reading" — because "Your stats" alone sent readers to a dashboard about pieces they
+    // wrote (docs/45 §4.4 row 4). Adjacent on purpose: adjacency is what makes the pair legible.
     {
       key: 'stats',
       icon: <BarChart3 size={16} strokeWidth={1.5} />,
-      label: 'Your stats',
+      label: 'Your writing’s stats',
       onClick: () => void navigate(ROUTES.stats),
+    },
+    {
+      key: 'reading',
+      icon: <BookOpen size={16} strokeWidth={1.5} />,
+      label: 'Your reading',
+      onClick: () => void navigate(ROUTES.reading),
     },
     // W7b. The menu is web's home for account-scoped surfaces — the same place drafts, stats and
     // follow requests already live. Mobile reaches its collections from the my-profile screen

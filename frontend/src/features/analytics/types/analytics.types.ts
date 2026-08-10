@@ -93,6 +93,19 @@ export interface Dashboard {
   reader: ReaderAnalytics;
 }
 
+/**
+ * A count derived from ONE page of a cursor-paginated list — the shape mobile calls a
+ * "bounded count" (`profile_repository_impl._boundedCount`). `v1` exposes no `COUNT(*)` for a
+ * viewer's bookmarks, so the only honest figure is "how many are on the first page, and is there
+ * more". `hasMore` is what keeps it honest: the reading page renders `50+`, never a bare `50`
+ * that reads like a total. See [48 §4] — the same reason `profile-stats.tsx` omits the
+ * server-hardcoded `bookmarksReceived`.
+ */
+export interface BoundedCount {
+  count: number;
+  hasMore: boolean;
+}
+
 /** `GET /analytics/trending` (public) — platform-wide ranked entities. */
 export interface Trending {
   period: string;

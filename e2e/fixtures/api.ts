@@ -979,6 +979,66 @@ export class ApiHelper {
     return this.data(res);
   }
 
+  /**
+   * Track a completed read of a piece (`POST /analytics/pieces/:id/read`) — W7c, to arrange REAL
+   * reader history for `/me/reading`.
+   *
+   * Deterministic despite being event-driven: `DomainEventBus.emit` AWAITS its handlers, so
+   * `reader_analytics` and `read_event` are both updated by the time this request returns. No
+   * polling needed.
+   *
+   * The defaults clear the server's completion thresholds (`READ_MIN_DWELL_SECONDS` 30 /
+   * `READ_MIN_COMPLETION_PCT` 50), so the read counts as COMPLETED. Pass lower values to arrange a
+   * read that is counted but not completed.
+   */
+  async trackRead(
+    pieceId: string,
+    { durationSeconds = 120, completionPct = 100 } = {},
+    token?: string,
+  ): Promise<void> {
+    const res = await this.request.post(this.url(`/analytics/pieces/${pieceId}/read`), {
+      headers:
+        token === undefined ? await this.writerHeaders() : { Authorization: `Bearer ${token}` },
+      data: { durationSeconds, completionPct },
+    });
+    expect(res.ok(), `track read → ${res.status()}`).toBeTruthy();
+  }
+
+  /** The caller's own reader aggregate (`GET /analytics/readers/me`) — the `/me/reading` source. */
+  async readerAnalytics(token?: string): Promise<{
+    piecesRead: number;
+    readingTimeSeconds: number;
+    completedReads: number;
+    currentStreak: number;
+    longestStreak: number;
+    favoriteGenres: Array<{ key: string; label: string; count: number }>;
+    favoriteLanguages: Array<{ key: string; label: string; count: number }>;
+  }> {
+    const res = await this.request.get(this.url('/analytics/readers/me'), {
+      headers:
+        token === undefined ? await this.writerHeaders() : { Authorization: `Bearer ${token}` },
+    });
+    return this.data(res);
+  }
+
+  /** Bookmark a piece (`POST /pieces/:id/bookmarks`; idempotent) — arranges the bounded count. */
+  async bookmarkPiece(pieceId: string, token?: string): Promise<void> {
+    const res = await this.request.post(this.url(`/pieces/${pieceId}/bookmarks`), {
+      headers:
+        token === undefined ? await this.writerHeaders() : { Authorization: `Bearer ${token}` },
+    });
+    expect(res.ok(), `bookmark piece → ${res.status()}`).toBeTruthy();
+  }
+
+  /** Remove a bookmark (`DELETE /pieces/:id/bookmarks`; idempotent) — teardown for the above. */
+  async unbookmarkPiece(pieceId: string, token?: string): Promise<void> {
+    const res = await this.request.delete(this.url(`/pieces/${pieceId}/bookmarks`), {
+      headers:
+        token === undefined ? await this.writerHeaders() : { Authorization: `Bearer ${token}` },
+    });
+    expect(res.ok(), `unbookmark piece → ${res.status()}`).toBeTruthy();
+  }
+
   /** Read admin audit-log entries (admin+). Assert an admin action was recorded. */
   async getAuditLogs(params: {
     action?: string;
