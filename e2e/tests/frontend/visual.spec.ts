@@ -9,6 +9,7 @@ import { UsagePage } from '../../pages/frontend/billing-detail-pages';
 import { AiConversationsPage, AiUsagePage, PromptLibraryPage } from '../../pages/frontend/ai-pages';
 import { PlansPage } from '../../pages/frontend/plans-page';
 import { CollaboratorsPage } from '../../pages/frontend/collaborators-page';
+import { PieceConversation } from '../../pages/frontend/conversation';
 import { ReaderPage } from '../../pages/frontend/reader-page';
 import { SearchPage } from '../../pages/frontend/search-page';
 import { SettingsBlocksPage } from '../../pages/frontend/settings-blocks-page';
@@ -158,6 +159,50 @@ test.describe('@phase5 @visual frontend (authenticated)', () => {
       // The title carries a per-run unique token, and engagement counts move as other specs
       // publish and react — both are content, not layout.
       mask: [page.getByRole('heading', { level: 1 }), reader.engagement],
+    });
+  });
+
+  /**
+   * The conversation on a piece (W7a, docs/45 §4.4).
+   *
+   * **Its own baseline rather than an extension of `frontend-reader.png`**, and deliberately so:
+   * that shot is viewport-only because a per-run title changes where the `h1` wraps and therefore
+   * the page height (see the note above it). The conversation sits at the very END of the article,
+   * so it is not in that viewport at all — and making the reader shot `fullPage` to include it would
+   * reintroduce exactly the height instability that note records. Scrolling to the section and
+   * shooting the viewport keeps this one stable for the same reason.
+   *
+   * What it is guarding: the byline/action-row rhythm, the reply indent, the tombstone's muted
+   * italic, and the response card — in BOTH themes, since `frontend-dark` re-runs this file. The
+   * tombstone is the interesting one: muted italic on a card is where a dark-mode contrast
+   * regression would land ([10 §8.4]).
+   */
+  test('the piece conversation matches its visual baseline', async ({ page, api, data }) => {
+    const title = data.pieceTitle();
+    const piece = await api.createPublishedPiece({ title });
+    const live = await api.commentOnPiece(piece.id, 'A live comment, kept short for the baseline.');
+    await api.replyToComment(live.id, 'A nested reply.');
+    const doomed = await api.commentOnPiece(piece.id, 'Soon a tombstone.');
+    await api.deleteComment(doomed.id);
+
+    const reader = new ReaderPage(page);
+    await reader.gotoSlug(piece.slug as string);
+    await reader.expectRendered(title);
+
+    const conversation = new PieceConversation(page);
+    await conversation.expectLoaded();
+    await conversation.expandReplies('A live comment');
+    await expect(conversation.comments.getByText('A nested reply.')).toBeVisible({
+      timeout: 30_000,
+    });
+    // Bring the section into the viewport — it is below the fold on every realistic article.
+    await conversation.comments.scrollIntoViewIfNeeded();
+    await settleToasts(page);
+
+    await expect(page).toHaveScreenshot('frontend-conversation.png', {
+      // Relative timestamps ("2m", "just now") and avatars are content that moves between runs;
+      // the comment BODIES are pinned literals above precisely so the boxes do not move with them.
+      mask: [page.getByRole('time'), conversation.comments.locator('.ant-avatar')],
     });
   });
 

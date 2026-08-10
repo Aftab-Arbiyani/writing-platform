@@ -25,6 +25,7 @@ import { StoryPublishingPage } from '../../pages/frontend/story-publishing-page'
 import { StorySuggestionsPage } from '../../pages/frontend/story-suggestions-page';
 import { DiscoverPage } from '../../pages/frontend/discover-page';
 import { ProfilePage } from '../../pages/frontend/profile-page';
+import { PieceConversation } from '../../pages/frontend/conversation';
 import { ReaderPage } from '../../pages/frontend/reader-page';
 import { ResiliencePage } from '../../pages/frontend/resilience-page';
 import { SearchPage } from '../../pages/frontend/search-page';
@@ -169,6 +170,48 @@ test.describe('@phase5 @a11y frontend accessibility (authenticated)', () => {
     // Scan with the engagement bar present, not just the article.
     await expect(reader.engagement).toBeVisible({ timeout: 30_000 });
     await expectNoSeriousA11yViolations(page, { label: 'frontend /p/:slug' });
+  });
+
+  /**
+   * The conversation on a piece (W7a, docs/45 §4.4) — scanned with real CONTENT, because the parts
+   * axe has something to say about only exist once there is a row: a comment's byline and action
+   * row, an expanded reply list, the tombstone's muted-italic text, and a response card's links.
+   *
+   * The tombstone is included deliberately. It renders in `text-ink-muted` + italic, which is the
+   * lowest-contrast text this surface produces — the exact class of defect the `--q-text-muted`
+   * burn-down was about ([fixtures/a11y.ts], `KNOWN_A11Y_FINDINGS`). This spec runs in
+   * `frontend-dark` as well as the desktop engines ([10 §3.3]), so both themes are covered.
+   */
+  test('the piece conversation has no critical/serious a11y violations', async ({
+    page,
+    api,
+    data,
+  }) => {
+    const title = data.pieceTitle();
+    const piece = await api.createPublishedPiece({ title });
+
+    // A live comment with a reply, a tombstone with a reply, and a published response — so every
+    // state the surface can render is in the scan rather than only the happy one.
+    const live = await api.commentOnPiece(piece.id, `A live comment ${data.username()}`);
+    await api.replyToComment(live.id, `A nested reply ${data.username()}`);
+    const doomed = await api.commentOnPiece(piece.id, `Soon a tombstone ${data.username()}`);
+    await api.replyToComment(doomed.id, `Outlives its parent ${data.username()}`);
+    await api.deleteComment(doomed.id);
+    await api.createPublishedResponse(piece.id, data.pieceTitle());
+
+    const reader = new ReaderPage(page);
+    await reader.gotoSlug(piece.slug as string);
+    await reader.expectRendered(title);
+
+    const conversation = new PieceConversation(page);
+    await conversation.expectLoaded();
+    // Expand a thread so the reply list — and its own controls — are in the scanned tree.
+    await conversation.expandReplies('A live comment');
+    await expect(conversation.comments.getByRole('article').nth(1)).toBeVisible({
+      timeout: 30_000,
+    });
+
+    await expectNoSeriousA11yViolations(page, { label: 'frontend /p/:slug conversation' });
   });
 
   test('the collaborators page has no critical/serious a11y violations', async ({

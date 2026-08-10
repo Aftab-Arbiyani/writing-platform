@@ -66,6 +66,20 @@ export interface PieceSummary {
   readonly status: 'draft' | 'scheduled' | 'published' | 'archived';
 }
 
+/**
+ * A piece comment as `CommentResponseDto` returns it (W7a). `author` is null on a soft-deleted
+ * node, and there is no `replies` array — `replyCount` plus `GET /comments/:id/replies`.
+ */
+export interface CommentSummary {
+  readonly id: string;
+  readonly parentId: string | null;
+  readonly depth: number;
+  readonly body: string;
+  readonly isDeleted: boolean;
+  readonly replyCount: number;
+  readonly editedAt: string | null;
+}
+
 export class ApiHelper {
   private adminTokenCache: string | null = null;
   private writerTokenCache: string | null = null;
@@ -720,6 +734,99 @@ export class ApiHelper {
       headers: await this.writerHeaders(),
     });
     expect(res.ok(), `delete saved search ${id} → ${res.status()}`).toBeTruthy();
+  }
+
+  // ── Conversation layer / piece comments + responses (W7a, docs/45 §4.4) ──────────────────
+  //
+  // These are `modules/engagement` PIECE comments — public conversation — not AF6's collaboration
+  // comments, which are a story's private review and go through the `/stories/:id/comments` helpers
+  // above. Different module, different DTO, different privacy model.
+
+  /**
+   * Comment on a piece as the seeded writer (`POST /pieces/:id/comments`).
+   *
+   * The body is `{ body }` and NOTHING else: `CreateCommentDto` runs under `forbidNonWhitelisted`,
+   * so arranging through the exact shape the UI sends means this fixture breaks alongside the UI if
+   * the contract ever moves — the M-1 lesson (docs/48 §3.1).
+   */
+  async commentOnPiece(pieceId: string, body: string): Promise<CommentSummary> {
+    const res = await this.request.post(this.url(`/pieces/${pieceId}/comments`), {
+      headers: await this.writerHeaders(),
+      data: { body },
+    });
+    return this.data<CommentSummary>(res);
+  }
+
+  /** Same, as an arbitrary user — for "you cannot edit someone else's comment". */
+  async commentOnPieceAs(token: string, pieceId: string, body: string): Promise<CommentSummary> {
+    const res = await this.request.post(this.url(`/pieces/${pieceId}/comments`), {
+      headers: { Authorization: `Bearer ${token}` },
+      data: { body },
+    });
+    return this.data<CommentSummary>(res);
+  }
+
+  /**
+   * Reply to a comment (`POST /comments/:id/replies`). The parent comes from the URL — the same
+   * `CreateCommentDto` as a top-level comment, so a `parentId` in the body would be a 400.
+   */
+  async replyToComment(commentId: string, body: string): Promise<CommentSummary> {
+    const res = await this.request.post(this.url(`/comments/${commentId}/replies`), {
+      headers: await this.writerHeaders(),
+      data: { body },
+    });
+    return this.data<CommentSummary>(res);
+  }
+
+  /**
+   * Soft-delete a comment (`DELETE /comments/:id`, 204) — how the tombstone case is arranged.
+   *
+   * This is a SOFT delete through the app's own endpoint, which is the only removal the guard rails
+   * permit (docs/e2e/09): the node survives, its author goes null, and its replies stay visible.
+   */
+  async deleteComment(commentId: string): Promise<void> {
+    const res = await this.request.delete(this.url(`/comments/${commentId}`), {
+      headers: await this.writerHeaders(),
+    });
+    expect(res.ok(), `delete comment ${commentId} → ${res.status()}`).toBeTruthy();
+  }
+
+  /**
+   * Write a response to a piece as the seeded writer (`POST /pieces/:id/responses`).
+   *
+   * Creates a linked DRAFT piece and returns it — the body is `CreatePieceDto`, not a comment DTO,
+   * because a response IS a piece. Publishing the returned draft is what makes it appear in the
+   * parent's response list (the list is visibility-gated to published, visible pieces).
+   */
+  async respondToPiece(
+    pieceId: string,
+    input: { title: string; languageCode?: string },
+  ): Promise<PieceSummary> {
+    const res = await this.request.post(this.url(`/pieces/${pieceId}/responses`), {
+      headers: await this.writerHeaders(),
+      data: { title: input.title, languageCode: input.languageCode ?? 'en' },
+    });
+    return this.data<PieceSummary>(res);
+  }
+
+  /**
+   * Arrange a PUBLISHED response in one call — create the linked draft, give it a genre and a body
+   * so it is publishable, then publish it.
+   *
+   * The two-step exists because `POST /pieces/:id/responses` mints a draft with only a title and a
+   * language: `genreSlug` is optional for a draft and required at publish.
+   */
+  async createPublishedResponse(pieceId: string, title: string): Promise<PieceSummary> {
+    const draft = await this.respondToPiece(pieceId, { title });
+    const patched = await this.request.patch(this.url(`/pieces/${draft.id}`), {
+      headers: await this.writerHeaders(),
+      data: {
+        genreSlug: 'short-story',
+        content: this.tiptapDoc(`${title} — a response seeded by the E2E suite.`),
+      },
+    });
+    await this.data(patched);
+    return this.publishPiece(draft.id);
   }
 
   /** Read admin audit-log entries (admin+). Assert an admin action was recorded. */

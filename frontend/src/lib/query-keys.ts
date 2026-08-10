@@ -212,6 +212,30 @@ export const qk = {
     thread: (commentId: string) => ['comments', commentId, 'thread'] as const,
   },
 
+  // The public conversation on a PIECE (W7a — `modules/engagement`): reader comments and the
+  // responses written back to it.
+  //
+  // Deliberately its own namespace rather than an addition to `comments` above, which belongs to
+  // AF6 collaboration — a story's PRIVATE review (`modules/collaboration`). Different module,
+  // different entity, different privacy model: a co-author resolving an inline note on a draft and
+  // a stranger replying under a published piece must never invalidate each other, and a single
+  // `comments` prefix would make them do exactly that.
+  //
+  // Replies are NOT nested in `CommentResponseDto` — it carries `replyCount` and the children come
+  // from `GET /comments/:id/replies`. So a thread is two keys, and `replies` is fetched lazily when
+  // a reader expands it; a page of forty comments must not fire forty reply requests.
+  conversation: {
+    all: ['conversation'] as const,
+    /** Prefix for one piece's whole conversation — a comment or response mutation targets this. */
+    piece: (pieceId: string) => ['conversation', pieceId] as const,
+    comments: (pieceId: string) => ['conversation', pieceId, 'comments'] as const, // GET /pieces/:id/comments
+    responses: (pieceId: string) => ['conversation', pieceId, 'responses'] as const, // GET /pieces/:id/responses
+    // Keyed by the PARENT comment id, not by the piece: a reply page is addressed by its parent
+    // (`GET /comments/:id/replies`) and the piece is not in that URL. Kept under the same
+    // `conversation` root so the whole feature evicts as one.
+    replies: (commentId: string) => ['conversation', 'replies', commentId] as const,
+  },
+
   // The viewer's own collaboration inbox — outside `stories` because it spans every story.
   invitations: {
     all: ['invitations'] as const,

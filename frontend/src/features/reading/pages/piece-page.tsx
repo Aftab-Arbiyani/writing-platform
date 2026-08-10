@@ -2,6 +2,7 @@ import { QErrorState, QSkeleton } from '@qalam/ui';
 import type { ReactElement, ReactNode } from 'react';
 import { Link, useParams } from 'react-router';
 
+import { PieceConversation } from '@/components/conversation';
 import { Seo } from '@/components/seo';
 import { usePageTitle } from '@/hooks/use-page-title';
 import { getErrorMessage, getRequestId, isApiError } from '@/lib/errors';
@@ -225,6 +226,18 @@ export function PiecePage(): ReactElement {
 
       <Column maxWidth={maxWidth} className="mt-10">
         <ReaderAuthorCard username={author.username} fallbackName={displayName} />
+      </Column>
+
+      {/* The conversation (W7a, docs/45 §4.4) — INLINE here rather than on two pushed screens the
+          way mobile does it, which is a recorded layout difference (48 §4.1). Ordered as mobile's
+          own reader footer orders it: comments, then responses, then "More like this" last. */}
+      <Column maxWidth={maxWidth} className="mt-12">
+        <PieceConversation
+          pieceId={piece.id}
+          languageCode={language?.code ?? 'ur'}
+          parentTitle={piece.title}
+          returnTo={canonicalPath}
+        />
       </Column>
 
       {related.data && related.data.length > 0 ? (

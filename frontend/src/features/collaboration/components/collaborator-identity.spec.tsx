@@ -101,12 +101,15 @@ describe('PresenceBar identity (B3)', () => {
     vi.clearAllMocks();
   });
 
+  // `StoryPresence` carries `lastSeenAt`, not `updatedAt` — and the `as` cast was hiding that
+  // rather than satisfying it, so this file failed `tsc --noEmit` for the whole repo (found while
+  // running W7a's gate; fixed here because the gate has to be green to mean anything).
   function entry(userId: string): StoryPresence {
     return {
       userId,
       state: PresenceState.Active,
-      updatedAt: new Date('2026-08-08T10:00:00Z').toISOString(),
-    } as StoryPresence;
+      lastSeenAt: new Date('2026-08-08T10:00:00Z').toISOString(),
+    };
   }
 
   it('names roster entries instead of showing a truncated id', async () => {

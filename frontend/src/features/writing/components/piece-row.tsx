@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router';
 import { formatDate, formatReadingTime, formatRelativeTime } from '@/lib/format';
 import { getErrorMessage } from '@/lib/errors';
 import { mediaUrl } from '@/lib/media';
-import { piecePath, ROUTES } from '@/lib/routes';
+import { draftPath, piecePath } from '@/lib/routes';
 
 import {
   useArchivePiece,
@@ -28,7 +28,7 @@ export function PieceRow({ item }: { item: PieceListItem }): ReactElement {
   const archive = useArchivePiece();
   const unarchive = useUnarchivePiece();
 
-  const editPath = `${ROUTES.write}/${item.id}`;
+  const editPath = draftPath(item.id);
   const cover = mediaUrl(item.coverImageKey);
 
   const meta =
@@ -108,7 +108,7 @@ export function PieceRow({ item }: { item: PieceListItem }): ReactElement {
             duplicate.mutate(item.id, {
               onSuccess: (piece) => {
                 toast.success('Draft duplicated');
-                void navigate(`${ROUTES.write}/${piece.id}`);
+                void navigate(draftPath(piece.id));
               },
               onError: (err) => {
                 toast.error('Couldn’t duplicate', { description: getErrorMessage(err) });

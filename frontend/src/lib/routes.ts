@@ -68,6 +68,19 @@ export function piecePath(idOrSlug: string): string {
   return `/p/${encodeURIComponent(idOrSlug)}`;
 }
 
+/**
+ * The editor path for an existing draft (`/write/:draftId`).
+ *
+ * A named helper rather than an inline template because W7a made it a **cross-feature seam**:
+ * writing a response creates a linked draft (`POST /pieces/:id/responses`) and the flow ends in the
+ * editor — but that flow is composed at app level and the reader is what renders it, so neither may
+ * reach into `features/writing` (docs/26 §4). Route composition is the sanctioned way across, and a
+ * route is only composable once it has a name.
+ */
+export function draftPath(draftId: string): string {
+  return `${ROUTES.write}/${encodeURIComponent(draftId)}`;
+}
+
 /** A feed URL for a given tab + optional filter params (used by rail chips → filtered feed). */
 export function feedPath(params: Record<string, string> = {}): string {
   const query = new URLSearchParams(params).toString();

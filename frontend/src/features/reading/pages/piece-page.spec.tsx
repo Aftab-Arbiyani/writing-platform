@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useProfile } from '@/hooks/use-profile';
 import { ApiError } from '@/lib/api-client';
+import { conversationApi } from '@/lib/conversation-api';
 import { renderWithProviders } from '@/test/render';
 
 import { readingApi } from '../api/reading.api';
@@ -27,6 +28,12 @@ vi.mock('../api/reading.api', () => ({
 // The author card is a secondary, degrade-gracefully surface with its own app-level query; the
 // page's own contract is what is under test here, so the profile is stubbed rather than served.
 vi.mock('@/hooks/use-profile', () => ({ useProfile: vi.fn() }));
+
+// The conversation (W7a) is app-level and has its own component specs. It is mocked at the api
+// boundary here so this file can assert the one thing only it can: that the reader actually
+// REACHES it. "Looked wired and was not" is this codebase's repeated defect class (R-1, M5-1,
+// W5-3, W8-1), and a component that is only ever unit-tested in isolation is how it happens.
+vi.mock('@/lib/conversation-api');
 
 const PIECE_ID = '0197d2f4-1c3a-7000-8000-000000000001';
 
@@ -87,6 +94,9 @@ describe('PiecePage', () => {
     vi.mocked(readingApi.engagement).mockResolvedValue(ENGAGEMENT);
     vi.mocked(readingApi.related).mockResolvedValue([]);
     vi.mocked(useProfile).mockReturnValue({ data: undefined } as ReturnType<typeof useProfile>);
+    const emptyPage = { items: [], meta: { nextCursor: null, hasMore: false } };
+    vi.mocked(conversationApi.comments).mockResolvedValue(emptyPage);
+    vi.mocked(conversationApi.responses).mockResolvedValue(emptyPage);
   });
 
   it('renders the piece: title, author, meta and body', async () => {
@@ -158,5 +168,42 @@ describe('PiecePage', () => {
 
     await screen.findByRole('heading', { level: 1 });
     expect(container.querySelector('.qalam-prose')).toHaveAttribute('dir', 'rtl');
+  });
+
+  /**
+   * The conversation (W7a, docs/45 §4.4) sits INLINE at the end of the page rather than on two
+   * pushed screens the way mobile does — a recorded layout difference (48 §4.1). These two tests
+   * assert REACHABILITY: that the reader composes it, addresses it with the resolved piece **id**
+   * (the URL carries a slug, so an unresolved id would silently read nothing), and that a
+   * signed-out visitor still gets the whole page.
+   */
+  it('renders the conversation inline, keyed by the resolved piece id', async () => {
+    vi.mocked(readingApi.bySlug).mockResolvedValue(makePiece());
+    renderAt('a-door-never-opened');
+
+    await screen.findByRole('heading', { level: 1 });
+    expect(await screen.findByRole('heading', { level: 2, name: 'Comments' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'Responses' })).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(conversationApi.comments).toHaveBeenCalledWith(PIECE_ID, undefined, expect.anything());
+    });
+    expect(conversationApi.responses).toHaveBeenCalledWith(PIECE_ID, undefined, expect.anything());
+  });
+
+  it('still renders for a signed-out reader — both conversation reads are public', async () => {
+    // The W5-6 regression in miniature (48 §3.9): an authenticated read on a public page 401s, the
+    // 401 clears the cache, and the page breaks for every signed-out visitor. No session is
+    // established in this test, so a read that needed one would fail here.
+    vi.mocked(readingApi.bySlug).mockResolvedValue(makePiece());
+    renderAt('a-door-never-opened');
+
+    await screen.findByRole('heading', { level: 1, name: 'A door never opened' });
+    expect(await screen.findByText(/No comments yet/)).toBeInTheDocument();
+    expect(screen.getByText(/No responses yet/)).toBeInTheDocument();
+    // Read yes, compose no: two sign-in prompts, and neither surface offers a composer.
+    expect(screen.queryByLabelText('Add a comment')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Write a response' })).not.toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: 'Sign in' })).toHaveLength(2);
   });
 });

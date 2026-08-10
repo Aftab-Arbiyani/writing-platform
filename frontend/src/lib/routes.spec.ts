@@ -1,6 +1,23 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseHandle, profilePath } from './routes';
+import { draftPath, parseHandle, profilePath } from './routes';
+
+/**
+ * `draftPath` is the cross-feature seam W7a needed: writing a response creates a linked draft and
+ * the flow ends in the editor, which the reader may not import (docs/26 §4). Route composition is
+ * the way across, so the route has to be addressable by name and correct.
+ */
+describe('draftPath', () => {
+  it('addresses an existing draft in the editor', () => {
+    expect(draftPath('0197d2f4-1c3a-7000-8000-000000000001')).toBe(
+      '/write/0197d2f4-1c3a-7000-8000-000000000001',
+    );
+  });
+
+  it('encodes the id rather than pasting it into the path', () => {
+    expect(draftPath('a b/c')).toBe('/write/a%20b%2Fc');
+  });
+});
 
 describe('profilePath', () => {
   it('mints an @handle path and encodes it', () => {

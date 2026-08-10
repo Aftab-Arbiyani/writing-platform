@@ -1,6 +1,16 @@
 # 48 — Platform Parity Register (web ↔ mobile)
 
-**Status:** 🔒 Binding · **Owner:** every client epic · **Last swept:** 2026-08-08 (after **B3** — profile lookup
+**Status:** 🔒 Binding · **Owner:** every client epic · **Last swept:** 2026-08-10 (after **W7a** — the
+**conversation layer** on web, the first slice of W7 and the row that finally owns piece comments +
+responses, which §5 had listed as unowned since this document was written. Its sweep is **§6.8**, the
+inline-vs-pushed arrangement is **§4.1**, and it found the harness defect that matters most here:
+**B4-1** (§3.14) — B4's 25-piece plan cap is enforced on `POST /pieces`, which is how almost every
+browser spec arranges its content as the ONE shared seeded writer, so the suite could not arrange
+anything at all. `reader.spec.ts` was failing **8 of 10** for that reason and nobody had run it since
+B4 landed; fixed in `seed:e2e` (free plan → unlimited pieces for the E2E stack only, the same category
+of stack config as `RATE_LIMIT_ENABLED=false`) and verified back to 13/13. Also **B4-2**: a response is
+counted toward the piece allowance but never gated by it — correct, deliberate, and recorded only in a
+service doc comment, which W7a's first draft duly got wrong. Previously swept after **B3** — profile lookup
 by **id**, the enabler three consecutive epics deferred, and the first row where **mobile** was the platform
 missing the client half rather than web. `GET /users/by-id/:id` is the same view as the username route under a
 different key, both delegating to one `buildPublicView` so the visibility rules cannot drift. Its sweep is
@@ -97,17 +107,17 @@ epic now has to reconcile.
 Measured from `lib/features/**/presentation/screens` and `frontend/src/features/**/pages` plus route
 tables, not assumed.
 
-| #   | Area                  | Mobile has                                                                                                               | Web has                                                                                                                                                                                                                                                                     | Closed by                                                                                                                                                                                                                                          |
-| --- | --------------------- | ------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | **Collaboration**     | 6 screens: collaborators, comments, invitations inbox, publishing workflow, restricted state, suggestions                | nothing                                                                                                                                                                                                                                                                     | **W3**                                                                                                                                                                                                                                             |
-| 2   | ~~**Monetization**~~  | 5 screens: plans, subscription, billing history, credit dashboard, usage dashboard                                       | ✅ **all five** (W4) — **fully at parity since 2026-08-03**: the coupon field (M5-2) and the two missing history tabs (M5-6) are now on both                                                                                                                                | **W4 ✅ closed 2026-07-29** — [report](./50_WebMonetizationReadinessReport.md)                                                                                                                                                                     |
-| 3   | ~~**AI breadth**~~    | 8 screens: conversation, conversations list, discovery, usage, ask-book, prompt library, semantic search, story explorer | ✅ **8 of 8 — CLOSED 2026-08-08.** Assistant + Craft Coach (W2), semantic search + AI discovery (W5), conversations + prompt library + AI usage (W8), **story explorer + ask-book (W9 ✅ 2026-08-08)** — the last two as tabs on the in-editor AI drawer, not routes (§4.1) | **W5 closed discovery + search; W8 the next three; W9 the last two ✅.** Note the direction reversed on conversations: mobile ships the screen and cannot populate it (§3.12 **W8-1**), so **web is the reference** and mobile needs the follow-up |
-| 4   | **Social depth**      | collections, collection detail, comments, responses (+ followers, follow requests)                                       | follow requests; followers via a dialog                                                                                                                                                                                                                                     | **unassigned — see §5**                                                                                                                                                                                                                            |
-| 5   | **Reader actions**    | clap (1..50 accumulating) and report, on the reader action bar                                                           | like, bookmark, copy-link share                                                                                                                                                                                                                                             | **unassigned — see §5**                                                                                                                                                                                                                            |
-| 6   | **Reading analytics** | `reading_analytics_screen` — the _reader's_ own stats                                                                    | writer + per-piece analytics only                                                                                                                                                                                                                                           | **unassigned — see §5**                                                                                                                                                                                                                            |
-| 7   | **Onboarding**        | `onboarding_screen` — first-run flow                                                                                     | nothing                                                                                                                                                                                                                                                                     | **unassigned — see §5**                                                                                                                                                                                                                            |
-| 8   | **Privacy prefs**     | dedicated privacy screen: private account, **show bookmarks count**, **show reading-history count**                      | private-notebook toggle inside edit-profile                                                                                                                                                                                                                                 | **unassigned — small, see §5**                                                                                                                                                                                                                     |
-| 9   | **Offline behaviour** | engagement + follow taken offline are queued and reconciled by a unified `SyncEngine`                                    | no offline write queue                                                                                                                                                                                                                                                      | **see §4** (partly platform-inherent)                                                                                                                                                                                                              |
+| #   | Area                  | Mobile has                                                                                                               | Web has                                                                                                                                                                                                                                                                               | Closed by                                                                                                                                                                                                                                          |
+| --- | --------------------- | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **Collaboration**     | 6 screens: collaborators, comments, invitations inbox, publishing workflow, restricted state, suggestions                | nothing                                                                                                                                                                                                                                                                               | **W3**                                                                                                                                                                                                                                             |
+| 2   | ~~**Monetization**~~  | 5 screens: plans, subscription, billing history, credit dashboard, usage dashboard                                       | ✅ **all five** (W4) — **fully at parity since 2026-08-03**: the coupon field (M5-2) and the two missing history tabs (M5-6) are now on both                                                                                                                                          | **W4 ✅ closed 2026-07-29** — [report](./50_WebMonetizationReadinessReport.md)                                                                                                                                                                     |
+| 3   | ~~**AI breadth**~~    | 8 screens: conversation, conversations list, discovery, usage, ask-book, prompt library, semantic search, story explorer | ✅ **8 of 8 — CLOSED 2026-08-08.** Assistant + Craft Coach (W2), semantic search + AI discovery (W5), conversations + prompt library + AI usage (W8), **story explorer + ask-book (W9 ✅ 2026-08-08)** — the last two as tabs on the in-editor AI drawer, not routes (§4.1)           | **W5 closed discovery + search; W8 the next three; W9 the last two ✅.** Note the direction reversed on conversations: mobile ships the screen and cannot populate it (§3.12 **W8-1**), so **web is the reference** and mobile needs the follow-up |
+| 4   | **Social depth**      | collections, collection detail, comments, responses (+ followers, follow requests)                                       | ✅ **comments + responses — CLOSED 2026-08-10 by W7a** (the conversation layer, inline on the reader — [§4.1](#41-accepted-layout-differences--same-feature-different-arrangement)). Still missing: **collections** + collection detail. Plus follow requests; followers via a dialog | **W7** — [45 §4.4](./45_WebClientRoadmap.md). **W7a ✅ closed** rows 1–2 (conversation); collections is W7b, together with clap/report                                                                                                             |
+| 5   | **Reader actions**    | clap (1..50 accumulating) and report, on the reader action bar                                                           | like, bookmark, copy-link share                                                                                                                                                                                                                                                       | **unassigned — see §5**                                                                                                                                                                                                                            |
+| 6   | **Reading analytics** | `reading_analytics_screen` — the _reader's_ own stats                                                                    | writer + per-piece analytics only                                                                                                                                                                                                                                                     | **unassigned — see §5**                                                                                                                                                                                                                            |
+| 7   | **Onboarding**        | `onboarding_screen` — first-run flow                                                                                     | nothing                                                                                                                                                                                                                                                                               | **unassigned — see §5**                                                                                                                                                                                                                            |
+| 8   | **Privacy prefs**     | dedicated privacy screen: private account, **show bookmarks count**, **show reading-history count**                      | private-notebook toggle inside edit-profile                                                                                                                                                                                                                                           | **unassigned — small, see §5**                                                                                                                                                                                                                     |
+| 9   | **Offline behaviour** | engagement + follow taken offline are queued and reconciled by a unified `SyncEngine`                                    | no offline write queue                                                                                                                                                                                                                                                                | **see §4** (partly platform-inherent)                                                                                                                                                                                                              |
 
 ---
 
@@ -2038,6 +2048,74 @@ instead of spinning forever".
 
 ---
 
+## 3.14 Found while running W7a's browser suite (2026-08-10)
+
+### B4-1 · ~~**high (harness)**~~ · **CLOSED 2026-08-10** · B4's piece cap made the browser suite unable to arrange content
+
+**What.** B4 ([45 §4.9](./45_WebClientRoadmap.md), commit `98e02b8`) caps the **free** plan at
+`maxPieces: 25` and enforces it on `POST /pieces`. Nearly every frontend spec arranges its own content
+through `api.createPublishedPiece` → `POST /pieces`, as the **one shared seeded writer**
+(`writer@qalam.local`). So the 26th piece created in a suite run is a `402 PIECE_LIMIT_REACHED`, in
+**arrange** — before the test asserts anything at all.
+
+**Consequence, stated precisely.** This is not "the suite gets slower near the end". It is a hard
+failure of every affected test with an error that names a _plan limit_, which reads like a monetization
+bug and has nothing to do with the code under test. Measured on the local stack (4,262 writer pieces
+accumulated): `reader.spec.ts` failed **8 of 10**, and all 11 of W7a's new conversation tests failed,
+every one of them inside `createPublishedPiece`.
+
+**And it is not only a long-lived-database problem, which is the part worth being precise about.** A
+single full pass of the suite creates far more than 25 pieces as that writer — `reader.spec.ts` alone
+creates ten. So a **fresh** database trips the cap partway through the run too; the accumulated local DB
+only made it fail from the first test instead of the twenty-sixth. The suite has not had a green run
+since B4 landed (B3–B7 all landed 2026-08-08–08-09, after the last full CI run).
+
+**Why it was not caught by B4 itself.** B4's own tests are unit + module tests against a fresh author
+with a controlled count, and `/me/pieces/limit` behaves exactly as designed. Nothing in B4's row said
+"the E2E suite shares one author", and nothing in the E2E docs said "the product now caps how much a
+single author may create". The gap is between the two, which is what makes it a §6-step-3 finding.
+
+**Resolution — in the harness, not the product.** `seed:e2e` now writes
+`monetization.plans → free.limits.maxPieces = 0` (the "0 = unlimited" convention B4 itself defines), so
+the stack the browser suite runs against does not cap its own fixture author. Three properties of the
+fix, each deliberate:
+
+- **It is stack configuration, exactly like its neighbour.** `stack-up.sh` already sets
+  `RATE_LIMIT_ENABLED=false` because a suite that mints a login per test would otherwise be judged by
+  a real product behaviour it is structurally guaranteed to violate ([e2e/06 §6]). The piece cap is
+  the same category of thing.
+- **It merges, never replaces.** The `monetization.plans` blob also carries plus/pro/enterprise and
+  every price. Only `free.limits.maxPieces` is touched.
+- **It runs unconditionally**, outside the seed's insert-if-missing writer guard, so an
+  already-seeded stack picks it up on the next `pnpm e2e:up` without a `--reset`.
+
+**No coverage was lost:** no spec anywhere asserts the cap (grepped). If one is ever written it must
+arrange its **own** author rather than the shared writer — which is the correct shape for a
+per-author limit anyway, and is now the standing note for whoever writes it.
+
+**Also verified as part of the fix:** `reader.spec.ts` + `writing.spec.ts` go from 8 failures to
+**13/13 green**, and W7a's own 11 tests from 0 to 11.
+
+### B4-2 · **low** (documentation, not behaviour) · a response is exempt from the piece cap, and only the service says so
+
+**What.** `POST /pieces/:id/responses` reaches `PiecesService.createDraft` **beneath**
+`assertPieceAllowance`, so writing a response is never refused for the plan piece cap. That is
+deliberate and correct — `pieces.service.ts` says it outright ("capping those would block a reader from
+replying, which B4 does not ask for") — but the exemption is recorded **only** in that method's doc
+comment. `getPieceAllowance`'s comment says the opposite-sounding thing in the same breath ("Responses
+ARE counted"), and both are true: a response **counts toward** `used` but is never **gated** by it.
+
+**Why it is worth a row rather than nothing.** W7a's first draft of the client believed the cap applied
+and shipped copy and a test comment saying so — plausible, self-consistent, and wrong. Corrected before
+commit, from the service rather than from the roadmap. Counting-but-not-gating is a genuinely
+surprising combination, and neither [45 §4.9](./45_WebClientRoadmap.md) nor B4's own row mentions
+responses at all.
+
+**Open**, deliberately: the behaviour is right, so there is nothing to fix in code. It belongs in
+[45 §4.9](./45_WebClientRoadmap.md)'s description of the cap, which is a roadmap edit and not W7a's.
+
+---
+
 ## 4. Divergences that are NOT gaps (platform-inherent)
 
 These are accepted permanently and need no epic. They exist because the platforms genuinely differ.
@@ -2080,6 +2158,7 @@ every known difference to live in §2, §3, or §4 — so a later epic comparing
 | **Explorer → Ask** | Web: **no cross-link**; the two are adjacent tabs. Mobile: an "Ask about this story" **app-bar action** on the explorer (`story_explorer_screen.dart:54-59`). | Mobile needs the action because the two are separate routes and the explorer is where a question occurs to you. On web they are one click apart in the same drawer, so a link would navigate to the tab beside the one you are on. (Mobile's version of this action is also the entry point that skips the feature-flag check — **W9-2**, §6.2.) Added by W9's sweep (2026-08-08). |
 | **Piece limit — where the refusal lands** | Web: the editor creates the draft on **first autosave**, so a refused create surfaces as a distinct `limit-error` save status mid-typing. Mobile: "New piece" mints a **local** draft and the refusal arrives at **sync**, so it surfaces as an explanation on that draft's row. | Same server refusal, same copy. The two clients create a piece at different moments — web on the first keystroke that saves, mobile offline-first — so the honest place to say "this will not save" is different on each. Neither could adopt the other's placement without adopting its create model. |
 | **Piece limit — which controls block** | Web: **two** disabled controls (the header "New draft" and the empty state's "Write your first draft"), each `aria-describedby` the notice. Mobile: **one** disabled FAB, with the reason in its semantics label. | Web's dashboard has two create affordances because a browser page shows list and empty state in the same layout; mobile has exactly one. Both are disabled-and-explained rather than hidden (C-1) or live-and-refused (W3c-1). |
+| **Conversation layer — where it lives** | Web: comments and responses are **two inline sections at the end of the reading page** (`/p/:slug`), under the author card and above "More like this". Mobile: a **footer of two rows** on the reader that PUSH two dedicated screens (`comments_screen.dart`, `responses_screen.dart`). | A phone has no room for a thread under an article, so mobile's footer is a navigation affordance standing in for the surface itself; a browser page scrolls and has the room. Keeping the conversation on the piece's **own canonical URL** is what makes it shareable and deep-linkable (`#conversation`) — a separate web route would mint a second URL for the same piece and take the prose away from the reply being written. **Same two surfaces, same order as mobile's footer** (comments first, responses second, "More like this" last), same states, same endpoints. Added by W7a's sweep (2026-08-10) — **§6.8**. |
 
 **The bottom four rows were added by W5's sweep (2026-08-04), and they had to be.** The epic's own code
 comments said each of them was "recorded in 48 §4.1" — and none of them was. A claim in a comment is not
@@ -2103,8 +2182,12 @@ Items **3 (partly), 4, 5, 6, 7, 8** — plus **P-1 / P-2** in §5.1 — are not 
 close the AF1–AF6 client gap, and these fall outside those AF epics. (**W-1 is no longer in this
 list** — it was closed by the 2026-07-28 port, §3.1.)
 
-- **Conversation layer** — comments and responses have UI on mobile and none on web. `W3` is
-  collaboration/trust and `W4` is monetization; **neither owns comments/responses**.
+- ~~**Conversation layer**~~ — **CLOSED 2026-08-10 by W7a** ([45 §4.4](./45_WebClientRoadmap.md), rows
+  1–2; report [53](./53_WebConversationLayerReadinessReport.md)). The original entry, for the record:
+  comments and responses had UI on mobile and none on web, and `W3` is collaboration/trust while `W4`
+  is monetization — **neither owned comments/responses**. W7 is the row that finally did, and it was
+  sliced (W7a = conversation) by the W3/W5 precedent. Web now ships both surfaces inline on the
+  reader; the arrangement difference is recorded in §4.1 and the sweep is **§6.8**.
 - **Collections** — mobile has a collections list + detail; web has neither, and no row covers it.
 - **Clap / report** — deliberately scoped out of W1, with no row that picks them up.
 - **Reader analytics, onboarding, privacy prefs, AI conversations + prompt library + usage** — all
@@ -2701,3 +2784,73 @@ only one of the four whose enforcement point is the AI orchestrator rather than 
      replaced fixed-length ids in five baselines; four show the seeded `e2e_writer`, but the blocked
      list showed throwaway users whose pen name defaults to a per-run variable-LENGTH username. Mask
      hides pixels, not boxes. Pinned via `api.setPenName`; the 20 baselines still need a CI mint.
+
+### 6.8 W7a's sweep (2026-08-10)
+
+The conversation layer on web — piece comments + responses ([45 §4.4](./45_WebClientRoadmap.md), W7
+rows 1–2; report [53](./53_WebConversationLayerReadinessReport.md)).
+
+1. **Only what the row named?** Yes — the two rows, and nothing from the other four W7 items. Named
+   explicitly because each of them sits _physically adjacent_ to what was built and was tempting:
+   **clap and report** are W7b even though `report_sheet.dart` lives in the same mobile directory as
+   the comment widgets and a "Report" action on a comment row would have been three lines;
+   **collections** are W7b; **reader analytics** and **privacy prefs** are W7c; and **@mentions are
+   P-2** — `CreateCommentDto` has no `mentions` field, so no field was added and a typed `@handle`
+   stays plain text rather than silently notifying nobody.
+
+   Three things W7a touched that were **not** in its row, all consequences rather than additions:
+
+   - **`draftPath()` in `lib/routes.ts`** — the response write flow ends in the editor, and the
+     reader may not import `features/writing` (docs/26 §4), so route composition is the way across
+     and a route must be named to be composed. Two existing inline `${ROUTES.write}/${id}` templates
+     in `piece-row.tsx` now call it; identical output, no behaviour change.
+   - **`usePermission()` at app level** — the response write is gated on `piece.create` and web had
+     **no** permission helper of any kind: before this, the only occurrence of `PERMISSIONS.*` in
+     `frontend/src` was inside a doc comment. It mirrors the server's _rank inheritance_
+     (`permission.resolver.ts:50-54`), which is the part a naive `DEFAULT_ROLE_PERMISSIONS[role]`
+     lookup gets wrong — that version would hide "Write a response" from every moderator and admin,
+     all of whom hold `piece.create` by inheritance. It is a **hint**, never enforcement: a 403 is
+     surfaced honestly, since a direct user grant or a customized `role_permissions` row is invisible
+     to it (both fail toward under-offering, never toward wrongly granting).
+   - **One pre-existing typecheck failure fixed.** `collaborator-identity.spec.tsx` (B3) built a
+     `StoryPresence` with `updatedAt` instead of `lastSeenAt` behind an `as` cast, failing
+     `tsc --noEmit` for the whole repo on a clean `develop`. Confirmed pre-existing by stashing.
+     Fixed rather than worked around, because a gate that is already red cannot verify anything.
+
+2. **Does mobile actually have every part I built?** Compared surface by surface against
+   `comments_screen.dart`, `responses_screen.dart`, `comment_tile.dart`, `comment_composer.dart` and
+   `response_tile.dart`. Same parts, same vocabulary: paginated top-level list, lazy reply expansion
+   driven by `replyCount`, add / reply / edit / delete, tombstone rows, the response list, and
+   "Write a response" → `POST` → the returned draft in the editor. **One arrangement difference**
+   (inline sections vs two pushed screens) → recorded in §4.1, which is the whole reason that
+   section exists.
+
+   **Two things mobile has that web deliberately does not**, both scoped out rather than missed:
+
+   - a **newest/oldest sort toggle** on the comments screen (`comments_screen.dart:35`, `_newestFirst`).
+     It is a **client-side sort of the loaded page only** — with cursor pagination that means "oldest
+     first" reorders the twenty comments in hand and then appends the next twenty newest below them,
+     which is not the sort it claims to be. Porting it would port the bug. Not filed as a mobile
+     defect either: it is honest enough on one page of a phone thread, and calling it wrong is a
+     judgment W7a should not make unilaterally. Named here so the next epic sees a decision.
+   - a **report action** on each comment row — W7b, as above.
+
+   **One thing web has that mobile does not:** the composer enforces `COMMENT_MAX_LENGTH` from
+   `@qalam/shared`; mobile hardcodes `maxLength: 2000` in `comment_composer.dart:77`. Same number
+   today, two sources of truth. Filed below.
+
+3. **Does mobile need a follow-up?** Yes, one, and it is small: **M7-1** — `comment_composer.dart`
+   hardcodes `maxLength: 2000` where `COMMENT_MAX_LENGTH` is the shared constant the DTO validates
+   against. It agrees today, so nothing is broken; it is a drift waiting to happen, of exactly the
+   class §3.11 closed for `@qalam/api-types`. Unowned; not W7a's to fix (mobile is out of scope for
+   this row).
+
+4. **§2 re-swept.** Row 4 (social depth) closed to **collections only** — comments and responses now
+   ship on both clients. Row 4's owner line moved from "unassigned — see §5" to W7, and §5's
+   conversation-layer bullet is struck through with the record kept.
+
+5. **Nothing left unrecorded.** One accepted difference in §4.1, two defects in §3.14 (**B4-1**
+   closed, **B4-2** open and documentation-only), one mobile follow-up (**M7-1**, above), and the
+   **four visual baselines** `frontend-conversation-*` needing a CI mint —
+   [53 §5](./53_WebConversationLayerReadinessReport.md). The local run confirmed the config still
+   **refuses** to mint them (T-8 holds); a red spec asking for a baseline is the correct state.

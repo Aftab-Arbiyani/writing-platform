@@ -211,17 +211,24 @@ was written, with the explicit note that they need "a roadmap decision, not more
 are that decision. They are **last** on purpose: every one of them is a gap on _one_ client with the
 other already shipped, so nothing is blocked on them — unlike W3–W6, which closed a total absence.
 
-**W7 — engagement & parity backfill.** Mostly mobile → web, one item on both:
+**W7 — engagement & parity backfill.** Mostly mobile → web, one item on both.
 
-| Item                                               | Direction    | Notes                                                                        |
-| -------------------------------------------------- | ------------ | ---------------------------------------------------------------------------- |
-| Conversation layer (piece comments + responses)    | mobile → web | Distinct from AF6 collaboration comments, which are a story's private review |
-| Collections (list + detail)                        | mobile → web | 48 §2 item 4                                                                 |
-| Clap (1..50 accumulating) + report                 | mobile → web | Scoped out of W1 deliberately; no row picked them up                         |
-| Reader analytics (the reader's own stats)          | mobile → web | 48 §2 item 6                                                                 |
-| Privacy prefs (bookmarks / reading-history counts) | mobile → web | Small — 48 §2 item 8                                                         |
-| Onboarding first-run flow                          | mobile → web | Needs a product shape for web before it is an engineering task               |
-| **P-2** composing @mentions                        | **both**     | `mentions` are resolved user **ids**; neither composer sends any today       |
+**Sliced, by the W3 → W3a/b/c and W5 → three-phase precedent.** Six scopeable items in one M–L row is
+not one epic: **W7a** = the conversation layer (rows 1–2, ✅ **done 2026-08-10** —
+[report](./53_WebConversationLayerReadinessReport.md)); **W7b** = collections + clap/report; **W7c** =
+reader analytics + privacy prefs; **P-2** (@mentions) stays its own item because it touches BOTH
+clients; onboarding stays blocked on a product shape for web.
+
+| Item                                                                           | Direction    | Notes                                                                                                                                                                                                                             |
+| ------------------------------------------------------------------------------ | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Piece comments (thread, replies, edit, tombstone) ✅ **DONE 2026-08-10 (W7a)** | mobile → web | Distinct from AF6 collaboration comments, which are a story's private review. Shipped **inline on the reader**, not as a route — [48 §4.1](./48_PlatformParityRegister.md); [report](./53_WebConversationLayerReadinessReport.md) |
+| Responses (public list + write → editor) ✅ **DONE 2026-08-10 (W7a)**          | mobile → web | A response IS a piece: `POST` creates a linked draft and the flow ends in the editor, so there is no inline composer on either client. List is public; the write is gated on `piece.create`                                       |
+| Collections (list + detail)                                                    | mobile → web | 48 §2 item 4 — **W7b**, with clap/report                                                                                                                                                                                          |
+| Clap (1..50 accumulating) + report                                             | mobile → web | Scoped out of W1 deliberately; no row picked them up — **W7b**                                                                                                                                                                    |
+| Reader analytics (the reader's own stats)                                      | mobile → web | 48 §2 item 6 — **W7c**                                                                                                                                                                                                            |
+| Privacy prefs (bookmarks / reading-history counts)                             | mobile → web | Small — 48 §2 item 8 — **W7c**                                                                                                                                                                                                    |
+| Onboarding first-run flow                                                      | mobile → web | Needs a product shape for web before it is an engineering task                                                                                                                                                                    |
+| **P-2** composing @mentions                                                    | **both**     | `mentions` are resolved user **ids**; neither composer sends any today                                                                                                                                                            |
 
 **W8 — remaining AI surfaces.** ✅ **Done 2026-08-05** —
 [report](./52_WebAiSurfacesReadinessReport.md). AI conversations, the prompt library, and AI usage: mobile
