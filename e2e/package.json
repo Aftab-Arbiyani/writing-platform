@@ -19,7 +19,7 @@
     "@playwright/test": "^1.55.0",
     "@qalam/api-types": "workspace:*",
     "@qalam/config": "workspace:*",
-    "@types/node": "^24.0.0",
+    "@types/node": "^26.2.0",
     "dotenv": "^16.4.0",
     "eslint": "^9.0.0",
     "typescript": "^5.6.0"
