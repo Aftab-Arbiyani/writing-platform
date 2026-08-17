@@ -1,5 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { CreditReason, PremiumFeature, QuotaWindow, creditsForCostUsd } from '@qalam/shared';
+import {
+  CreditReason,
+  PremiumFeature,
+  QuotaWindow,
+  creditsForCostUsd,
+  premiumCodeForAiFeature,
+} from '@qalam/shared';
 
 import { DomainEventBus } from '../../common/events/domain-event-bus';
 import { DomainEventType } from '../../common/events/domain-events';
@@ -21,6 +27,7 @@ import { UsageService } from './usage.service';
  * passes through the Usage Service" is realized without duplicating any token counting:
  *
  * - `checkQuota` (before generation): confirms the user is entitled to an AI budget, then
+ *   to the requested feature's premium code when it has one (D3 — `ai_writing`), then
  *   enforces the plan's daily/monthly token quota (budget protection). A QUOTA_EXCEEDED
  *   also emits a cost-alert event.
  * - `recordConsumption` (after generation): converts the cost the AI platform already
@@ -49,6 +56,30 @@ export class AiUsageMeterService implements AiUsageMeter {
     }
     // Must be entitled to an AI budget at all (a deny override blocks AI entirely).
     await this.entitlements.assertAllowed(input.userId, PremiumFeature.AiBudget);
+    // Then the per-feature premium code, when the feature is sold behind one (D3,
+    // docs/45 §4 row D3, docs/48 §6.13). Asserted HERE rather than in `AiFeatureService`
+    // for three reasons that all point the same way:
+    //
+    // 1. It is the one place every AI request already passes through carrying its
+    //    `feature` — `AiCompletionService.prepare()` feeds both `complete()` and
+    //    `stream()`, so neither path can bypass it and no new port is needed.
+    // 2. The AI module must never import monetization (that inversion is the whole
+    //    reason the `AI_USAGE_METER` seam exists), so a gate inside `AiFeatureService`
+    //    would need a second port to answer a question this one already can.
+    // 3. The payments-dark early return above covers it for free: with the flag off
+    //    NOBODY holds a subscription, so every user resolves to the free plan and a gate
+    //    that ran anyway would take AI writing from EVERYONE, not just free users.
+    //    Obeying the meter's existing convention is what makes the dark build correct.
+    //
+    // Broad-to-narrow is deliberate: `ai_budget` ("may you use AI at all") is asserted
+    // first, so a deny override on the budget still reports `ai_budget` as the blocker.
+    // Both run BEFORE `assertWithinQuota`, so a user who is not entitled gets
+    // ENTITLEMENT_DENIED ("upgrade") and never QUOTA_EXCEEDED ("wait for reset") — the
+    // conflation docs/48 §3.6 records against W4.
+    const premiumCode = premiumCodeForAiFeature(input.feature);
+    if (premiumCode !== null) {
+      await this.entitlements.assertAllowed(input.userId, premiumCode);
+    }
     try {
       await this.usage.assertWithinQuota(input.userId);
     } catch (error) {

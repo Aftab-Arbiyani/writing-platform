@@ -14,6 +14,8 @@
  * rows (mirrors the settings catalogue pattern). Only the TYPES live here.
  */
 
+import { PremiumFeature } from './monetization.js';
+
 /**
  * AI providers. The first three ship real adapters in AF1; the rest are
  * reserved extension points (config may reference them, adapters land later)
@@ -138,6 +140,95 @@ export const FLAGGED_AI_FEATURES: readonly AiFeature[] = [
   AiFeature.AskBook,
   AiFeature.Moderation,
 ];
+
+/**
+ * Which PREMIUM code (if any) each AI feature is sold under — the one place the
+ * answer lives (D3, [45 §4](../../../docs/45_WebClientRoadmap.md) row D3, decided
+ * by the owner 2026-08-08: **the free tier gets no AI writing; AI writing is paid**).
+ *
+ * `Record<AiFeature, …>` is load-bearing and is the totality pin: a value added to
+ * {@link AiFeature} without a row here is a COMPILE ERROR, never a silent hole. That
+ * direction matters more than it looks — the failure mode this forecloses is a future
+ * AI feature shipping ungated because nobody remembered a gate existed. A new feature
+ * must *declare* that it is free; it can never default to free by omission.
+ *
+ * **Where the map stops, and why.** Five features map to `ai_writing` — the AF2
+ * in-editor assistant (`writing_assistant`, whose eight actions are prompt-template
+ * keys, not distinct features), the AF2 Craft Coach, and the three vestigial AF1 codes
+ * (`grammar`/`rewrite`/`summarization`) which have no caller but are mapped for
+ * totality. Everything else maps to `null` — **deliberately**, and each for its own
+ * reason:
+ *
+ * - The five AF3 story analyses (`character_analysis`, `plot_analysis`,
+ *   `world_building`, `style_analysis`, `story_timeline`) and the AF4 surfaces
+ *   (`semantic_search`, `recommendations`, `ask_book`) belong to **D4**, whose scope
+ *   the owner has DEFERRED. 48 §5.2 consequence 1 ("a client must not gate on the
+ *   seven") still binds for every code but `ai_writing`. Gating them here would
+ *   silently pre-empt a decision that has not been taken.
+ * - `moderation` and `playground` are infrastructure, not a sold capability.
+ * - The reserved codes (`expand`, `shorten`, `title_suggestions`, `synopsis`,
+ *   `voice_dictation`, `image_generation`) have no caller, no seeded flag, and no
+ *   product scope. ⚠️ `expand`/`shorten` in particular READ like writing and are not
+ *   mapped to it: the assistant's own expand/condense actions are prompt keys under
+ *   `writing_assistant` and are already gated. Whoever gives one of these codes a real
+ *   caller must revisit this row rather than inherit `null` by default.
+ *
+ * A `null` here means "no premium code", NOT "no gating" — the AI feature flag
+ * (`aiFeatureFlagKey`) and the AI budget (`ai_budget`, asserted by the usage meter)
+ * both still apply to every feature regardless of this map.
+ */
+export const AI_FEATURE_PREMIUM_CODE = {
+  // ── Paid: AI writing (D3) ────────────────────────────────────────────────────
+  [AiFeature.WritingAssistant]: PremiumFeature.AiWriting,
+  [AiFeature.CraftCoach]: PremiumFeature.AiWriting,
+  [AiFeature.Grammar]: PremiumFeature.AiWriting,
+  [AiFeature.Rewrite]: PremiumFeature.AiWriting,
+  [AiFeature.Summarization]: PremiumFeature.AiWriting,
+  // ── D4's codes — NOT gated (scope deferred by the owner) ─────────────────────
+  [AiFeature.CharacterAnalysis]: null,
+  [AiFeature.PlotAnalysis]: null,
+  [AiFeature.WorldBuilding]: null,
+  [AiFeature.StyleAnalysis]: null,
+  [AiFeature.StoryTimeline]: null,
+  [AiFeature.SemanticSearch]: null,
+  [AiFeature.Recommendations]: null,
+  [AiFeature.AskBook]: null,
+  // ── Infrastructure ───────────────────────────────────────────────────────────
+  [AiFeature.Moderation]: null,
+  [AiFeature.Playground]: null,
+  // ── Reserved, no caller — see the ⚠️ above before giving one of these a caller ─
+  [AiFeature.Expand]: null,
+  [AiFeature.Shorten]: null,
+  [AiFeature.TitleSuggestions]: null,
+  [AiFeature.Synopsis]: null,
+  [AiFeature.VoiceDictation]: null,
+  [AiFeature.ImageGeneration]: null,
+} satisfies Record<AiFeature, PremiumFeature | null>;
+
+/**
+ * The totality test for {@link AI_FEATURE_PREMIUM_CODE}, pinned at COMPILE TIME because
+ * `@qalam/shared` is pure vocabulary with no test runner — `pnpm typecheck` is its suite.
+ *
+ * `satisfies` (rather than a `Record<…>` annotation) is what makes this a real test
+ * instead of a tautology: it keeps `keyof typeof` as the map's LITERAL keys, so the
+ * mutual-extends check below compares the two sets in both directions. A missing feature
+ * and a stale key that outlived its `AiFeature` value both fail the build here.
+ */
+type MutuallyExtends<A, B> = [A] extends [B] ? ([B] extends [A] ? true : never) : never;
+
+export const AI_FEATURE_PREMIUM_CODE_IS_TOTAL: MutuallyExtends<
+  keyof typeof AI_FEATURE_PREMIUM_CODE,
+  AiFeature
+> = true;
+
+/**
+ * The premium code an AI request must be entitled to, or `null` when the feature is
+ * not sold behind one. The ONLY correct way to read {@link AI_FEATURE_PREMIUM_CODE} —
+ * callers must not index the record directly, so the answer stays in one place.
+ */
+export function premiumCodeForAiFeature(feature: AiFeature): PremiumFeature | null {
+  return AI_FEATURE_PREMIUM_CODE[feature];
+}
 
 /** Master AI feature-flag key (already seeded pre-AF1). */
 export const AI_MASTER_FLAG_KEY = 'feature.ai.enabled';
