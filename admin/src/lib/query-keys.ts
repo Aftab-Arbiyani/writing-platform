@@ -104,4 +104,11 @@ export const qk = {
     runbooks: () => ['operations', 'runbooks'] as const, // GET /admin/operations/runbooks
     maintenanceWindows: () => ['operations', 'maintenance-windows'] as const, // GET …/maintenance-windows
   },
+  monetization: {
+    all: ['monetization'] as const, // Monetization admin (A1); mutations invalidate the namespace
+    plans: () => ['monetization', 'plans'] as const, // GET /admin/monetization/plans
+    config: () => ['monetization', 'config'] as const, // GET /admin/monetization/config
+    // Keyed by user because there is no "all overrides" route — the read is per-account.
+    overrides: (userId: string) => ['monetization', 'overrides', userId] as const, // GET …/overrides/:userId
+  },
 } as const;

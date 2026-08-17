@@ -38,6 +38,9 @@ export const ROUTES = {
   cost: '/operations/cost',
   slo: '/operations/slo',
   serviceStatus: '/operations/status',
+  // Monetization (A1) — every route behind `billing.manage`
+  billingPlans: '/billing/plans',
+  billingEntitlements: '/billing/entitlements',
   // Access
   users: '/users',
   moderators: '/moderators',

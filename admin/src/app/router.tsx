@@ -1,9 +1,10 @@
-import { Role } from '@qalam/shared';
+import { PERMISSIONS, Role } from '@qalam/shared';
 import { createBrowserRouter, Navigate } from 'react-router';
 
 import { AdminErrorBoundary } from '@/app/error-boundary';
 import { RequireAuth } from '@/app/guards/require-auth';
 import { RequireGuest } from '@/app/guards/require-guest';
+import { RequirePermission } from '@/app/guards/require-permission';
 import { RequireRole } from '@/app/guards/require-role';
 import { AdminShell } from '@/app/layouts/admin-shell';
 import { AppRoot } from '@/app/layouts/app-root';
@@ -114,6 +115,25 @@ export const router = createBrowserRouter([
                       {
                         path: ROUTES.serviceStatus,
                         lazy: () => import('@/app/routes/operations-status'),
+                      },
+                    ],
+                  },
+
+                  // Monetization (A1). Gated by PERMISSION rather than by rank: every
+                  // `admin/monetization` endpoint carries `@Permissions(billing.manage)`, so the
+                  // guard names the grant the server actually checks. `billing.*` sits on Admin
+                  // today, so this selects the same viewers as the floor above — see
+                  // `RequirePermission` for why it is still the right check to write.
+                  {
+                    element: <RequirePermission require={PERMISSIONS.BillingManage} />,
+                    children: [
+                      {
+                        path: ROUTES.billingPlans,
+                        lazy: () => import('@/app/routes/billing-plans'),
+                      },
+                      {
+                        path: ROUTES.billingEntitlements,
+                        lazy: () => import('@/app/routes/billing-entitlements'),
                       },
                     ],
                   },

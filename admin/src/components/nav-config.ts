@@ -1,6 +1,7 @@
 import { Role } from '@qalam/shared';
 import {
   Activity,
+  BadgeCheck,
   BarChart3,
   BellRing,
   DollarSign,
@@ -26,6 +27,7 @@ import {
   Target,
   TrendingUp,
   Users,
+  Wallet,
   Waypoints,
   type LucideIcon,
 } from 'lucide-react';
@@ -150,6 +152,29 @@ export const NAV_GROUPS: NavGroup[] = [
         label: 'AI Defaults',
         path: ROUTES.aiSettings,
         icon: Sparkles,
+        minRole: Role.Admin,
+      },
+      /**
+       * Monetization (A1). `minRole: Role.Admin` is the `billing.manage` gate expressed in the shape
+       * this map has: nav items carry a role FLOOR, not a permission code, and `billing.*` is granted
+       * to Admin and SuperAdmin only (`permissions.ts` DEFAULT_ROLE_PERMISSIONS) — so a moderator,
+       * who holds no billing grant, does not see these. The ROUTES are guarded by
+       * `RequirePermission(billing.manage)`, which is the check the server actually makes; adding a
+       * `permission` field here would mean rewriting all 30-odd existing entries inside a
+       * monetization row, so the shape is left alone and the equivalence is stated instead.
+       */
+      {
+        key: 'billing-plans',
+        label: 'Plans & pricing',
+        path: ROUTES.billingPlans,
+        icon: Wallet,
+        minRole: Role.Admin,
+      },
+      {
+        key: 'billing-entitlements',
+        label: 'Entitlements',
+        path: ROUTES.billingEntitlements,
+        icon: BadgeCheck,
         minRole: Role.Admin,
       },
     ],
