@@ -11,3 +11,6 @@ export { PlansPage } from './pages/plans-page';
 export { EntitlementsPage } from './pages/entitlements-page';
 export { CouponsPage } from './pages/coupons-page';
 export { BillingActionsPage } from './pages/billing-actions-page';
+export { RevenueDashboardPage } from './pages/revenue-dashboard-page';
+export { SubscriptionsDashboardPage } from './pages/subscriptions-dashboard-page';
+export { UsageDashboardPage } from './pages/usage-dashboard-page';

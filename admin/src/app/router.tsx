@@ -143,6 +143,18 @@ export const router = createBrowserRouter([
                         path: ROUTES.billingActions,
                         lazy: () => import('@/app/routes/billing-actions'),
                       },
+                      {
+                        path: ROUTES.billingRevenue,
+                        lazy: () => import('@/app/routes/billing-revenue'),
+                      },
+                      {
+                        path: ROUTES.billingSubscriptions,
+                        lazy: () => import('@/app/routes/billing-subscriptions'),
+                      },
+                      {
+                        path: ROUTES.billingUsage,
+                        lazy: () => import('@/app/routes/billing-usage'),
+                      },
                     ],
                   },
 

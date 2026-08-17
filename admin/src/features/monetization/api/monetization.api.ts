@@ -12,7 +12,10 @@ import type {
   CreditAdjustResult,
   GrantOverridePayload,
   RefundPayload,
+  RevenueAnalytics,
+  SubscriptionAnalytics,
   UpdateCouponPayload,
+  UsageAnalytics,
 } from '../types/monetization.types';
 
 /**
@@ -75,4 +78,18 @@ export const monetizationApi = {
     api
       .post<AdminPayment>(`/admin/monetization/payments/${paymentId}/refund`, payload)
       .then((r) => r.data),
+
+  // ── Analytics (A1c) — read-only, no failure modes beyond transport ───────────
+  getRevenue: (signal?: AbortSignal): Promise<RevenueAnalytics> =>
+    api
+      .get<RevenueAnalytics>('/admin/monetization/analytics/revenue', { signal })
+      .then((r) => r.data),
+
+  getSubscriptionAnalytics: (signal?: AbortSignal): Promise<SubscriptionAnalytics> =>
+    api
+      .get<SubscriptionAnalytics>('/admin/monetization/analytics/subscriptions', { signal })
+      .then((r) => r.data),
+
+  getUsageAnalytics: (signal?: AbortSignal): Promise<UsageAnalytics> =>
+    api.get<UsageAnalytics>('/admin/monetization/analytics/usage', { signal }).then((r) => r.data),
 };

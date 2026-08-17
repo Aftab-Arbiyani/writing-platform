@@ -23,7 +23,10 @@ import type {
   CreditAdjustResult,
   GrantOverridePayload,
   RefundPayload,
+  RevenueAnalytics,
+  SubscriptionAnalytics,
   UpdateCouponPayload,
+  UsageAnalytics,
 } from '../types/monetization.types';
 
 /**
@@ -176,5 +179,43 @@ export function useRefundPayment(): UseMutationResult<
   return useMutation({
     mutationFn: ({ paymentId, payload }: { paymentId: string; payload: RefundPayload }) =>
       monetizationApi.refundPayment(paymentId, payload),
+  });
+}
+
+// ── Analytics (A1c) ───────────────────────────────────────────────────────────
+
+/**
+ * The three dashboards. Each keys independently so one failing read cannot blank another, and each
+ * is computed on read from an append-only ledger server-side — there is no rollup table, so these are
+ * the most expensive reads on this surface. A minute of staleness is the right trade for a revenue
+ * figure nobody is watching second by second.
+ */
+export function useRevenueAnalytics(): UseQueryResult<RevenueAnalytics> {
+  const enabled = useBillingManage();
+  return useQuery({
+    queryKey: qk.monetization.revenue(),
+    queryFn: ({ signal }) => monetizationApi.getRevenue(signal),
+    enabled,
+    staleTime: 60_000,
+  });
+}
+
+export function useSubscriptionAnalytics(): UseQueryResult<SubscriptionAnalytics> {
+  const enabled = useBillingManage();
+  return useQuery({
+    queryKey: qk.monetization.subscriptions(),
+    queryFn: ({ signal }) => monetizationApi.getSubscriptionAnalytics(signal),
+    enabled,
+    staleTime: 60_000,
+  });
+}
+
+export function useUsageAnalytics(): UseQueryResult<UsageAnalytics> {
+  const enabled = useBillingManage();
+  return useQuery({
+    queryKey: qk.monetization.usage(),
+    queryFn: ({ signal }) => monetizationApi.getUsageAnalytics(signal),
+    enabled,
+    staleTime: 60_000,
   });
 }

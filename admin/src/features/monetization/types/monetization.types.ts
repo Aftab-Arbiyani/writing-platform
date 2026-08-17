@@ -156,3 +156,40 @@ export interface AdminPayment {
   description: string | null;
   createdAt: string;
 }
+
+// ── Analytics (A1c) ───────────────────────────────────────────────────────────
+
+/**
+ * `GET /admin/monetization/analytics/revenue`.
+ *
+ * Amounts are MINOR currency units summed across every currency the install has taken payments in —
+ * `sumPayments` does not group by currency, so a mixed-currency install produces a meaningless total
+ * (docs/48 §3, A1-6). The dashboard states the unit and does not print a currency symbol.
+ */
+export interface RevenueAnalytics {
+  totalRevenue: number;
+  last30dRevenue: number;
+  /** Absolute value of refunded payments (the service already flips the sign). */
+  refunded: number;
+  /** Count of SUCCEEDED payment rows — the only field that proves whether any data exists. */
+  paymentsCount: number;
+}
+
+/** `GET /admin/monetization/analytics/subscriptions`. */
+export interface SubscriptionAnalytics {
+  /** GROUP BY status. Empty when no subscription has ever existed. */
+  byStatus: Record<string, number>;
+  byTier: Record<string, number>;
+  activeCount: number;
+  trialingCount: number;
+  last30d: { created: number; upgraded: number; downgraded: number; canceled: number };
+}
+
+/** `GET /admin/monetization/analytics/usage` — AI tokens, credits and cost. */
+export interface UsageAnalytics {
+  totalTokens: number;
+  totalCreditsConsumed: number;
+  totalCostUsd: number;
+  last30dCostUsd: number;
+  byFeature: Array<{ feature: string; tokens: number; costUsd: number }>;
+}

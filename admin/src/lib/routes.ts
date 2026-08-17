@@ -43,6 +43,9 @@ export const ROUTES = {
   billingEntitlements: '/billing/entitlements',
   billingCoupons: '/billing/coupons',
   billingActions: '/billing/actions',
+  billingRevenue: '/billing/revenue',
+  billingSubscriptions: '/billing/subscriptions',
+  billingUsage: '/billing/usage',
   // Access
   users: '/users',
   moderators: '/moderators',
