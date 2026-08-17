@@ -2380,9 +2380,22 @@ subscriber's plan is computed correctly and then ignored on every route but the 
    default build. Worth pinning both ways.
 4. **The free tier is internally contradictory.** `free` is granted `ai_budget` with a 20k/day,
    200k/month token allowance but **not** `ai_writing`. If the server ever enforced `ai_writing`, the
-   free tier's budget would become unspendable. **That contradiction is a product question and it
-   blocks scoping the fix** — it must be answered before any row makes the server assert the declared
-   features.
+   free tier's budget would become unspendable. ~~That contradiction is a product question and it
+   blocks scoping the fix~~ — **RESOLVED BY THE OWNER 2026-08-08 ([45](./45_WebClientRoadmap.md) D3):
+   the free tier gets NO AI writing.** AI writing is a paid capability. The contradiction is settled
+   in favour of removing the allowance, not the restriction.
+
+   **Nothing has been built yet, and until it is, the decision has no effect.** Two things are
+   required for it to be real: free's `ai_budget` allowance must be **removed or zeroed** (otherwise
+   it is an allowance that cannot be spent — the same contradiction, inverted), and `ai_writing` must
+   actually be **enforced** (nothing checks it today, so free users keep using the assistant exactly
+   as before). ⚠️ **This is a behaviour REGRESSION for existing free users** — they can use AI writing
+   today. That was flagged before the decision and taken deliberately.
+
+   **D4's scope is deferred** (owner, same day: "will decide this later what enforcement we will
+   do"). D3 turned D4 from _blocked_ into _floored_: enforcing `ai_writing` is now mandatory, and the
+   open question is only how far past it to go. **The "a client must not gate on the seven" rule in
+   consequence 1 still stands** for the six codes beyond `ai_writing`.
 
 **Ownership.** `premium_content` (a ninth code that does not exist yet) is owned by **B2**, held —
 [45 §4.5](./45_WebClientRoadmap.md#45-b2--premium-content-held-detail). B2 will write the **first real
