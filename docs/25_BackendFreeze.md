@@ -167,11 +167,12 @@ Changing anything in §1–§3 (the contract) requires: (a) an ADR entry in `doc
 a new API version per §8. Additive changes update the relevant doc + `openapi.json`
 and are noted here.
 
-| Date       | Change                                                                                                         | By  |
-| ---------- | -------------------------------------------------------------------------------------------------------------- | --- |
-| 2026-07-09 | Initial freeze at `v1` (post Epic 12)                                                                          | —   |
-| 2026-07-27 | **Additive:** `GET /pieces/by-slug/:slug` (B1, [45 §3](./45_WebClientRoadmap.md))                              | —   |
-| 2026-08-08 | **Post-freeze surface, shape change:** `GET /stories/:id/snapshots` (B7, [45 §4.12](./45_WebClientRoadmap.md)) | —   |
+| Date       | Change                                                                                                                 | By  |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------- | --- |
+| 2026-07-09 | Initial freeze at `v1` (post Epic 12)                                                                                  | —   |
+| 2026-07-27 | **Additive:** `GET /pieces/by-slug/:slug` (B1, [45 §3](./45_WebClientRoadmap.md))                                      | —   |
+| 2026-08-08 | **Post-freeze surface, shape change:** `GET /stories/:id/snapshots` (B7, [45 §4.12](./45_WebClientRoadmap.md))         | —   |
+| 2026-08-17 | **Post-freeze surface, additive + one error code split:** `admin/monetization` (B8, [45 §5](./45_WebClientRoadmap.md)) | —   |
 
 **2026-07-27 — `GET /pieces/by-slug/:slug`.** Additive per §8; no existing endpoint, DTO, or
 behaviour changed. **Why:** the web reader addresses pieces by slug (`/p/:slug` — already emitted by
@@ -195,3 +196,45 @@ is a property of the very list being clamped, and splitting them makes a torn re
 the two requests. Nothing else changed — same route, same guard, same permission, same `SnapshotDto`
 for each item. `POST /stories/:id/snapshots` (capture) is untouched **by design**, and a test fails if
 that stops being true.
+
+**2026-08-17 — `admin/monetization` gains three reads, four fields, and one error code.** Recorded
+here for discoverability, in the B7 style above and **not** as a freeze amendment: `admin/monetization`
+is AF5, built after the `v1` baseline of 102 paths was frozen on 2026-07-09, and §8 names monetization
+and admin explicitly as future features that "enter additively" outside that baseline. Its only
+consumer is the admin app, updated in the same commits. No ADR and no version bump; every change below
+is additive except one error code, which is discussed on its own.
+
+**What changed.** Three new routes, all `@Permissions(billing.manage)` like every other route on the
+controller, all pure plumbing over service methods that already existed:
+
+| Route                                               | Answers                           | Reuses                                      |
+| --------------------------------------------------- | --------------------------------- | ------------------------------------------- |
+| `GET admin/monetization/users/:userId/subscription` | `AdminUserSubscriptionDto`        | `SubscriptionService.findByUser`            |
+| `GET admin/monetization/users/:userId/payments`     | the module's cursor page envelope | `BillingService.listPayments`               |
+| `GET admin/monetization/users/:userId/credits`      | `AdminUserCreditsDto`             | `CreditService.findWallet` (new, read-only) |
+
+Plus, on existing shapes: `UpdateMonetizationConfigDto` declares its remaining three properties
+(`taxRates`, `currencyRates`, `regionCurrency` — the service always merged them; the DTO was what the
+boundary rejected them at); `toCouponDto` returns `appliesToTier`, `perUserLimit` and `description`;
+and `RevenueAnalytics` gains `byCurrency`.
+
+**Why `byCurrency` is an addition and not a fix to the fields it corrects.** `totalRevenue`,
+`last30dRevenue` and `refunded` sum across every currency, which is meaningless on a multi-currency
+install — the honest shape would be a per-currency map. Retyping a shipped field from a number to a
+map is breaking regardless of the baseline, and the admin revenue dashboard already reads all three.
+So the grouped figures arrive alongside, the four scalars keep their exact former types and meanings,
+and a spec asserts that promise directly so the next person tempted to "finish the job" finds out
+there rather than in a client.
+
+**The one non-additive change: `PAYMENT_NOT_REFUNDABLE`.** `BillingService.refund` threw
+`PAYMENT_NOT_FOUND` both when no payment row existed and when the row existed with no
+`providerPaymentId` — a payment never captured at a provider. The second case now answers
+`PAYMENT_NOT_REFUNDABLE` (409). The code is additive; what changed is that a case which used to answer
+404 now answers 409, and that is a deliberate correction rather than an oversight: the two states lead
+an operator to opposite actions, and collapsing them told someone holding a correct payment id to go
+and find a better one. The admin app is the only consumer, its refund copy is split in the same commit
+per the B7 precedent, and both its unit and browser specs assert the two codes stay apart.
+
+**Nothing existing was removed, renamed or retyped.** The four numeric config fields, the coupon
+fields that already shipped, the four revenue scalars, `PAYMENT_NOT_FOUND` itself, and every one of
+A1's fourteen routes are untouched.

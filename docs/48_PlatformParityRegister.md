@@ -1,6 +1,6 @@
 # 48 — Platform Parity Register (web ↔ mobile)
 
-**Status:** 🔒 Binding · **Owner:** every client epic · **Last swept:** 2026-08-17 (after **A1** — the admin monetization surface, three slices; sweep **§6.14**, and six backend gaps recorded as **A1-1 … A1-7** in §3. Earlier the same day, **D3** — AI writing is now an enforced paid capability on the server and gated on both clients; the free-tier regression is LIVE, and §5.2 item 4 is rewritten. Sweep **§6.13**. Earlier the same day, **M7-3** — mobile's clap, sweep **§6.12**. Before those, 2026-08-10 after **W7c** —
+**Status:** 🔒 Binding · **Owner:** every client epic · **Last swept:** 2026-08-17 (after **B8** — the A1 enablers: all seven of A1's recorded gaps closed and their compensating copy deleted; one new gap, B8-1; sweep **§6.15**. Earlier the same day, **A1** — the admin monetization surface, three slices; sweep **§6.14**, and seven backend gaps recorded as **A1-1 … A1-7** in §3. Earlier the same day, **D3** — AI writing is now an enforced paid capability on the server and gated on both clients; the free-tier regression is LIVE, and §5.2 item 4 is rewritten. Sweep **§6.13**. Earlier the same day, **M7-3** — mobile's clap, sweep **§6.12**. Before those, 2026-08-10 after **W7c** —
 reader analytics + the privacy-prefs row, closing §2 rows **6 and 8** and leaving **onboarding as the
 only unowned §2 row**. Its sweep is **§6.10**, and it is the slice that shrank on contact with the code
 — twice, both reductions recorded in §4 rather than in a commit message. Row 4's premise was **wrong**:
@@ -2236,7 +2236,7 @@ self-report is refused, and the refusal is shown"). **Open** only as documentati
 
 ---
 
-### A1-1 · **low** · `PAYMENT_NOT_FOUND` is thrown for a payment that exists but is not refundable
+### A1-1 · ~~**low**~~ · **CLOSED 2026-08-17 (B8, `3d5695b` + `de85f6b`)** · `PAYMENT_NOT_FOUND` is thrown for a payment that exists but is not refundable
 
 `BillingService.refund` (`backend/src/modules/monetization/billing.service.ts:165`) throws
 `PaymentNotFoundException` on `original === null` **and** on `original.providerPaymentId === null`. The
@@ -2249,7 +2249,15 @@ collapses a third state into the first inside the very surface that must disting
 was never captured at a provider and so cannot be refunded", which covers both without asserting either.
 Splitting it properly needs a `PAYMENT_NOT_REFUNDABLE` code and is a backend row.
 
-### A1-2 · **low** · `PATCH /admin/monetization/config` can write 4 of the config's 7 fields
+**Closed by B8, exactly that way.** `PAYMENT_NOT_REFUNDABLE` (409) is in the catalogue and
+`BillingService.refund` throws it on `providerPaymentId === null`, before it touches the provider.
+409 rather than another 404 because the conflict is between the payment's STATE and the action, as
+with `COUPON_NOT_REDEEMABLE`. The admin copy is split in the same commit — the not-found sentence no
+longer hedges, and the new one says the id is correct and no retry will help — and both the unit and
+browser specs assert the two stay apart. Recorded in the freeze log at [25 §9](./25_BackendFreeze.md)
+as the row's one non-additive change.
+
+### A1-2 · ~~**low**~~ · **CLOSED 2026-08-17 (B8, `3d5695b` + `de85f6b`)** · `PATCH /admin/monetization/config` can write 4 of the config's 7 fields
 
 `MonetizationConfigPatch` and `MonetizationConfigService.updateConfig` both handle `taxRates`,
 `currencyRates` and `regionCurrency` — the service merges them per key. But
@@ -2260,7 +2268,20 @@ unwritable over this route.
 A1a renders them read-only with a sentence saying why and pointing at the `monetization.config` setting,
 rather than showing disabled inputs that read as a bug. Closing it is four DTO properties.
 
-### A1-3 · **medium** · no admin route reads another user's credit balance
+**Closed by B8** — three properties, in fact, and a validator each. `@IsObject()` alone (the idiom
+elsewhere, `retrieval-request.dto.ts:215`) would have been the wrong close: `mergeConfig` spreads
+values through uncoerced, so a string in `taxRates` persists and `TaxService` then computes `amount *
+"20%"` — NaN tax on every priced subscription, from a typo, silently. The validators assert what the
+consumers already assume (a rate is a fraction 0–1, a currency rate is > 0, a region maps to a
+non-empty code) and bound each table at 64 entries, because the merge never deletes and the merged row
+is read on every priced request. The config screen edits all three as key → value rows and states the
+merge rule, since a blanked row cannot delete a key.
+
+**One correction to the diagnosis above, which the code settles.** `main.ts:170` sets
+`forbidNonWhitelisted: true` as well as `whitelist: true`, so the three fields were **rejected with a
+400**, not silently stripped. Louder than recorded, and unwritable either way.
+
+### A1-3 · ~~**medium**~~ · **CLOSED 2026-08-17 (B8, `cd05b0a` + `de85f6b`)** · no admin route reads another user's credit balance
 
 `GET /monetization/credits` is `@CurrentUser` self-scoped, so an admin calling it gets their OWN wallet.
 There is no `admin/monetization` equivalent. Consequences for A1b, both handled rather than hidden:
@@ -2273,20 +2294,53 @@ There is no `admin/monetization` equivalent. Consequences for A1b, both handled 
   number the server will not honour.
 - Nothing in the admin app can display a balance, so there is no second place for one to be wrong.
 
-### A1-4 · **low** · the coupon response drops three fields the create DTO accepts
+**Closed by B8.** `GET admin/monetization/users/:userId/credits` answers `{ userId, credits }`, where
+`credits` is `null` for an account that has never held a wallet — a real balance of zero, not an error.
+It reads through a NEW `CreditService.findWallet`, not `getOrCreateWallet`, because the latter INSERTS:
+an operator glancing at an account must not create a wallet row for it, and a mistyped id must not
+create one for a user who does not exist. A spec asserts the route never calls the writing path.
+
+**The clamp is deliberately unchanged (B8 DECISION 3).** `CreditService.apply` still computes
+`Math.max(0, balance + delta)`. Over-spend is prevented upstream by the usage meter's quota check, the
+ledger records the CLAMPED delta so wallet and ledger stay consistent, and turning a
+currently-succeeding admin deduction into a 402 is a behaviour change no row has asked for. What
+changed is that the confirmation no longer has to guess: it projects the same `Math.max(0, …)` the
+server computes, so deducting 500 from an account holding 200 says the account will be emptied and
+that only 200 is actually removed. An empty wallet gets its own sentence, because the general wording
+degenerates into "only 0 credits are actually removed".
+
+### A1-4 · ~~**low**~~ · **CLOSED 2026-08-17 (B8, `3d5695b` + `de85f6b`)** · the coupon response drops three fields the create DTO accepts
 
 `CreateCouponDto` accepts `appliesToTier`, `perUserLimit` and `description`; `toCouponDto`
 (`monetization.mappers.ts`) returns none of them. So a coupon's tier restriction and per-user limit are
 write-only: an operator can set them and can never read them back to check. A1b's form says so at the
 field rather than letting the value appear to vanish.
 
-### A1-5 · **medium** · nothing admin-facing lists payments, so a refund needs an id from elsewhere
+**Closed by B8** — three additive response fields, and the coupon table now prints all three. The
+create form also gained the `perUserLimit` and `description` inputs it never had (only `appliesToTier`
+was on screen, under the write-only note). The spec that guards it compares the mapper's output keys
+against what the write side accepts, rather than asserting a hand-listed shape: a hand-listed shape is
+what was already there and already passing, because it had been copied from the mapper.
+
+### A1-5 · ~~**medium**~~ · **CLOSED 2026-08-17 (B8, `cd05b0a` + `de85f6b`)** · nothing admin-facing lists payments, so a refund needs an id from elsewhere
 
 `POST payments/:id/refund` takes a payment UUID and `GET /monetization/payments` is self-scoped, so the
 admin surface cannot offer a picker or a search. The operator must already hold the id — from a support
 ticket, or from the database. A1b's refund form is therefore an id-entry field and says why.
 
-### A1-6 · **low** · revenue analytics sums across currencies without grouping
+**Closed by B8**, per-user rather than global: `GET admin/monetization/users/:userId/payments` reuses
+`BillingService.listPayments` unchanged — no new query, no index review — and pages with the same
+cursor helpers the self-scoped ledgers use, so an admin cursor and a user cursor encode identically.
+Per-user also matches the flow, which starts from a support ticket naming a person. The global variant
+("show me today's failed payments") is a monitoring question with unspecified filters and was not
+guessed at; it remains available to a later row.
+
+The refund form now starts from a user id and lists their recent payments. Refund rows are shown but
+not selectable: hiding them would make an already-refunded charge look untouched, and offering them
+would invite refunding a refund. When more pages exist the picker says so rather than letting a list
+that happens to stop read as everything.
+
+### A1-6 · ~~**low**~~ · **CLOSED 2026-08-17 (B8, `3d5695b` + `de85f6b`)** · revenue analytics sums across currencies without grouping
 
 `MonetizationAnalyticsService.sumPayments` sums `p.amount` filtered only by status, so on an install
 that has taken payments in more than one currency `totalRevenue`, `last30dRevenue` and `refunded` add
@@ -2295,7 +2349,19 @@ unlike units. `paymentsCount` remains meaningful.
 A1c's revenue dashboard prints no currency symbol, labels the figures as minor units, and states the
 caveat on the page. A correct fix is a GROUP BY currency and a per-currency response shape.
 
-### A1-7 · **medium** · no admin route returns an individual subscription
+**Closed by B8 additively, and the "per-currency response shape" above is exactly what was NOT done.**
+Retyping `totalRevenue` from a number to a map is breaking regardless of the freeze baseline, and the
+dashboard already reads it — so `byCurrency` arrives ALONGSIDE, one row per currency carrying the same
+four figures in one unit, computed by conditional aggregation in a single grouped scan. The four
+scalars keep their exact types and meanings, and a spec asserts that promise so the next person tempted
+to finish the job finds out there rather than in a client.
+
+The dashboard leads with the breakdown, printed as money — with each currency's own exponent, since
+hard-coding `/100` renders a ¥4,000 charge as ¥40 (the M5-3 defect, §3 above). The scalars stay,
+symbol-free and labelled minor units, because on the single-currency install most deployments are they
+are the headline.
+
+### A1-7 · ~~**medium**~~ · **CLOSED 2026-08-17 (B8, `cd05b0a` + `de85f6b`)** · no admin route returns an individual subscription
 
 `analytics/subscriptions` is aggregate only (`byStatus`, `byTier`, counts), and
 `GET /monetization/subscription` is self-scoped. So **A1 does not close its own premise** — "an operator
@@ -2303,6 +2369,40 @@ today cannot see a subscription" is still true after this row, for the one thing
 naturally means. The row's other twelve endpoints were reachable and are now built; this one does not
 exist to build. The subscriptions dashboard names the limit on the page rather than leaving an operator
 to hunt for a search box.
+
+**Closed by B8, and with it the row's premise.** `GET admin/monetization/users/:userId/subscription`
+reuses `SubscriptionService.findByUser` + `toSubscriptionDto`, and the subscriptions dashboard carries
+the lookup where the sentence used to be.
+
+**It answers `subscription: null` for a free account rather than mirroring `SUBSCRIPTION_NOT_FOUND`
+(B8 DECISION 0.2).** The 404 is right for the account holder, who asked about their own subscription;
+for an operator, "on free" is the platform's commonest state, and answering an error would make every
+admin client render an error banner for the ordinary case. `GET overrides/:userId` on the same
+controller already answers `[]` rather than 404 for the same reason. The lookup sits OUTSIDE the
+dashboard's emptiness check, because an operator can need to confirm an account is on free whether or
+not anyone on the install has ever subscribed. The limitation this shape carries is recorded as **B8-1**
+below rather than left to be discovered.
+
+### B8-1 · **low** · an admin per-account read cannot tell an unknown user from one with no data (opened 2026-08-17, during B8)
+
+`GET admin/monetization/users/:userId/subscription` answers `{ subscription: null }` for an account on
+free AND for a user id that does not exist. `…/credits` answers `{ credits: null }` for both.
+`GET overrides/:userId` — which predates B8 — answers `[]` for both. The monetization module holds no
+user table and may not import one (`features/README.md`'s deletability rule applies on the client;
+`docs/16`'s no-cross-module-repository rule applies on the server), so nothing on this surface can
+check an id against the user directory.
+
+The consequence is small but real: an operator who mistypes one character of a UUID is told the account
+is on the free plan with an empty wallet, which is a plausible answer, rather than being told the
+account does not exist.
+
+**Found while building B8's DECISION 0.2 and deliberately not fixed there** (§4.4 of the row's brief).
+Closing it means either a cross-module user existence check — a new dependency for the module with the
+tightest boundary on the server — or a `userExists` flag on three responses that only the admin app
+would read. Both are design decisions larger than the row that surfaced them, and the pre-existing
+`overrides/:userId` has the same property, so fixing it here would leave the surface inconsistent with
+itself. The client says it instead: the free-plan card ends with a sentence telling the operator that
+a non-existent id reads the same way and to confirm it on the Users screen.
 
 ---
 
@@ -3662,7 +3762,8 @@ monetization row would have made the diff mostly unrelated churn.
 
 **31 route modules, not 30** — which is what §5 of docs/45 already said.
 
-**Six backend gaps, recorded in §3 as A1-1 … A1-7 and none fixed.** Three of them changed what A1 could
+**Seven backend gaps, recorded in §3 as A1-1 … A1-7 and none fixed.** (Written as "six" here and in
+this document's header until B8 corrected the count; the entries were always seven — §6.15.) Three of them changed what A1 could
 build, and are the honest limits of this row:
 
 1. **No admin route reads a subscription** (A1-7). The row's premise was "an operator cannot see a
@@ -3736,3 +3837,128 @@ dashboards and the coupon list all vary with data other specs in this suite crea
 `fullyParallel`, and masking cannot save them because the empty-vs-populated branch changes the page's
 STRUCTURE and therefore its height, not just its numbers. Entitlements has nothing to show until an id is
 typed.
+
+---
+
+### 6.15 B8's sweep (2026-08-17)
+
+The row that closes A1's hand-off. Seven gaps, four commits, and the first sweep in this document whose
+subject is another row's recorded debt rather than a new surface.
+
+**What shipped**, four commits, one concern each:
+
+| Commit    | Closes                     | What                                                                                               |
+| --------- | -------------------------- | -------------------------------------------------------------------------------------------------- |
+| `cd05b0a` | **A1-3, A1-5, A1-7**       | Three `admin/monetization/users/:userId/*` reads: subscription, payments, credits.                 |
+| `3d5695b` | **A1-1, A1-2, A1-4, A1-6** | `PAYMENT_NOT_REFUNDABLE`; three config DTO properties; three coupon response fields; `byCurrency`. |
+| `de85f6b` | the seven UI sites         | Real data wired, apology copy deleted, specs that pinned it rewritten.                             |
+| `7be6b9f` | the two new flows          | Browser coverage for the refund picker and the subscription drill-through.                         |
+
+**Gates.** Backend `tsc` clean · `eslint --max-warnings=0` clean · **150 suites / 1254 tests** (from
+146 / 1216: +4 spec files, +38 tests) · `nest build` clean. Admin `tsc` clean · lint clean · **63 files
+/ 290 tests** (from 61 / 259: +2 files, +31 tests) · `vite build` clean. E2E `tsc` + lint clean;
+`admin-chromium` collects **53** tests (was 47), `admin-dark` **15** (was 14).
+
+**The browser suite was NOT executed for this row.** No Qalam stack is running on this machine and the
+visual job's pinned image is CI-only, so what is verified here is that the specs typecheck, lint, and
+collect — not that they pass. That is the same standing position as every row since the E2E deferral
+(§3, "E2E browser testing"), and it is stated rather than implied because two of the new specs assert
+copy that only exists after this row.
+
+#### Did closing these seven reveal an eighth?
+
+**Yes, one, and it is recorded rather than fixed: B8-1** (§3). An admin per-account read cannot tell an
+unknown user id from a real account with no data — `subscription: null`, `credits: null` and the
+pre-existing `overrides/:userId`'s `[]` all mean both things. It was found while answering the row's
+DECISION 0.2, which is the honest place for it to surface: choosing a nullable shape over a mirrored
+404 is precisely what makes "no such user" and "no subscription" indistinguishable. Closing it means
+either a cross-module user-existence check in the module with the server's tightest boundary, or a
+`userExists` flag on three responses only the admin app reads — both larger design decisions than the
+row that surfaced them, and both would leave `overrides/:userId` inconsistent unless it moved too. The
+free-plan card says it instead.
+
+**Nothing else new.** Two things that look like gaps are not: the plan catalogue is still read-only
+(`updatePlans` is unexposed — recorded by A1, not one of the seven, and untouched here), and the
+payments list is per-user rather than global, which was a decision and not a shortfall (below).
+
+#### Did any compensating copy survive?
+
+**No.** All seven sites were rewired and their sentences deleted; `grep` over `admin/src` for the
+phrases A1 used returns only past-tense explanations of what was fixed, a spec asserting one of the
+sentences is **absent**, and two sentences describing limits this row did not touch — the entitlements
+screen taking an id rather than a handle (the deletability rule, not a backend gap) and the plan
+catalogue being read-only (no admin writer exists). Both are still true.
+
+Three copy changes are worth naming because they are corrections, not deletions:
+
+- The refund not-found message stopped hedging. "does not exist, **or** was never captured at a
+  provider" was the only honest sentence while the server collapsed both into one code; with the codes
+  split it became the inaccurate option, because it tells an operator holding a verified id to go and
+  check it.
+- The credit-adjust confirmation stopped stating a rule and started stating a result. A1 gave the delta
+  and the zero floor because the balance was unreadable; it now projects the same `Math.max(0, …)` the
+  server computes. **The clamp itself was deliberately left alone** — see A1-3's closure for why, and
+  note that the honest projection is what makes leaving it defensible.
+- The revenue dashboard's caveat narrowed rather than vanished. The four scalars still sum across
+  currencies and still carry no symbol; what changed is that the page now also shows figures that CAN
+  be quoted, so the caveat attaches to the scalars instead of to the whole page.
+
+#### The three shape decisions, and why they went the way they did
+
+**Payments are per-user, not global.** `BillingService.listPayments(userId, cursor, limit)` already
+answered exactly this question, so the route is plumbing: no new query, no index review, and the same
+cursor helpers the self-scoped ledgers use — a second pagination idiom in one module is a defect, not a
+feature. It also matches the flow, which starts from a support ticket naming a person. The global
+variant answers "show me today's failed payments", which is a monitoring question whose filters nobody
+has specified; guessing them would have been the expensive half of this row.
+
+**A free account answers `null`, not a 404.** The self-scoped route throws `SUBSCRIPTION_NOT_FOUND` and
+is right to — the account holder asked about their own subscription. For an operator, "on free" is the
+platform's commonest state, and a 404 would make `AsyncSection` render an error banner for the ordinary
+case, which is a defect A1 would have recorded. The sibling `GET overrides/:userId` already answers
+`[]` rather than 404 for the same reason, so this follows the controller rather than inventing a rule.
+Its cost is B8-1, above.
+
+**`byCurrency` is added, never substituted.** The tempting fix — retype `totalRevenue` as a
+per-currency map — is breaking regardless of the freeze baseline, and the dashboard already reads it.
+So the grouped figures arrive beside the scalars, and a spec asserts the scalars are unchanged, which
+is the assertion that will actually fail if someone later "finishes the job".
+
+#### One side effect a read endpoint should never have
+
+`GET .../credits` reads through a new `CreditService.findWallet`, not the existing
+`getOrCreateWallet`. The latter INSERTS on a miss, which is correct when a user opens their own wallet
+screen and wrong when an operator merely looks at an account: an idle lookup would materialise a row,
+and a mistyped id would materialise one for a user who does not exist. A spec asserts the route never
+calls the writing path. The question was asked because the row's brief asked it; it is recorded because
+the answer was not obvious from the call site.
+
+#### What the audit corrected
+
+**A1-1 … A1-7 is seven entries, and §6.14 called them six.** The list was always right and only the
+total was wrong — the same shape of slip A1 itself caught in its brief's "fifteen endpoints". Corrected
+in place, in the header and in §6.14, rather than left for a third row to trip over.
+
+**A1-2's diagnosis was slightly wrong in the operator's favour.** It says `ValidationPipe` _strips_ the
+three config tables. `main.ts:170` also sets `forbidNonWhitelisted: true`, so the request was
+**rejected with a 400** — louder than recorded, and unwritable either way. The register entry is
+corrected in place.
+
+**Bare `@IsObject()` would have been the wrong close for A1-2**, even though it is the idiom elsewhere
+(`retrieval-request.dto.ts:215`). `mergeConfig` spreads values through without coercion, so a string in
+`taxRates` persists and `TaxService` computes NaN tax on every priced subscription — from a typo, with
+no error anywhere. Three validators mirror what the consumers assume, and the config form applies the
+same rules so the operator learns before the round trip rather than from a 400.
+
+**Currency formatting is not `/100`.** JPY has no minor unit and KWD has three, so the revenue
+dashboard asks `Intl` for each currency's exponent. Hard-coding two decimals is the **M5-3** defect
+(§3) reappearing on the other platform, which is exactly the kind of repeat this register exists to
+prevent.
+
+#### Does any other client need this?
+
+**No, by construction, and for the same reason §6.14 gave.** `billing.manage` is an operator
+permission, mobile ships no admin surface, and the web frontend is the customer side of monetization.
+The three new routes are admin-only; nothing on either client can or should call them. The
+`PAYMENT_NOT_REFUNDABLE` split is the one change with a theoretical second consumer, and it has none:
+`POST payments/:id/refund` is on the admin controller, so no user-facing client can reach the code.

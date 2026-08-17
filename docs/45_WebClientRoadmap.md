@@ -1071,10 +1071,40 @@ visual baselines are **deliberately unminted** (`admin-billing-plans.png`, `admi
 × 4 admin projects); only the web-e2e workflow's visual job may mint them.
 
 **The audit corrected the brief in twelve places and found six backend gaps**, all recorded in §3
-(A1-1 … A1-6) and none fixed — the backend is frozen. The three that shaped the UI: no admin route
+(A1-1 … A1-7) and none fixed — the backend is frozen. The three that shaped the UI: no admin route
 reads another user's subscription or credit balance, and none lists payments, so A1 does **not** close
 "an operator cannot see a subscription". `PATCH config` writes 4 of its 7 fields. Plans have no admin
 writer at all. Full reasoning in §6.14.
+
+#### A1 enablers ✅ **DONE 2026-08-17** (row **B8**; sweep [48 §6.15](./48_PlatformParityRegister.md))
+
+The row that makes the paragraph above false. It closes all seven gaps A1 recorded and deletes the
+compensating copy A1 wrote in their place — a stale apology being worse than the gap it described.
+
+| Commit    | What it closed                                                                                                                                                            |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `cd05b0a` | **A1-3, A1-5, A1-7** — three `admin/monetization/users/:userId/*` reads (subscription, payments, credits), each pure plumbing over a service method that already existed. |
+| `3d5695b` | **A1-1, A1-2, A1-4, A1-6** — `PAYMENT_NOT_REFUNDABLE`; the config DTO's remaining three properties; three coupon response fields; `byCurrency` on revenue analytics.      |
+| `de85f6b` | The seven UI sites, rewired to real data with their apology copy deleted.                                                                                                 |
+| `7be6b9f` | Browser coverage for the two flows that only exist now — the refund picker and the subscription drill-through.                                                            |
+
+**It breaks the "no backend expansion" default of §7 deliberately**, as B1 and B7 did, and with B7's
+lighter ceremony rather than B1's: `admin/monetization` is AF5, outside the frozen 102-path baseline,
+so the change is recorded in [25 §9](./25_BackendFreeze.md) with every consumer moved in the same
+commit, and needs no ADR or version bump. §8 still binds one thing hard, and A1-6 obeys it — the
+per-currency breakdown is ADDED beside `totalRevenue` and the four scalars keep their types.
+
+**Gates:** backend `tsc` clean, `eslint --max-warnings=0` clean, **150 suites / 1254 tests** (from
+146 / 1216), `nest build` clean. Admin `tsc` clean, lint clean, **63 files / 290 tests** (from 61 /
+259), `vite build` clean. **E2E:** `admin-chromium` **53** tests (was 47), `admin-dark` **15** (was
+14), including a fourth monetization a11y scan. No visual baseline minted; the two pending ones are
+unchanged and still named in `visual.spec.ts`.
+
+**Two things deliberately left.** The zero clamp on credit deduction stays (over-spend is prevented
+upstream, and the confirmation now projects the clamped result honestly), and the plan catalogue is
+still read-only — `updatePlans` is unexposed, which is not one of the seven. One new gap was opened
+and not fixed: **B8-1**, an admin per-account read cannot distinguish an unknown user from one with no
+data.
 
 ## 6. Track M — marketing site
 
