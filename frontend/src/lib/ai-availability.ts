@@ -1,4 +1,4 @@
-import { ERROR_CODES } from '@qalam/shared';
+import { ERROR_CODES, PremiumFeature, premiumCodeForAiFeature } from '@qalam/shared';
 import type { AiFeature, AiFeaturesResponse, AiUsageResponse } from '@qalam/api-types';
 
 /**
@@ -28,6 +28,13 @@ import type { AiFeature, AiFeaturesResponse, AiUsageResponse } from '@qalam/api-
  * - **upgrade** — the Entitlement Service denied the writer an AI budget outright (AF5/W4). Added by
  *   W4, and distinct from **quota** for the reason the remedy differs: an allowance resets on its own
  *   and waiting is enough, while a denied entitlement never resets and only a plan changes it.
+ * - **upgrade-writing** — D3 (docs/45 §4 row D3, docs/48 §6.13): the writer is on the free tier and
+ *   AI WRITING specifically is paid. Split from **upgrade** rather than folded into it because the two
+ *   denials name different things and lead to different places: **upgrade** means the account has no
+ *   AI allowance at all, so nothing AI works, while this one means the allowance is intact and only
+ *   the writing surfaces are sold separately — the writer can still ask their book a question and run
+ *   AI search. Telling them "your plan doesn't include an AI allowance" when their allowance is fine
+ *   would be the W4 defect (48 §3.6) committed a fourth time, so it gets its own copy.
  *
  * The usage gate is computed from `GET /ai/usage/me` **before** a request, so the writer is told
  * up front instead of composing an instruction and losing it to a rejection. The same states are
@@ -49,7 +56,15 @@ import type { AiFeature, AiFeaturesResponse, AiUsageResponse } from '@qalam/api-
  * the reader came for with it. Naming the state is what lets the hook skip the requests entirely.
  */
 export type AiAvailability =
-  'available' | 'off' | 'self-off' | 'feature-off' | 'quota' | 'upgrade' | 'signed-out' | 'unknown';
+  | 'available'
+  | 'off'
+  | 'self-off'
+  | 'feature-off'
+  | 'quota'
+  | 'upgrade'
+  | 'upgrade-writing'
+  | 'signed-out'
+  | 'unknown';
 
 /**
  * A window is exhausted when it has a cap and has reached it. Unlimited windows never are.
@@ -119,12 +134,26 @@ export function resolveAvailability(args: {
  * the one place where monetization genuinely gates an AI surface, and they get the state whose remedy
  * is a plan.
  */
-export function availabilityFromErrorCode(code: string | null): AiAvailability | null {
+export function availabilityFromErrorCode(
+  code: string | null,
+  feature?: AiFeature | null,
+): AiAvailability | null {
   switch (code) {
     case ERROR_CODES.QUOTA_EXCEEDED:
     case ERROR_CODES.AI_USAGE_LIMIT_EXCEEDED:
       return 'quota';
+    /**
+     * D3 splits this by WHICH code was denied, and it reads the same map the server gated on
+     * (`AI_FEATURE_PREMIUM_CODE`) rather than the 402's `details` — the surface already knows
+     * its own feature, so the answer needs no extra plumbing through the stream store and
+     * cannot drift from the server's decision. A caller that passes no feature keeps W4's
+     * behaviour exactly, which is what the AF4 surfaces want: their denial IS an allowance
+     * denial.
+     */
     case ERROR_CODES.ENTITLEMENT_DENIED:
+      return feature != null && premiumCodeForAiFeature(feature) === PremiumFeature.AiWriting
+        ? 'upgrade-writing'
+        : 'upgrade';
     case ERROR_CODES.INSUFFICIENT_CREDITS:
       return 'upgrade';
     case ERROR_CODES.AI_DISABLED:
@@ -179,5 +208,14 @@ export const AVAILABILITY_COPY: Record<
     title: 'This needs a paid plan',
     description:
       'Your plan doesn’t include an AI allowance. Your writing is unaffected — everything else works as usual.',
+  },
+  // D3. Deliberately says AI WRITING rather than "AI" or "an AI allowance": the free tier keeps
+  // its allowance and can still use AI search and Ask My Book, so a message about the allowance
+  // would be both wrong and needlessly alarming. Names the tier because "a paid plan" leaves the
+  // writer to go and find out which one.
+  'upgrade-writing': {
+    title: 'AI writing is on Plus and above',
+    description:
+      'Your plan doesn’t include AI writing. Your drafts are unaffected — the editor, search and Ask My Book all work as usual.',
   },
 };

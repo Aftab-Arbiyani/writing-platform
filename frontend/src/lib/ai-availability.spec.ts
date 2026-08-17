@@ -240,3 +240,76 @@ describe('AVAILABILITY_COPY', () => {
     expect(AVAILABILITY_COPY.upgrade.description).toMatch(/writing is unaffected/i);
   });
 });
+
+/**
+ * D3 (docs/45 §4 row D3, docs/48 §6.13) — AI writing is paid, so ENTITLEMENT_DENIED now has two
+ * readings and they lead to different places.
+ */
+describe('D3 — the AI-writing entitlement denial', () => {
+  it('reads a denial on a WRITING feature as the writing upgrade', () => {
+    for (const feature of [
+      AiFeature.WritingAssistant,
+      AiFeature.CraftCoach,
+      AiFeature.Grammar,
+      AiFeature.Rewrite,
+      AiFeature.Summarization,
+    ]) {
+      expect(availabilityFromErrorCode('ENTITLEMENT_DENIED', feature)).toBe('upgrade-writing');
+    }
+  });
+
+  it('leaves the AF4 surfaces on the allowance upgrade — their denial is NOT about writing', () => {
+    // D4's scope is deferred and 48 §5.2 forbids gating these. A denial reaching them is an
+    // `ai_budget` denial, whose copy is about the allowance, so it must not be reworded.
+    for (const feature of [
+      AiFeature.AskBook,
+      AiFeature.SemanticSearch,
+      AiFeature.Recommendations,
+    ]) {
+      expect(availabilityFromErrorCode('ENTITLEMENT_DENIED', feature)).toBe('upgrade');
+    }
+  });
+
+  it('keeps W4 behaviour for a caller that names no feature', () => {
+    expect(availabilityFromErrorCode('ENTITLEMENT_DENIED')).toBe('upgrade');
+    expect(availabilityFromErrorCode('ENTITLEMENT_DENIED', null)).toBe('upgrade');
+  });
+
+  /**
+   * The four-remedy pin. There are now four ways AI can be off and each has a DIFFERENT fix;
+   * conflating any two is the W4 defect recorded in 48 §3.6. This asserts the states are distinct
+   * AND that the copy tells four different stories, because equal-but-identically-worded states
+   * would pass a state check and still mislead the writer.
+   */
+  it('keeps all four remedies distinct, in state and in copy', () => {
+    const states = {
+      off: availabilityFromErrorCode('AI_DISABLED'),
+      selfOff: availabilityFromErrorCode('AI_DISABLED_BY_USER'),
+      quota: availabilityFromErrorCode('QUOTA_EXCEEDED'),
+      writing: availabilityFromErrorCode('ENTITLEMENT_DENIED', AiFeature.WritingAssistant),
+    };
+
+    expect(new Set(Object.values(states)).size).toBe(4);
+    expect(states).toEqual({
+      off: 'off',
+      selfOff: 'self-off',
+      quota: 'quota',
+      writing: 'upgrade-writing',
+    });
+
+    const titles = Object.values(states).map((s) => AVAILABILITY_COPY[s as 'off'].title);
+    expect(new Set(titles).size).toBe(4);
+  });
+
+  it('says AI WRITING and points at a tier — not at the allowance, a reset, or a switch', () => {
+    const copy = AVAILABILITY_COPY['upgrade-writing'];
+
+    expect(copy.title).toMatch(/plus/i);
+    expect(copy.description).toMatch(/ai writing/i);
+    // The free tier KEEPS its allowance (DECISION 2a), so this must not claim otherwise: the
+    // writer can still use Ask My Book and AI search, and the copy says so.
+    expect(copy.description).not.toMatch(/allowance/i);
+    expect(copy.description).not.toMatch(/reset/i);
+    expect(copy.description).not.toMatch(/settings/i);
+  });
+});

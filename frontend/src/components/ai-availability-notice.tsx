@@ -1,5 +1,5 @@
 import { QButton, QEmptyState } from '@qalam/ui';
-import { Ban, Gauge, LogIn, Settings, Sparkles } from 'lucide-react';
+import { Ban, Gauge, Lock, LogIn, Settings, Sparkles } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 
@@ -15,6 +15,9 @@ const ICONS = {
   'feature-off': Ban,
   quota: Gauge,
   upgrade: Sparkles,
+  // D3: a lock, not the AI sparkle. The sparkle on `upgrade` says "there is no AI here"; this
+  // state means AI is working and one surface is sold separately, which is a lock.
+  'upgrade-writing': Lock,
   'signed-out': LogIn,
 } as const;
 
@@ -60,7 +63,7 @@ export function AiAvailabilityNotice({
       description={copy.description}
       minHeight={220}
       action={
-        availability === 'upgrade' ? (
+        availability === 'upgrade' || availability === 'upgrade-writing' ? (
           <QButton
             variant="primary"
             size="sm"

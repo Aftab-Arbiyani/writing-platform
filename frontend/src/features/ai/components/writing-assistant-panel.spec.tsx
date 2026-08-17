@@ -2,6 +2,7 @@ import { AiFeature } from '@qalam/shared';
 import type { AiFeaturesResponse, AiUsageResponse } from '@qalam/api-types';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ReactNode } from 'react';
 
 import { useAiEditorTarget, type AiEditorTarget } from '@/stores/ai-editor-target.store';
 import { renderWithProviders } from '@/test/render';
@@ -46,6 +47,20 @@ const USAGE = { daily: WINDOW, monthly: WINDOW } as AiUsageResponse;
 
 const apply = vi.fn().mockReturnValue(true);
 
+/**
+ * Renders the panel with a PASS-THROUGH `writingGate`.
+ *
+ * The gate itself is monetization's `PremiumGate`, supplied by `app/routes/write.tsx` and covered
+ * by `write-route-gate.spec.tsx` — these tests are about the panel's own behaviour, so the seam is
+ * held open here rather than exercised. The prop is REQUIRED (D3), so a future test cannot forget
+ * the gate exists.
+ */
+function renderPanel(
+  writingGate: (children: ReactNode) => ReactNode = (children) => children,
+): ReturnType<typeof renderWithProviders> {
+  return renderWithProviders(<WritingAssistantPanel writingGate={writingGate} />);
+}
+
 function mockMeta(features: AiFeaturesResponse | undefined, usage: AiUsageResponse | undefined) {
   vi.mocked(useAiFeatures).mockReturnValue({ data: features } as ReturnType<typeof useAiFeatures>);
   vi.mocked(useAiUsage).mockReturnValue({ data: usage } as ReturnType<typeof useAiUsage>);
@@ -84,20 +99,20 @@ describe('WritingAssistantPanel', () => {
 
   it('renders nothing when no editor has registered', () => {
     useAiEditorTarget.setState({ open: true, target: null });
-    renderWithProviders(<WritingAssistantPanel />);
+    renderPanel();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
   it('offers the quick actions once an editor is registered', () => {
     registerTarget();
-    renderWithProviders(<WritingAssistantPanel />);
+    renderPanel();
     expect(screen.getByRole('button', { name: 'Continue writing' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Rewrite' })).toBeInTheDocument();
   });
 
   it('sends the action’s prompt key and the document as the operand', async () => {
     registerTarget();
-    renderWithProviders(<WritingAssistantPanel />);
+    renderPanel();
 
     fireEvent.click(screen.getByRole('button', { name: 'Rewrite' }));
 
@@ -113,7 +128,7 @@ describe('WritingAssistantPanel', () => {
 
   it('tells the writer whether it is working on the selection or the whole draft', () => {
     registerTarget({ selectionText: 'a phrase' });
-    renderWithProviders(<WritingAssistantPanel />);
+    renderPanel();
     expect(screen.getByText('Working on your selection.')).toBeInTheDocument();
   });
 
@@ -125,7 +140,7 @@ describe('WritingAssistantPanel', () => {
       monthly: WINDOW,
     } as AiUsageResponse);
     registerTarget();
-    renderWithProviders(<WritingAssistantPanel />);
+    renderPanel();
 
     expect(screen.getByText('You’ve used your AI allowance')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Rewrite' })).not.toBeInTheDocument();
@@ -147,21 +162,21 @@ describe('WritingAssistantPanel', () => {
       USAGE,
     );
     registerTarget();
-    renderWithProviders(<WritingAssistantPanel />);
+    renderPanel();
     expect(screen.getByText('Not available yet')).toBeInTheDocument();
   });
 
   it('walls off the surface when a request comes back over quota mid-flight', () => {
     registerTarget();
     useAiStreamStore.setState({ status: 'error', errorCode: 'QUOTA_EXCEEDED' });
-    renderWithProviders(<WritingAssistantPanel />);
+    renderPanel();
     expect(screen.getByText('You’ve used your AI allowance')).toBeInTheDocument();
   });
 
   it('applies an accepted suggestion through the editor target, never directly', () => {
     registerTarget();
     useAiStreamStore.setState({ status: 'done', text: 'A suggested line.' });
-    renderWithProviders(<WritingAssistantPanel />);
+    renderPanel();
 
     // No selection, so a one-click accept inserts below rather than replacing the draft.
     fireEvent.click(screen.getByRole('button', { name: /Insert below/ }));
@@ -171,7 +186,7 @@ describe('WritingAssistantPanel', () => {
   it('discards a suggestion without touching the document', () => {
     registerTarget();
     useAiStreamStore.setState({ status: 'done', text: 'A suggested line.' });
-    renderWithProviders(<WritingAssistantPanel />);
+    renderPanel();
 
     fireEvent.click(screen.getByRole('button', { name: /Discard/ }));
     expect(apply).not.toHaveBeenCalled();
@@ -180,7 +195,7 @@ describe('WritingAssistantPanel', () => {
 
   it('exposes the Craft Coach as its own tab', () => {
     registerTarget();
-    renderWithProviders(<WritingAssistantPanel />);
+    renderPanel();
     expect(screen.getByRole('tab', { name: 'Craft Coach' })).toBeInTheDocument();
   });
 
@@ -191,13 +206,13 @@ describe('WritingAssistantPanel', () => {
    */
   it('hides the Explorer until the draft has a server id', () => {
     registerTarget({}, null);
-    renderWithProviders(<WritingAssistantPanel />);
+    renderPanel();
     expect(screen.queryByRole('tab', { name: 'Explorer' })).not.toBeInTheDocument();
   });
 
   it('offers the Explorer once the draft has synced', () => {
     registerTarget({}, 'piece-1');
-    renderWithProviders(<WritingAssistantPanel />);
+    renderPanel();
     expect(screen.getByRole('tab', { name: 'Explorer' })).toBeInTheDocument();
   });
 
@@ -209,7 +224,7 @@ describe('WritingAssistantPanel', () => {
   it('offers the Explorer even when every AI feature flag is down', () => {
     mockMeta({ aiEnabled: true, userAiEnabled: true, features: [] }, USAGE);
     registerTarget({}, 'piece-1');
-    renderWithProviders(<WritingAssistantPanel />);
+    renderPanel();
     expect(screen.getByRole('tab', { name: 'Explorer' })).toBeInTheDocument();
   });
 
@@ -220,14 +235,14 @@ describe('WritingAssistantPanel', () => {
       monthly: WINDOW,
     } as AiUsageResponse);
     registerTarget({}, 'piece-1');
-    renderWithProviders(<WritingAssistantPanel />);
+    renderPanel();
     expect(screen.getByRole('tab', { name: 'Explorer' })).toBeInTheDocument();
   });
 
   it('walls off the Explorer when AI is off entirely', () => {
     mockMeta({ aiEnabled: false, userAiEnabled: true, features: [] }, USAGE);
     registerTarget({}, 'piece-1');
-    renderWithProviders(<WritingAssistantPanel />);
+    renderPanel();
 
     fireEvent.click(screen.getByRole('tab', { name: 'Explorer' }));
     expect(screen.getAllByText('AI is turned off').length).toBeGreaterThan(0);
@@ -242,7 +257,7 @@ describe('WritingAssistantPanel', () => {
   it('tells a writer who turned AI off that it was THEM, on every tab', () => {
     mockMeta({ aiEnabled: false, userAiEnabled: false, features: [] }, USAGE);
     registerTarget({}, 'piece-1');
-    renderWithProviders(<WritingAssistantPanel />);
+    renderPanel();
 
     for (const tab of ['Assistant', 'Craft Coach', 'Explorer', 'Ask']) {
       fireEvent.click(screen.getByRole('tab', { name: tab }));
@@ -254,12 +269,12 @@ describe('WritingAssistantPanel', () => {
 
   it('hides Ask until the draft has a server id, then offers it', () => {
     registerTarget({}, null);
-    const { unmount } = renderWithProviders(<WritingAssistantPanel />);
+    const { unmount } = renderPanel();
     expect(screen.queryByRole('tab', { name: 'Ask' })).not.toBeInTheDocument();
     unmount();
 
     registerTarget({}, 'piece-1');
-    renderWithProviders(<WritingAssistantPanel />);
+    renderPanel();
     expect(screen.getByRole('tab', { name: 'Ask' })).toBeInTheDocument();
   });
 
@@ -279,7 +294,7 @@ describe('WritingAssistantPanel', () => {
       USAGE,
     );
     registerTarget({}, 'piece-1');
-    renderWithProviders(<WritingAssistantPanel />);
+    renderPanel();
 
     fireEvent.click(screen.getByRole('tab', { name: 'Ask' }));
     expect(screen.getAllByText('Not available yet').length).toBeGreaterThan(0);
@@ -294,7 +309,7 @@ describe('WritingAssistantPanel', () => {
   it('keeps a mid-flight wall on one surface from walling the other', () => {
     registerTarget({}, 'piece-1');
     useAiStreamStore.setState({ status: 'error', errorCode: 'QUOTA_EXCEEDED' });
-    renderWithProviders(<WritingAssistantPanel />);
+    renderPanel();
 
     // The assistant is walled…
     expect(screen.getByText('You’ve used your AI allowance')).toBeInTheDocument();
@@ -306,9 +321,46 @@ describe('WritingAssistantPanel', () => {
   it('walls off Ask when ITS stream comes back over quota', () => {
     registerTarget({}, 'piece-1');
     useAskBookStore.setState({ status: 'error', errorCode: 'ENTITLEMENT_DENIED' });
-    renderWithProviders(<WritingAssistantPanel />);
+    renderPanel();
 
     fireEvent.click(screen.getByRole('tab', { name: 'Ask' }));
     expect(screen.getAllByText('This needs a paid plan').length).toBeGreaterThan(0);
+  });
+
+  /**
+   * D3, and the case the gate alone cannot cover: the entitlement can be revoked (or the payments
+   * flag raised) BETWEEN the page load that resolved the gate and the generation itself. The
+   * refusal arrives as a 402 on the STREAM, so it lands in `errorCode` rather than in the
+   * entitlement snapshot, and it must read as the same wall the gate would have shown.
+   */
+  it('renders the AI-writing wall when a 402 arrives mid-STREAM, not the allowance wall', () => {
+    registerTarget({}, 'piece-1');
+    useAiStreamStore.setState({ status: 'error', errorCode: 'ENTITLEMENT_DENIED' });
+    renderPanel();
+
+    expect(screen.getByText('AI writing is on Plus and above')).toBeInTheDocument();
+    // Not the `ai_budget` copy: free KEEPS its allowance under DECISION 2a, so telling the writer
+    // their plan has no AI allowance would be false as well as the wrong remedy (48 §3.6).
+    expect(screen.queryByText('This needs a paid plan')).not.toBeInTheDocument();
+    expect(screen.queryByText('You\u2019ve used your AI allowance')).not.toBeInTheDocument();
+  });
+
+  it('keeps the coach on the same mid-stream wall, since it is the same premium code', () => {
+    registerTarget({}, 'piece-1');
+    useAiStreamStore.setState({ status: 'error', errorCode: 'ENTITLEMENT_DENIED' });
+    renderPanel();
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Craft Coach' }));
+    expect(screen.getAllByText('AI writing is on Plus and above').length).toBeGreaterThan(0);
+  });
+
+  it('leaves an ASK denial on the allowance copy — a D4 code is not a writing code', () => {
+    registerTarget({}, 'piece-1');
+    useAskBookStore.setState({ status: 'error', errorCode: 'ENTITLEMENT_DENIED' });
+    renderPanel();
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Ask' }));
+    expect(screen.getAllByText('This needs a paid plan').length).toBeGreaterThan(0);
+    expect(screen.queryByText('AI writing is on Plus and above')).not.toBeInTheDocument();
   });
 });

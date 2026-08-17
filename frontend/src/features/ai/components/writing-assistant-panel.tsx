@@ -1,7 +1,7 @@
 import { AiFeature } from '@qalam/shared';
 import { QDrawer } from '@qalam/ui';
 import { Tabs } from 'antd';
-import { useState, type ReactElement } from 'react';
+import { useState, type ReactElement, type ReactNode } from 'react';
 
 import { useAiEditorTarget } from '@/stores/ai-editor-target.store';
 
@@ -37,7 +37,24 @@ import { useAskBookStore } from '../stores/ask-book.store';
  * draft has a server id, which is the web reading of mobile's `isRemote` gate: a draft that lives
  * only in this browser has no story to explore or ask about.
  */
-export function WritingAssistantPanel(): ReactElement | null {
+export interface WritingAssistantPanelProps {
+  /**
+   * Wraps the two AF2 tabs — Assistant and Craft Coach — in the `ai_writing` entitlement gate
+   * (D3, docs/45 §4 row D3). Supplied by `app/routes/write.tsx`, which is the only layer that may
+   * know about both `features/ai` and `features/monetization` (docs/26 §4) — the same reason the
+   * editor and this panel meet at an app-level seam rather than importing each other.
+   *
+   * **Required, not optional with an identity default.** An omitted gate would silently serve AI
+   * writing to a free user, which is the exact regression D3 exists to prevent, so omitting it is
+   * a compile error instead. It wraps only these two tabs: Explorer and Ask are AF4/D4 surfaces and
+   * gating them would pre-empt a decision the owner deferred (docs/48 §5.2 consequence 1).
+   */
+  writingGate: (children: ReactNode) => ReactNode;
+}
+
+export function WritingAssistantPanel({
+  writingGate,
+}: WritingAssistantPanelProps): ReactElement | null {
   const open = useAiEditorTarget((s) => s.open);
   const setOpen = useAiEditorTarget((s) => s.setOpen);
   const target = useAiEditorTarget((s) => s.target);
@@ -61,7 +78,7 @@ export function WritingAssistantPanel(): ReactElement | null {
    * would be told to upgrade over a request they never made.
    */
   const resolve = (feature: AiFeature, failedCode: string | null) =>
-    availabilityFromErrorCode(failedCode) ??
+    availabilityFromErrorCode(failedCode, feature) ??
     resolveAvailability({ feature, features: features.data, usage: usage.data });
 
   const assistant = resolve(AiFeature.WritingAssistant, errorCode);
@@ -93,25 +110,38 @@ export function WritingAssistantPanel(): ReactElement | null {
         activeKey={tab}
         onChange={setTab}
         items={[
+          /**
+           * D3: the entitlement gate wraps the WHOLE tab body, including the availability notice.
+           * A free writer is not entitled to AI writing whatever the flags and allowance say, so
+           * showing them "you've used your AI allowance" would be answering a question they are
+           * not being asked. The gate wins and says the one thing that is true and actionable.
+           *
+           * The mid-flight path needs no wrapper: a 402 arriving during a generation lands in
+           * `errorCode`, which `resolve` maps to `upgrade-writing` — the same copy this gate's
+           * locked slot renders, so a wall hit between page load and generation reads identically
+           * to one that was there all along.
+           */
           {
             key: 'assistant',
             label: 'Assistant',
-            children:
+            children: writingGate(
               assistant === 'available' || assistant === 'unknown' ? (
                 <AssistantTab disabled={assistant !== 'available'} />
               ) : (
                 <AiAvailabilityNotice availability={assistant} />
               ),
+            ),
           },
           {
             key: 'coach',
             label: 'Craft Coach',
-            children:
+            children: writingGate(
               coach === 'available' || coach === 'unknown' ? (
                 <CoachTab disabled={coach !== 'available'} />
               ) : (
                 <AiAvailabilityNotice availability={coach} />
               ),
+            ),
           },
           // Hidden outright without a story id rather than shown disabled: there is nothing the
           // writer can do about it here except keep writing, and autosave adds the tab the moment
