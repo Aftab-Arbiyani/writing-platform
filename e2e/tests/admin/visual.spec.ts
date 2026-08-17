@@ -1,5 +1,6 @@
 import { freshLogin } from '../../fixtures/auth';
 import { test, expect } from '../../fixtures/test';
+import { MONETIZATION_ROUTES, MonetizationPage } from '../../pages/admin/monetization-page';
 import { UsersPage } from '../../pages/admin/users-page';
 import { LoginPage } from '../../pages/shared/login-page';
 
@@ -63,5 +64,42 @@ test.describe('@phase5 @visual admin (authenticated)', () => {
       // filter bar, and section tabs, all above the fold.
       mask: [page.getByRole('tabpanel')],
     });
+  });
+
+  /**
+   * A1's monetization chrome. **These baselines are DELIBERATELY UNMINTED** — only the web-e2e
+   * workflow's visual job may mint one, in the pinned Playwright image ([10 §5], [10 §8.3]); a
+   * locally produced PNG bakes in this machine's fonts and would fail in CI forever. Until the
+   * workflow mints them these two tests fail on a missing snapshot, which is the intended, visible
+   * state rather than a silent gap.
+   *
+   * Pending, across all four admin projects (chromium / firefox / webkit / dark):
+   *   • `admin-billing-plans.png`
+   *   • `admin-billing-actions.png`
+   *
+   * Determinism was checked FIRST, which is why it is two files and not seven:
+   *
+   *   • **Plans** is fully deterministic. `GET plans` resolves the stored catalogue over compiled
+   *     defaults, no spec in this suite writes `monetization.plans`, and nothing on the page renders
+   *     a date or a live count.
+   *   • **Billing actions** is deterministic because it is two empty FORMS — no reads at all, so no
+   *     seeded data and no ordering to race.
+   *   • The three dashboards are **excluded**: every figure comes from ledgers other specs in this
+   *     suite mutate (users, pieces, AI conversations) under `fullyParallel` with two workers, so a
+   *     baseline would race them exactly as the users table did ([10 §2.2]). Masking would not save
+   *     it either — the empty-vs-populated branch changes the page's whole STRUCTURE, not just its
+   *     numbers, so a masked shot would still mismatch in height.
+   *   • **Coupons** is excluded for the same reason at a smaller scale: the A1b functional spec
+   *     creates a coupon per run, so the table's row count varies.
+   *   • **Entitlements** is excluded as it has nothing to show until an id is typed.
+   */
+  test('the plans console chrome matches its visual baseline', async ({ page }) => {
+    await new MonetizationPage(page).goto(MONETIZATION_ROUTES[0]!);
+    await expect(page).toHaveScreenshot('admin-billing-plans.png', { fullPage: true });
+  });
+
+  test('the billing actions forms match their visual baseline', async ({ page }) => {
+    await new MonetizationPage(page).goto(MONETIZATION_ROUTES[3]!);
+    await expect(page).toHaveScreenshot('admin-billing-actions.png', { fullPage: true });
   });
 });

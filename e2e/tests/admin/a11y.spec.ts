@@ -3,6 +3,7 @@ import { freshLogin } from '../../fixtures/auth';
 import { test, expect } from '../../fixtures/test';
 import { ADMIN_DASHBOARDS, DashboardsPage } from '../../pages/admin/dashboards-page';
 import { ModerationPage } from '../../pages/admin/moderation-page';
+import { MONETIZATION_ROUTES, MonetizationPage } from '../../pages/admin/monetization-page';
 import { UsersPage } from '../../pages/admin/users-page';
 import { LoginPage } from '../../pages/shared/login-page';
 
@@ -48,5 +49,33 @@ test.describe('@phase5 @a11y admin accessibility (authenticated)', () => {
     const dashboards = new DashboardsPage(page);
     await dashboards.expectRenders(analytics!);
     await expectNoSeriousA11yViolations(page, { label: 'admin /analytics' });
+  });
+
+  /**
+   * A1's monetization surfaces. Scanned in BOTH themes with no extra configuration: the `admin-dark`
+   * project re-runs this file under `colorScheme: 'dark'` (playwright.config.ts `UI_QUALITY_ONLY`),
+   * so registering the scans here is what makes the dark pass happen — a separate dark spec would
+   * duplicate it and drift.
+   *
+   * Three of the seven are scanned rather than all: the plan catalogue is the densest composition on
+   * the surface (nested lists, badge clusters, an inline convention note per field), Billing actions
+   * carries the two destructive FORMS with their aria-invalid + described-by wiring, and Revenue is
+   * the representative dashboard whose stat grid and empty state the other two share. The remaining
+   * four are the same components in different arrangements, and scanning them would buy coverage of
+   * AntD internals rather than of our composition.
+   */
+  test('the plan catalogue has no critical/serious a11y violations', async ({ page }) => {
+    await new MonetizationPage(page).goto(MONETIZATION_ROUTES[0]!);
+    await expectNoSeriousA11yViolations(page, { label: 'admin /billing/plans' });
+  });
+
+  test('the billing actions forms have no critical/serious a11y violations', async ({ page }) => {
+    await new MonetizationPage(page).goto(MONETIZATION_ROUTES[3]!);
+    await expectNoSeriousA11yViolations(page, { label: 'admin /billing/actions' });
+  });
+
+  test('the revenue dashboard has no critical/serious a11y violations', async ({ page }) => {
+    await new MonetizationPage(page).expectRenders(MONETIZATION_ROUTES[4]!);
+    await expectNoSeriousA11yViolations(page, { label: 'admin /billing/revenue' });
   });
 });

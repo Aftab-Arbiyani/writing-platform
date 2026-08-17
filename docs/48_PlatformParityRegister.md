@@ -1,6 +1,6 @@
 # 48 — Platform Parity Register (web ↔ mobile)
 
-**Status:** 🔒 Binding · **Owner:** every client epic · **Last swept:** 2026-08-17 (after **D3** — AI writing is now an enforced paid capability on the server and gated on both clients; the free-tier regression is LIVE, and §5.2 item 4 is rewritten. Sweep **§6.13**. Earlier the same day, **M7-3** — mobile's clap, sweep **§6.12**. Before those, 2026-08-10 after **W7c** —
+**Status:** 🔒 Binding · **Owner:** every client epic · **Last swept:** 2026-08-17 (after **A1** — the admin monetization surface, three slices; sweep **§6.14**, and six backend gaps recorded as **A1-1 … A1-7** in §3. Earlier the same day, **D3** — AI writing is now an enforced paid capability on the server and gated on both clients; the free-tier regression is LIVE, and §5.2 item 4 is rewritten. Sweep **§6.13**. Earlier the same day, **M7-3** — mobile's clap, sweep **§6.12**. Before those, 2026-08-10 after **W7c** —
 reader analytics + the privacy-prefs row, closing §2 rows **6 and 8** and leaving **onboarding as the
 only unowned §2 row**. Its sweep is **§6.10**, and it is the slice that shrank on contact with the code
 — twice, both reductions recorded in §4 rather than in a commit message. Row 4's premise was **wrong**:
@@ -2236,6 +2236,76 @@ self-report is refused, and the refusal is shown"). **Open** only as documentati
 
 ---
 
+### A1-1 · **low** · `PAYMENT_NOT_FOUND` is thrown for a payment that exists but is not refundable
+
+`BillingService.refund` (`backend/src/modules/monetization/billing.service.ts:165`) throws
+`PaymentNotFoundException` on `original === null` **and** on `original.providerPaymentId === null`. The
+second case is a real payment row that was never captured at a provider, and it is not "no such
+payment": the operator's id is correct and nothing they retype will help.
+
+Found while building A1b, whose whole point was keeping the refund failures apart — so the endpoint
+collapses a third state into the first inside the very surface that must distinguish them.
+**Not fixed: the backend is frozen for this row.** The client compensates by saying "does not exist, or
+was never captured at a provider and so cannot be refunded", which covers both without asserting either.
+Splitting it properly needs a `PAYMENT_NOT_REFUNDABLE` code and is a backend row.
+
+### A1-2 · **low** · `PATCH /admin/monetization/config` can write 4 of the config's 7 fields
+
+`MonetizationConfigPatch` and `MonetizationConfigService.updateConfig` both handle `taxRates`,
+`currencyRates` and `regionCurrency` — the service merges them per key. But
+`UpdateMonetizationConfigDto` (`dto/monetization-request.dto.ts`) declares no properties for them, so
+`ValidationPipe` strips them before the service is reached. The three tables are therefore readable and
+unwritable over this route.
+
+A1a renders them read-only with a sentence saying why and pointing at the `monetization.config` setting,
+rather than showing disabled inputs that read as a bug. Closing it is four DTO properties.
+
+### A1-3 · **medium** · no admin route reads another user's credit balance
+
+`GET /monetization/credits` is `@CurrentUser` self-scoped, so an admin calling it gets their OWN wallet.
+There is no `admin/monetization` equivalent. Consequences for A1b, both handled rather than hidden:
+
+- The credit-adjust confirmation **cannot** state a projected balance, which is what the row's brief
+  asked for. It states the delta and the zero floor instead, and reports the real post-adjustment figure
+  from the response. Compounded by `CreditService.apply` clamping at zero
+  (`credit.service.ts:111`) — a deduction beyond the balance succeeds and lands on 0 rather than raising
+  `INSUFFICIENT_CREDITS` — so even _with_ the starting figure, client-side arithmetic could print a
+  number the server will not honour.
+- Nothing in the admin app can display a balance, so there is no second place for one to be wrong.
+
+### A1-4 · **low** · the coupon response drops three fields the create DTO accepts
+
+`CreateCouponDto` accepts `appliesToTier`, `perUserLimit` and `description`; `toCouponDto`
+(`monetization.mappers.ts`) returns none of them. So a coupon's tier restriction and per-user limit are
+write-only: an operator can set them and can never read them back to check. A1b's form says so at the
+field rather than letting the value appear to vanish.
+
+### A1-5 · **medium** · nothing admin-facing lists payments, so a refund needs an id from elsewhere
+
+`POST payments/:id/refund` takes a payment UUID and `GET /monetization/payments` is self-scoped, so the
+admin surface cannot offer a picker or a search. The operator must already hold the id — from a support
+ticket, or from the database. A1b's refund form is therefore an id-entry field and says why.
+
+### A1-6 · **low** · revenue analytics sums across currencies without grouping
+
+`MonetizationAnalyticsService.sumPayments` sums `p.amount` filtered only by status, so on an install
+that has taken payments in more than one currency `totalRevenue`, `last30dRevenue` and `refunded` add
+unlike units. `paymentsCount` remains meaningful.
+
+A1c's revenue dashboard prints no currency symbol, labels the figures as minor units, and states the
+caveat on the page. A correct fix is a GROUP BY currency and a per-currency response shape.
+
+### A1-7 · **medium** · no admin route returns an individual subscription
+
+`analytics/subscriptions` is aggregate only (`byStatus`, `byTier`, counts), and
+`GET /monetization/subscription` is self-scoped. So **A1 does not close its own premise** — "an operator
+today cannot see a subscription" is still true after this row, for the one thing the phrase most
+naturally means. The row's other twelve endpoints were reachable and are now built; this one does not
+exist to build. The subscriptions dashboard names the limit on the page rather than leaving an operator
+to hunt for a search box.
+
+---
+
 ## 4. Divergences that are NOT gaps (platform-inherent)
 
 These are accepted permanently and need no epic. They exist because the platforms genuinely differ.
@@ -3532,3 +3602,137 @@ no client, so D4's answer for them is still a client question as much as an enfo
 in several rows: both clients shipped in the same session against the same server change, with one
 recorded arrangement difference (how the gate reaches the panel, above) that is inherent to web's import
 rule and not a gap. §5.2 item 4 is rewritten; §5.1's remaining row is untouched by this.
+
+---
+
+### 6.14 A1's sweep (2026-08-17)
+
+The first **Track A** row, and the first in this document with no client counterpart to check — see the
+parity question below, which is answered rather than skipped.
+
+**What shipped**, three slices, one commit each:
+
+| Slice   | Commit    | Routes                                                         | Endpoints consumed                                                                                     |
+| ------- | --------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| **A1a** | `f8644ea` | `/billing/plans`, `/billing/entitlements`                      | `GET plans` · `GET/PATCH config` · `GET overrides/:userId` · `POST overrides` · `DELETE overrides/:id` |
+| **A1b** | `ea3335d` | `/billing/coupons`, `/billing/actions`                         | `GET/POST coupons` · `PATCH coupons/:id` · `POST credits/adjust` · `POST payments/:id/refund`          |
+| **A1c** | `7ae5ca9` | `/billing/revenue`, `/billing/subscriptions`, `/billing/usage` | `GET analytics/revenue` · `…/subscriptions` · `…/usage`                                                |
+
+**Gates.** Admin `pnpm typecheck` clean · `eslint --max-warnings=0` clean · **61 files / 259 tests**
+(baseline 53 / 156, so +8 files / +103 tests) · `pnpm build` clean. E2E: 17 new functional tests in
+`tests/admin/monetization.spec.ts`, one new RBAC test in the existing `rbac.spec.ts`, three new a11y
+scans in the existing `a11y.spec.ts` — 47 tests in `admin-chromium` (was 29), 14 in `admin-dark` (was 8).
+
+#### Did the row deliver only what it named?
+
+Yes, with three additions the audit forced and one it declined.
+
+**Added, because the audit found an asymmetry the brief's destructive-action list missed:** a `deny`
+entitlement override confirms like a revoke. An override outranks the plan in **both** directions
+(`entitlement.service.ts:177`), so denying a code a subscriber's tier includes removes access they paid
+for — the same consequence as a revoke, under a button labelled "grant". The brief listed refund, credit
+deduction, override revoke and config patch; this is a fifth.
+
+**Added:** each premium code is marked enforced or not. Exactly two are asserted by a route today —
+`ai_budget` and, since D3 (2026-08-17), `ai_writing`. Granting one of D4's six changes nothing, and an
+operator should learn that from the screen rather than from a ticket about a grant that "did not work".
+
+**Added:** `RequirePermission`, a route guard beside `RequireRole`. See the nav/guard note below.
+
+**Declined:** a generic coupon edit modal. `PATCH coupons/:id` accepts four fields; A1b ships the
+activate/deactivate toggle because a coupon leaking discounts needs stopping now, while editing a value
+mid-campaign changes what earlier redeemers got versus later ones. The other three fields are one form
+away whenever a row asks for them.
+
+#### What the audit corrected
+
+**The count is 14, not 15.** The brief said "Fifteen shipped endpoints" and "every one of the 15"; its own
+anchor table listed 14, and `grep` on the controller returns 14 route decorators. Every line number in
+the brief matched, so the anchors were right and only the total was wrong. Track A's remaining rows should
+not inherit the figure.
+
+**Nav items gate by `minRole`, not by a `permission` field.** The brief described items as
+`{ label, to, icon, permission }`; they are `{ key, label, path, icon, minRole }`. `billing.*` is granted
+to `Role.Admin` and `SuperAdmin` only, so `minRole: Role.Admin` selects exactly the viewers who hold
+`billing.manage`, and `usePermissions().can()` reads the same grant map — the two are not independent
+sources of truth. So the nav keeps its shape and the **routes** got
+`RequirePermission(PERMISSIONS.BillingManage)`, which names the check the server actually makes and would
+follow the grant map if `billing.*` ever moved off Admin. Rewriting all 30-odd nav entries inside a
+monetization row would have made the diff mostly unrelated churn.
+
+**31 route modules, not 30** — which is what §5 of docs/45 already said.
+
+**Six backend gaps, recorded in §3 as A1-1 … A1-7 and none fixed.** Three of them changed what A1 could
+build, and are the honest limits of this row:
+
+1. **No admin route reads a subscription** (A1-7). The row's premise was "an operator cannot see a
+   subscription"; that is still true for a single account, because the endpoint does not exist. A1c is
+   aggregate-only and says so on the page.
+2. **No admin route reads a credit balance** (A1-3), and a deduction **clamps at zero** rather than
+   erroring. Together these make the brief's "confirmation states the resulting balance" unbuildable
+   honestly, so the confirmation states the delta and the floor — both certain — and the response's
+   post-clamp figure is reported afterwards. An invented projection is the kind of number an operator
+   reads back to a customer.
+3. **Nothing lists payments** (A1-5), so refunds are id-in by necessity.
+
+Also: `PATCH config` writes 4 of 7 fields (A1-2), the coupon response drops 3 fields the create DTO
+accepts (A1-4), revenue sums across currencies (A1-6), and `PAYMENT_NOT_FOUND` covers a payment that
+exists but cannot be refunded (A1-1).
+
+#### The plan catalogue, and the two readings a plain table gets wrong
+
+B4, B6, B7 and D3 all resolve their behaviour out of `monetization.plans`, which makes this the
+consequential screen of the row.
+
+**The sentinel.** `0` means unlimited on every limit key except `maxCollaborators`, where `-1` is
+unlimited and `0` is a real, sold zero. A table rendering one convention across all keys shows Free as
+having _unlimited collaborators_ — the exact inverse of what B6 sells, with green tests and no error. The
+reading is delegated to `resolvePlanLimit`, the shared reader that is the single place the two conventions
+are reconciled, and the convention is printed **at every field**, including the ordinary ones: a note that
+appears only on the odd key reads as decoration, and a rule an operator must hover to find is a rule they
+will act without.
+
+**Provenance.** `GET plans` returns the resolved catalogue and says nothing about which numbers an admin
+chose, so default-vs-override is derived against the same `DEFAULT_PLAN_*` constants the server compiled
+from. Deliberately **weaker for `features` than for limits**: `mergePlans` merges `limits` per key but
+spreads the rest of a stored tier wholesale, so a stored feature array REPLACES the compiled one and no
+per-code provenance exists to report. The UI answers at array granularity and says why, instead of
+decorating codes with a precision the wire cannot support.
+
+**No admin writer exists** for the catalogue (`updatePlans` is unexposed), so the screen is read-only and
+every tier links to the Settings surface that owns the JSON.
+
+#### Empty states, and not fabricating a zero
+
+All three analytics endpoints compute on read from append-only ledgers, so a young install returns a
+complete response full of zeroes. Rendering it is the **W7c** defect: a fabricated zero reads as a
+measurement and cannot be told apart from a real collapse. Each dashboard therefore withholds its figures
+entirely and says why, keyed off a **count** rather than a sum — a sum of zero is ambiguous, a count of
+zero is not. Two rules are more careful than the obvious version:
+
+- **Subscriptions** keys off `byStatus` having no rows, not `activeCount === 0`. An install whose only
+  subscriptions are cancelled has real history and zero active ones; that is a churn event worth seeing,
+  and flattening it to "no data" would hide it.
+- **Usage** requires no feature rows **and** no tokens. A provider that reported no token counts still
+  produced attributable spend.
+
+The E2E spec asserts the exclusive-or directly: a dashboard shows figures or the empty state, never both.
+
+#### Does any other client need this?
+
+**No, and admin has no mobile counterpart — stated explicitly rather than left unaddressed.** This is the
+first row in this register where the parity question has a structural answer instead of a follow-up:
+`billing.manage` is an operator permission, the mobile app ships no admin surface at all, and the web
+frontend is the _customer_ side of monetization (W4 shipped its five screens). So there is no second
+platform on which any of this could exist, and no §3 row is owed. The register's step-3 question is
+answered "not applicable, by construction" — the only such answer so far, which is why it is spelled out.
+
+**Two visual baselines are pending**, and deliberately unminted here: `admin-billing-plans.png` and
+`admin-billing-actions.png`, across all four admin projects (chromium / firefox / webkit / dark). Only the
+web-e2e workflow's visual job may mint a baseline, in the pinned image
+([e2e/10 §8.3](./e2e/10_UIQuality.md)) — a locally produced PNG bakes in this machine's fonts and fails in
+CI forever. Determinism was checked FIRST, which is why it is two files and not seven: the three
+dashboards and the coupon list all vary with data other specs in this suite create under
+`fullyParallel`, and masking cannot save them because the empty-vs-populated branch changes the page's
+STRUCTURE and therefore its height, not just its numbers. Entitlements has nothing to show until an id is
+typed.

@@ -1051,6 +1051,31 @@ that would have minted an unstable baseline. Those two users now get fixed pen n
 consuming shipped backends. Deliberately lower priority: admin already covers the operational surface
 (31 route modules), so these add reach, not readiness.
 
+### A1 — monetization ✅ **DONE 2026-08-17** (sweep [48 §6.14](./48_PlatformParityRegister.md))
+
+Sliced three ways on the W3 / W5 / W7 precedent, each landing green on its own. **Fourteen** endpoints,
+not fifteen — the count in the row's own brief was wrong, and `admin-monetization.controller.ts` carries
+exactly 14 route decorators (§6.14).
+
+| Slice   | Commit    | What shipped                                                                                                                                                                                                  |
+| ------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **A1a** | `f8644ea` | `/billing/plans` (resolved catalogue + cross-cutting config) and `/billing/entitlements` (read, grant, revoke). The feature skeleton, `RequirePermission(billing.manage)`, and 7 nav entries in **Platform**. |
+| **A1b** | `ea3335d` | `/billing/coupons` (list, create, activate/deactivate) and `/billing/actions` (credit adjustment + refunds).                                                                                                  |
+| **A1c** | `7ae5ca9` | `/billing/revenue`, `/billing/subscriptions`, `/billing/usage` — three read-only dashboards on the P7.4 idiom, each with an honest empty state.                                                               |
+
+**Gates:** admin `pnpm typecheck` clean, `eslint --max-warnings=0` clean, **61 test files / 259 tests**
+(from 53 / 156), `pnpm build` clean. **E2E:** `tests/admin/monetization.spec.ts` (17 tests across the
+three slices) plus extensions to the existing `rbac.spec.ts` and `a11y.spec.ts` — the a11y scans run in
+light AND dark with no new config, because the `admin-dark` project already re-runs `a11y.spec.ts`. Two
+visual baselines are **deliberately unminted** (`admin-billing-plans.png`, `admin-billing-actions.png`,
+× 4 admin projects); only the web-e2e workflow's visual job may mint them.
+
+**The audit corrected the brief in twelve places and found six backend gaps**, all recorded in §3
+(A1-1 … A1-6) and none fixed — the backend is frozen. The three that shaped the UI: no admin route
+reads another user's subscription or credit balance, and none lists payments, so A1 does **not** close
+"an operator cannot see a subscription". `PATCH config` writes 4 of its 7 fields. Plans have no admin
+writer at all. Full reasoning in §6.14.
+
 ## 6. Track M — marketing site
 
 Config only: real `NEXT_PUBLIC_FIREBASE_*` values for the waitlist, the production domain, and social
