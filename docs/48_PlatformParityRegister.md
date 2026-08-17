@@ -1,6 +1,6 @@
 # 48 — Platform Parity Register (web ↔ mobile)
 
-**Status:** 🔒 Binding · **Owner:** every client epic · **Last swept:** 2026-08-10 (after **W7c** —
+**Status:** 🔒 Binding · **Owner:** every client epic · **Last swept:** 2026-08-17 (after **D3** — AI writing is now an enforced paid capability on the server and gated on both clients; the free-tier regression is LIVE, and §5.2 item 4 is rewritten. Sweep **§6.13**. Earlier the same day, **M7-3** — mobile's clap, sweep **§6.12**. Before those, 2026-08-10 after **W7c** —
 reader analytics + the privacy-prefs row, closing §2 rows **6 and 8** and leaving **onboarding as the
 only unowned §2 row**. Its sweep is **§6.10**, and it is the slice that shrank on contact with the code
 — twice, both reductions recorded in §4 rather than in a commit message. Row 4's premise was **wrong**:
@@ -2429,12 +2429,33 @@ subscriber's plan is computed correctly and then ignored on every route but the 
    the free tier gets NO AI writing.** AI writing is a paid capability. The contradiction is settled
    in favour of removing the allowance, not the restriction.
 
-   **Nothing has been built yet, and until it is, the decision has no effect.** Two things are
-   required for it to be real: free's `ai_budget` allowance must be **removed or zeroed** (otherwise
-   it is an allowance that cannot be spent — the same contradiction, inverted), and `ai_writing` must
-   actually be **enforced** (nothing checks it today, so free users keep using the assistant exactly
-   as before). ⚠️ **This is a behaviour REGRESSION for existing free users** — they can use AI writing
-   today. That was flagged before the decision and taken deliberately.
+   ~~**Nothing has been built yet, and until it is, the decision has no effect.**~~ — **BUILT
+   2026-08-17** (`bda3f08`, `390c1ac`, `af8448f`, `a826103`; sweep in **§6.13**). ⚠️ **The behaviour
+   REGRESSION for existing free users is LIVE from `bda3f08`.** They could use AI writing yesterday
+   and cannot today; it was flagged before the decision and taken deliberately, and nothing was added
+   to soften it — no grandfather clause, no grace period, no last free generation.
+
+   Of the two things this item said were required, **one shipped and the other was answered instead of
+   done, because its premise had gone stale:**
+
+   - **`ai_writing` is now enforced.** `AiUsageMeterService.checkQuota` maps the request's `AiFeature`
+     through a TOTAL `AI_FEATURE_PREMIUM_CODE` map in `@qalam/shared` and asserts the code when the
+     feature has one, beside the existing `assertAllowed(AiBudget)`. Five features are sold behind it —
+     `writing_assistant`, `craft_coach` (it generates model output and meters identically; its
+     `analysis` prompt category is a template label, not a product tier) and the three vestigial AF1
+     codes. Both clients gate their AF2 surfaces through their own existing `PremiumGate`, and a
+     distinct FOURTH remedy was added on each, pinned apart from the other three by tests.
+   - **Free KEEPS `ai_budget`.** This item's wording ("an allowance that cannot be spent") predates the
+     AF4 surfaces going live and is **no longer true**: `ask_book` and semantic-search synthesis both
+     run through `AiCompletionService.complete()` and therefore meter against `ai_budget`, and both are
+     shipped on both clients. Free's allowance is spendable. Removing it would have denied free users
+     every metered AI feature — far wider than D3 decided — and would have silently pre-empted **D4**,
+     whose scope the owner deferred. Zeroing the token limits instead would have routed the refusal to
+     `QUOTA_EXCEEDED` ("wait for reset"), which is the conflation defect **§3.6** already records. So
+     the contradiction this item opened is closed the other way round: free has a budget it can spend
+     on the AI it still has, and no AI writing. **Consequence 1 of this section still stands for the six
+     codes beyond `ai_writing`** — nothing else was gated, and both clients carry a test proving a free
+     user can still ask their book a question.
 
    **D4's scope is deferred** (owner, same day: "will decide this later what enforcement we will
    do"). D3 turned D4 from _blocked_ into _floored_: enforcing `ai_writing` is now mandatory, and the
@@ -3350,3 +3371,164 @@ did the porting. That inversion is the reason this sweep's second question is th
    timer leak), and **no new open defects**. No new mobile readiness report: this is one control on
    one bar against an existing reference, and §3.15 plus this sweep hold everything a report would —
    a fourth document would dilute rather than add.
+
+---
+
+### 6.13 D3's sweep (2026-08-17)
+
+The first row in this track that is a **product decision made real rather than a feature ported**, and
+the only one whose deliverable is a capability being **taken away**. Both clients moved together, so
+there is no follow-up on either — but the answer to question 1 below is where the interesting part is.
+
+**What shipped**, four commits, one per layer:
+
+| Layer             | Commit    | File:line                                                                                                                                                                                   |
+| ----------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Map + server gate | `bda3f08` | `packages/shared/src/ai.ts` (`AI_FEATURE_PREMIUM_CODE`, `premiumCodeForAiFeature`, `AI_FEATURE_PREMIUM_CODE_IS_TOTAL`) · `backend/src/modules/monetization/ai-usage-meter.service.ts:53-81` |
+| Deployment audit  | `390c1ac` | `backend/src/modules/monetization/monetization.config-service.ts` (`auditEnforcedPaidFeatures`, `onModuleInit`, `driftedPaidEntitlements`)                                                  |
+| Web               | `af8448f` | `frontend/src/lib/ai-availability.ts` (`upgrade-writing`) · `frontend/src/app/routes/write.tsx` (the gate) · `writing-assistant-panel.tsx` (`writingGate`)                                  |
+| Mobile            | `a826103` | `lib/features/ai/domain/value_objects/ai_feature_ids.dart` (the Dart mirror) · `panels/writing_assistant_panel.dart`, `panels/craft_coach_panel.dart` · `widgets/ai_writing_lock_card.dart` |
+
+**Gates.** Backend 146 suites / 1216 tests, frontend 136 files / 906 tests, both `pnpm typecheck` and
+`eslint --max-warnings=0` clean. Mobile 814 tests (was 801 after M7-3) + 1 skipped, `dart analyze`
+clean.
+
+#### The map, and why it stops where it does
+
+`AiFeature → PremiumFeature | null`, in `@qalam/shared` beside `AiFeature`, mirrored in Dart for the
+Flutter client. **Five** features are sold behind `ai_writing`: `writing_assistant`, `craft_coach`, and
+the three vestigial AF1 codes (`grammar`, `rewrite`, `summarization`) which have no caller and are
+mapped for totality. Everything else maps to `null`, each for its own reason:
+
+- the five AF3 analyses and the three AF4 surfaces belong to **D4**, deferred — §5.2 consequence 1
+  still forbids gating them, and doing so would pre-empt a decision nobody has taken;
+- `moderation` and `playground` are infrastructure, not a sold capability;
+- the six reserved codes have no caller, no flag and no product scope. ⚠️ **`expand` and `shorten` read
+  like writing and are deliberately NOT mapped to it** — the assistant's own expand/condense actions
+  are prompt keys under `writing_assistant` and are already gated. Whoever gives one of those codes a
+  real caller must revisit that row rather than inherit `null`.
+
+**Totality is the load-bearing part.** The map is declared with `satisfies Record<AiFeature, …>` rather
+than a `Record<>` annotation, which keeps `keyof typeof` as the literal keys so the mutual-extends
+assertion beside it is a real check and not a tautology; adding an `AiFeature` without a row fails
+`pnpm typecheck` in three places. `@qalam/shared` has no test runner — it is pure vocabulary — so
+typecheck **is** its suite, and that is where the pin belongs. Dart has no equivalent for a `Map`
+literal, so `aiPremiumMapIsTotal()` stands in for it and the mobile suite asserts it. The direction
+matters more than it looks: a future AI feature that forgets to declare itself must fail loudly, never
+default to free.
+
+#### DECISION §2 — free KEEPS `ai_budget`, and §5.2's premise was wrong
+
+§5.2 item 4 called free's allowance "an allowance that cannot be spent" and asked for it to be removed
+or zeroed. **That was written before AF4 shipped and is no longer true.** Verified in the code rather
+than reasoned about:
+
+- `ask_book` → `ask-book.service.ts:49-51` calls `AiCompletionService.complete()`, which meters via
+  `AI_USAGE_METER` → `assertAllowed(AiBudget)`. Live on both clients (`use-ask-book.ts`,
+  `ask_book_screen.dart`).
+- `semantic_search` with `synthesize: true` → `semantic-search.service.ts:88-90`, same path. Live on
+  both (`ai-search-panel.tsx:35`, `semantic_search_controller.dart`).
+
+So free's budget **is** spendable. Removing it would deny free users every metered AI feature — far
+wider than D3 decided, and a silent pre-emption of D4. Zeroing the token limits instead would route the
+refusal to `QUOTA_EXCEEDED` ("wait for a reset that never helps"), which is the **§3.6** conflation
+defect committed again. Free therefore keeps `ai_budget` and loses only writing.
+
+**One correction to the brief's own framing, recorded because it is the kind of thing that rots:**
+`recommendations` does **not** meter — `recommendation.service.ts` has zero `completion.` calls and only
+asserts the AI feature flag. It is two of the three AF4 consumers, not three. The conclusion is
+unchanged; two live spenders are enough.
+
+#### The two traps, and how each was closed
+
+**TRAP 1 — a code-only catalogue change is inert on existing deployments.** It does not bite D3, and
+that is the finding rather than a migration. `mergePlans` spreads a stored tier wholesale (only `limits`
+merges per key) and settings rows insert with `orIgnore()`, so a stored `features` array shadows the
+compiled default forever — the class that caught B4's `maxPieces`. But under DECISION §2 free's compiled
+default is **already** exactly `[ai_budget]` and stays that way, so there is no catalogue edit for a
+stored array to shadow. The regression rides entirely on the gate, which is code and is therefore live
+on every deployment the moment it deploys. Pinned by a test that starts from a stored pre-D3 catalogue.
+
+**The inverse IS real, and it is the failure that actually hurts:** a paid tier missing `ai_writing` now
+denies a PAYING subscriber. No seeded install can be in that state — `monetization.plans` was born with
+`ai_writing` on plus/pro/enterprise in the same commit that created the setting (`14b8bec`, verified in
+the introducing diff), so only a hand edit produces it, and it was harmless until this commit.
+`auditEnforcedPaidFeatures` reports it at boot and **deliberately does not repair it**. Where the two
+constraints conflict — "a stale seed must end up correct" against "an admin's edit must not be silently
+overwritten" — the admin's intent is privileged, because a stored array replaces rather than merges and
+a stale seed is therefore **indistinguishable by inspection** from a deliberate removal. Healing one
+would silently overwrite the other, so the dangerous state is made loud instead. The enforced-code set
+is derived from the map rather than listed, so D4 will widen this audit rather than leave it stale.
+
+**TRAP 2 — a naive gate takes AI writing from EVERYONE when payments are dark.** Entitlement resolution
+answers even with `feature.payments.enabled` down and degrades to deny, so with payments dark nobody
+holds a subscription, everyone resolves to free, and a gate that ran anyway would wall every user. The
+gate sits **behind the meter's existing early return**, inheriting the convention rather than restating
+it, and a test with the flag off proves a free user still gets AI writing.
+
+#### Where the gate lives, and the one arrangement difference between the clients
+
+Server-side it is in `AiUsageMeterService.checkQuota`, not `AiFeatureService`: it is the one place every
+AI request already passes through carrying its `feature` (`prepare()` feeds both `complete()` and
+`stream()`, so neither can bypass it), the AI module must never import monetization (that inversion is
+the whole reason the `AI_USAGE_METER` seam exists), and TRAP 2 comes for free. The cost is that a
+refusal arrives after context assembly and prompt render; it spends no provider tokens, which is the
+part that matters. Both entitlement asserts run **before** `assertWithinQuota`, so an unentitled writer
+gets `ENTITLEMENT_DENIED` and never `QUOTA_EXCEEDED`.
+
+Client-side both use their OWN existing `PremiumGate` on the entitlements snapshot they already read —
+no new endpoint, and `GET /ai/features` untouched. **They differ in how the gate reaches the panel, and
+the reason is a web-only rule:**
+
+|       | Web                                                                                                                                                                  | Mobile                                                                    |
+| ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| How   | `app/routes/write.tsx` passes a `writingGate` render-prop into the panel                                                                                             | the panels import `PremiumGate` directly                                  |
+| Why   | a feature may never import another feature (docs/26 §185) — the same rule that made `upgrade` reactive-only until now, and that puts the editor↔AI seam at app level | mobile has no such rule; `features/writing` already imports `features/ai` |
+| Scope | only the Assistant and Craft Coach **tabs** — Explorer and Ask are untouched                                                                                         | only the two AF2 **panels**                                               |
+
+The web prop is **required rather than optional-with-a-default**, on purpose: an omitted gate would
+silently serve AI writing to a free user, so forgetting it is a compile error. It caught the existing
+panel spec immediately. Mobile's equivalent is that `PremiumGate` fails closed, which caught the
+existing prompt-library test — hence `buildTestContainer`'s new `entitlementSnapshot` parameter.
+
+#### The fourth remedy
+
+There are now four ways AI can be off and each has a different fix. The new one is its own state
+(`upgrade-writing` on web, `AiErrorCopy.aiWritingLocked` on mobile) rather than a reword of the existing
+`upgrade`, and both clients pin all four apart by test:
+
+| Code                                      | State                 | What it says                     | Remedy                      |
+| ----------------------------------------- | --------------------- | -------------------------------- | --------------------------- |
+| `AI_DISABLED`                             | `off`                 | an admin turned the platform off | nothing the user can do     |
+| `AI_DISABLED_BY_USER`                     | `self-off` (B5)       | they turned it off               | turn it back on in settings |
+| `QUOTA_EXCEEDED`                          | `quota`               | out of budget                    | wait, or top up             |
+| `ENTITLEMENT_DENIED` on a writing feature | **`upgrade-writing`** | AI writing is on Plus and above  | see plans                   |
+
+It is split from `upgrade` because the two denials name different things: `upgrade` means the account
+has no AI allowance **at all**, while this one means the allowance is intact and only writing is sold
+separately. Telling a free writer "your plan doesn't include an AI allowance" would be **false** as well
+as the wrong remedy — they can still run AI search and Ask My Book. The copy is resolved from the same
+`AI_FEATURE_PREMIUM_CODE` map the server gated on, not from the 402's `details`, so it cannot drift from
+the decision and needs no extra plumbing through either client's stream store.
+
+**The mid-flight path carries equal weight**, because the gate cannot cover the window between a page
+load and a generation: the entitlement can be revoked, or the payments flag raised, in between. Both
+clients map the 402 on the **streaming** path as well as the plain one, and render the identical notice
+the gate's locked slot shows — a writer walled on open and one walled mid-generation are in the same
+situation and must not be told two different stories.
+
+#### What D4 still owns
+
+Everything past `ai_writing`, unchanged by this row except that it now has a floor rather than a
+blocker. The six codes — `ai_discovery`, `premium_search`, `premium_recommendations`,
+`story_intelligence`, `advanced_analytics`, `publishing_pro` — are still computed and asserted by
+nothing, `PolicyEngineService.isEntitled()` still has zero callers, and **consequence 1 of §5.2 still
+forbids either client from gating them.** Both clients carry a test proving a free user can still use
+`ask_book`, and the server carries one proving the same at the meter — three regression tests against
+scope creep, in the place each would first go wrong. The five AF3 analyses have a complete backend and
+no client, so D4's answer for them is still a client question as much as an enforcement one.
+
+**Parity check.** Question 3 — does the other platform need a follow-up? — is **no** for the first time
+in several rows: both clients shipped in the same session against the same server change, with one
+recorded arrangement difference (how the gate reaches the panel, above) that is inherent to web's import
+rule and not a gap. §5.2 item 4 is rewritten; §5.1's remaining row is untouched by this.
