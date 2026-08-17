@@ -8,12 +8,32 @@ import { Payment } from './entities/payment.entity';
 import { Subscription } from './entities/subscription.entity';
 import { SubscriptionEvent } from './entities/subscription-event.entity';
 
-/** Revenue overview for the admin dashboard. */
+/** One currency's slice of the revenue overview — the same four figures, in ONE unit. */
+export interface RevenueByCurrency {
+  /** The payment row's currency code, lower-cased as stored (e.g. `usd`). */
+  currency: string;
+  totalRevenue: number;
+  last30dRevenue: number;
+  refunded: number;
+  paymentsCount: number;
+}
+
+/**
+ * Revenue overview for the admin dashboard.
+ *
+ * **The four scalars sum ACROSS currencies and always have** — `1000 usd + 1000 inr` reads as
+ * `2000`. `byCurrency` (B8, docs/48 §3, A1-6) is the figure that is actually addable; the scalars
+ * keep their exact former type and meaning because the admin dashboard already reads them and §8 of
+ * the freeze forbids retyping a shipped field. On a single-currency install the one `byCurrency` row
+ * equals the scalars, which is the property the spec pins.
+ */
 export interface RevenueAnalytics {
   totalRevenue: number;
   last30dRevenue: number;
   refunded: number;
   paymentsCount: number;
+  /** Per-currency breakdown, highest total first. Empty only when no payment row exists. */
+  byCurrency: RevenueByCurrency[];
 }
 
 /** Subscription + conversion metrics. */
@@ -54,17 +74,19 @@ export class MonetizationAnalyticsService {
 
   async revenue(): Promise<RevenueAnalytics> {
     const since = this.daysAgo(30);
-    const [total, recent, refunded, count] = await Promise.all([
+    const [total, recent, refunded, count, byCurrency] = await Promise.all([
       this.sumPayments(PaymentStatus.Succeeded, null),
       this.sumPayments(PaymentStatus.Succeeded, since),
       this.sumPayments(PaymentStatus.Refunded, null),
       this.payments.count({ where: { status: PaymentStatus.Succeeded } }),
+      this.revenueByCurrency(since),
     ]);
     return {
       totalRevenue: total,
       last30dRevenue: recent,
       refunded: Math.abs(refunded),
       paymentsCount: count,
+      byCurrency,
     };
   }
 
@@ -122,6 +144,61 @@ export class MonetizationAnalyticsService {
         costUsd: Number(r.cost),
       })),
     };
+  }
+
+  /**
+   * The same four revenue figures, GROUPED BY currency, in one pass over the payments ledger.
+   *
+   * One query rather than four-per-currency: the currencies are not known ahead of time, so a
+   * per-currency loop would need a `SELECT DISTINCT currency` first and then N round trips that grow
+   * with the install. Conditional aggregation keeps it at exactly one scan whatever the mix.
+   *
+   * `refunded` is `ABS`-ed per row inside the sum rather than on the total, because a refund row is
+   * stored negative and a currency that has ONLY refunds must not report a negative "refunded".
+   */
+  private async revenueByCurrency(since: Date): Promise<RevenueByCurrency[]> {
+    const rows = await this.payments
+      .createQueryBuilder('p')
+      .select('p.currency', 'currency')
+      .addSelect(
+        'COALESCE(SUM(CASE WHEN p.status = :succeeded THEN p.amount ELSE 0 END), 0)',
+        'total',
+      )
+      .addSelect(
+        'COALESCE(SUM(CASE WHEN p.status = :succeeded AND p.created_at >= :since THEN p.amount ELSE 0 END), 0)',
+        'recent',
+      )
+      .addSelect(
+        'COALESCE(SUM(CASE WHEN p.status = :refunded THEN ABS(p.amount) ELSE 0 END), 0)',
+        'refunded',
+      )
+      .addSelect('COUNT(*) FILTER (WHERE p.status = :succeeded)', 'count')
+      .where('p.status IN (:...statuses)', {
+        statuses: [PaymentStatus.Succeeded, PaymentStatus.Refunded],
+      })
+      .setParameters({
+        succeeded: PaymentStatus.Succeeded,
+        refunded: PaymentStatus.Refunded,
+        since,
+      })
+      .groupBy('p.currency')
+      .getRawMany<{
+        currency: string;
+        total: string;
+        recent: string;
+        refunded: string;
+        count: string;
+      }>();
+
+    return rows
+      .map((row) => ({
+        currency: row.currency,
+        totalRevenue: Number(row.total),
+        last30dRevenue: Number(row.recent),
+        refunded: Number(row.refunded),
+        paymentsCount: Number(row.count),
+      }))
+      .sort((a, b) => b.totalRevenue - a.totalRevenue);
   }
 
   private async sumPayments(status: PaymentStatus, since: Date | null): Promise<number> {

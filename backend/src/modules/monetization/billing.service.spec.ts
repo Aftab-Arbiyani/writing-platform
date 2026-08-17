@@ -11,6 +11,7 @@ import type { InvoiceService } from './invoice.service';
 import type { MonetizationConfigService } from './monetization.config-service';
 import {
   PaymentNotFoundException,
+  PaymentNotRefundableException,
   WebhookSignatureInvalidException,
 } from './monetization.exceptions';
 import type { PaymentProviderAdapter } from './payments/payment-provider.port';
@@ -379,6 +380,39 @@ describe('BillingService', () => {
           requestId: null,
         }),
       ).rejects.toBeInstanceOf(PaymentNotFoundException);
+    });
+
+    it('should throw PAYMENT_NOT_REFUNDABLE — not NOT_FOUND — for an uncaptured payment', async () => {
+      // A1-1 (docs/48 §3). The row EXISTS; it simply never reached a provider, so there is no
+      // charge to reverse. Answering 404 told an operator whose id was already correct to go and
+      // find a better one — the two codes lead to opposite next actions, which is the whole reason
+      // the admin refund form keeps its failures apart.
+      const { service, payments, adapter } = build();
+      (payments.findOne as jest.Mock).mockResolvedValue({
+        id: 'pay-1',
+        userId: 'u1',
+        provider: PaymentProvider.Stripe,
+        providerPaymentId: null,
+        amount: 499,
+        currency: 'usd',
+      });
+
+      const error: unknown = await service
+        .refund('pay-1', {
+          id: 'admin-1',
+          role: 'admin',
+          ip: null,
+          userAgent: null,
+          requestId: null,
+        })
+        .catch((thrown: unknown) => thrown);
+
+      expect(error).toBeInstanceOf(PaymentNotRefundableException);
+      expect((error as PaymentNotRefundableException).code).toBe('PAYMENT_NOT_REFUNDABLE');
+      expect((error as PaymentNotRefundableException).getStatus()).toBe(409);
+      // And it refuses BEFORE touching the provider — nothing is attempted against a charge that
+      // does not exist upstream.
+      expect(adapter.refund).not.toHaveBeenCalled();
     });
 
     it('should call the provider adapter refund and record a negative payment row', async () => {

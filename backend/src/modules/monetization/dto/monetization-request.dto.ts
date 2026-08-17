@@ -11,9 +11,100 @@ import {
   PromotionType,
 } from '@qalam/shared';
 import { Type } from 'class-transformer';
-import { IsBoolean, IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
+import {
+  IsBoolean,
+  IsIn,
+  IsInt,
+  IsObject,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+  Validate,
+  ValidatorConstraint,
+  type ValidatorConstraintInterface,
+} from 'class-validator';
 
 const PAGE_SIZE_MAX = 50;
+
+/**
+ * How many entries one config table may carry (B8, A1-2).
+ *
+ * `updateConfig` MERGES per key and never deletes, so without a bound a single patch could grow the
+ * `monetization.config` settings row without limit — and that row is read (and Redis-cached) on
+ * every priced request. The number is generous: ~250 ISO country codes and ~180 currencies exist,
+ * and a real install configures a handful.
+ */
+const CONFIG_TABLE_MAX_ENTRIES = 64;
+const CONFIG_TABLE_KEY_MAX = 16;
+
+function entries(value: unknown): Array<[string, unknown]> {
+  return value !== null && typeof value === 'object' ? Object.entries(value) : [];
+}
+
+function keysAreSane(value: unknown): boolean {
+  const rows = entries(value);
+  return (
+    rows.length <= CONFIG_TABLE_MAX_ENTRIES &&
+    rows.every(([key]) => key.length > 0 && key.length <= CONFIG_TABLE_KEY_MAX)
+  );
+}
+
+/** `taxRates`: region → rate as a fraction. `TaxService` computes `amount * rate`. */
+@ValidatorConstraint({ name: 'isRateTable' })
+export class IsRateTable implements ValidatorConstraintInterface {
+  validate(value: unknown): boolean {
+    return (
+      keysAreSane(value) &&
+      entries(value).every(
+        ([, v]) => typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 1,
+      )
+    );
+  }
+
+  defaultMessage(): string {
+    return (
+      'taxRates must map at most 64 short region keys to finite fractions between 0 and 1 ' +
+      '(0.2 means 20%, not 20).'
+    );
+  }
+}
+
+/** `currencyRates`: currency → multiplier vs USD. `PricingService` multiplies by it. */
+@ValidatorConstraint({ name: 'isCurrencyRateTable' })
+export class IsCurrencyRateTable implements ValidatorConstraintInterface {
+  validate(value: unknown): boolean {
+    return (
+      keysAreSane(value) &&
+      entries(value).every(([, v]) => typeof v === 'number' && Number.isFinite(v) && v > 0)
+    );
+  }
+
+  defaultMessage(): string {
+    return (
+      'currencyRates must map at most 64 short currency keys to finite rates greater than 0 ' +
+      '(a rate of 0 would price every plan at nothing).'
+    );
+  }
+}
+
+/** `regionCurrency`: region → currency code. `PricingService` returns it as the currency. */
+@ValidatorConstraint({ name: 'isCurrencyByRegionTable' })
+export class IsCurrencyByRegionTable implements ValidatorConstraintInterface {
+  validate(value: unknown): boolean {
+    return (
+      keysAreSane(value) &&
+      entries(value).every(
+        ([, v]) => typeof v === 'string' && v.length > 0 && v.length <= CONFIG_TABLE_KEY_MAX,
+      )
+    );
+  }
+
+  defaultMessage(): string {
+    return 'regionCurrency must map at most 64 short region keys to non-empty currency codes.';
+  }
+}
 
 /** Cursor pagination query (opaque cursor + clamped limit). */
 export class CursorQueryDto {
@@ -212,7 +303,21 @@ export class RefundDto {
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(255) reason?: string;
 }
 
-/** Patch the cross-cutting monetization config (admin). */
+/**
+ * Patch the cross-cutting monetization config (admin).
+ *
+ * **All SEVEN fields, since B8.** Until then this declared the four numbers only, so
+ * `ValidationPipe` (`whitelist: true`) stripped `taxRates`, `currencyRates` and `regionCurrency`
+ * before the service saw them — even though `MonetizationConfigPatch` carries all three and
+ * `MonetizationConfigService.updateConfig` merges each per key. The tables were readable and
+ * unwritable over this route, and nothing said so (docs/48 §3, A1-2).
+ *
+ * The three table validators below assert exactly what the consumers already ASSUME, which is why
+ * bare `@IsObject()` (the idiom elsewhere in the codebase, e.g. `retrieval-request.dto.ts:215`) is
+ * not enough here: `mergeConfig` spreads values through without coercing them, so a string in
+ * `taxRates` would persist and `TaxService` would then compute `amount * "20%"` — NaN tax on every
+ * priced subscription, from a typo, with no error anywhere.
+ */
 export class UpdateMonetizationConfigDto {
   @ApiPropertyOptional() @IsOptional() @Type(() => Number) @IsInt() @Min(1) creditsPerUsd?: number;
   @ApiPropertyOptional() @IsOptional() @Type(() => Number) @IsInt() @Min(0) trialDays?: number;
@@ -228,4 +333,37 @@ export class UpdateMonetizationConfigDto {
   @IsInt()
   @Min(0)
   lowCreditThreshold?: number;
+
+  @ApiPropertyOptional({
+    type: Object,
+    description:
+      'Region code → tax rate as a FRACTION (0.2 = 20%), plus a `default` key. Merged per key ' +
+      'over the stored table; keys are never removed by a patch.',
+    example: { default: 0, GB: 0.2 },
+  })
+  @IsOptional()
+  @IsObject()
+  @Validate(IsRateTable)
+  taxRates?: Record<string, number>;
+
+  @ApiPropertyOptional({
+    type: Object,
+    description:
+      'Currency code → multiplier against USD (usd: 1). Merged per key over the stored table.',
+    example: { usd: 1, gbp: 0.79 },
+  })
+  @IsOptional()
+  @IsObject()
+  @Validate(IsCurrencyRateTable)
+  currencyRates?: Record<string, number>;
+
+  @ApiPropertyOptional({
+    type: Object,
+    description: 'Region code → currency code. Merged per key over the stored table.',
+    example: { GB: 'gbp' },
+  })
+  @IsOptional()
+  @IsObject()
+  @Validate(IsCurrencyByRegionTable)
+  regionCurrency?: Record<string, string>;
 }

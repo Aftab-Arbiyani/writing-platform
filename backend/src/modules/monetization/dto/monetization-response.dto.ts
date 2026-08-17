@@ -197,8 +197,12 @@ export class CouponDto {
   @ApiProperty() value!: number;
   @ApiProperty() active!: boolean;
   @ApiProperty() redemptions!: number;
-  @ApiProperty() maxRedemptions!: number;
+  @ApiProperty({ description: '0 = unlimited total redemptions.' }) maxRedemptions!: number;
+  @ApiProperty({ description: 'Per-user redemption cap.' }) perUserLimit!: number;
+  @ApiProperty({ nullable: true, type: String, description: 'Tier restriction; null = any tier.' })
+  appliesToTier!: string | null;
   @ApiProperty({ nullable: true, type: String }) campaign!: string | null;
+  @ApiProperty({ nullable: true, type: String }) description!: string | null;
   @ApiProperty({ nullable: true, type: String }) expiresAt!: string | null;
   @ApiProperty() createdAt!: string;
 }

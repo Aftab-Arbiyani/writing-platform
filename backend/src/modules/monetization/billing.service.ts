@@ -22,6 +22,7 @@ import { InvoiceService } from './invoice.service';
 import { MONETIZATION_AUDIT_ACTIONS, MONETIZATION_AUDIT_TARGET } from './monetization.constants';
 import {
   PaymentNotFoundException,
+  PaymentNotRefundableException,
   WebhookSignatureInvalidException,
 } from './monetization.exceptions';
 import { Payment } from './entities/payment.entity';
@@ -162,8 +163,14 @@ export class BillingService {
     reason?: string,
   ): Promise<Payment> {
     const original = await this.payments.findOne({ where: { id: paymentId } });
-    if (original === null || original.providerPaymentId === null) {
+    if (original === null) {
       throw new PaymentNotFoundException();
+    }
+    // A row with no `providerPaymentId` was never captured at a provider, so there is no charge to
+    // reverse. Until B8 this answered PAYMENT_NOT_FOUND too (docs/48 §3, A1-1), which told an
+    // operator holding a perfectly correct id to go and find a better one.
+    if (original.providerPaymentId === null) {
+      throw new PaymentNotRefundableException();
     }
     const result = await this.registry
       .get(original.provider)

@@ -155,6 +155,12 @@ export function toPurchaseDto(p: Purchase): PurchaseDto {
   };
 }
 
+/**
+ * `appliesToTier`, `perUserLimit` and `description` are here since B8 (docs/48 §3, A1-4): the create
+ * DTO accepts all three, and until this row none came back, so a coupon's tier restriction and its
+ * per-user cap were write-only — an operator could set them and could never read them back to check.
+ * Additive fields on a response; nothing existing changed shape.
+ */
 export function toCouponDto(c: Coupon): CouponDto {
   return {
     id: c.id,
@@ -164,7 +170,10 @@ export function toCouponDto(c: Coupon): CouponDto {
     active: c.active,
     redemptions: c.redemptions,
     maxRedemptions: c.maxRedemptions,
+    perUserLimit: c.perUserLimit,
+    appliesToTier: c.appliesToTier,
     campaign: c.campaign,
+    description: c.description,
     expiresAt: c.expiresAt?.toISOString() ?? null,
     createdAt: c.createdAt.toISOString(),
   };

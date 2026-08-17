@@ -296,6 +296,16 @@ export const ERROR_CODES = {
   PAYMENT_FAILED: 'PAYMENT_FAILED',
   /** No such payment / invoice for this user (404). */
   PAYMENT_NOT_FOUND: 'PAYMENT_NOT_FOUND',
+  /**
+   * The payment row EXISTS but cannot be refunded — it was never captured at a provider, so there
+   * is no provider-side charge to reverse (409).
+   *
+   * Split out of `PAYMENT_NOT_FOUND` by B8 (docs/48 §3, A1-1). The two lead an operator to opposite
+   * actions: a 404 means the id is wrong and they should go find the right one, while this means the
+   * id is exactly right and no id will ever work. Collapsing them sent an operator hunting for an
+   * identifier they already had.
+   */
+  PAYMENT_NOT_REFUNDABLE: 'PAYMENT_NOT_REFUNDABLE',
   INVOICE_NOT_FOUND: 'INVOICE_NOT_FOUND',
   /** The selected payment provider has no credentials / is not configured (503). */
   PAYMENT_PROVIDER_NOT_CONFIGURED: 'PAYMENT_PROVIDER_NOT_CONFIGURED',

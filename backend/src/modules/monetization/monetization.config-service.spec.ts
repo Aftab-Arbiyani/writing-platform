@@ -7,7 +7,7 @@ import {
   resolvePlanLimit,
 } from '@qalam/shared';
 
-import { MonetizationConfigService } from './monetization.config-service';
+import { DEFAULT_CONFIG, MonetizationConfigService } from './monetization.config-service';
 import type { SettingsService } from '../settings/settings.service';
 import { SETTING_DEFINITION_BY_KEY } from '../settings/settings.catalog';
 
@@ -285,5 +285,61 @@ describe('MonetizationConfigService — D3, AI writing is enforced', () => {
         'premium_search',
       ]);
     });
+  });
+});
+
+/**
+ * The write half of A1-2 (docs/48 §3). `updateConfig` always merged all seven fields per key — the
+ * DTO was what withheld three of them, and `dto/monetization-config.dto.spec.ts` now pins that
+ * boundary. This pins the other end: given a patch carrying the tables, the value actually SAVED
+ * carries them too, merged rather than replaced.
+ */
+describe('MonetizationConfigService — a config patch persists all seven fields (A1-2)', () => {
+  function serviceWriting(stored: unknown) {
+    const settings = {
+      getValue: jest.fn().mockResolvedValue(stored),
+      updateSettings: jest.fn().mockResolvedValue(undefined),
+    };
+    const service = new MonetizationConfigService(settings as unknown as SettingsService);
+    return { service, settings };
+  }
+
+  const ACTOR = { id: 'admin-1', role: 'admin' } as never;
+
+  it('saves the three tables, merged per key over what was stored', async () => {
+    const { service, settings } = serviceWriting(null);
+
+    const next = await service.updateConfig(
+      {
+        creditsPerUsd: 1200,
+        taxRates: { PK: 0.17 },
+        currencyRates: { pkr: 280 },
+        regionCurrency: { PK: 'pkr' },
+      },
+      ACTOR,
+    );
+
+    const [rows] = settings.updateSettings.mock.calls[0] as [
+      Array<{ key: string; value: unknown }>,
+    ];
+    expect(rows[0]?.key).toBe('monetization.config');
+    expect(rows[0]?.value).toEqual(next);
+
+    expect(next.creditsPerUsd).toBe(1200);
+    // Merged, not replaced: the compiled entries survive alongside the new one.
+    expect(next.taxRates).toMatchObject({ default: 0, GB: 0.2, PK: 0.17 });
+    expect(next.currencyRates).toMatchObject({ usd: 1, gbp: 0.79, pkr: 280 });
+    expect(next.regionCurrency).toMatchObject({ US: 'usd', PK: 'pkr' });
+  });
+
+  it('leaves every table untouched when the patch names none of them', async () => {
+    const { service } = serviceWriting(null);
+
+    const next = await service.updateConfig({ trialDays: 21 }, ACTOR);
+
+    expect(next.trialDays).toBe(21);
+    expect(next.taxRates).toEqual(DEFAULT_CONFIG.taxRates);
+    expect(next.currencyRates).toEqual(DEFAULT_CONFIG.currencyRates);
+    expect(next.regionCurrency).toEqual(DEFAULT_CONFIG.regionCurrency);
   });
 });

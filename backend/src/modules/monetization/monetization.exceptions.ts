@@ -232,6 +232,23 @@ export class PaymentNotFoundException extends AppException {
   }
 }
 
+/**
+ * The payment exists but has no provider-side charge to reverse.
+ *
+ * 409, not 404: the row is there and the operator's id is correct — the CONFLICT is between the
+ * payment's state and the action asked of it, exactly like `COUPON_NOT_REDEEMABLE` (a coupon that
+ * exists but cannot be used right now) two dozen lines below.
+ */
+export class PaymentNotRefundableException extends AppException {
+  constructor() {
+    super(
+      ERROR_CODES.PAYMENT_NOT_REFUNDABLE,
+      'That payment was never captured at a provider, so there is nothing to refund.',
+      HttpStatus.CONFLICT,
+    );
+  }
+}
+
 /** No such invoice for this user. */
 export class InvoiceNotFoundException extends AppException {
   constructor() {
