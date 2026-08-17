@@ -1,5 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
+import type { OnModuleInit } from '@nestjs/common';
 import {
+  AI_FEATURE_PREMIUM_CODE,
   BillingInterval,
   DEFAULT_CREDITS_PER_USD,
   DEFAULT_CURRENCY,
@@ -9,6 +11,7 @@ import {
   DEFAULT_TRIAL_DAYS,
   PLAN_TIER_ORDER,
   PlanTier,
+  PremiumFeature,
 } from '@qalam/shared';
 import type { PlanDefinition } from '@qalam/shared';
 
@@ -32,7 +35,7 @@ import type {
  * subscription/usage/promo pricing all live here as data, not code.
  */
 @Injectable()
-export class MonetizationConfigService {
+export class MonetizationConfigService implements OnModuleInit {
   private readonly logger = new Logger(MonetizationConfigService.name);
 
   constructor(private readonly settings: SettingsService) {}
@@ -101,6 +104,83 @@ export class MonetizationConfigService {
     );
     return plans;
   }
+
+  /**
+   * Paid tiers whose RESOLVED catalogue omits a premium code the compiled default grants
+   * and the server actually ENFORCES — i.e. the states in which a PAYING subscriber is
+   * refused a capability they bought.
+   *
+   * This exists because D3 changed what a `features` array *is*. Until D3 the arrays drove
+   * display plus a single `ai_budget` assertion; from D3 they gate a live capability, so a
+   * stored catalogue that has drifted from the compiled default now has consequences it did
+   * not have when it was written. `mergePlans` spreads a stored tier wholesale (only
+   * `limits` merges per key), and settings rows insert with `orIgnore()`, so a stored
+   * `features` array REPLACES the compiled one forever.
+   *
+   * It reports and does not repair, and that is the deliberate call where the two
+   * constraints conflict. Auto-healing a missing code would silently overwrite an admin who
+   * removed it on purpose — and because a stored array replaces rather than merges, there is
+   * no way to distinguish "stale seed" from "deliberate edit" by inspecting the value. So
+   * the admin's intent is privileged and the dangerous state is made LOUD instead. Nothing
+   * here is required for a seeded deployment: `monetization.plans` was born with `ai_writing`
+   * on plus/pro/enterprise in the same commit that created the setting (`14b8bec`), so no
+   * seeded install can lack it. This covers the hand-edited case only.
+   */
+  async auditEnforcedPaidFeatures(): Promise<
+    ReadonlyArray<{ tier: PlanTier; feature: PremiumFeature }>
+  > {
+    return driftedPaidEntitlements(await this.getPlans());
+  }
+
+  /**
+   * Warn once at boot rather than on every catalogue read — a drifted deployment would
+   * otherwise log on every AI request. Never throws: `getPlans` already falls back to the
+   * compiled defaults, and a diagnostic must not be able to stop the app from starting.
+   */
+  async onModuleInit(): Promise<void> {
+    try {
+      for (const { tier, feature } of await this.auditEnforcedPaidFeatures()) {
+        this.logger.warn(
+          `monetization.plans: paid tier "${tier}" does not grant the ENFORCED premium code ` +
+            `"${feature}" — subscribers on this tier will be DENIED it (402 ENTITLEMENT_DENIED). ` +
+            `The compiled default grants it; the stored catalogue overrides that. Fix the ` +
+            `stored value via the admin settings surface if this was not deliberate.`,
+        );
+      }
+    } catch (error) {
+      this.logger.warn(`paid-tier entitlement audit skipped: ${(error as Error).message}`);
+    }
+  }
+}
+
+/**
+ * The premium codes the server ASSERTS today: the AI budget (checked by the usage meter on
+ * every AI request) plus every code the AI feature map sells a feature behind (D3 —
+ * `ai_writing`). Derived rather than listed, so when D4 finally enforces its six codes the
+ * audit above widens with it instead of quietly going stale.
+ */
+const ENFORCED_PREMIUM_FEATURES: ReadonlySet<PremiumFeature> = new Set<PremiumFeature>([
+  PremiumFeature.AiBudget,
+  ...Object.values(AI_FEATURE_PREMIUM_CODE).flatMap((code) => (code === null ? [] : [code])),
+]);
+
+/** Pure core of {@link MonetizationConfigService.auditEnforcedPaidFeatures}. */
+export function driftedPaidEntitlements(
+  catalogue: ResolvedPlanCatalogue,
+): ReadonlyArray<{ tier: PlanTier; feature: PremiumFeature }> {
+  const drift: Array<{ tier: PlanTier; feature: PremiumFeature }> = [];
+  for (const tier of PLAN_TIER_ORDER) {
+    if (tier === PlanTier.Free) {
+      continue; // Free is not sold anything; its omissions are the product, not drift.
+    }
+    const granted = new Set<PremiumFeature>(catalogue[tier].features);
+    for (const feature of DEFAULT_PLAN_FEATURES[tier]) {
+      if (ENFORCED_PREMIUM_FEATURES.has(feature) && !granted.has(feature)) {
+        drift.push({ tier, feature });
+      }
+    }
+  }
+  return drift;
 }
 
 /** The compiled default cross-cutting config (also the seeded `monetization.config`). */

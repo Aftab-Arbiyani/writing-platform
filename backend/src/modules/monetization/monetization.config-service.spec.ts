@@ -1,12 +1,15 @@
 import {
+  DEFAULT_PLAN_FEATURES,
   NEGATIVE_UNLIMITED_LIMIT_KEYS,
   PlanTier,
+  PremiumFeature,
   UNLIMITED_SEATS,
   resolvePlanLimit,
 } from '@qalam/shared';
 
 import { MonetizationConfigService } from './monetization.config-service';
 import type { SettingsService } from '../settings/settings.service';
+import { SETTING_DEFINITION_BY_KEY } from '../settings/settings.catalog';
 
 /**
  * The plan catalogue's merge behaviour, which is what decides whether a limit added to the
@@ -179,5 +182,108 @@ describe('MonetizationConfigService — plan catalogue merge', () => {
     // Enterprise (`0`) stop being unlimited and start showing zero versions — a silent inversion
     // with no error anywhere, which is precisely how B6 warned this fails.
     expect(NEGATIVE_UNLIMITED_LIMIT_KEYS).toEqual(['maxCollaborators']);
+  });
+});
+
+/**
+ * D3's existing-deployment path (docs/45 §4 row D3, docs/48 §6.13).
+ *
+ * From this commit `ai_writing` is ENFORCED, which changes what a stored `features` array
+ * means: it stopped being display data and became access control. These tests are about the
+ * case that only exists in production — a `monetization.plans` row written before today and
+ * kept forever by `orIgnore()`.
+ */
+describe('MonetizationConfigService — D3, AI writing is enforced', () => {
+  /**
+   * The catalogue exactly as `monetization.plans` was SEEDED (AF5, `14b8bec`) — free holds
+   * `ai_budget` and nothing else. This is the row a pre-D3 deployment still has.
+   */
+  const STORED_OLD_CATALOGUE = {
+    free: { tier: 'free', name: 'Free', features: ['ai_budget'] },
+    plus: {
+      tier: 'plus',
+      name: 'Plus',
+      features: ['ai_budget', 'ai_writing', 'ai_discovery', 'premium_search'],
+    },
+  };
+
+  describe('the free tier', () => {
+    it('resolves WITHOUT ai_writing on a database seeded before today — the regression is live', async () => {
+      const plans = await serviceReading(STORED_OLD_CATALOGUE).getPlans();
+
+      expect(plans[PlanTier.Free].features).not.toContain(PremiumFeature.AiWriting);
+    });
+
+    it('KEEPS ai_budget, because free can still spend it (DECISION 2a)', async () => {
+      // 48 §5.2 called free's allowance "unspendable" and asked for it to be removed or
+      // zeroed. That premise predates AF4 going live: `ask_book` and semantic-search
+      // synthesis both meter against `ai_budget` and are shipped on BOTH clients, so the
+      // allowance is spendable. Removing it would deny free users every metered AI
+      // feature — far wider than D3 decided, and it would pre-empt D4.
+      const plans = await serviceReading(STORED_OLD_CATALOGUE).getPlans();
+
+      expect(plans[PlanTier.Free].features).toContain(PremiumFeature.AiBudget);
+    });
+
+    it('needs no catalogue migration at all — the compiled default already matches', () => {
+      // This is why D3 escapes the trap that caught B4's `maxPieces`: `mergePlans` spreads a
+      // stored tier's `features` wholesale, so a code-only edit to DEFAULT_PLAN_FEATURES
+      // would have been inert on every existing deployment. D3 needs no such edit. The
+      // regression is carried entirely by the gate in the usage meter, which is CODE and is
+      // therefore live everywhere the moment it deploys — stored catalogue or not.
+      expect(DEFAULT_PLAN_FEATURES[PlanTier.Free]).not.toContain(PremiumFeature.AiWriting);
+      expect(DEFAULT_PLAN_FEATURES[PlanTier.Free]).toContain(PremiumFeature.AiBudget);
+    });
+  });
+
+  describe('the paid tiers — the failure that actually hurts', () => {
+    it('grants ai_writing on every paid tier as SEEDED, so no seeded deployment denies a payer', async () => {
+      // The seeded row is the shipped `monetization.plans` default value, read from the
+      // catalogue rather than restated, so this test tracks the real seed if it ever moves.
+      const seeded = SETTING_DEFINITION_BY_KEY.get('monetization.plans')?.defaultValue;
+      const plans = await serviceReading(seeded).getPlans();
+
+      for (const tier of [PlanTier.Plus, PlanTier.Pro, PlanTier.Enterprise]) {
+        expect(plans[tier].features).toContain(PremiumFeature.AiWriting);
+      }
+    });
+
+    it('reports no drift for a seeded or absent catalogue', async () => {
+      await expect(serviceReading(null).auditEnforcedPaidFeatures()).resolves.toEqual([]);
+      await expect(
+        serviceReading(STORED_OLD_CATALOGUE).auditEnforcedPaidFeatures(),
+      ).resolves.toEqual([]);
+    });
+
+    it('DETECTS a hand-edited catalogue whose paid tier lost ai_writing', async () => {
+      // Not reachable by seeding — `ai_writing` was on plus in the same commit that created
+      // the setting. Only an admin edit produces this, and before today it was harmless.
+      const handEdited = {
+        ...STORED_OLD_CATALOGUE,
+        plus: { tier: 'plus', name: 'Plus', features: ['ai_budget', 'premium_search'] },
+      };
+
+      await expect(serviceReading(handEdited).auditEnforcedPaidFeatures()).resolves.toEqual([
+        { tier: PlanTier.Plus, feature: PremiumFeature.AiWriting },
+      ]);
+    });
+
+    it('reports and does not repair — the stored value is left exactly as the admin wrote it', async () => {
+      // Where the two constraints conflict, the admin's intent wins: a stored array replaces
+      // rather than merges, so "stale seed" and "deliberate removal" are indistinguishable
+      // by inspection, and healing one would silently overwrite the other.
+      const handEdited = {
+        ...STORED_OLD_CATALOGUE,
+        plus: { tier: 'plus', name: 'Plus', features: ['ai_budget', 'premium_search'] },
+      };
+      const service = serviceReading(handEdited);
+
+      await service.auditEnforcedPaidFeatures();
+
+      expect((await service.getPlans())[PlanTier.Plus].features).toEqual([
+        'ai_budget',
+        'premium_search',
+      ]);
+    });
   });
 });
