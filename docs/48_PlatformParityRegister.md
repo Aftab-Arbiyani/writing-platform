@@ -2959,6 +2959,20 @@ rows 1–2; report [53](./53_WebConversationLayerReadinessReport.md)).
    class §3.11 closed for `@qalam/api-types`. Unowned; not W7a's to fix (mobile is out of scope for
    this row).
 
+   > **CLOSED 2026-08-17** (`d088d49`) — now `Limits.commentMaxLength`
+   > (`lib/shared/widgets/social/comment_composer.dart:83`). **"It agrees today, so nothing is broken"
+   > understated it**: P-2 subsequently found these exact two numbers conflated on both clients, an
+   > AF6 story review counted against this 2,000 public-piece cap when its real limit is 5,000 (§6.11
+   > item 5). An inlined literal is what made the wrong cap read as plausible — nothing at the call
+   > site said which one it was. The docblock now names the endpoint, and records that AF6 composes
+   > through `MentionField` rather than this widget (verified: `CommentComposer` and `CommentTile`
+   > are reached only from `features/social/.../comments_screen.dart`, so the two surfaces share no
+   > widget). Two siblings went with it — `collection_form_sheet.dart:93,104` → `Limits.collectionNameMax`
+   > / `Limits.collectionDescriptionMax`. Deliberately **not** changed: `report_sheet.dart:127`'s
+   > `1000` mirrors `@MaxLength(1000)` on `create-report.dto.ts:25` but has no constant on **either**
+   > side to reference, and `semantic_search_screen.dart`'s `120` bounds a device-local saved-search
+   > name with no server counterpart.
+
 4. **§2 re-swept.** Row 4 (social depth) closed to **collections only** — comments and responses now
    ship on both clients. Row 4's owner line moved from "unassigned — see §5" to W7, and §5's
    conversation-layer bullet is struck through with the record kept.
