@@ -2263,8 +2263,9 @@ does in passing.
 
 ## 5. The unassigned gaps — a real hole in the plan
 
-Item **7** — plus **P-2** in §5.1 — is what remains unowned. (Items 3, 4, 5, 6 and 8 have all closed:
-6 and 8 by **W7c** on 2026-08-10, which leaves onboarding as the only §2 row with no owner.) The W-track was written to
+Item **7** is what remains unowned. (Items 3, 4, 5, 6 and 8 have all closed: 6 and 8 by **W7c** on
+2026-08-10; **P-2** in §5.1 closed on both clients on 2026-08-17 — §6.11. Onboarding is now the only
+§2 row with no owner, and it is blocked on a product shape rather than unassigned.) The W-track was written to
 close the AF1–AF6 client gap, and these fall outside those AF epics. (**W-1 is no longer in this
 list** — it was closed by the 2026-07-28 port, §3.1.)
 
@@ -2313,7 +2314,7 @@ is how the debt in this document accumulated in the first place.
 | #   | Gap                                                                                           | Where both clients stand                                                                                                                                                                                                                                    | Shape of the work                                                                                                                                                       |
 | --- | --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | P-1 | ~~**Applying an accepted suggestion**~~ **CLOSED — server 2026-07-29, both clients same day** | `POST /suggestions/:id/accept` now **rewrites the anchored range of the piece body**, in the same transaction that marks the suggestion accepted, and captures a `pre_edit` snapshot first. A stale anchor is `409 SUGGESTION_CONFLICT` and writes nothing. | Done on the backend (commit `f6827e0`, `qalam-mobile/docs/56` §3b); mobile's client half in `dd12091`; web's copy + assertions in W3c-4, §3.4. **Nothing outstanding.** |
-| P-2 | **Composing @mentions**                                                                       | `mentions` on the wire are resolved user **ids**. Neither composer sends any, so a typed `@handle` is plain text and nobody is notified.                                                                                                                    | Handle→id resolution per mention inside the composer — the same lookup the invite dialog uses, applied inline.                                                          |
+| P-2 | ~~**Composing @mentions**~~ **CLOSED — both clients 2026-08-17, same day**                    | Both composers now resolve a typed `@handle` to an id and the mentioned person is notified. Web `7ff62d4`, mobile `738c8d9`. The stored form is `@<uuid>` **inside the body** (the server re-derives `mentions[]` from it), so the body is the mention.     | Done. The shape of the work changed on contact — the candidate set is the **story roster**, not the invite dialog's arbitrary-handle lookup. Sweep: **§6.11**.          |
 
 **P-1 was correctness-shaped, not a nicety** — and it went the server's way.
 
@@ -3117,3 +3118,117 @@ rather than in a commit message, which is the whole reason this section exists.
    the `web-e2e` workflow's visual job may produce, in the pinned image (§3.5 **T-8**; docs/e2e/10
    §8.3). It was deliberately NOT minted locally, and "a snapshot doesn't exist" is the correct local
    result until that job runs.
+
+---
+
+### 6.11 P-2's sweep (2026-08-17)
+
+The **only §5.1 gap that was open on BOTH clients**, and therefore the only row in the W-track where
+there was no reference implementation to port from — both halves were written against the backend
+contract on the same day (web `7ff62d4`, mobile `738c8d9`). That is also why this sweep matters more
+than most: with no reference, a divergence between the two clients could not be caught by comparing
+one to the other, only by pinning both to the server's regex.
+
+1. **Only what the row named?** Yes. @mentions in the AF6 story-review composer, on both clients, and
+   nothing else. No notification-preference surface (mentions ride the existing
+   `NotificationType.CommentMention`, which already shipped), no mention support in the **piece**
+   comment composer (a different endpoint with no `mentions` concept — see the constant defect below),
+   and no onboarding. One thing was added that the row did not name, and it is recorded in §3 rather
+   than hidden here: **M7-1's constant**, because P-2 could not have been written correctly without it.
+
+2. **The wire format, which is the whole reason this was not a text-field feature.** A mention is
+   stored as `@<uuid>` **inside the comment body**. `CommentService.parseMentions` re-derives
+   `mentions[]` from the body with its own `MENTION_UUID_RE` (`comment.service.ts:46`), so **the body
+   is the mention** and the DTO's `mentions` array only states client intent. The format was chosen
+   because it is **rename-proof**: the stored token points at a _person_, and the name is resolved
+   fresh at render time rather than frozen into prose that goes stale.
+
+   The cost is that a raw body is unreadable — 37 characters of hex where a name belongs. So neither
+   composer ever shows one. The writer types and edits **handles**, and exactly one pure module per
+   client owns the translation:
+
+   |         | Web                                                       | Mobile                                                      |
+   | ------- | --------------------------------------------------------- | ----------------------------------------------------------- |
+   | module  | `frontend/src/features/collaboration/lib/mention-text.ts` | `lib/features/collaboration/presentation/mention_text.dart` |
+   | display | `"nice catch @farheen"`                                   | same                                                        |
+   | raw     | `"nice catch @550e8400-…-446655440000"`                   | same                                                        |
+
+   Both modules are **pure** — the round-trip is unit-testable without a textarea or a widget, which is
+   the property that lets the two clients be pinned to the same behaviour without an E2E run. The two
+   `MENTION_UUID_RE` / `mentionUuidPattern` regexes are deliberately character-identical to the
+   server's. **If these three ever disagree, one client counts and renders a set of mentions the
+   server does not notify, or the reverse** — so a change to any one of them is a change to all three.
+
+3. **Why a handle and not a pen name.** The reverse mapping (display text → ids) has to be **total**,
+   and a pen name breaks it twice: pen names are **not unique** — two collaborators called "Ali" are
+   indistinguishable when turning display text back into ids — and they **contain spaces**, so there is
+   no token boundary to find one by. A username is unique platform-wide and drawn from `[a-z0-9_]`
+   (`Patterns.username`), which makes both the tokenizer and the reverse map exact. It is also what
+   people actually type.
+
+4. **Why the candidate set is the story roster and NOT `GET /users/:username` — a safety decision, and
+   a correction to §5.1's stated shape of the work.** The row proposed "the same lookup the invite
+   dialog uses, applied inline". **That could not be used**, and the audit that found this is the
+   fourth time a §5/§2 cell has been corrected on contact with the code (cf. **W8-1**, **M7-3**,
+   **W7c**).
+
+   `CommentService.notifyComment` notifies **every id it is handed, with no access check of any kind**
+   (`comment.service.ts:250-270` — verified 2026-08-17; the policy `assert` above it authorizes the
+   _commenter_, never the _mentioned_). So whatever a composer is willing to resolve is, in effect, the
+   set of people who can be notified about a private story. `GET /users/:username` resolves **anybody
+   on the platform** — precisely the id a mention must never be able to carry. Mentioning a stranger
+   would tell them a story exists, who is discussing it, and hand them a notification linking to a
+   comment they cannot open.
+
+   Candidates therefore come from `GET /stories/:id/members` — exactly "people who can see this story".
+   The endpoint synthesises the **owner** row from the piece author before appending collaborators
+   (`membership.service.ts:102`), so author + members needs no second request and no client-side union.
+   What **is** reused from the invite flow is the _lesson_ of **M-1** — a mention is an id, and the
+   writer confirms a person before one is sent — not its endpoint.
+
+   Two consequences worth stating: a roster that cannot be read means **no typeahead, not a broken
+   screen** (the composer still posts plain text), and the **viewer is not filtered out** — "as @me
+   noted above" is legitimate prose, and the server drops self-notification anyway
+   (`comment.service.ts:259`).
+
+5. **The constant defect P-2 found, which is a real bug and not a tidiness note.** Both composers were
+   counting the story-review body against the **2,000-character engagement comment cap**. That is the
+   wrong endpoint's limit. AF6's private story review is `MAX_COMMENT_BODY_LENGTH` in `@qalam/shared`
+   `collaboration.ts` — **5,000** — while 2,000 is `limits.ts`'s cap on a **public piece comment**.
+   The two had been conflated. Mobile had no mirror of the larger constant at all, so
+   `Limits.storyCommentBodyMax = 5000` was added (`lib/shared/domain/limits.dart:24`) with a docblock
+   naming which endpoint it belongs to, sitting directly beneath `commentMaxLength = 2000` with the
+   distinction spelled out. The visible symptom was a composer refusing a review the server would have
+   accepted — a false rejection, silently, at 40% of the real limit.
+
+6. **The counter counts the RAW body, not what is on screen.** `@MaxLength` is applied server-side to
+   the **raw** string, where every mention is 37 characters rather than the handle's length. A counter
+   over the display text would tell the writer they had room and then take a `400` — the failure is
+   invisible until submit, and worse the closer a body gets to the cap. Both clients therefore length-
+   check through `rawBodyLength` / `rawCommentBodyLength`, and both have a spec that pins exactly this
+   ("counts the RAW body, so a comment the server would reject is caught here").
+
+7. **Do the two clients actually match?** Compared function by function: same regexes, same function
+   names, same round-trip semantics, same raw-length rule, same roster source, same never-throw
+   behaviour on an unreadable roster. **One deliberate difference**, and it is platform-inherent rather
+   than a gap: web's typeahead is keyboard-first (Enter selects, Escape leaves plain text — asserted in
+   `comment-composer.spec.tsx`), mobile's is a tap target list. Not recorded in §4.1 because "a
+   keyboard affordance on the keyboard platform" is not a feature difference.
+
+8. **Verification.** Both repos' full gates were run for the first time on this row — P-2 had shipped
+   with only its own new spec files run, which its commit messages stated. Mobile: `dart analyze` clean,
+   **772 passed / 1 skipped**, and the nine P-2 files format-clean. Web: `tsc --noEmit` clean, `eslint
+--max-warnings=0` clean, **135 files / 893 tests passed**, including `mention-text.spec.ts` (21) and
+   the six `CommentComposer — mentions` / `CommentThread — mentions in a reply` cases. **No failures,
+   so no fix commit.**
+
+   > **The whole-tree `dart format` is not a valid mobile gate**, and this is the second time it has
+   > been attempted. The repo's baseline predates Dart's tall style and configures no `page_width`, so
+   > `dart format .` rewrites ~124 unrelated files and reports "changed". The gate is `dart format
+--set-exit-if-changed` **over the commit's own files**; a whole-tree reformat must never be
+   > committed.
+
+9. **Does mobile need a follow-up?** **No new one.** The two pre-existing mobile follow-ups from
+   §6.10 are unchanged in kind, and both are closed by this session's later phases: **M7-1** (the
+   hardcoded 2000) and **M7-3** (no clap control). Nothing P-2 built creates a gap on either client —
+   it is the rare row where both sides shipped together, so §5.1 closes rather than moving.
