@@ -9,6 +9,7 @@ import type { CollaborationComment } from '../types/collaboration.types';
 import { CapabilityGate } from './capability-gate';
 import { CollaboratorIdentity } from './collaborator-identity';
 import { CommentComposer } from './comment-composer';
+import { MentionBody } from './mention-body';
 
 /**
  * One comment thread (AF6, W3b) — a root comment, its replies, and the actions on it.
@@ -59,7 +60,7 @@ export function CommentThread({ storyId, comment }: CommentThreadProps): ReactEl
         ) : null}
 
         <p className="text-ink text-sm whitespace-pre-wrap">
-          <bdi>{comment.body}</bdi>
+          <MentionBody body={comment.body} />
         </p>
 
         <footer className="flex flex-wrap items-center gap-2">
@@ -121,7 +122,7 @@ export function CommentThread({ storyId, comment }: CommentThreadProps): ReactEl
                     </span>
                   </div>
                   <p className="text-ink ps-10 text-sm whitespace-pre-wrap">
-                    <bdi>{item.body}</bdi>
+                    <MentionBody body={item.body} />
                   </p>
                 </li>
               ))
@@ -132,12 +133,14 @@ export function CommentThread({ storyId, comment }: CommentThreadProps): ReactEl
         {replying ? (
           <CommentComposer
             dense
+            storyId={storyId}
             placeholder="Write a reply…"
             submitLabel="Reply"
             isPending={reply.isPending}
             onCancel={() => setReplying(false)}
-            onSubmit={async (body) => {
-              await reply.mutateAsync({ commentId: comment.id, body });
+            // Mentions ride the reply endpoint too (`{body, mentions?}`) — P-2 is not root-only.
+            onSubmit={async ({ body, mentions }) => {
+              await reply.mutateAsync({ commentId: comment.id, body, mentions });
               setReplying(false);
               setExpanded(true);
             }}

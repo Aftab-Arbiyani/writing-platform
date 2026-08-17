@@ -151,9 +151,17 @@ export const collaborationApi = {
   /**
    * POST /stories/:id/comments — a general or inline comment.
    *
-   * `mentions` are **user ids**, not handles (`@IsUUID('all', {each: true})`), so a composer must
-   * resolve a typed handle first — the same lesson as the invite (M-1). `parentId` is deliberately
-   * absent: the create DTO rejects it, and a reply has its own endpoint.
+   * `mentions` are **user ids**, not handles (`@IsUUID('all', {each: true})`) — the same lesson as the
+   * invite (M-1). Since **P-2** the composer resolves them: `comment-composer.tsx` picks people from
+   * the story's roster and `mention-text.ts` rewrites each handle to `@<uuid>` inside `body` before
+   * this call. What is sent here is therefore already resolved; passing a handle would be silently
+   * dropped by the server's `@IsUUID` and notify nobody.
+   *
+   * Note that `mentions` is **belt-and-braces, not the mechanism**: the server re-derives it from the
+   * body with its own regex and unions the two (`comment.service.ts:332`), so the mention lives in the
+   * body text and this array only states the client's intent explicitly.
+   *
+   * `parentId` is deliberately absent: the create DTO rejects it, and a reply has its own endpoint.
    */
   addComment: (
     storyId: string,

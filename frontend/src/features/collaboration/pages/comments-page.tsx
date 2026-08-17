@@ -73,8 +73,9 @@ export function CommentsPage(): ReactElement {
 
       <CapabilityGate storyId={storyId} action={POLICY_ACTIONS.StoryComment}>
         <CommentComposer
+          storyId={storyId}
           isPending={addComment.isPending}
-          onSubmit={(body) => addComment.mutateAsync({ body })}
+          onSubmit={(input) => addComment.mutateAsync(input)}
         />
       </CapabilityGate>
 

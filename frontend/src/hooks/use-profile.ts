@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { type QueryClient, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { get } from '@/lib/api-client';
 import { qk } from '@/lib/query-keys';
@@ -42,9 +42,19 @@ export function useProfile(username: string | null) {
 export function useProfileById(userId: string | null) {
   const queryClient = useQueryClient();
 
-  return useQuery({
+  return useQuery(profileByIdQueryOptions(userId, queryClient));
+}
+
+/**
+ * The same lookup as an options object, for a caller that must resolve **several** ids at once and
+ * therefore cannot call a hook per id (`useQueries` — P-2's mention typeahead resolves a whole story
+ * roster). Extracted rather than reimplemented so both callers share `qk.profiles.byId`: a name
+ * already resolved for a comment author costs the typeahead nothing.
+ */
+export function profileByIdQueryOptions(userId: string | null, queryClient: QueryClient) {
+  return {
     queryKey: qk.profiles.byId(userId ?? ''),
-    queryFn: async ({ signal }) => {
+    queryFn: async ({ signal }: { signal?: AbortSignal }) => {
       const profile = await get<ProfileResponse>(
         `/users/by-id/${encodeURIComponent(userId ?? '')}`,
         { signal },
@@ -60,5 +70,5 @@ export function useProfileById(userId: string | null) {
     staleTime: 60_000,
     // A deleted account 404s. Retrying cannot change that, and the caller has an honest fallback.
     retry: false,
-  });
+  };
 }
