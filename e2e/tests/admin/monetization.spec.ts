@@ -119,20 +119,52 @@ test.describe('@phase4 admin monetization — A1b, the money actions', () => {
     await expect(page.getByRole('alert')).toHaveCount(0);
   });
 
-  test('a credit DEDUCTION confirms and states the zero floor', async ({ page }) => {
+  test('the credit form reads the account’s balance before anything is changed', async ({
+    page,
+  }) => {
+    // B8's A1-3. A well-formed UUID matching no account answers `credits: null`, which is a real
+    // balance of zero rather than an error — the screen has to say so calmly, and the read must not
+    // create a wallet for an id that was typed by mistake.
     const monetization = new MonetizationPage(page);
     await monetization.goto(MONETIZATION_ROUTES[3]!);
 
-    await page.getByLabel('User ID').fill('00000000-0000-4000-8000-000000000000');
+    await page.getByLabel('User ID').first().fill('00000000-0000-4000-8000-000000000000');
+
+    await expect(page.getByText(/has no wallet yet/i)).toBeVisible({ timeout: 15_000 });
+    await monetization.expectNoErrorPanel();
+  });
+
+  test('a credit DEDUCTION confirms with the balance it actually read', async ({ page }) => {
+    const monetization = new MonetizationPage(page);
+    await monetization.goto(MONETIZATION_ROUTES[3]!);
+
+    await page.getByLabel('User ID').first().fill('00000000-0000-4000-8000-000000000000');
+    // Wait for the balance: until it lands the form cannot project, and asserting the projected
+    // copy before the read settles would be asserting the fallback.
+    await expect(page.getByText(/has no wallet yet/i)).toBeVisible({ timeout: 15_000 });
     await page.getByLabel('Amount').fill('-500');
     await page.getByRole('button', { name: 'Deduct credits' }).click();
 
     const dialog = page.getByRole('dialog');
     await expect(dialog).toContainText('Deduct 500 credits?');
-    // No projected balance is promised: no admin route reads another user's wallet, and the server
-    // clamps at zero anyway.
-    await expect(dialog).toContainText('will not go below zero');
+    // The server clamps at zero and B8 left that alone (DECISION 3), so the confirmation says what
+    // will really happen to an empty wallet rather than promising a negative balance.
+    await expect(dialog).toContainText('holds no credits, so the deduction removes nothing');
     await page.getByRole('button', { name: 'Cancel' }).click();
+  });
+
+  test('the refund form lists the account’s payments instead of demanding an ID', async ({
+    page,
+  }) => {
+    // B8's A1-5. An account with no charges answers an empty page, not an error — and the picker
+    // says so, which is the state a mistyped id lands in.
+    const monetization = new MonetizationPage(page);
+    await monetization.goto(MONETIZATION_ROUTES[3]!);
+
+    await page.getByLabel('User ID').last().fill('00000000-0000-4000-8000-000000000000');
+
+    await expect(page.getByText('No payments on this account')).toBeVisible({ timeout: 15_000 });
+    await monetization.expectNoErrorPanel();
   });
 
   test('a grant does NOT confirm — only the destructive direction does', async ({ page }) => {
@@ -161,8 +193,32 @@ test.describe('@phase4 admin monetization — A1b, the money actions', () => {
     await page.getByRole('button', { name: 'Send refund' }).click();
 
     const alert = page.getByRole('alert');
-    await expect(alert).toContainText('No refundable payment with that ID', { timeout: 15_000 });
+    await expect(alert).toContainText('No payment with that ID', { timeout: 15_000 });
+    // No longer hedged with "or was never captured at a provider": B8 split that into
+    // PAYMENT_NOT_REFUNDABLE, so this copy can mean only what it says (A1-1).
+    await expect(alert).not.toContainText('never captured at a provider');
     await expect(alert.getByRole('button', { name: 'Try again' })).toHaveCount(0);
+  });
+
+  test('a coupon’s tier restriction and per-user cap come back on the list', async ({
+    page,
+    data,
+  }) => {
+    // B8's A1-4. All three were write-only until the mapper returned them, so an operator could set
+    // a Plus-only coupon and had no way to confirm it was Plus-only.
+    const monetization = new MonetizationPage(page);
+    await monetization.goto(MONETIZATION_ROUTES[2]!);
+
+    const code = `E2E${data.username().slice(-8).toUpperCase()}`;
+    await page.getByLabel('Code').fill(code);
+    await page.getByLabel('Applies to tier').selectOption('plus');
+    await page.getByLabel('Per-user limit').fill('3');
+    await page.getByRole('button', { name: 'Create coupon' }).click();
+
+    const row = page.locator('li', { hasText: code }).first();
+    await expect(row).toBeVisible({ timeout: 15_000 });
+    await expect(row).toContainText('3 per user');
+    await expect(row).toContainText('plus only');
   });
 });
 
@@ -191,18 +247,54 @@ test.describe('@phase4 admin monetization — A1c, the dashboards', () => {
     }
   });
 
-  test('the subscriptions dashboard admits it cannot look up one account', async ({ page }) => {
+  test('the subscriptions dashboard looks up ONE account', async ({ page }) => {
+    // A1's premise, closed by B8 (A1-7). Unconditional, unlike the sentence it replaces: the lookup
+    // sits outside the emptiness check, because an operator can need to confirm an account is on
+    // free whether or not anyone on the install has ever subscribed.
     const monetization = new MonetizationPage(page);
     await monetization.goto(MONETIZATION_ROUTES[5]!);
 
-    // Only when populated — the empty state stands on its own. The platform exposes no admin route
-    // for an individual subscription, and the page says so rather than implying a search exists.
-    const section = page.getByText('Looking up one account');
-    if ((await section.count()) > 0) {
-      await expect(section).toBeVisible();
-      await expect(
-        page.getByText(/no admin endpoint for an individual subscription/),
-      ).toBeVisible();
-    }
+    await expect(page.getByText('Look up one account')).toBeVisible();
+    await page.getByLabel('User ID').fill('00000000-0000-4000-8000-000000000000');
+
+    // No subscription row → the free-plan card, which is a statement and not an error. This is the
+    // platform's commonest account state and it must never render as a failure.
+    await expect(page.getByText('Free plan')).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole('alert')).toHaveCount(0);
+    await monetization.expectNoErrorPanel();
+  });
+});
+
+test.describe('@phase4 admin monetization — B8, the config tables', () => {
+  test.beforeEach(async ({ page }) => {
+    await freshLogin(page, 'admin');
+  });
+
+  test('a tax rate is editable and confirms with before → after', async ({ page }) => {
+    // A1-2: `PATCH config` wrote four of seven fields, so these three were rendered read-only. They
+    // are inputs now.
+    //
+    // **It cancels rather than saves, deliberately.** `monetization.config` is global state that
+    // prices every subscription in this suite's database, and the specs run `fullyParallel`. Writing
+    // a rate here would race every other spec that touches billing. What needs proving is that the
+    // field reaches the patch at all, and the confirmation dialog shows exactly that.
+    const monetization = new MonetizationPage(page);
+    await monetization.goto(MONETIZATION_ROUTES[0]!);
+
+    const gb = page.locator('#config-taxRates-GB');
+    await expect(gb).toBeVisible();
+    await gb.fill('0.25');
+    await page.getByRole('button', { name: 'Save changes' }).click();
+
+    await expect(page.getByRole('dialog')).toContainText('Tax rates · GB: 0.2 → 0.25');
+    await page.getByRole('button', { name: 'Cancel' }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+  });
+
+  test('the merge rule is stated, so a blanked row does not read as a delete', async ({ page }) => {
+    const monetization = new MonetizationPage(page);
+    await monetization.goto(MONETIZATION_ROUTES[0]!);
+
+    await expect(page.getByText(/a row you blank is left as it was/i)).toBeVisible();
   });
 });

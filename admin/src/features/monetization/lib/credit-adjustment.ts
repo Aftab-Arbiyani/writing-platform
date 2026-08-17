@@ -83,9 +83,17 @@ export function planAdjustment(amount: number, balance: number | null): Adjustme
   }
 
   const next = projectedBalance(balance, amount);
-  const consequence = clampWillBite(balance, amount)
-    ? `The account holds ${balance.toLocaleString()} credits, which is fewer than the ${formatted} you asked to deduct. It will be emptied to 0 rather than going negative, so only ${balance.toLocaleString()} credits are actually removed. This cannot be undone.`
-    : `The balance goes from ${balance.toLocaleString()} to ${next.toLocaleString()} credits. ${base.slice(base.indexOf('Credits are spent'))}`;
+  let consequence: string;
+  if (balance === 0) {
+    // Its own sentence because the general clamp wording degenerates here into "only 0 credits are
+    // actually removed", which reads like a bug report. An empty wallet is a common state on this
+    // screen — most accounts have never been granted a credit.
+    consequence = `This account holds no credits, so the deduction removes nothing and the balance stays at 0. It is still recorded in the audit trail.`;
+  } else if (clampWillBite(balance, amount)) {
+    consequence = `The account holds ${balance.toLocaleString()} credits, which is fewer than the ${formatted} you asked to deduct. It will be emptied to 0 rather than going negative, so only ${balance.toLocaleString()} credits are actually removed. This cannot be undone.`;
+  } else {
+    consequence = `The balance goes from ${balance.toLocaleString()} to ${next.toLocaleString()} credits. ${base.slice(base.indexOf('Credits are spent'))}`;
+  }
 
   return {
     direction: 'deduct',

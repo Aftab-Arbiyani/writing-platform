@@ -104,6 +104,14 @@ describe('planAdjustment — a deduction confirms, a grant does not', () => {
     expect(plan.consequence).not.toMatch(/-300/);
   });
 
+  it('says an empty wallet will lose nothing, rather than "only 0 credits removed"', () => {
+    // The commonest account state on this screen deserves a sentence that reads like English.
+    const plan = planAdjustment(-500, 0);
+
+    expect(plan.consequence).toMatch(/holds no credits, so the deduction removes nothing/i);
+    expect(plan.consequence).toMatch(/recorded in the audit trail/i);
+  });
+
   it('falls back to the floor rule when the balance has not been read yet', () => {
     // `null` is "unknown", not "zero": an unread balance must not be projected from, and an empty
     // wallet is a real balance of 0. Both are certain statements; only one is a projection.

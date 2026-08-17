@@ -57,12 +57,14 @@ test.describe('@phase5 @a11y admin accessibility (authenticated)', () => {
    * so registering the scans here is what makes the dark pass happen — a separate dark spec would
    * duplicate it and drift.
    *
-   * Three of the seven are scanned rather than all: the plan catalogue is the densest composition on
-   * the surface (nested lists, badge clusters, an inline convention note per field), Billing actions
-   * carries the two destructive FORMS with their aria-invalid + described-by wiring, and Revenue is
-   * the representative dashboard whose stat grid and empty state the other two share. The remaining
-   * four are the same components in different arrangements, and scanning them would buy coverage of
-   * AntD internals rather than of our composition.
+   * Four of the seven are scanned rather than all: the plan catalogue is the densest composition on
+   * the surface (nested lists, badge clusters, an inline convention note per field, and since B8 the
+   * three editable config tables), Billing actions carries the two destructive FORMS with their
+   * aria-invalid + described-by wiring, Revenue is the representative dashboard whose stat grid and
+   * empty state the other two share, and Subscriptions was ADDED by B8 because it stopped being a
+   * pure dashboard — it now carries an account lookup whose result renders a definition list. The
+   * remaining three are the same components in different arrangements, and scanning them would buy
+   * coverage of AntD internals rather than of our composition.
    */
   test('the plan catalogue has no critical/serious a11y violations', async ({ page }) => {
     await new MonetizationPage(page).goto(MONETIZATION_ROUTES[0]!);
@@ -77,5 +79,17 @@ test.describe('@phase5 @a11y admin accessibility (authenticated)', () => {
   test('the revenue dashboard has no critical/serious a11y violations', async ({ page }) => {
     await new MonetizationPage(page).expectRenders(MONETIZATION_ROUTES[4]!);
     await expectNoSeriousA11yViolations(page, { label: 'admin /billing/revenue' });
+  });
+
+  test('the subscription lookup has no critical/serious a11y violations', async ({ page }) => {
+    // Scanned WITH a result on screen, not at rest: the lookup's whole point is the card it renders,
+    // and an empty search box would scan none of it. A well-formed UUID matching no account resolves
+    // to the free-plan card, which is deterministic on any database.
+    const monetization = new MonetizationPage(page);
+    await monetization.goto(MONETIZATION_ROUTES[5]!);
+    await page.getByLabel('User ID').fill('00000000-0000-4000-8000-000000000000');
+    await expect(page.getByText('Free plan')).toBeVisible({ timeout: 15_000 });
+
+    await expectNoSeriousA11yViolations(page, { label: 'admin /billing/subscriptions' });
   });
 });

@@ -81,9 +81,15 @@ test.describe('@phase5 @visual admin (authenticated)', () => {
    *
    *   • **Plans** is fully deterministic. `GET plans` resolves the stored catalogue over compiled
    *     defaults, no spec in this suite writes `monetization.plans`, and nothing on the page renders
-   *     a date or a live count.
-   *   • **Billing actions** is deterministic because it is two empty FORMS — no reads at all, so no
-   *     seeded data and no ordering to race.
+   *     a date or a live count. B8 turned its config tables into inputs, which does not change that:
+   *     `GET config` resolves the same way, and the B8 spec that edits a rate CANCELS rather than
+   *     saving, precisely so nothing in this suite writes `monetization.config` either.
+   *   • **Billing actions** is deterministic because it is two empty FORMS at rest — no reads fire
+   *     until an id is typed, so no seeded data and no ordering to race. B8's payment picker and
+   *     balance panel render only after an id, and this shot does not type one.
+   *   • **Subscriptions** gained an account lookup in B8 and is still excluded: the dashboard above
+   *     the lookup is the racing part, and photographing the lookup alone would need a viewport shot
+   *     framed around one card — coverage the a11y scan already provides more cheaply.
    *   • The three dashboards are **excluded**: every figure comes from ledgers other specs in this
    *     suite mutate (users, pieces, AI conversations) under `fullyParallel` with two workers, so a
    *     baseline would race them exactly as the users table did ([10 §2.2]). Masking would not save
