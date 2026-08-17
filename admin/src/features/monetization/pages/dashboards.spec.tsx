@@ -1,5 +1,5 @@
-import { Role } from '@qalam/shared';
-import { screen, waitFor } from '@testing-library/react';
+import { PlanTier, Role } from '@qalam/shared';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ApiError } from '@/lib/api-client';
@@ -30,6 +30,7 @@ const { monetizationApi } = await import('../api/monetization.api');
 const getRevenue = vi.mocked(monetizationApi.getRevenue);
 const getSubs = vi.mocked(monetizationApi.getSubscriptionAnalytics);
 const getUsage = vi.mocked(monetizationApi.getUsageAnalytics);
+const getUserSubscription = vi.mocked(monetizationApi.getUserSubscription);
 
 /** A fresh install: complete response, every number zero. Nothing here is a measurement. */
 const EMPTY_REVENUE: RevenueAnalytics = {
@@ -37,12 +38,40 @@ const EMPTY_REVENUE: RevenueAnalytics = {
   last30dRevenue: 0,
   refunded: 0,
   paymentsCount: 0,
+  byCurrency: [],
 };
+/** A single-currency install: the scalars and the one grouped row agree, which is the common case. */
 const REVENUE: RevenueAnalytics = {
   totalRevenue: 1_250_000,
   last30dRevenue: 90_000,
   refunded: 4_990,
   paymentsCount: 312,
+  byCurrency: [
+    {
+      currency: 'usd',
+      totalRevenue: 1_250_000,
+      last30dRevenue: 90_000,
+      refunded: 4_990,
+      paymentsCount: 312,
+    },
+  ],
+};
+/** The install A1-6 was about: the scalars add dollars to yen and mean nothing. */
+const MIXED_REVENUE: RevenueAnalytics = {
+  totalRevenue: 1_254_000,
+  last30dRevenue: 90_000,
+  refunded: 4_990,
+  paymentsCount: 315,
+  byCurrency: [
+    {
+      currency: 'usd',
+      totalRevenue: 1_250_000,
+      last30dRevenue: 90_000,
+      refunded: 4_990,
+      paymentsCount: 312,
+    },
+    { currency: 'jpy', totalRevenue: 4_000, last30dRevenue: 0, refunded: 0, paymentsCount: 3 },
+  ],
 };
 
 const EMPTY_SUBS: SubscriptionAnalytics = {
@@ -131,12 +160,36 @@ describe('RevenueDashboardPage', () => {
     expect(screen.queryByText('No payments recorded yet')).not.toBeInTheDocument();
   });
 
-  it('states that refunds are not netted off, and the multi-currency caveat', async () => {
+  it('states that refunds are not netted off, and why the scalars carry no symbol', async () => {
     getRevenue.mockResolvedValue(REVENUE);
     renderWithProviders(<RevenueDashboardPage />);
 
     expect(await screen.findByText(/deducted from total/)).toBeInTheDocument();
-    expect(screen.getByText(/add unlike units together/)).toBeInTheDocument();
+    expect(screen.getByText(/add unlike units/)).toBeInTheDocument();
+  });
+
+  it('prints each currency as money, with that currency’s own decimal places', async () => {
+    // A1-6's closure. USD's minor unit is 1/100 and JPY has none, so 1_250_000 is $12,500.00 while
+    // 4_000 is ¥4,000 — hard-coding `/100` is the M5-3 defect and would print ¥40.
+    getRevenue.mockResolvedValue(MIXED_REVENUE);
+    renderWithProviders(<RevenueDashboardPage />);
+
+    expect(await screen.findByText('By currency')).toBeInTheDocument();
+    expect(screen.getByText(/\$12,500\.00/)).toBeInTheDocument();
+    // Matched loosely because the symbol's exact form is the runtime locale's business (`JP¥` in a
+    // US locale). The CLAIM under test is the exponent: yen are not divided by 100.
+    expect(screen.getByText(/¥4,000(?!\.)/)).toBeInTheDocument();
+  });
+
+  it('keeps the cross-currency scalars symbol-free beside the grouped figures', async () => {
+    // Both are shown and they disagree by design: the scalars are the pre-B8 arithmetic, kept
+    // because they are a shipped shape, and they must never be dressed up as a currency amount.
+    getRevenue.mockResolvedValue(MIXED_REVENUE);
+    renderWithProviders(<RevenueDashboardPage />);
+
+    expect(await screen.findByText('Total revenue')).toBeInTheDocument();
+    expect(screen.getByText((1_254_000).toLocaleString())).toBeInTheDocument();
+    expect(screen.getByText(/All succeeded payments, minor units/)).toBeInTheDocument();
   });
 
   it('shows the house error panel with a retry when the read fails', async () => {
@@ -194,16 +247,61 @@ describe('SubscriptionsDashboardPage', () => {
     expect(screen.getByText('pro')).toBeInTheDocument();
   });
 
-  it('admits it cannot look up a single account', async () => {
+  it('looks up one account and shows its subscription', async () => {
+    // A1's premise, finally closed (A1-7): the page carries the lookup rather than a sentence
+    // explaining that no endpoint exists for it.
     getSubs.mockResolvedValue(SUBS);
+    getUserSubscription.mockResolvedValue({
+      userId: 'u-1',
+      subscription: {
+        id: 'sub-1',
+        tier: PlanTier.Plus,
+        status: 'active',
+        interval: 'monthly',
+        provider: 'stripe',
+        currency: 'usd',
+        autoRenew: true,
+        cancelAtPeriodEnd: false,
+        currentPeriodStart: '2026-08-01T00:00:00.000Z',
+        currentPeriodEnd: '2026-09-01T00:00:00.000Z',
+        trialEnd: null,
+        gracePeriodEnd: null,
+        canceledAt: null,
+        scheduledTier: null,
+        scheduledInterval: null,
+        createdAt: '2026-07-01T00:00:00.000Z',
+      },
+    });
     renderWithProviders(<SubscriptionsDashboardPage />);
 
-    // The row's stated goal was "an operator cannot see a subscription"; the backend exposes no
-    // per-account route, so the page names the limit instead of implying a search exists.
-    expect(await screen.findByText('Looking up one account')).toBeInTheDocument();
-    expect(
-      screen.getByText(/no admin endpoint for an individual subscription/),
-    ).toBeInTheDocument();
+    fireEvent.change(await screen.findByLabelText('User ID'), { target: { value: 'u-1' } });
+
+    expect(await screen.findByText('Subscription')).toBeInTheDocument();
+    expect(screen.getByText('sub-1')).toBeInTheDocument();
+  });
+
+  it('renders a free account as a calm statement, not an error', async () => {
+    // DECISION 0.2: `subscription: null` is the platform's commonest account state. An error banner
+    // here would send an operator looking for a problem that is not there.
+    getSubs.mockResolvedValue(SUBS);
+    getUserSubscription.mockResolvedValue({ userId: 'u-2', subscription: null });
+    renderWithProviders(<SubscriptionsDashboardPage />);
+
+    fireEvent.change(await screen.findByLabelText('User ID'), { target: { value: 'u-2' } });
+
+    expect(await screen.findByText('Free plan')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    // And it says what a null cannot distinguish, rather than letting a typo read as a free account.
+    expect(screen.getByText(/does not exist reads the same way/i)).toBeInTheDocument();
+  });
+
+  it('offers the lookup even on an install with no subscriptions at all', async () => {
+    // The emptiness check governs the AGGREGATES. An operator can still need to confirm that a
+    // particular account is on free, and that answer exists whether or not anyone has ever paid.
+    getSubs.mockResolvedValue(EMPTY_SUBS);
+    renderWithProviders(<SubscriptionsDashboardPage />);
+
+    expect(await screen.findByText('Look up one account')).toBeInTheDocument();
   });
 
   it('shows the error panel on failure', async () => {

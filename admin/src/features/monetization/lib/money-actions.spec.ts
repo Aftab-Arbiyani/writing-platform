@@ -9,19 +9,28 @@ import { refundOutcome } from './refund-outcome';
  * quietly wrong: a refund that reports one failure for three causes, a confirmation that promises a
  * balance the server will clamp, and a "Value" field that means six different things.
  */
-describe('refundOutcome — three failures, three remedies (docs/48 §3.6)', () => {
+describe('refundOutcome — four failures, four remedies (docs/48 §3.6)', () => {
   it('calls a bad ID the operator’s input problem, and does not offer a retry', () => {
     const outcome = refundOutcome('PAYMENT_NOT_FOUND');
 
     expect(outcome.retryable).toBe(false);
-    expect(outcome.message).toMatch(/Check the ID/i);
+    expect(outcome.message).toMatch(/Pick the payment from the account/i);
   });
 
-  it('says a not-found payment might exist but be unrefundable — the server conflates both', () => {
-    // `BillingService.refund` throws PAYMENT_NOT_FOUND when the row is missing AND when it exists
-    // with no `providerPaymentId` (billing.service.ts:165). Saying only "no such payment" would send
-    // the operator hunting for an id that is in fact correct. Recorded as A1-1.
-    expect(refundOutcome('PAYMENT_NOT_FOUND').message).toMatch(/never captured at a provider/i);
+  it('no longer hedges about payments that were never captured — that is its own code now', () => {
+    // A1 wrote "does not exist, OR was never captured at a provider" because `BillingService.refund`
+    // threw PAYMENT_NOT_FOUND for both (billing.service.ts:165, recorded as A1-1). B8 split the
+    // codes, so the hedge became the inaccurate option: it would tell an operator holding a verified
+    // id to go and check it.
+    expect(refundOutcome('PAYMENT_NOT_FOUND').message).not.toMatch(/never captured at a provider/i);
+  });
+
+  it('says a PAYMENT_NOT_REFUNDABLE id is CORRECT, and offers no retry', () => {
+    const outcome = refundOutcome('PAYMENT_NOT_REFUNDABLE');
+
+    expect(outcome.retryable).toBe(false);
+    expect(outcome.message).toMatch(/never captured at a payment provider/i);
+    expect(outcome.message).toMatch(/the ID is correct/i);
   });
 
   it('calls a provider refusal retryable, and says no money moved', () => {
@@ -40,19 +49,20 @@ describe('refundOutcome — three failures, three remedies (docs/48 §3.6)', () 
     expect(outcome.message).toMatch(/configure the provider/i);
   });
 
-  it('keeps all three apart in title, message AND retryability', () => {
+  it('keeps all four apart in title, message AND retryability', () => {
     const codes = [
       'PAYMENT_NOT_FOUND',
+      'PAYMENT_NOT_REFUNDABLE',
       'PAYMENT_PROVIDER_ERROR',
       'PAYMENT_PROVIDER_NOT_CONFIGURED',
     ];
     const outcomes = codes.map(refundOutcome);
 
-    expect(new Set(outcomes.map((o) => o.title)).size).toBe(3);
-    expect(new Set(outcomes.map((o) => o.message)).size).toBe(3);
-    // Only the provider-refusal case is worth retrying; conflating that with either of the others
+    expect(new Set(outcomes.map((o) => o.title)).size).toBe(4);
+    expect(new Set(outcomes.map((o) => o.message)).size).toBe(4);
+    // Only the provider-refusal case is worth retrying; conflating that with any of the others
     // either hides a working remedy or offers a useless one.
-    expect(outcomes.map((o) => o.retryable)).toEqual([false, true, false]);
+    expect(outcomes.map((o) => o.retryable)).toEqual([false, false, true, false]);
   });
 
   it('makes no claim about the money for an unrecognised failure', () => {
@@ -65,7 +75,7 @@ describe('refundOutcome — three failures, three remedies (docs/48 §3.6)', () 
 
 describe('planAdjustment — a deduction confirms, a grant does not', () => {
   it('marks a deduction destructive and titles it as a deduction', () => {
-    const plan = planAdjustment(-500);
+    const plan = planAdjustment(-500, 1200);
 
     expect(plan.direction).toBe('deduct');
     expect(plan.destructive).toBe(true);
@@ -73,22 +83,42 @@ describe('planAdjustment — a deduction confirms, a grant does not', () => {
     expect(plan.title).toBe('Deduct 500 credits?');
   });
 
-  it('states the zero floor instead of a projected balance', () => {
-    // The projection cannot be built: no admin route reads another user's wallet, and
-    // `CreditService.apply` clamps at zero anyway (credit.service.ts:111). Promising "200 → -300"
-    // would be a number the server refuses to honour.
-    const plan = planAdjustment(-500);
+  it('projects the resulting balance now that one can be read', () => {
+    // A1 could state only the delta and the floor rule, because no admin route read another user's
+    // wallet (A1-3). `GET users/:userId/credits` closed that, so the confirmation states the result.
+    const plan = planAdjustment(-500, 1200);
 
-    expect(plan.consequence).toMatch(/will not go below zero/i);
-    expect(plan.consequence).toMatch(/emptied rather than going negative/i);
+    expect(plan.consequence).toMatch(/from 1,200 to 700 credits/i);
     expect(plan.consequence).toMatch(/cannot be undone/i);
   });
 
+  it('says the clamp will bite rather than projecting a negative balance', () => {
+    // DECISION 3: `CreditService.apply` computes `Math.max(0, balance + delta)`
+    // (credit.service.ts:111) and B8 leaves that alone. So the projection mirrors it — "200 → -300"
+    // would be a number the server refuses to honour, and a bare "success" would hide that only 200
+    // of the 500 was actually taken.
+    const plan = planAdjustment(-500, 200);
+
+    expect(plan.consequence).toMatch(/emptied to 0 rather than going negative/i);
+    expect(plan.consequence).toMatch(/only 200 credits are actually removed/i);
+    expect(plan.consequence).not.toMatch(/-300/);
+  });
+
+  it('falls back to the floor rule when the balance has not been read yet', () => {
+    // `null` is "unknown", not "zero": an unread balance must not be projected from, and an empty
+    // wallet is a real balance of 0. Both are certain statements; only one is a projection.
+    const plan = planAdjustment(-500, null);
+
+    expect(plan.consequence).toMatch(/will not go below zero/i);
+    expect(plan.consequence).not.toMatch(/from .* to .* credits/i);
+  });
+
   it('leaves a grant non-destructive so the dialog stays meaningful', () => {
-    const plan = planAdjustment(250);
+    const plan = planAdjustment(250, 1200);
 
     expect(plan.direction).toBe('grant');
     expect(plan.destructive).toBe(false);
+    expect(plan.consequence).toMatch(/from 1,200 to 1,450 credits/i);
     expect(plan.consequence).toMatch(/immediately spendable/i);
   });
 

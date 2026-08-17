@@ -18,7 +18,10 @@ import type {
   AdminMonetizationConfig,
   AdminMonetizationConfigPatch,
   AdminPayment,
+  AdminPaymentPage,
   AdminPlanCatalogue,
+  AdminUserCredits,
+  AdminUserSubscription,
   CreateCouponPayload,
   CreditAdjustResult,
   GrantOverridePayload,
@@ -156,29 +159,87 @@ export function useUpdateCoupon(): UseMutationResult<
 // ── Credits + refunds (A1b) ───────────────────────────────────────────────────
 
 /**
- * Adjust a balance. Nothing is invalidated on success and nothing can be: no query in this app holds
- * another user's balance, because no admin route exposes one. The authoritative post-clamp figure
- * comes back in the response and the form reports THAT.
+ * Adjust a balance, then refresh the wallet the screen is showing. The response's post-clamp figure
+ * is still what the form REPORTS — it is authoritative and arrives first — but the displayed balance
+ * has to follow it, or the screen would keep showing the pre-adjustment number under a message
+ * saying it changed.
  */
 export function useAdjustCredits(): UseMutationResult<
   CreditAdjustResult,
   Error,
   AdjustCreditsPayload
 > {
+  const client = useQueryClient();
   return useMutation({
     mutationFn: (payload: AdjustCreditsPayload) => monetizationApi.adjustCredits(payload),
+    onSuccess: (_result, payload) => {
+      void client.invalidateQueries({ queryKey: qk.monetization.userCredits(payload.userId) });
+    },
   });
 }
 
-/** Refund a payment. Not invalidated either — there is no admin payments list to refresh. */
+/**
+ * Refund a payment, then refresh the picker it was chosen from: the refund is recorded as a NEW
+ * negative payment row on the same account, so the list is stale the moment this succeeds.
+ */
 export function useRefundPayment(): UseMutationResult<
   AdminPayment,
   Error,
-  { paymentId: string; payload: RefundPayload }
+  { paymentId: string; payload: RefundPayload; userId?: string }
 > {
+  const client = useQueryClient();
   return useMutation({
     mutationFn: ({ paymentId, payload }: { paymentId: string; payload: RefundPayload }) =>
       monetizationApi.refundPayment(paymentId, payload),
+    onSuccess: (_payment, variables) => {
+      if (variables.userId !== undefined && variables.userId !== '') {
+        void client.invalidateQueries({
+          queryKey: qk.monetization.userPayments(variables.userId),
+        });
+      }
+    },
+  });
+}
+
+// ── One account (B8) ──────────────────────────────────────────────────────────
+
+/**
+ * The three per-account reads, each disabled until an id is supplied and each answering a NORMAL
+ * empty state rather than an error: `subscription: null` for a free account, `credits: null` for an
+ * account that has never held one, an empty list for one that has never paid. Nothing here needs an
+ * error branch for "this person has nothing".
+ */
+export function useUserSubscription(userId: string): UseQueryResult<AdminUserSubscription> {
+  const permitted = useBillingManage();
+  return useQuery({
+    queryKey: qk.monetization.userSubscription(userId),
+    queryFn: ({ signal }) => monetizationApi.getUserSubscription(userId, signal),
+    enabled: permitted && userId.length > 0,
+  });
+}
+
+export function useUserCredits(userId: string): UseQueryResult<AdminUserCredits> {
+  const permitted = useBillingManage();
+  return useQuery({
+    queryKey: qk.monetization.userCredits(userId),
+    queryFn: ({ signal }) => monetizationApi.getUserCredits(userId, signal),
+    enabled: permitted && userId.length > 0,
+  });
+}
+
+/**
+ * One page of an account's payments, newest first.
+ *
+ * A page rather than an infinite list, and the picker SAYS so when there are more: a refund raised
+ * from a support ticket concerns a recent charge, and paging back through years of history to find
+ * it is not the flow. The cursor is on the wire if a later row needs it.
+ */
+export function useUserPayments(userId: string, limit = 20): UseQueryResult<AdminPaymentPage> {
+  const permitted = useBillingManage();
+  return useQuery({
+    queryKey: qk.monetization.userPayments(userId),
+    queryFn: ({ signal }) => monetizationApi.getUserPayments(userId, { limit, signal }),
+    enabled: permitted && userId.length > 0,
   });
 }
 

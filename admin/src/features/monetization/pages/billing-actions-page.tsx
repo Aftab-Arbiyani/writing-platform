@@ -11,9 +11,9 @@ import { RefundForm } from '../components/refund-form';
  * The money actions (A1b) — credit adjustment and refunds on one page.
  *
  * They share a page because they share a situation: an operator resolving a billing complaint reaches
- * for one or the other, usually after the same support ticket. Neither has a list to browse (no admin
- * route exposes another user's wallet or their payments), so both are id-in, action-out forms and
- * neither would fill a route of its own.
+ * for one or the other, usually after the same support ticket. Both now start from a user ID and show
+ * what that account actually holds before anything is changed — its credit balance, its recent
+ * payments (B8, closing A1-3 and A1-5) — so neither is a blind id-in, action-out form any more.
  *
  * Both are destructive in one direction and both confirm there; see each component for which and why.
  */

@@ -5,24 +5,29 @@ import { useState, type ReactElement } from 'react';
 import { ConfirmationDialog } from '@/components/confirmation-dialog';
 import { isApiError } from '@/lib/errors';
 
+import { PaymentPicker } from './payment-picker';
 import { useRefundPayment } from '../hooks/use-monetization';
 import { refundOutcome, type RefundOutcome } from '../lib/refund-outcome';
 
 /**
- * Refund a payment (A1b).
+ * Refund a payment (A1b, given a picker by B8).
  *
- * **It takes a payment ID typed by hand, and that is a contract limit.** Nothing admin-facing lists
- * payments — `GET /monetization/payments` is `@CurrentUser` self-scoped — so there is no picker to
- * offer and the operator arrives with an id from a support ticket or the database (docs/48 §3, A1-5).
+ * **The operator picks the payment from the account's own history.** A1 shipped a bare ID field
+ * because nothing admin-facing listed payments (A1-5); `GET users/:userId/payments` closes that, so
+ * the flow is now the one a support ticket actually implies — find the person, see their charges,
+ * refund the right one. The ID field survives as an override for a charge older than the page shown,
+ * and it stays in sync with the picker in both directions.
  *
- * **Failure is the interesting half.** Three codes come back and they lead to three different next
- * actions, so they are never collapsed into "refund failed, try again": the retry button is bound to
- * `outcome.retryable`, which means the affordance and the copy can never disagree about whether
- * retrying is worth doing. See `lib/refund-outcome.ts` for the three and why a fourth default exists.
+ * **Failure is still the interesting half.** Four codes come back and they lead to four different
+ * next actions, so they are never collapsed into "refund failed, try again": the retry button is
+ * bound to `outcome.retryable`, which means the affordance and the copy can never disagree about
+ * whether retrying is worth doing. See `lib/refund-outcome.ts` — including why the not-found copy no
+ * longer hedges about payments that were never captured.
  */
 export function RefundForm(): ReactElement {
   const toast = useToast();
   const refund = useRefundPayment();
+  const [userId, setUserId] = useState('');
   const [paymentId, setPaymentId] = useState('');
   const [amount, setAmount] = useState('');
   const [reason, setReason] = useState('');
@@ -41,6 +46,7 @@ export function RefundForm(): ReactElement {
     refund.mutate(
       {
         paymentId: paymentId.trim(),
+        userId: userId.trim(),
         payload: {
           ...(partial ? { amount: numericAmount } : {}),
           ...(reason.trim() === '' ? {} : { reason: reason.trim() }),
@@ -57,7 +63,7 @@ export function RefundForm(): ReactElement {
           setConfirming(false);
         },
         onError: (error) => {
-          // Rendered in place, not as a toast: two of the three failures need the operator to read a
+          // Rendered in place, not as a toast: three of the four failures need the operator to read a
           // sentence and change something, and a toast that vanishes is the wrong channel for that.
           setFailure(refundOutcome(isApiError(error) ? error.code : undefined));
           setConfirming(false);
@@ -70,8 +76,44 @@ export function RefundForm(): ReactElement {
     <QCard padding="md" className="flex flex-col gap-4">
       <QSectionHeader
         title="Refund a payment"
-        description="Sends a refund to the payment's original provider. There is no admin payment list — paste the payment ID."
+        description="Sends a refund to the payment's original provider. Look the account up to pick the charge."
       />
+
+      <div className="flex flex-col gap-1">
+        <label htmlFor="refund-user" className="text-sm font-medium text-ink">
+          User ID
+        </label>
+        <input
+          id="refund-user"
+          type="text"
+          value={userId}
+          aria-describedby="refund-user-hint"
+          onChange={(event) => {
+            setUserId(event.target.value);
+            setFailure(null);
+          }}
+          className="h-9 w-full max-w-md rounded-md border border-line bg-surface px-3 text-sm text-ink"
+        />
+        <span id="refund-user-hint" className="text-xs text-ink-muted">
+          Lists this account&rsquo;s recent payments so you can pick the one to refund.
+        </span>
+      </div>
+
+      {userId.trim() === '' ? null : (
+        <section className="flex flex-col gap-2 border-t border-line pt-4">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-ink-secondary">
+            Recent payments
+          </h3>
+          <PaymentPicker
+            userId={userId.trim()}
+            selectedId={paymentId.trim()}
+            onSelect={(id) => {
+              setPaymentId(id);
+              setFailure(null);
+            }}
+          />
+        </section>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-1 sm:col-span-2">
@@ -82,12 +124,17 @@ export function RefundForm(): ReactElement {
             id="refund-payment"
             type="text"
             value={paymentId}
+            aria-describedby="refund-payment-hint"
             onChange={(event) => {
               setPaymentId(event.target.value);
               setFailure(null);
             }}
             className="h-9 w-full max-w-md rounded-md border border-line bg-surface px-3 text-sm text-ink"
           />
+          <span id="refund-payment-hint" className="text-xs text-ink-muted">
+            Filled in when you select a payment above. Paste one directly for a charge older than
+            that list.
+          </span>
         </div>
 
         <div className="flex flex-col gap-1">

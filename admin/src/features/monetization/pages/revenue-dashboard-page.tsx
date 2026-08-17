@@ -10,6 +10,7 @@ import { usePageTitle } from '@/hooks/use-page-title';
 
 import { AsyncSection } from '../components/async-section';
 import { EMPTY_COPY, revenueIsEmpty } from '../lib/analytics-emptiness';
+import { formatMinorUnits } from '../lib/money-format';
 import { useRevenueAnalytics } from '../hooks/use-monetization';
 
 /**
@@ -21,11 +22,13 @@ import { useRevenueAnalytics } from '../hooks/use-monetization';
  * is the W7c defect — an operator cannot distinguish it from a real collapse in revenue — so a zero
  * payment COUNT switches the whole page to saying there is no data.
  *
- * **Amounts are labelled as minor units and carry no currency symbol**, deliberately.
- * `MonetizationAnalyticsService.sumPayments` sums `p.amount` across every currency without grouping,
- * so on a multi-currency install the total is an arithmetic sum of unlike things. Printing `$` on that
- * would assert something false; the label states the unit and the caveat is in the description
- * (docs/48 §3, A1-6).
+ * **The per-currency breakdown leads, and the cross-currency scalars follow it** (B8, closing A1-6).
+ * `byCurrency` is grouped, so each figure is money in one unit and is printed as money — with its
+ * symbol, and with the right number of decimal places for that currency, which is not always two.
+ * The four scalars still sum across currencies, so they keep no symbol and keep saying "minor
+ * units": on a mixed install they add unlike things, and a `$` on that would assert something false.
+ * They are not dropped, because on the single-currency install most deployments are they are the
+ * headline, and because they are a shipped shape.
  */
 export function RevenueDashboardPage(): ReactElement {
   usePageTitle('Revenue');
@@ -55,6 +58,41 @@ export function RevenueDashboardPage(): ReactElement {
             />
           ) : (
             <div className="flex flex-col gap-6">
+              <QCard as="section" padding="lg" className="flex flex-col gap-4">
+                <QSectionHeader
+                  title="By currency"
+                  description="Grouped server-side, so each figure is money in one unit."
+                />
+                {revenue.byCurrency.length === 0 ? (
+                  // Reachable only if every payment row is neither succeeded nor refunded — the
+                  // scalars would be zero too, so say what is true rather than render a blank table.
+                  <p className="text-sm text-ink-muted">
+                    No succeeded or refunded payments to group.
+                  </p>
+                ) : (
+                  <ul className="flex flex-col divide-y divide-line">
+                    {revenue.byCurrency.map((row) => (
+                      <li key={row.currency} className="flex flex-col gap-1 py-3">
+                        <span className="flex flex-wrap items-baseline justify-between gap-x-4">
+                          <span className="font-mono text-xs uppercase text-ink-secondary">
+                            {row.currency}
+                          </span>
+                          <span className="text-lg font-semibold text-ink [font-variant-numeric:tabular-nums]">
+                            {formatMinorUnits(row.totalRevenue, row.currency)}
+                          </span>
+                        </span>
+                        <span className="text-xs text-ink-muted [font-variant-numeric:tabular-nums]">
+                          last 30 days {formatMinorUnits(row.last30dRevenue, row.currency)} &middot;
+                          refunded {formatMinorUnits(row.refunded, row.currency)} &middot;{' '}
+                          {row.paymentsCount.toLocaleString()} payment
+                          {row.paymentsCount === 1 ? '' : 's'}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </QCard>
+
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 <StatCard
                   label="Total revenue"
@@ -90,8 +128,9 @@ export function RevenueDashboardPage(): ReactElement {
                   is total minus refunded.
                 </p>
                 <p className="text-sm text-ink-secondary">
-                  If this install takes payments in more than one currency, these totals add unlike
-                  units together and only the payment count is meaningful.
+                  The four totals above are summed across every currency, so on a multi-currency
+                  install they add unlike units &mdash; that is why they carry no symbol. Use the
+                  per-currency breakdown for a figure you can quote.
                 </p>
               </QCard>
             </div>

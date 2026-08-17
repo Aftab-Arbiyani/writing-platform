@@ -3,23 +3,26 @@ import { useState, type ReactElement } from 'react';
 
 import { ConfirmationDialog } from '@/components/confirmation-dialog';
 import { getErrorMessage } from '@/lib/errors';
+import { formatDateTime } from '@/lib/format';
 
-import { useAdjustCredits } from '../hooks/use-monetization';
+import { AsyncSection } from './async-section';
+import { useAdjustCredits, useUserCredits } from '../hooks/use-monetization';
 import { adjustmentResult, planAdjustment } from '../lib/credit-adjustment';
 
 /**
- * Adjust a user's credit balance (A1b) — grant or deduct, with a reason recorded in the audit trail.
+ * Adjust a user's credit balance (A1b, given a balance by B8) — grant or deduct, with a reason
+ * recorded in the audit trail.
  *
  * **A deduction confirms; a grant does not.** A deduction removes something spendable and cannot be
  * undone from this screen, so it earns the dialog. A grant is additive, reversible by a matching
  * deduction, and confirming it would train the operator to click through dialogs — which is how the
  * one that mattered gets clicked through too.
  *
- * **What the confirmation does NOT say is the point.** It states the delta and the zero floor, both
- * certain, and never a projected balance: no admin route reads another user's wallet, and
- * `CreditService.apply` clamps at zero anyway, so any figure computed here could be one the server
- * will not honour. The real balance is reported after the call from the response, which is
- * authoritative and post-clamp. See `lib/credit-adjustment.ts`.
+ * **The confirmation now states the resulting balance, which is what A1's brief asked for and A1
+ * could not build.** `GET users/:userId/credits` supplies the starting figure, and the projection
+ * mirrors the server's zero clamp rather than ignoring it — see `lib/credit-adjustment.ts`, which
+ * also records why the clamp itself was left alone. The response's post-adjustment figure is still
+ * reported afterwards: it is authoritative, and it is what confirms the projection was right.
  */
 export function CreditAdjustForm(): ReactElement {
   const toast = useToast();
@@ -28,12 +31,18 @@ export function CreditAdjustForm(): ReactElement {
   const [amount, setAmount] = useState('');
   const [reason, setReason] = useState('');
   const [confirming, setConfirming] = useState(false);
-  /** The one balance figure this surface can state honestly — the server's, after the fact. */
   const [outcome, setOutcome] = useState<string | null>(null);
+
+  const wallet = useUserCredits(userId.trim());
+  /**
+   * `null` means "not read yet"; a wallet that has never existed is a real balance of 0, not an
+   * unknown one. The plan's copy branches on exactly that difference.
+   */
+  const balance = wallet.data === undefined ? null : (wallet.data.credits?.balance ?? 0);
 
   const numeric = Number(amount);
   const valid = userId.trim().length > 0 && Number.isInteger(numeric) && numeric !== 0;
-  const plan = planAdjustment(Number.isFinite(numeric) ? numeric : 0);
+  const plan = planAdjustment(Number.isFinite(numeric) ? numeric : 0, balance);
 
   const send = (): void => {
     adjust.mutate(
@@ -105,8 +114,7 @@ export function CreditAdjustForm(): ReactElement {
             className="h-9 rounded-md border border-line bg-surface px-3 text-sm text-ink"
           />
           <span id="credit-amount-hint" className="text-xs text-ink-muted">
-            A negative number deducts. This screen cannot show the current balance &mdash; the
-            server has no admin route for one.
+            A negative number deducts. A deduction never takes the balance below zero.
           </span>
         </div>
 
@@ -126,6 +134,40 @@ export function CreditAdjustForm(): ReactElement {
           />
         </div>
       </div>
+
+      {userId.trim() === '' ? null : (
+        <section className="flex flex-col gap-2 border-t border-line pt-4">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-ink-secondary">
+            Current balance
+          </h3>
+          <AsyncSection
+            isLoading={wallet.isLoading}
+            error={wallet.error}
+            onRetry={() => void wallet.refetch()}
+            loadingRows={1}
+          >
+            {wallet.data === undefined ? null : wallet.data.credits === null ? (
+              // Not an error and not a blank: an account that has never held a credit has a real
+              // balance, and it is zero.
+              <p className="text-sm text-ink-secondary">
+                This account has no wallet yet &mdash; it has never been granted or spent a credit,
+                so its balance is <strong>0</strong>. A grant creates the wallet.
+              </p>
+            ) : (
+              <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1">
+                <span className="text-2xl font-semibold text-ink [font-variant-numeric:tabular-nums]">
+                  {wallet.data.credits.balance.toLocaleString()}
+                </span>
+                <span className="text-xs text-ink-muted [font-variant-numeric:tabular-nums]">
+                  granted {wallet.data.credits.lifetimeGranted.toLocaleString()} &middot; spent{' '}
+                  {wallet.data.credits.lifetimeConsumed.toLocaleString()} &middot; updated{' '}
+                  {formatDateTime(wallet.data.credits.updatedAt)}
+                </span>
+              </div>
+            )}
+          </AsyncSection>
+        </section>
+      )}
 
       <div className="flex flex-wrap items-center gap-3">
         <QButton

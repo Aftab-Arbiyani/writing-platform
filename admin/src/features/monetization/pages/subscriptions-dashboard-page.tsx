@@ -7,35 +7,40 @@ import {
   Sparkles,
   UserPlus,
 } from 'lucide-react';
-import type { ReactElement } from 'react';
+import { useState, type ReactElement } from 'react';
 
 import { EmptyState } from '@/components/empty-state';
 import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
+import { SearchInput } from '@/components/search-input';
 import { StatCard } from '@/components/stat-card';
 import { usePageTitle } from '@/hooks/use-page-title';
 
+import { AccountSubscription } from '../components/account-subscription';
 import { AsyncSection } from '../components/async-section';
 import { EMPTY_COPY, subscriptionsAreEmpty } from '../lib/analytics-emptiness';
-import { useSubscriptionAnalytics } from '../hooks/use-monetization';
+import { useSubscriptionAnalytics, useUserSubscription } from '../hooks/use-monetization';
 
 /**
- * Subscriptions dashboard (A1c) — status and tier distribution plus 30-day lifecycle movement.
+ * Subscriptions dashboard (A1c) — status and tier distribution, 30-day lifecycle movement, and a
+ * lookup for one account (B8, closing A1-7).
  *
- * **Aggregate only, and the page says so.** There is no admin route that returns an individual
- * account's subscription — `GET /monetization/subscription` is `@CurrentUser` self-scoped — so an
- * operator cannot look one up from here or anywhere else in this app. That is a real gap in the row's
- * stated goal ("an operator cannot see a subscription") and it is named on the page rather than left
- * for someone to discover by looking for a search box that does not exist (docs/48 §3, A1-7).
+ * **The aggregates and the single account answer different questions and both belong here.** A1
+ * shipped the aggregates and named the missing half on the page, because `GET /monetization/
+ * subscription` is `@CurrentUser` self-scoped and no admin equivalent existed. It does now, so the
+ * page carries the lookup rather than a sentence about not having one.
  *
  * Emptiness is decided by `byStatus` having no keys, not by `activeCount` being zero: an install whose
  * only subscriptions are cancelled has real data and no active ones, and flattening that to "no data"
- * would hide a churn event worth seeing.
+ * would hide a churn event worth seeing. The lookup is deliberately OUTSIDE that check — an install
+ * with no subscriptions at all still has accounts an operator may want to confirm are on free.
  */
 export function SubscriptionsDashboardPage(): ReactElement {
   usePageTitle('Subscriptions');
   const query = useSubscriptionAnalytics();
   const subs = query.data;
+  const [userId, setUserId] = useState('');
+  const account = useUserSubscription(userId.trim());
 
   return (
     <PageContainer>
@@ -108,19 +113,36 @@ export function SubscriptionsDashboardPage(): ReactElement {
                   />
                 </div>
               </QCard>
-
-              <QCard as="section" padding="lg" className="flex flex-col gap-2">
-                <QSectionHeader title="Looking up one account" />
-                <p className="text-sm text-ink-secondary">
-                  This surface is aggregate only. The platform exposes no admin endpoint for an
-                  individual subscription, so a single account&rsquo;s plan and status cannot be
-                  read here. Its entitlements can &mdash; see Entitlements.
-                </p>
-              </QCard>
             </div>
           )
         ) : null}
       </AsyncSection>
+
+      <QCard as="section" padding="lg" className="flex flex-col gap-3">
+        <QSectionHeader
+          title="Look up one account"
+          description="Paste the user's ID to see their subscription. Entitlement overrides live on the Entitlements screen."
+        />
+        <div className="max-w-md">
+          <SearchInput
+            value={userId}
+            onChange={setUserId}
+            placeholder="User ID (UUID)"
+            ariaLabel="User ID"
+          />
+        </div>
+
+        {userId.trim() === '' ? null : (
+          <AsyncSection
+            isLoading={account.isLoading}
+            error={account.error}
+            onRetry={() => void account.refetch()}
+            loadingRows={4}
+          >
+            {account.data === undefined ? null : <AccountSubscription result={account.data} />}
+          </AsyncSection>
+        )}
+      </QCard>
     </PageContainer>
   );
 }

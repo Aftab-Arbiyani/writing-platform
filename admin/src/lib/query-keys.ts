@@ -111,6 +111,10 @@ export const qk = {
     // Keyed by user because there is no "all overrides" route — the read is per-account.
     overrides: (userId: string) => ['monetization', 'overrides', userId] as const, // GET …/overrides/:userId
     coupons: () => ['monetization', 'coupons'] as const, // GET /admin/monetization/coupons
+    // The three per-account reads B8 added — each keyed by user, like `overrides` above.
+    userSubscription: (userId: string) => ['monetization', 'user-subscription', userId] as const,
+    userCredits: (userId: string) => ['monetization', 'user-credits', userId] as const,
+    userPayments: (userId: string) => ['monetization', 'user-payments', userId] as const,
     revenue: () => ['monetization', 'revenue'] as const, // GET …/analytics/revenue
     subscriptions: () => ['monetization', 'subscriptions'] as const, // GET …/analytics/subscriptions
     usage: () => ['monetization', 'usage'] as const, // GET …/analytics/usage

@@ -11,6 +11,10 @@ import type { AdminCoupon } from '../types/monetization.types';
 /**
  * Existing coupons, with the one edit that matters operationally: activate / deactivate (A1b).
  *
+ * Every field the create form sets is shown here since B8 (A1-4) — the tier restriction, the
+ * per-user cap and the description used to be write-only, so an operator could set a Plus-only
+ * coupon and have no way to confirm it was Plus-only.
+ *
  * `PATCH coupons/:id` also accepts `value`, `maxRedemptions`, `description` and `expiresAt`, but
  * toggling `active` is what an operator reaches for — a coupon leaking discounts needs to stop NOW,
  * and editing its value mid-campaign changes what earlier redeemers got versus later ones. The other
@@ -76,12 +80,17 @@ export function CouponTable({ coupons }: CouponTableProps): ReactElement {
               {coupon.maxRedemptions === 0
                 ? ' of unlimited'
                 : ` of ${coupon.maxRedemptions.toLocaleString()}`}
+              {` · ${coupon.perUserLimit.toLocaleString()} per user`}
+              {coupon.appliesToTier === null ? '' : ` · ${coupon.appliesToTier} only`}
               {coupon.expiresAt === null
                 ? ' · no expiry'
                 : ` · expires ${formatDateTime(coupon.expiresAt)}`}
             </span>
+            {coupon.description === null ? null : (
+              <span className="text-xs text-ink-secondary">{coupon.description}</span>
+            )}
             {coupon.campaign === null ? null : (
-              <span className="text-xs text-ink-secondary">{coupon.campaign}</span>
+              <span className="text-xs text-ink-muted">campaign: {coupon.campaign}</span>
             )}
           </div>
           <QButton

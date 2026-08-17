@@ -7,7 +7,10 @@ import type {
   AdminMonetizationConfig,
   AdminMonetizationConfigPatch,
   AdminPayment,
+  AdminPaymentPage,
   AdminPlanCatalogue,
+  AdminUserCredits,
+  AdminUserSubscription,
   CreateCouponPayload,
   CreditAdjustResult,
   GrantOverridePayload,
@@ -25,11 +28,8 @@ import type {
  * unwraps the `{success,data,meta}` envelope) and every one requires `billing.manage`; the server
  * re-checks on each call regardless of what the router let through.
  *
- * **What is deliberately absent, because the backend has no such route** (A1's audit, docs/48 §3):
- * there is no admin read for one user's subscription, none for their credit balance, and none that
- * lists payments. Those are `@CurrentUser` self-scoped on the public controller, so an admin cannot
- * reach another account through them. Anything here that looks like it should exist and does not is
- * a recorded gap, not an omission.
+ * The three `users/:userId/*` reads landed with B8 and are what A1 recorded as missing: an operator
+ * can now see one account's subscription, payments and credit balance rather than only aggregates.
  */
 export const monetizationApi = {
   // ── Plans + config (A1a) ────────────────────────────────────────────────────
@@ -73,11 +73,52 @@ export const monetizationApi = {
   adjustCredits: (payload: AdjustCreditsPayload): Promise<CreditAdjustResult> =>
     api.post<CreditAdjustResult>('/admin/monetization/credits/adjust', payload).then((r) => r.data),
 
-  /** Fails with PAYMENT_NOT_FOUND (404), PAYMENT_PROVIDER_ERROR (502) or …NOT_CONFIGURED (503). */
+  /**
+   * Fails with PAYMENT_NOT_FOUND (404), PAYMENT_NOT_REFUNDABLE (409), PAYMENT_PROVIDER_ERROR (502)
+   * or …NOT_CONFIGURED (503). The 409 was split out of the 404 by B8 (A1-1): a payment that exists
+   * but was never captured at a provider is not a wrong id.
+   */
   refundPayment: (paymentId: string, payload: RefundPayload): Promise<AdminPayment> =>
     api
       .post<AdminPayment>(`/admin/monetization/payments/${paymentId}/refund`, payload)
       .then((r) => r.data),
+
+  // ── One account (B8) ────────────────────────────────────────────────────────
+  getUserSubscription: (userId: string, signal?: AbortSignal): Promise<AdminUserSubscription> =>
+    api
+      .get<AdminUserSubscription>(`/admin/monetization/users/${userId}/subscription`, { signal })
+      .then((r) => r.data),
+
+  getUserCredits: (userId: string, signal?: AbortSignal): Promise<AdminUserCredits> =>
+    api
+      .get<AdminUserCredits>(`/admin/monetization/users/${userId}/credits`, { signal })
+      .then((r) => r.data),
+
+  /**
+   * Keyset-paginated, newest first. The cursor rides in `meta.pagination` alongside `hasMore`, which
+   * is the monetization ledgers' envelope — NOT the offset `{page,total}` shape `ApiPagination`
+   * describes, hence the narrowing below rather than a straight read.
+   */
+  getUserPayments: (
+    userId: string,
+    options?: { cursor?: string; limit?: number; signal?: AbortSignal },
+  ): Promise<AdminPaymentPage> =>
+    api
+      .get<AdminPayment[]>(`/admin/monetization/users/${userId}/payments`, {
+        // `buildUrl` drops undefined keys, so an absent cursor means "first page" without the
+        // caller assembling a query string.
+        query: { cursor: options?.cursor, limit: options?.limit },
+        signal: options?.signal,
+      })
+      .then((r) => {
+        const cursorMeta = r.meta?.pagination as unknown as
+          { nextCursor?: string | null; hasMore?: boolean } | undefined;
+        return {
+          items: r.data,
+          nextCursor: cursorMeta?.nextCursor ?? null,
+          hasMore: cursorMeta?.hasMore ?? false,
+        };
+      }),
 
   // ── Analytics (A1c) — read-only, no failure modes beyond transport ───────────
   getRevenue: (signal?: AbortSignal): Promise<RevenueAnalytics> =>

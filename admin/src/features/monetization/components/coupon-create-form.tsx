@@ -33,6 +33,8 @@ export function CouponCreateForm(): ReactElement {
   const [value, setValue] = useState('10');
   const [appliesToTier, setAppliesToTier] = useState('');
   const [maxRedemptions, setMaxRedemptions] = useState('');
+  const [perUserLimit, setPerUserLimit] = useState('');
+  const [description, setDescription] = useState('');
   const [campaign, setCampaign] = useState('');
   const [expiresAt, setExpiresAt] = useState('');
   /** Set only from COUPON_CODE_TAKEN — the field-level channel, cleared on every edit. */
@@ -49,6 +51,8 @@ export function CouponCreateForm(): ReactElement {
       value: numericValue,
       ...(appliesToTier === '' ? {} : { appliesToTier: appliesToTier as PlanTier }),
       ...(maxRedemptions === '' ? {} : { maxRedemptions: Number(maxRedemptions) }),
+      ...(perUserLimit === '' ? {} : { perUserLimit: Number(perUserLimit) }),
+      ...(description.trim() === '' ? {} : { description: description.trim() }),
       ...(campaign.trim() === '' ? {} : { campaign: campaign.trim() }),
       ...(expiresAt === '' ? {} : { expiresAt: new Date(expiresAt).toISOString() }),
     };
@@ -60,6 +64,8 @@ export function CouponCreateForm(): ReactElement {
         setCampaign('');
         setExpiresAt('');
         setMaxRedemptions('');
+        setPerUserLimit('');
+        setDescription('');
       },
       onError: (error) => {
         // The one error that belongs at the field. Everything else is a toast, because nothing on
@@ -167,9 +173,8 @@ export function CouponCreateForm(): ReactElement {
               </option>
             ))}
           </select>
-          {/* Write-only over this surface — the coupon response omits it, so the list cannot show it. */}
           <span className="text-xs text-ink-muted">
-            Stored but not returned by the coupon list, so it will not appear in the table below.
+            Restricts the code to one plan. Shown on the coupon in the table below.
           </span>
         </div>
 
@@ -188,6 +193,44 @@ export function CouponCreateForm(): ReactElement {
             className="h-9 rounded-md border border-line bg-surface px-3 text-sm text-ink"
           />
           <span className="text-xs text-ink-muted">Leave empty for unlimited redemptions.</span>
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label htmlFor="coupon-per-user" className="text-sm font-medium text-ink">
+            Per-user limit <span className="text-ink-muted">(optional)</span>
+          </label>
+          <input
+            id="coupon-per-user"
+            type="number"
+            min={1}
+            value={perUserLimit}
+            onChange={(event) => {
+              setPerUserLimit(event.target.value);
+            }}
+            className="h-9 rounded-md border border-line bg-surface px-3 text-sm text-ink"
+          />
+          <span className="text-xs text-ink-muted">
+            How many times one account may redeem it. Defaults to 1.
+          </span>
+        </div>
+
+        <div className="flex flex-col gap-1 sm:col-span-2">
+          <label htmlFor="coupon-description" className="text-sm font-medium text-ink">
+            Description <span className="text-ink-muted">(optional)</span>
+          </label>
+          <input
+            id="coupon-description"
+            type="text"
+            maxLength={255}
+            value={description}
+            onChange={(event) => {
+              setDescription(event.target.value);
+            }}
+            className="h-9 rounded-md border border-line bg-surface px-3 text-sm text-ink"
+          />
+          <span className="text-xs text-ink-muted">
+            Internal note. Shown on the coupon in the table below.
+          </span>
         </div>
 
         <div className="flex flex-col gap-1">
