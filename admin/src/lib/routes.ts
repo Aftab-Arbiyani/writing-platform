@@ -14,6 +14,9 @@ export const ROUTES = {
   featured: '/featured',
   // Moderation
   reports: '/reports',
+  // Trust & safety (A2) — behind `trust.view`, which a moderator holds, so it sits below the
+  // admin floor that `/users` (and its Trust tab) is gated by.
+  trust: '/trust',
   // Platform
   analytics: '/analytics',
   auditLogs: '/audit-logs',

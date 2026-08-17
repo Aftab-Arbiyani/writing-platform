@@ -58,6 +58,20 @@ export const router = createBrowserRouter([
                   { path: ROUTES.prompts, lazy: () => import('@/app/routes/prompts') },
                   { path: ROUTES.reports, lazy: () => import('@/app/routes/reports') },
 
+                  /**
+                   * Trust & safety (A2). Gated by PERMISSION, like the monetization group below,
+                   * because `trust.view` is what both trust reads carry
+                   * (`trust.admin.controller.ts`) — and here the permission and the rank do NOT
+                   * coincide: `trust.*` is granted to Moderator as well as Admin, so a role floor
+                   * would either strand the moderator above this line or let a below-floor role in.
+                   * The same panel is a tab on the user detail drawer for viewers who can reach
+                   * `/users`; this route is how the moderator who cannot reach it gets there.
+                   */
+                  {
+                    element: <RequirePermission require={PERMISSIONS.TrustView} />,
+                    children: [{ path: ROUTES.trust, lazy: () => import('@/app/routes/trust') }],
+                  },
+
                   // Admin floor.
                   {
                     element: <RequireRole min={Role.Admin} />,

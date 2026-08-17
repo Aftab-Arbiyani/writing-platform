@@ -11,6 +11,7 @@ import {
   FileText,
   Flag,
   Gauge,
+  Gavel,
   HeartPulse,
   KeyRound,
   Languages,
@@ -123,6 +124,21 @@ export const NAV_GROUPS: NavGroup[] = [
         label: 'Reports',
         path: ROUTES.reports,
         icon: Flag,
+        minRole: Role.Moderator,
+      },
+      /**
+       * Trust & safety (A2). `minRole: Role.Moderator` is the `trust.view` gate expressed in the
+       * shape this map has (a role FLOOR, not a permission code): `trust.*` is granted to Moderator
+       * and, by rank inheritance, to Admin and SuperAdmin — so the floor selects exactly the viewers
+       * who hold the grant. The ROUTE carries `RequirePermission(trust.view)`, which is the check
+       * the server makes; the equivalence is stated here rather than by adding a `permission` field
+       * to all 30-odd entries, as A1 decided for the billing rows.
+       */
+      {
+        key: 'trust',
+        label: 'Trust & safety',
+        path: ROUTES.trust,
+        icon: Gavel,
         minRole: Role.Moderator,
       },
     ],

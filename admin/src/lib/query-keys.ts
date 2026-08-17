@@ -24,6 +24,13 @@ export const qk = {
       ['users', 'detail', id, 'audit', params] as const,
     loginHistory: (id: string) => ['users', 'detail', id, 'login-history'] as const,
   },
+  trust: {
+    all: ['trust'] as const, // Trust & Safety admin (AF6, A2); mutations invalidate the namespace
+    // Both reads are per-account and there is no cross-account trust route, so every key is
+    // keyed by user — like `monetization.overrides` above, and for the same reason.
+    summary: (userId: string) => ['trust', 'summary', userId] as const, // GET /admin/users/:id/trust
+    restrictions: (userId: string) => ['trust', 'restrictions', userId] as const, // GET …/restrictions
+  },
   moderation: {
     all: ['moderation'] as const, // invalidate the whole namespace after a mutation
     reports: (params: Record<string, unknown>) => ['moderation', 'reports', params] as const,

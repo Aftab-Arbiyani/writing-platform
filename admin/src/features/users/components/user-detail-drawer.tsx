@@ -17,6 +17,7 @@ import { useUser, useUserActivity, useUserLoginHistory } from '../hooks/use-user
 import { ROLE_LABELS } from '../users.constants';
 import type { AdminUserDetail, AdminUserListItem, AuditLogEntry } from '../types/users.types';
 import { AuditEntryRow } from './audit-entry-row';
+import { TrustPanel } from './trust-panel';
 import { UserAuditTab } from './user-audit-tab';
 
 interface UserDetailDrawerProps {
@@ -183,7 +184,16 @@ function LoginHistoryTab({ userId, active }: { userId: string; active: boolean }
   );
 }
 
-/** The user detail drawer — a tabbed read-only profile, statistics, activity, audit + login views. */
+/**
+ * The user detail drawer — a tabbed read-only profile, statistics, activity, audit + login views,
+ * plus (A2) the account's trust standing.
+ *
+ * **The Trust tab is here on purpose**: this is the screen where an operator suspends the account,
+ * so the account suspension and a trust `suspended` restriction — two controls that both read as
+ * "suspend this person", backed by different tables — end up close enough for the panel to explain
+ * the difference. The tab is gated on `trust.view`, and the same panel is also served by the
+ * `/trust` route for a moderator, who cannot reach `/users` at all.
+ */
 export function UserDetailDrawer({ user, onClose, onEdit }: UserDetailDrawerProps): ReactElement {
   const { can } = usePermissions();
   const [tab, setTab] = useState('overview');
@@ -215,6 +225,17 @@ export function UserDetailDrawer({ user, onClose, onEdit }: UserDetailDrawerProp
             label: 'Audit',
             children: <UserAuditTab userId={data.id} active={tab === 'audit'} />,
           },
+          // A viewer without `trust.view` gets no Trust tab at all, rather than a tab whose two
+          // reads would 403 — the same posture as the Edit button above.
+          ...(can(PERMISSIONS.TrustView)
+            ? [
+                {
+                  key: 'trust',
+                  label: 'Trust',
+                  children: <TrustPanel userId={data.id} active={tab === 'trust'} />,
+                },
+              ]
+            : []),
           {
             key: 'login',
             label: 'Login history',
