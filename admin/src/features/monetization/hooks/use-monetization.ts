@@ -12,11 +12,18 @@ import { qk } from '@/lib/query-keys';
 
 import { monetizationApi } from '../api/monetization.api';
 import type {
+  AdjustCreditsPayload,
+  AdminCoupon,
   AdminEntitlementOverride,
   AdminMonetizationConfig,
   AdminMonetizationConfigPatch,
+  AdminPayment,
   AdminPlanCatalogue,
+  CreateCouponPayload,
+  CreditAdjustResult,
   GrantOverridePayload,
+  RefundPayload,
+  UpdateCouponPayload,
 } from '../types/monetization.types';
 
 /**
@@ -104,5 +111,70 @@ export function useRevokeOverride(): UseMutationResult<void, Error, string> {
     onSuccess: () => {
       void client.invalidateQueries({ queryKey: qk.monetization.all });
     },
+  });
+}
+
+// ── Coupons (A1b) ─────────────────────────────────────────────────────────────
+
+export function useCoupons(): UseQueryResult<AdminCoupon[]> {
+  const enabled = useBillingManage();
+  return useQuery({
+    queryKey: qk.monetization.coupons(),
+    queryFn: ({ signal }) => monetizationApi.getCoupons(signal),
+    enabled,
+  });
+}
+
+export function useCreateCoupon(): UseMutationResult<AdminCoupon, Error, CreateCouponPayload> {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: CreateCouponPayload) => monetizationApi.createCoupon(payload),
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: qk.monetization.all });
+    },
+  });
+}
+
+export function useUpdateCoupon(): UseMutationResult<
+  AdminCoupon,
+  Error,
+  { id: string; patch: UpdateCouponPayload }
+> {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, patch }: { id: string; patch: UpdateCouponPayload }) =>
+      monetizationApi.updateCoupon(id, patch),
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: qk.monetization.all });
+    },
+  });
+}
+
+// ── Credits + refunds (A1b) ───────────────────────────────────────────────────
+
+/**
+ * Adjust a balance. Nothing is invalidated on success and nothing can be: no query in this app holds
+ * another user's balance, because no admin route exposes one. The authoritative post-clamp figure
+ * comes back in the response and the form reports THAT.
+ */
+export function useAdjustCredits(): UseMutationResult<
+  CreditAdjustResult,
+  Error,
+  AdjustCreditsPayload
+> {
+  return useMutation({
+    mutationFn: (payload: AdjustCreditsPayload) => monetizationApi.adjustCredits(payload),
+  });
+}
+
+/** Refund a payment. Not invalidated either — there is no admin payments list to refresh. */
+export function useRefundPayment(): UseMutationResult<
+  AdminPayment,
+  Error,
+  { paymentId: string; payload: RefundPayload }
+> {
+  return useMutation({
+    mutationFn: ({ paymentId, payload }: { paymentId: string; payload: RefundPayload }) =>
+      monetizationApi.refundPayment(paymentId, payload),
   });
 }

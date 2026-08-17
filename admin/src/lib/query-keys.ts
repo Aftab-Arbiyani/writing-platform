@@ -110,5 +110,6 @@ export const qk = {
     config: () => ['monetization', 'config'] as const, // GET /admin/monetization/config
     // Keyed by user because there is no "all overrides" route — the read is per-account.
     overrides: (userId: string) => ['monetization', 'overrides', userId] as const, // GET …/overrides/:userId
+    coupons: () => ['monetization', 'coupons'] as const, // GET /admin/monetization/coupons
   },
 } as const;

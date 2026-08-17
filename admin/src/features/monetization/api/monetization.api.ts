@@ -1,11 +1,18 @@
 import { api } from '@/lib/api-client';
 
 import type {
+  AdjustCreditsPayload,
+  AdminCoupon,
   AdminEntitlementOverride,
   AdminMonetizationConfig,
   AdminMonetizationConfigPatch,
+  AdminPayment,
   AdminPlanCatalogue,
+  CreateCouponPayload,
+  CreditAdjustResult,
   GrantOverridePayload,
+  RefundPayload,
+  UpdateCouponPayload,
 } from '../types/monetization.types';
 
 /**
@@ -46,4 +53,26 @@ export const monetizationApi = {
   /** 204 No Content — the override row is deactivated, not deleted. */
   revokeOverride: (id: string): Promise<void> =>
     api.delete<void>(`/admin/monetization/overrides/${id}`).then(() => undefined),
+
+  // ── Coupons (A1b) ───────────────────────────────────────────────────────────
+  getCoupons: (signal?: AbortSignal): Promise<AdminCoupon[]> =>
+    api.get<AdminCoupon[]>('/admin/monetization/coupons', { signal }).then((r) => r.data),
+
+  /** Fails with COUPON_CODE_TAKEN (409) — the one error the operator can fix in place. */
+  createCoupon: (payload: CreateCouponPayload): Promise<AdminCoupon> =>
+    api.post<AdminCoupon>('/admin/monetization/coupons', payload).then((r) => r.data),
+
+  updateCoupon: (id: string, payload: UpdateCouponPayload): Promise<AdminCoupon> =>
+    api.patch<AdminCoupon>(`/admin/monetization/coupons/${id}`, payload).then((r) => r.data),
+
+  // ── Credits + refunds (A1b) ─────────────────────────────────────────────────
+  /** Positive grants, negative deducts. The response balance is post-clamp and authoritative. */
+  adjustCredits: (payload: AdjustCreditsPayload): Promise<CreditAdjustResult> =>
+    api.post<CreditAdjustResult>('/admin/monetization/credits/adjust', payload).then((r) => r.data),
+
+  /** Fails with PAYMENT_NOT_FOUND (404), PAYMENT_PROVIDER_ERROR (502) or …NOT_CONFIGURED (503). */
+  refundPayment: (paymentId: string, payload: RefundPayload): Promise<AdminPayment> =>
+    api
+      .post<AdminPayment>(`/admin/monetization/payments/${paymentId}/refund`, payload)
+      .then((r) => r.data),
 };

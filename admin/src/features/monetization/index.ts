@@ -9,3 +9,5 @@
  */
 export { PlansPage } from './pages/plans-page';
 export { EntitlementsPage } from './pages/entitlements-page';
+export { CouponsPage } from './pages/coupons-page';
+export { BillingActionsPage } from './pages/billing-actions-page';

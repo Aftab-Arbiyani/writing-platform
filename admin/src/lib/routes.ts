@@ -41,6 +41,8 @@ export const ROUTES = {
   // Monetization (A1) — every route behind `billing.manage`
   billingPlans: '/billing/plans',
   billingEntitlements: '/billing/entitlements',
+  billingCoupons: '/billing/coupons',
+  billingActions: '/billing/actions',
   // Access
   users: '/users',
   moderators: '/moderators',

@@ -135,6 +135,14 @@ export const router = createBrowserRouter([
                         path: ROUTES.billingEntitlements,
                         lazy: () => import('@/app/routes/billing-entitlements'),
                       },
+                      {
+                        path: ROUTES.billingCoupons,
+                        lazy: () => import('@/app/routes/billing-coupons'),
+                      },
+                      {
+                        path: ROUTES.billingActions,
+                        lazy: () => import('@/app/routes/billing-actions'),
+                      },
                     ],
                   },
 
