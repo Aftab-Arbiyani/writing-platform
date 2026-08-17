@@ -1,13 +1,18 @@
+import { PERMISSIONS } from '@qalam/shared';
 import { QCard, QSectionHeader } from '@qalam/ui';
 import { ShieldAlert } from 'lucide-react';
 import type { ReactElement } from 'react';
 
 import { LoadingState } from '@/components/loading-state';
+import { usePermissions } from '@/hooks/use-permissions';
 import { getErrorMessage } from '@/lib/errors';
 
 import { useTrustRestrictions, useTrustSummary } from '../hooks/use-trust';
+import { TrustLiftButton } from './trust-lift-button';
+import { TrustRestrictForm } from './trust-restrict-form';
 import { TrustRestrictionList } from './trust-restriction-list';
 import { TrustStandingCard } from './trust-standing-card';
+import { TrustStrikeForm } from './trust-strike-form';
 
 /**
  * The Trust & Safety surface for one account (AF6, row A2) — **one panel, two entry points**.
@@ -23,9 +28,12 @@ import { TrustStandingCard } from './trust-standing-card';
  * ACTIVE restrictions; the list (`GET users/:id/restrictions`) carries active AND historical. They
  * are fetched separately, fail separately, and both are refetched after any mutation.
  *
- * Actions (issue a strike, apply a restriction, lift one) require `trust.manage` and are added by
- * the mutations slice; a `trust.view`-only operator sees this whole panel with no action
- * affordances — not disabled buttons that would 403 on click.
+ * **The two permissions are gated separately, because the server checks them separately.** The reads
+ * carry `trust.view`, the three mutations `trust.manage`. A viewer with only `trust.view` gets this
+ * whole panel — standing, history, everything — with NO action affordances: no forms, no lift
+ * buttons, not disabled buttons that would 403 on click. No seeded role is in that state today
+ * (`Role.Moderator` upward all hold `trust.*`), but `role_permissions` is editable at runtime, so
+ * the branch is real and is written rather than collapsed into one check.
  */
 export interface TrustPanelProps {
   userId: string;
@@ -69,8 +77,10 @@ function SanctionScopeNote(): ReactElement {
 }
 
 export function TrustPanel({ userId, active = true }: TrustPanelProps): ReactElement {
+  const { can } = usePermissions();
   const summary = useTrustSummary(userId, active);
   const restrictions = useTrustRestrictions(userId, active);
+  const canManage = can(PERMISSIONS.TrustManage);
 
   return (
     <div className="flex flex-col gap-5" data-testid="trust-panel">
@@ -94,9 +104,33 @@ export function TrustPanel({ userId, active = true }: TrustPanelProps): ReactEle
         ) : restrictions.isError ? (
           <p className="text-sm text-danger">{getErrorMessage(restrictions.error)}</p>
         ) : (
-          <TrustRestrictionList restrictions={restrictions.data ?? []} />
+          <TrustRestrictionList
+            restrictions={restrictions.data ?? []}
+            // Lift is offered per row, and only on rows still in force — the list decides which
+            // those are. Without `trust.manage` no `renderActions` is passed at all, so the rows
+            // render exactly as they do for a read-only viewer.
+            renderActions={
+              canManage ? (restriction) => <TrustLiftButton restriction={restriction} /> : undefined
+            }
+          />
         )}
       </QCard>
+
+      {/*
+        The two write forms need the standing to say anything honest — the strike form's escalation
+        projection is built from the current active weight and the active restrictions — so they wait
+        for it rather than guessing from zero.
+      */}
+      {canManage && summary.data !== undefined ? (
+        <>
+          <TrustStrikeForm
+            userId={userId}
+            activeStrikeWeight={summary.data.activeStrikeWeight}
+            activeRestrictions={summary.data.restrictions}
+          />
+          <TrustRestrictForm userId={userId} />
+        </>
+      ) : null}
     </div>
   );
 }

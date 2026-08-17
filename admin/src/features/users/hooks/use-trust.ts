@@ -1,11 +1,23 @@
 import { PERMISSIONS } from '@qalam/shared';
-import { useQuery, type UseQueryResult } from '@tanstack/react-query';
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type UseMutationResult,
+  type UseQueryResult,
+} from '@tanstack/react-query';
 
 import { usePermissions } from '@/hooks/use-permissions';
 import { qk } from '@/lib/query-keys';
 
 import { trustApi } from '../api/trust.api';
-import type { AdminRestriction, AdminTrustSummary } from '../types/trust.types';
+import type {
+  AdminRestriction,
+  AdminStrike,
+  AdminTrustSummary,
+  ApplyRestrictionPayload,
+  IssueStrikePayload,
+} from '../types/trust.types';
 
 /**
  * The two Trust reads (AF6, row A2) — both gated on `trust.view`.
@@ -46,5 +58,75 @@ export function useTrustRestrictions(
     queryFn: ({ signal }) => trustApi.restrictions(userId, signal),
     enabled: userId !== '' && enabled && can(PERMISSIONS.TrustView),
     staleTime: TRUST_STALE,
+  });
+}
+
+// ── Mutations (`trust.manage`) ──────────────────────────────────────────────────
+
+/**
+ * Every trust mutation invalidates the WHOLE trust namespace, never one key.
+ *
+ * The standing and the restriction list are separate reads and both move on any of the three
+ * writes — including in ways that are not obvious: issuing a strike can create a restriction all by
+ * itself (`maybeEscalate`), and lifting a restriction changes the standing's derived status even
+ * though it targets a restriction row. Invalidating both is the only version of this that is
+ * always right.
+ *
+ * The service also invalidates the Policy Engine's decision cache server-side
+ * (`engine.invalidateUser`), which is a different cache from this one. Nothing here claims anything
+ * about how fast that propagates to the user's own app — this row did not verify it.
+ */
+function useTrustInvalidation(): () => void {
+  const client = useQueryClient();
+  return () => {
+    void client.invalidateQueries({ queryKey: qk.trust.all });
+  };
+}
+
+/** `POST /admin/users/:id/strikes` — issue a strike. May auto-apply a restriction server-side. */
+export function useIssueStrike(): UseMutationResult<
+  AdminStrike,
+  Error,
+  { userId: string; payload: IssueStrikePayload }
+> {
+  const invalidate = useTrustInvalidation();
+  return useMutation({
+    mutationFn: ({ userId, payload }: { userId: string; payload: IssueStrikePayload }) =>
+      trustApi.issueStrike(userId, payload),
+    onSuccess: invalidate,
+  });
+}
+
+/** `POST /admin/users/:id/restrictions` — apply a restriction. */
+export function useApplyRestriction(): UseMutationResult<
+  AdminRestriction,
+  Error,
+  { userId: string; payload: ApplyRestrictionPayload }
+> {
+  const invalidate = useTrustInvalidation();
+  return useMutation({
+    mutationFn: ({ userId, payload }: { userId: string; payload: ApplyRestrictionPayload }) =>
+      trustApi.applyRestriction(userId, payload),
+    onSuccess: invalidate,
+  });
+}
+
+/**
+ * `DELETE /admin/restrictions/:restrictionId` — lift one restriction.
+ *
+ * **Keyed by the RESTRICTION id.** Every other route in this file takes a user id, and both are
+ * UUIDs, so the variable is named `restrictionId` and typed as its own object property rather than
+ * a bare string a caller could fill from the wrong variable.
+ */
+export function useLiftRestriction(): UseMutationResult<
+  AdminRestriction,
+  Error,
+  { restrictionId: string }
+> {
+  const invalidate = useTrustInvalidation();
+  return useMutation({
+    mutationFn: ({ restrictionId }: { restrictionId: string }) =>
+      trustApi.liftRestriction(restrictionId),
+    onSuccess: invalidate,
   });
 }
