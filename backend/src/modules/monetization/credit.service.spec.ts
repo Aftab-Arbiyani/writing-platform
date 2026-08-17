@@ -91,6 +91,27 @@ describe('CreditService', () => {
     });
   });
 
+  describe('findWallet', () => {
+    it('should return the wallet when one exists', async () => {
+      const wallet = makeWallet(250);
+      const { service } = build({ walletForBalance: wallet });
+
+      await expect(service.findWallet('u1')).resolves.toBe(wallet);
+    });
+
+    it('should return null WITHOUT creating a wallet when none exists', async () => {
+      // The read-only counterpart to `getOrCreateWallet`, added for the admin balance read (B8,
+      // A1-3). `getOrCreateWallet` inserts on a miss, which is right when a user opens their own
+      // wallet screen and wrong when an operator merely looks at an account — a lookup must not
+      // materialise a row, least of all for a mistyped id.
+      const { service, wallets } = build({ walletForBalance: null });
+
+      await expect(service.findWallet('u1')).resolves.toBeNull();
+      expect(wallets.save).not.toHaveBeenCalled();
+      expect(wallets.create).not.toHaveBeenCalled();
+    });
+  });
+
   describe('grant', () => {
     it('should increment balance and lifetimeGranted, then write a grant ledger row', async () => {
       const wallet = makeWallet(100, 50, 0); // balance=100, lifetime=50

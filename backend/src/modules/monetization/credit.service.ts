@@ -38,6 +38,18 @@ export class CreditService {
     private readonly dataSource: DataSource,
   ) {}
 
+  /**
+   * The user's wallet, or `null` if they have never had one — a pure READ.
+   *
+   * Exists because {@link getOrCreateWallet} writes, and an admin merely LOOKING at an account
+   * must not thereby create a row for it (B8, A1-3). A missing wallet is not an error state: a
+   * user who has never been granted or spent a credit has an effective balance of 0, which is
+   * exactly what {@link balance} already reports for them. The caller decides how to say so.
+   */
+  async findWallet(userId: string): Promise<CreditWallet | null> {
+    return this.wallets.findOne({ where: { userId } });
+  }
+
   /** The user's wallet, creating an empty one on first access. */
   async getOrCreateWallet(userId: string): Promise<CreditWallet> {
     const existing = await this.wallets.findOne({ where: { userId } });

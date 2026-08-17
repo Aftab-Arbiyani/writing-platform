@@ -9,15 +9,17 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CreditReason, PERMISSIONS } from '@qalam/shared';
 import type { Request } from 'express';
 
 import { RateLimit } from '../../common/decorators/rate-limit.decorator';
 import { RateLimitGuard } from '../../common/guards/rate-limit.guard';
+import { decodeCursor } from '../../common/pagination/cursor.util';
 import { AuditService } from '../audit/audit.service';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
@@ -28,17 +30,30 @@ import { CreditService } from './credit.service';
 import {
   AdjustCreditsDto,
   CreateCouponDto,
+  CursorQueryDto,
   GrantOverrideDto,
   RefundDto,
   UpdateCouponDto,
   UpdateMonetizationConfigDto,
 } from './dto/monetization-request.dto';
+import { AdminUserCreditsDto, AdminUserSubscriptionDto } from './dto/monetization-response.dto';
 import { EntitlementService } from './entitlement.service';
 import { MONETIZATION_AUDIT_ACTIONS, MONETIZATION_AUDIT_TARGET } from './monetization.constants';
 import { MonetizationAnalyticsService } from './monetization-analytics.service';
 import { MonetizationConfigService } from './monetization.config-service';
-import { toCouponDto, toEntitlementOverrideDto, toPaymentDto } from './monetization.mappers';
+import { page } from './monetization.controller';
+import {
+  toCouponDto,
+  toCreditBalanceDto,
+  toEntitlementOverrideDto,
+  toPaymentDto,
+  toSubscriptionDto,
+} from './monetization.mappers';
 import { PromotionService } from './promotion.service';
+import { SubscriptionService } from './subscription.service';
+
+/** Page size when the caller does not ask — the same default the user-facing ledgers use. */
+const DEFAULT_PAGE_LIMIT = 20;
 
 /**
  * The admin monetization surface (AF5) — plan/pricing config, promotions/coupons,
@@ -57,6 +72,7 @@ export class AdminMonetizationController {
     private readonly entitlements: EntitlementService,
     private readonly credits: CreditService,
     private readonly billing: BillingService,
+    private readonly subscriptionService: SubscriptionService,
     private readonly config: MonetizationConfigService,
     private readonly analytics: MonetizationAnalyticsService,
     private readonly audit: AuditService,
@@ -219,6 +235,73 @@ export class AdminMonetizationController {
   ) {
     const refund = await this.billing.refund(id, buildActor(user, req), dto.amount, dto.reason);
     return toPaymentDto(refund);
+  }
+
+  // ── One account (B8 — the A1 enablers) ────────────────────────────────────────
+
+  /**
+   * These three answer "show me THIS person's billing", which A1 could not: every equivalent on
+   * the user-facing controller is `@CurrentUser` self-scoped, so an admin calling one reads their
+   * OWN account. Each is pure plumbing over a service method that already existed — no new query,
+   * no new pagination shape.
+   *
+   * **They are not audited, deliberately, and that is consistent rather than an oversight.** Every
+   * MUTATION on this controller records through `this.record`; no READ does — not `listCoupons`,
+   * not `getConfig`, not `listOverrides`, which is the closest precedent (an admin read of one
+   * named user's billing-adjacent data). Auditing three reads and not the fourth would make the
+   * trail's silence ambiguous. If admin reads should be audited, that is a decision for the audit
+   * subsystem across every module, not a rule invented inside a monetization row.
+   */
+
+  @Get('users/:userId/subscription')
+  @Permissions(PERMISSIONS.BillingManage)
+  @RateLimit('read')
+  @ApiOperation({
+    summary:
+      "One user's subscription, or null when they are on free. " +
+      'No error code: a free account is a normal state, not a 404.',
+  })
+  @ApiOkResponse({ type: AdminUserSubscriptionDto })
+  async userSubscription(
+    @Param('userId', ParseUUIDPipe) userId: string,
+  ): Promise<AdminUserSubscriptionDto> {
+    const subscription = await this.subscriptionService.findByUser(userId);
+    return { userId, subscription: subscription === null ? null : toSubscriptionDto(subscription) };
+  }
+
+  @Get('users/:userId/payments')
+  @Permissions(PERMISSIONS.BillingManage)
+  @RateLimit('read')
+  @ApiOperation({
+    summary: "One user's payment history (cursor-paginated) — the ids a refund needs.",
+  })
+  async userPayments(
+    @Param('userId', ParseUUIDPipe) userId: string,
+    @Query() query: CursorQueryDto,
+  ) {
+    const limit = query.limit ?? DEFAULT_PAGE_LIMIT;
+    const rows = await this.billing.listPayments(userId, decodeCursor(query.cursor), limit);
+    return page(rows, limit, toPaymentDto);
+  }
+
+  @Get('users/:userId/credits')
+  @Permissions(PERMISSIONS.BillingManage)
+  @RateLimit('read')
+  @ApiOperation({
+    summary:
+      "One user's AI credit wallet, or null when they have never had one (effective balance 0). " +
+      'A pure read — it does not create a wallet.',
+  })
+  @ApiOkResponse({ type: AdminUserCreditsDto })
+  async userCredits(@Param('userId', ParseUUIDPipe) userId: string): Promise<AdminUserCreditsDto> {
+    const [wallet, config] = await Promise.all([
+      this.credits.findWallet(userId),
+      this.config.getConfig(),
+    ]);
+    return {
+      userId,
+      credits: wallet === null ? null : toCreditBalanceDto(wallet, config.creditsPerUsd),
+    };
   }
 
   // ── Config / plans / analytics ─────────────────────────────────────────────────

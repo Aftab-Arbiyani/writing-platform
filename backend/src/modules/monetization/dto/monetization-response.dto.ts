@@ -212,6 +212,41 @@ export class CouponValidationDto {
   @ApiProperty() description!: string;
 }
 
+/**
+ * One user's subscription, read by an operator (`GET admin/monetization/users/:userId/subscription`).
+ *
+ * **`subscription` is nullable and that is the design, not a shortcut** (B8, closing A1-3/A1-7's
+ * premise). The self-scoped `GET /monetization/subscription` throws `SUBSCRIPTION_NOT_FOUND` for a
+ * user who has never subscribed, which is right for the account holder — they asked about *their*
+ * subscription and there isn't one. For an operator, "this account is on free" is the platform's
+ * most COMMON state, not an error, and answering 404 would make every admin client render an error
+ * banner for the ordinary case. It also matches the sibling route on this controller:
+ * `GET overrides/:userId` answers `[]` for a user with none rather than 404.
+ *
+ * The trade recorded rather than hidden: an unknown/typo'd user id is indistinguishable from a real
+ * free account here, because this module holds no user table to check against (docs/48 §3, B8-1).
+ */
+export class AdminUserSubscriptionDto {
+  @ApiProperty() userId!: string;
+  @ApiProperty({ type: SubscriptionDto, nullable: true })
+  subscription!: SubscriptionDto | null;
+}
+
+/**
+ * One user's credit wallet, read by an operator (`GET admin/monetization/users/:userId/credits`).
+ *
+ * `credits` is `null` when no wallet row has ever existed — the account has never been granted or
+ * spent a credit, so its effective balance is 0. Null rather than a fabricated zero-wallet because
+ * there is no honest `updatedAt` for a row that does not exist, and because this route reads through
+ * `CreditService.findWallet`, which does NOT create one: an admin looking at an account must not
+ * write to it.
+ */
+export class AdminUserCreditsDto {
+  @ApiProperty() userId!: string;
+  @ApiProperty({ type: CreditBalanceDto, nullable: true })
+  credits!: CreditBalanceDto | null;
+}
+
 /** An entitlement override (admin). */
 export class EntitlementOverrideDto {
   @ApiProperty() id!: string;

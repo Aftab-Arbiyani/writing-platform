@@ -404,8 +404,13 @@ export class MonetizationController {
   }
 }
 
-/** Build the paginated envelope from over-fetched (limit+1) rows with a keyset cursor. */
-function page<E extends { id: string; createdAt: Date }, T>(
+/**
+ * Build the paginated envelope from over-fetched (limit+1) rows with a keyset cursor.
+ *
+ * Exported so the ADMIN controller pages identically (B8, A1-5) — a second pagination shape in
+ * the same module would mean two cursor encodings for the same `payments` table.
+ */
+export function page<E extends { id: string; createdAt: Date }, T>(
   rows: E[],
   limit: number,
   map: (row: E) => T,

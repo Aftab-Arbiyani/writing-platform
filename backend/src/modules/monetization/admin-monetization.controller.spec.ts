@@ -1,0 +1,238 @@
+import 'reflect-metadata';
+import { PERMISSIONS } from '@qalam/shared';
+
+import { PERMISSIONS_KEY } from '../../common/constants/metadata.constants';
+import type { AuditService } from '../audit/audit.service';
+import { AdminMonetizationController } from './admin-monetization.controller';
+import type { BillingService } from './billing.service';
+import type { CreditService } from './credit.service';
+import { CursorQueryDto } from './dto/monetization-request.dto';
+import type { EntitlementService } from './entitlement.service';
+import type { MonetizationAnalyticsService } from './monetization-analytics.service';
+import type { MonetizationConfigService } from './monetization.config-service';
+import type { PromotionService } from './promotion.service';
+import type { SubscriptionService } from './subscription.service';
+
+/**
+ * The three admin reads B8 added to close A1-3, A1-5 and A1-7 — "show me THIS person's billing",
+ * which A1 could not ask because every equivalent is `@CurrentUser` self-scoped.
+ *
+ * Each is covered three ways, per the row's done-when: the account HAS the thing, the account does
+ * not (a free user / an empty wallet / no payments — all normal states here, not errors), and a
+ * caller without `billing.manage` is refused. The refusal is asserted as route METADATA rather than
+ * by standing up a guard: `PermissionGuard` is the thing that turns that metadata into a 403 and it
+ * has its own spec (`permissions/permission.guard.spec.ts`, "denies (403 AUTH_PERMISSION_DENIED)
+ * when a required permission is missing"). Re-testing the guard here would prove the guard twice and
+ * the ROUTES not at all — the failure mode that actually ships is a handler that forgot the
+ * decorator, and that is exactly what this reads.
+ */
+function permsOf(handler: (...args: never[]) => unknown): unknown {
+  return Reflect.getMetadata(PERMISSIONS_KEY, handler);
+}
+
+function build(overrides?: { subscription?: unknown; wallet?: unknown; payments?: unknown[] }) {
+  const credits = {
+    findWallet: jest.fn().mockResolvedValue(overrides?.wallet ?? null),
+    getOrCreateWallet: jest.fn(),
+  } as unknown as CreditService;
+  const billing = {
+    listPayments: jest.fn().mockResolvedValue(overrides?.payments ?? []),
+  } as unknown as BillingService;
+  const subscriptions = {
+    findByUser: jest.fn().mockResolvedValue(overrides?.subscription ?? null),
+  } as unknown as SubscriptionService;
+  const config = {
+    getConfig: jest.fn().mockResolvedValue({ creditsPerUsd: 1000 }),
+  } as unknown as MonetizationConfigService;
+
+  const controller = new AdminMonetizationController(
+    {} as PromotionService,
+    {} as EntitlementService,
+    credits,
+    billing,
+    subscriptions,
+    config,
+    {} as MonetizationAnalyticsService,
+    { record: jest.fn().mockResolvedValue(undefined) } as unknown as AuditService,
+  );
+  return { controller, credits, billing, subscriptions };
+}
+
+const USER = '11111111-1111-4111-8111-111111111111';
+
+function query(limit?: number, cursor?: string): CursorQueryDto {
+  return Object.assign(new CursorQueryDto(), { limit, cursor });
+}
+
+describe('AdminMonetizationController — the B8 account reads require billing.manage', () => {
+  const routes: Array<[string, (...args: never[]) => unknown]> = [
+    ['users/:userId/subscription', AdminMonetizationController.prototype.userSubscription],
+    ['users/:userId/payments', AdminMonetizationController.prototype.userPayments],
+    ['users/:userId/credits', AdminMonetizationController.prototype.userCredits],
+  ];
+
+  it.each(routes)('GET %s requires billing.manage', (_name, handler) => {
+    expect(permsOf(handler)).toEqual([PERMISSIONS.BillingManage]);
+  });
+
+  it('declares the same grant the rest of the controller does', () => {
+    // A read that leaked onto a weaker permission than its sibling WRITES would be the whole point
+    // of the surface, missed. Compare against a route that shipped in A1 rather than a literal.
+    expect(permsOf(AdminMonetizationController.prototype.userCredits)).toEqual(
+      permsOf(AdminMonetizationController.prototype.adjustCredits),
+    );
+  });
+});
+
+describe('AdminMonetizationController — one user’s subscription (A1-7)', () => {
+  it('returns the mapped subscription when the account has one', async () => {
+    const { controller } = build({
+      subscription: {
+        id: 'sub-1',
+        tier: 'plus',
+        status: 'active',
+        interval: 'monthly',
+        provider: 'stripe',
+        currency: 'usd',
+        autoRenew: true,
+        cancelAtPeriodEnd: false,
+        currentPeriodStart: new Date('2026-08-01T00:00:00.000Z'),
+        currentPeriodEnd: new Date('2026-09-01T00:00:00.000Z'),
+        trialEnd: null,
+        gracePeriodEnd: null,
+        canceledAt: null,
+        scheduledTier: null,
+        scheduledInterval: null,
+        createdAt: new Date('2026-07-01T00:00:00.000Z'),
+      },
+    });
+
+    const result = await controller.userSubscription(USER);
+
+    expect(result.userId).toBe(USER);
+    expect(result.subscription).toMatchObject({
+      id: 'sub-1',
+      tier: 'plus',
+      status: 'active',
+      currentPeriodEnd: '2026-09-01T00:00:00.000Z',
+    });
+  });
+
+  it('answers null for a free account instead of throwing SUBSCRIPTION_NOT_FOUND', async () => {
+    // DECISION 0.2. `getByUser` throws for this case and is right to for the account holder; for an
+    // operator, "on free" is the platform's commonest state and a 404 would make every client draw
+    // an error banner for it. `findByUser` is the read that does not raise.
+    const { controller, subscriptions } = build({ subscription: null });
+
+    await expect(controller.userSubscription(USER)).resolves.toEqual({
+      userId: USER,
+      subscription: null,
+    });
+    expect(subscriptions.findByUser).toHaveBeenCalledWith(USER);
+  });
+});
+
+describe('AdminMonetizationController — one user’s payments (A1-5)', () => {
+  const row = (id: string, at: string) => ({
+    id,
+    provider: 'stripe',
+    method: 'card',
+    status: 'succeeded',
+    amount: 1999,
+    currency: 'usd',
+    description: null,
+    createdAt: new Date(at),
+  });
+
+  it('pages through listPayments with the module’s cursor idiom', async () => {
+    // Over-fetch of limit+1 → the extra row is dropped and becomes the cursor. Same `page` helper
+    // the self-scoped ledgers use, so an admin cursor and a user cursor encode identically.
+    const { controller, billing } = build({
+      payments: [
+        row('p1', '2026-08-03T00:00:00.000Z'),
+        row('p2', '2026-08-02T00:00:00.000Z'),
+        row('p3', '2026-08-01T00:00:00.000Z'),
+      ],
+    });
+
+    const result = await controller.userPayments(USER, query(2));
+
+    expect(billing.listPayments).toHaveBeenCalledWith(USER, null, 2);
+    expect(result.data).toHaveLength(2);
+    expect(result.data.map((p) => p.id)).toEqual(['p1', 'p2']);
+    expect(result.meta.pagination.hasMore).toBe(true);
+    expect(result.meta.pagination.nextCursor).not.toBeNull();
+  });
+
+  it('answers an empty page — not an error — for an account that has never paid', async () => {
+    const { controller } = build({ payments: [] });
+
+    const result = await controller.userPayments(USER, query());
+
+    expect(result.data).toEqual([]);
+    expect(result.meta.pagination).toEqual({ nextCursor: null, hasMore: false, limit: 20 });
+  });
+
+  it('decodes a supplied cursor and passes the position down', async () => {
+    const { controller, billing } = build({ payments: [] });
+    const cursor = Buffer.from(
+      JSON.stringify({ k: '2026-08-02T00:00:00.000Z', id: 'p2' }),
+      'utf8',
+    ).toString('base64url');
+
+    await controller.userPayments(USER, query(20, cursor));
+
+    expect(billing.listPayments).toHaveBeenCalledWith(
+      USER,
+      { k: '2026-08-02T00:00:00.000Z', id: 'p2' },
+      20,
+    );
+  });
+});
+
+describe('AdminMonetizationController — one user’s credits (A1-3)', () => {
+  const wallet = {
+    id: 'w1',
+    userId: USER,
+    balance: 250,
+    lifetimeGranted: 1000,
+    lifetimeConsumed: 750,
+    updatedAt: new Date('2026-08-16T12:00:00.000Z'),
+  };
+
+  it('returns the balance with the credit rate that priced it', async () => {
+    const { controller } = build({ wallet });
+
+    const result = await controller.userCredits(USER);
+
+    expect(result).toEqual({
+      userId: USER,
+      credits: {
+        balance: 250,
+        lifetimeGranted: 1000,
+        lifetimeConsumed: 750,
+        creditsPerUsd: 1000,
+        updatedAt: '2026-08-16T12:00:00.000Z',
+      },
+    });
+  });
+
+  it('answers null for an account that has never had a wallet', async () => {
+    const { controller } = build({ wallet: null });
+
+    await expect(controller.userCredits(USER)).resolves.toEqual({ userId: USER, credits: null });
+  });
+
+  it('NEVER creates a wallet — an admin looking at an account must not write to it', async () => {
+    // The side-effect question this row was told to answer. `getOrCreateWallet` (which the
+    // self-scoped route uses, correctly, because a user reading their own balance is the moment to
+    // materialise it) would have an operator's idle lookup insert a row for an account that has
+    // none — and a typo'd id would create one for a user that does not exist.
+    const { controller, credits } = build({ wallet: null });
+
+    await controller.userCredits(USER);
+
+    expect(credits.findWallet).toHaveBeenCalledWith(USER);
+    expect(credits.getOrCreateWallet).not.toHaveBeenCalled();
+  });
+});
