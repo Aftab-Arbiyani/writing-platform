@@ -39,9 +39,25 @@ export class UsersPage {
     });
   }
 
-  /** Type into the debounced search box and wait for the target row to appear. */
+  /**
+   * Type into the debounced search box and wait for the search to have actually HAPPENED.
+   *
+   * The row assertion alone was not enough, and that is a correctness bug in this helper rather than a
+   * timing preference. The box commits to the URL after a 350ms debounce
+   * (`useDebouncedSearch`), the table's query key is built from the URL, and `useUsers` holds
+   * `placeholderData: keepPreviousData` — so on a small database the target row is often ALREADY on
+   * the unfiltered first page and `rowActions(username)` goes visible immediately, while the commit is
+   * still pending. Every caller then interacted with a table that was about to re-render underneath
+   * them.
+   *
+   * Waiting for the committed `?q=` and then for the row is waiting for the precondition the name of
+   * this method implies. It is not a longer timeout: if the commit never lands, this still fails.
+   */
   async searchFor(username: string): Promise<void> {
     await this.searchInput.fill(username);
+    await this.page.waitForURL((url) => url.searchParams.get('q') === username, {
+      timeout: 15_000,
+    });
     await expect(this.rowActions(username)).toBeVisible();
   }
 

@@ -1,5 +1,7 @@
 import { type Locator, type Page, expect } from '@playwright/test';
 
+import { UsersPage } from './users-page';
+
 /**
  * The admin Trust & Safety surface (A2, docs/45 §5) — one panel, two entry points.
  *
@@ -197,16 +199,20 @@ export class TrustPage {
 
   // ── The drawer entry point ────────────────────────────────────────────────────
 
-  /** Open a user's detail drawer from `/users` and select its Trust tab. */
+  /**
+   * Open a user's detail drawer from `/users` and select its Trust tab.
+   *
+   * Delegates the grid half to {@link UsersPage} rather than re-implementing it. This method used to
+   * fill the search box and click the row's action trigger on the next line, with no wait for the row
+   * OR for the debounced search to commit — so it interacted with a table that had a pending refetch.
+   * `UsersPage.searchFor` and `.openProfile` now own that sequence in one place, which is where the
+   * waiting rules belong.
+   */
   async openDrawerTab(username: string): Promise<void> {
-    await this.page.goto('/users');
-    await expect(this.page.getByRole('heading', { level: 1, name: 'Users' })).toBeVisible({
-      timeout: 30_000,
-    });
-    await this.page.getByLabel('Search users').fill(username);
-    await this.page.getByRole('button', { name: `Actions for ${username}` }).click();
-    await this.page.getByRole('menuitem', { name: 'View profile' }).click();
-    await expect(this.page.getByTestId('user-detail-drawer')).toBeVisible();
+    const users = new UsersPage(this.page);
+    await users.goto();
+    await users.searchFor(username);
+    await users.openProfile(username);
     await this.page.getByRole('tab', { name: 'Trust' }).click();
     await expect(this.panel).toBeVisible();
   }

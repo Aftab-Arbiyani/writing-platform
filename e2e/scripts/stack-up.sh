@@ -29,8 +29,40 @@ if [ "${RESET}" -eq 1 ]; then
   docker compose down -v
 fi
 
+# `--wait` covers only the LONG-RUNNING services. `minio-init` is deliberately excluded:
+# it is a one-shot `mc` container that creates the bucket and exits 0, and current Compose
+# (tested on Docker 29.7.2 / Compose v5.4.0) treats an exited dependency as a `--wait`
+# FAILURE — it prints "container qalam-minio-init-1 exited (0)" and returns 1. With
+# `set -e` that killed this script before the migrations ran, so `pnpm e2e:up` never
+# produced a usable stack on a current Docker and every step after this line was
+# unreachable. That is very plausibly why five rows of specs were written and never run
+# locally.
+#
+# It is still STARTED, just not waited on: `up -d` brings it up, and it only has to finish
+# before something reads the bucket, which nothing does during bring-up. Older Compose,
+# which tolerated the exited container, is unaffected — the service list is simply shorter.
+#
+# The alternative, `depends_on: { minio-init: { condition: service_completed_successfully } }`,
+# was not taken: it would make the bucket a hard gate for every `docker compose up` in the
+# repo, including plain local dev, for a step that is idempotent and fast.
 echo "→ Starting infra (postgres, redis, minio, minio-init, mailpit)…"
-docker compose up -d --wait postgres redis minio minio-init mailpit
+docker compose up -d postgres redis minio minio-init mailpit
+docker compose up -d --wait postgres redis minio mailpit
+
+# The bucket-creation container is not waited on above, so report what it did rather than
+# leaving a silent failure to surface later as a broken media upload.
+# `ps -aq`, not `ps -q`: this container has already exited by now, and `-q` lists only running
+# ones — which is the same distinction that broke `--wait` above.
+INIT_CID="$(docker compose ps -aq minio-init 2>/dev/null || true)"
+if [ -n "${INIT_CID}" ]; then
+  INIT_EXIT="$(docker inspect -f '{{.State.ExitCode}}' "${INIT_CID}" 2>/dev/null || echo '?')"
+  if [ "${INIT_EXIT}" = "0" ]; then
+    echo "  ✓ minio-init completed (bucket qalam-media ready)."
+  else
+    echo "  ! minio-init exited ${INIT_EXIT} — media uploads may fail. Logs:"
+    docker compose logs --no-log-prefix --tail 20 minio-init || true
+  fi
+fi
 
 echo "→ Running migrations…"
 pnpm --filter backend migration:run

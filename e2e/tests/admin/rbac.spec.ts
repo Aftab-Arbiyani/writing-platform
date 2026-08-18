@@ -106,6 +106,15 @@ test.describe('@phase3 admin RBAC', () => {
       username: data.username(),
       password: data.password(),
     });
+    // ALL the arranging happens before the moderator signs in — see the note at the revoke assertion
+    // below for why that ordering is load-bearing rather than tidy.
+    const inspected = await api.createVerifiedUser({
+      email: data.email(),
+      username: data.username(),
+      password: data.password(),
+    });
+    await api.strikeUser(inspected.id, { severity: 'minor', reason: 'e2e rbac strike' });
+
     await freshLoginAs(page, moderator.email, moderator.password);
 
     await page.goto('/dashboard');
@@ -128,20 +137,24 @@ test.describe('@phase3 admin RBAC', () => {
     // for any well-formed UUID, which this assertion relied on, and B9 closed that (A2-4). The forms
     // render only once the standing resolves — they read the active weight to state the escalation —
     // so a 404 now leaves nothing to assert about.
-    const inspected = await api.createVerifiedUser({
-      email: data.email(),
-      username: data.username(),
-      password: data.password(),
-    });
     await trust.open(inspected.id);
     await expect(trust.panel.getByRole('button', { name: 'Issue strike' })).toBeVisible();
     await expect(trust.panel.getByRole('button', { name: 'Apply restriction' })).toBeVisible();
+
     // The revoke B9 added is gated `trust.manage` as well, so it belongs to this role too — asserted
-    // with a strike on the record, since the affordance is per-row.
-    await api.strikeUser(inspected.id, { severity: 'minor', reason: 'e2e rbac strike' });
-    await page.reload();
-    await trust.open(inspected.id);
-    await expect(trust.panel.getByRole('button', { name: 'Revoke' }).first()).toBeVisible({
+    // with a strike already on the record, since the affordance is per-row.
+    //
+    // **The strike is arranged at the top of the test and there is no `page.reload()` here**, and that
+    // is the fix for this spec's flake rather than a tidy-up. B9 wrote it the other way round —
+    // arrange mid-test, then reload to pick the row up — and the reload intermittently returned the
+    // SIGN-IN page: the moderator's session is established by a login inside the page context, and a
+    // full reload re-runs the app's boot refresh against a rotating refresh-token family. Losing that
+    // race signs the moderator out, and the test then fails on a missing `Trust & safety` heading with
+    // no hint that authentication was the cause. Arranging first needs no reload at all.
+    // One strike was arranged, so there is exactly one Revoke button — no `.first()` needed, and its
+    // absence is what keeps this assertion honest about how many rows it expects.
+    await expect(trust.countingTags).toHaveCount(1, { timeout: 15_000 });
+    await expect(trust.panel.getByRole('button', { name: 'Revoke' })).toBeVisible({
       timeout: 15_000,
     });
   });
