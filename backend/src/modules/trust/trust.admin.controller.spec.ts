@@ -53,16 +53,16 @@ describe('TrustAdminController — trust.view reads, trust.manage mutations', ()
   });
 
   it('leaves no route on this controller ungated', () => {
-    // The whole surface, so a route added later without a decorator fails here rather
-    // than shipping open. `@Permissions` is the only thing standing between these
-    // handlers and any authenticated user.
+    // The whole surface, counted rather than walked: the two tables above already assert a
+    // permission on every handler they name, so the only way a route can be ungated is by
+    // existing and not being in them — which is exactly what this count catches. `@Permissions`
+    // is the only thing standing between these handlers and any authenticated user, so a route
+    // added later without a decorator must fail here rather than ship open.
     const handlers = Object.getOwnPropertyNames(TrustAdminController.prototype).filter(
       (name) => name !== 'constructor',
     );
-    expect(handlers).toHaveLength(reads.length + mutations.length);
-    for (const name of handlers) {
-      const handler = (TrustAdminController.prototype as unknown as Record<string, never>)[name];
-      expect(permsOf(handler)).toBeDefined();
-    }
+    expect(handlers.sort()).toEqual(
+      [...reads, ...mutations].map(([, handler]) => handler.name).sort(),
+    );
   });
 });
