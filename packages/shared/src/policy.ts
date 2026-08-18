@@ -54,6 +54,27 @@ export const TrustStatus = {
   Muted: 'muted',
   Shadowed: 'shadowed',
   Suspended: 'suspended',
+  /**
+   * RESERVED — never produced, and nothing should start producing it without a
+   * product decision. Recorded here in B9 (finding A2-5) so the next reader stops
+   * rediscovering it.
+   *
+   * It is unreachable by construction, not by omission: a trust status is derived
+   * only from `trustStatusForRestriction` or a score band, and `RestrictionType` has
+   * no `banned` member, so nothing can map to this. It would also be
+   * indistinguishable if it were reachable — `TrustRule` gives `banned` and
+   * `suspended` the identical decision (`policy.rules.ts`).
+   *
+   * **A ban already lives elsewhere, and that is why this stays reserved.**
+   * `ReportResolution.UserBanned` resolves to `suspendUser(user, actor, permanent)`
+   * (`moderation.service.ts`) — i.e. `users.status = suspended`, audited as
+   * `MODERATION_ACTIONS.UserBan`. Ban is an ACCOUNT sanction, not a trust standing.
+   * Wiring this member would stand up a third sanction system beside the two that
+   * A2-1 already found talking past each other, so it needs a new `RestrictionType`,
+   * a distinct effect in `TrustRule`, and a decision about what a ban means that a
+   * suspension does not — none of which is a defect fix. Do not delete it either:
+   * removing an enum member is a breaking change (docs/25 §8).
+   */
   Banned: 'banned',
 } as const;
 export type TrustStatus = (typeof TrustStatus)[keyof typeof TrustStatus];
