@@ -69,6 +69,45 @@
 }
 
 /*
+ * UNLAYERED ON PURPOSE — the one rule in this file that sits outside every layer, because a
+ * layered rule cannot win the conflict it exists to settle.
+ *
+ * AntD's cssinjs reset injects `:where(.css-…) a { text-decoration: none }` into a plain
+ * `<style>` element, i.e. outside every cascade layer. **Unlayered declarations beat layered
+ * ones regardless of specificity**, so Tailwind's `.underline` — which lives in
+ * `@layer utilities` — never applied to a single `<a>` in this app. Every `underline` and
+ * `hover:underline` written on a link here has been silently inert since the app was built.
+ * A rule in `@layer antd` below would lose the same way; only an unlayered one wins.
+ *
+ * That is what axe caught on `/billing/plans` as `link-in-text-block` (serious, and in BOTH
+ * themes): the "Settings" link in running text was distinguished from its paragraph by colour
+ * alone, at 1.04:1 in light and 1.31:1 in dark, because the `underline` class it already
+ * carried did nothing. WCAG 1.4.1 is satisfied by contrast ≥ 3:1 OR a non-colour cue, and the
+ * non-colour cue is the right half to fix: raising the accent token to 3:1 against
+ * `--q-text-secondary` would move the brand colour in both themes and in every other place
+ * accent is used (focus rings, icons, tags, active nav), and would still leave links relying
+ * on colour. Restoring the underline the author already asked for fixes both themes at once.
+ *
+ * `a.underline` is specificity (0,1,1) against AntD's (0,0,1) — `:where()` contributes
+ * nothing — so this wins on specificity as well as on layer, and it can only affect elements
+ * that already carry the class.
+ *
+ * The structural alternative, recorded rather than taken: `@ant-design/cssinjs` (1.24.0) has
+ * `StyleProvider layer`, which would put AntD's own CSS into the `antd` layer this file already
+ * declares — making the declared layer order real instead of aspirational. It is the better fix
+ * and it is NOT a drop-in: it would let every Tailwind utility win over every AntD style at
+ * once, which changes far more than links and needs the visual baselines regenerated in CI to
+ * confirm. See docs/48 §3.18.
+ */
+a.underline {
+  text-decoration-line: underline;
+}
+
+a.hover\:underline:hover {
+  text-decoration-line: underline;
+}
+
+/*
  * Corrections to AntD's own DOM that cannot be expressed through its theme tokens
  * (docs/e2e/10 §8.1).
  */
