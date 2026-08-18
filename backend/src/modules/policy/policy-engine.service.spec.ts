@@ -16,6 +16,7 @@ import type { PermissionResolver } from '../permissions/permission.resolver';
 import { PolicyCacheService } from './policy-cache.service';
 import { PolicyEngineService } from './policy-engine.service';
 import type {
+  AccountStatusPort,
   PolicyResource,
   StoryMembershipPort,
   TrustContext,
@@ -41,6 +42,10 @@ function makeEngine(options: {
   trust?: (userId: string) => TrustContext;
   role?: (storyId: string, userId: string) => StoryRole | null;
   blocked?: boolean;
+  /** B9 (A2-1). Omitted leaves the account-status port UNREGISTERED, as before this row. */
+  accountClosed?: (userId: string) => boolean;
+  /** Lets a test make the account-status port throw, to pin the fail-open behaviour. */
+  accountStatusThrows?: boolean;
 }): PolicyEngineService {
   const engine = new PolicyEngineService(
     resolverFor(options.grants ?? [PERMISSIONS.CollaborationUse]),
@@ -55,6 +60,17 @@ function makeEngine(options: {
   };
   engine.registerTrustPort(trustPort);
   engine.registerMembershipPort(membershipPort);
+  if (options.accountClosed !== undefined || options.accountStatusThrows === true) {
+    const accountStatusPort: AccountStatusPort = {
+      isAccountClosed: async (userId) => {
+        if (options.accountStatusThrows === true) {
+          throw new Error('users table unreachable');
+        }
+        return (options.accountClosed ?? (() => false))(userId);
+      },
+    };
+    engine.registerAccountStatusPort(accountStatusPort);
+  }
   return engine;
 }
 
@@ -69,6 +85,107 @@ const storyResource: PolicyResource = {
 };
 
 describe('PolicyEngineService', () => {
+  /**
+   * B9, closing half of A2-1 — the engine no longer treats a suspended ACCOUNT as being
+   * in good standing.
+   *
+   * These are the tests that would have caught it: `grep UserStatus` over `modules/policy`
+   * returned nothing, so account suspension was enforced only at the auth edge (login
+   * refusal + `logoutAll`) and every decision downstream saw a clean record.
+   */
+  describe('account status', () => {
+    it('refuses a suspended account an action it would otherwise OWN', async () => {
+      // The owner case is the sharp one: `OwnershipRule` allows a story owner anything, so
+      // a rule ordered below it could never stop a suspended author. This one is above.
+      const engine = makeEngine({ accountClosed: () => true });
+      const decision = await engine.evaluate({
+        subject: { userId: OWNER, role: Role.User },
+        action: POLICY_ACTIONS.StoryManageMembers,
+        resource: storyResource,
+      });
+      expect(decision.allowed).toBe(false);
+      expect(decision.effect).toBe(PolicyEffect.Suspended);
+      expect(decision.matchedRule).toBe('account-status');
+    });
+
+    it('refuses a suspended STAFF account, outranking the permission grant', async () => {
+      const engine = makeEngine({
+        grants: [PERMISSIONS.TrustManage, PERMISSIONS.CollaborationUse],
+        accountClosed: () => true,
+      });
+      const decision = await engine.evaluate({
+        subject: { userId: OTHER, role: Role.Admin },
+        action: POLICY_ACTIONS.StoryEdit,
+        resource: storyResource,
+      });
+      expect(decision.matchedRule).toBe('account-status');
+    });
+
+    it('admits the same owner once the suspension is lifted', async () => {
+      // The other direction, on the same subject and action: nothing about the account
+      // status rule leaks into an account that is not closed.
+      const engine = makeEngine({ accountClosed: () => false });
+      const decision = await engine.evaluate({
+        subject: { userId: OWNER, role: Role.User },
+        action: POLICY_ACTIONS.StoryManageMembers,
+        resource: storyResource,
+      });
+      expect(decision.effect).toBe(PolicyEffect.Allow);
+      expect(decision.matchedRule).toBe('ownership');
+    });
+
+    it('names the ACCOUNT, not trust, so the audit trail can tell the two systems apart', async () => {
+      const engine = makeEngine({ accountClosed: () => true });
+      const closed = await engine.evaluate({
+        subject: { userId: OWNER, role: Role.User },
+        action: POLICY_ACTIONS.StoryEdit,
+        resource: storyResource,
+      });
+
+      const trustSuspended = makeEngine({
+        trust: () => ({
+          status: TrustStatus.Suspended,
+          level: TrustLevel.Member,
+          restrictions: [],
+        }),
+      });
+      const restricted = await trustSuspended.evaluate({
+        subject: { userId: OWNER, role: Role.User },
+        action: POLICY_ACTIONS.StoryEdit,
+        resource: storyResource,
+      });
+
+      // Same effect — the clients render one restricted-state screen and a suspended
+      // account has nothing different to do — but distinguishable in the trail.
+      expect(closed.effect).toBe(restricted.effect);
+      expect(closed.matchedRule).not.toBe(restricted.matchedRule);
+      expect(closed.reason).not.toBe(restricted.reason);
+    });
+
+    it('defers when no port is registered — the engine still runs standalone', async () => {
+      const engine = makeEngine({});
+      const decision = await engine.evaluate({
+        subject: { userId: OWNER, role: Role.User },
+        action: POLICY_ACTIONS.StoryManageMembers,
+        resource: storyResource,
+      });
+      expect(decision.effect).toBe(PolicyEffect.Allow);
+    });
+
+    it('fails OPEN when the port throws, rather than locking everyone out', async () => {
+      // Failing closed here would mean an unreachable users table refuses every
+      // policy-gated action for every user. Every other port on this path trades the same
+      // way, and the auth edge still refuses the login.
+      const engine = makeEngine({ accountStatusThrows: true });
+      const decision = await engine.evaluate({
+        subject: { userId: OWNER, role: Role.User },
+        action: POLICY_ACTIONS.StoryManageMembers,
+        resource: storyResource,
+      });
+      expect(decision.effect).toBe(PolicyEffect.Allow);
+    });
+  });
+
   describe('ownership', () => {
     it('lets the story owner do anything on their story', async () => {
       const engine = makeEngine({});

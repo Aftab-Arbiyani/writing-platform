@@ -50,6 +50,35 @@ export class FeatureFlagRule implements PolicyRule {
 }
 
 /**
+ * Rule 0b — account status (B9, closing half of A2-1). If the ACCOUNT is closed
+ * (`users.status = suspended`), nothing it asks for is permitted.
+ *
+ * **Ordered before {@link TrustRule} deliberately**, and it is the only rule above
+ * it: account closure is a stronger statement than any trust standing, and it must
+ * outrank every grant below — including `PermissionRule`, so a suspended admin
+ * cannot act either.
+ *
+ * It uses the same `Suspended` effect as a trust suspension because the clients
+ * already render that effect as a restricted-state screen, and a suspended account
+ * has nothing different to do about it. The `reason` differs so an operator reading
+ * the audit trail can tell which system spoke — `matchedRule` is `account-status`
+ * here and `trust` there.
+ *
+ * `accountClosed === undefined` (no port registered) defers rather than denies. Every
+ * port in this engine fails open by design; a rule that denied on a missing input
+ * would make the standalone engine refuse everyone.
+ */
+export class AccountStatusRule implements PolicyRule {
+  readonly name = 'account-status';
+  evaluate(ctx: PolicyEvaluationContext): PolicyDecision | null {
+    if (ctx.accountClosed === true) {
+      return decide(PolicyEffect.Suspended, this.name, 'This account has been suspended.');
+    }
+    return null;
+  }
+}
+
+/**
  * Rule 1 — trust standing. The highest-precedence DENY: a suspended/banned user
  * cannot act; a read-only/muted/shadowed user is constrained per action; an
  * active scoped restriction blocks matching writes. Reads are never blocked by
@@ -219,10 +248,13 @@ export class DefaultDenyRule implements PolicyRule {
 /**
  * The ordered rule pipeline. Precedence matters: restrictions and blocks come
  * before grants (a suspended owner still cannot act), and default-deny is last.
+ * `AccountStatusRule` sits above the trust rule because a closed account outranks
+ * every standing, grant and ownership claim below it (B9, A2-1).
  */
 export function buildPolicyRules(): PolicyRule[] {
   return [
     new FeatureFlagRule(),
+    new AccountStatusRule(),
     new TrustRule(),
     new BlockRule(),
     new PermissionRule(),

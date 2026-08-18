@@ -13,6 +13,7 @@ import {
 import { PolicyDeniedException } from './policy.exceptions';
 import { buildPolicyRules } from './policy.rules';
 import type {
+  AccountStatusPort,
   PolicyEntitlementPort,
   PolicyEvaluationContext,
   PolicyEvaluationRequest,
@@ -57,6 +58,7 @@ export class PolicyEngineService {
   private membershipPort?: StoryMembershipPort;
   private entitlementPort?: PolicyEntitlementPort;
   private featureFlagPort?: PolicyFeatureFlagPort;
+  private accountStatusPort?: AccountStatusPort;
 
   constructor(
     private readonly permissions: PermissionResolver,
@@ -77,6 +79,9 @@ export class PolicyEngineService {
   }
   registerFeatureFlagPort(port: PolicyFeatureFlagPort): void {
     this.featureFlagPort = port;
+  }
+  registerAccountStatusPort(port: AccountStatusPort): void {
+    this.accountStatusPort = port;
   }
 
   // ── Public API ─────────────────────────────────────────────────────────────
@@ -176,13 +181,17 @@ export class PolicyEngineService {
     const isOwner = storyOwnerId !== null && storyOwnerId === subject.userId;
     const isResourceOwner = resource.ownerId != null && resource.ownerId === subject.userId;
 
-    const [permissions, trust, storyRole, isInteractionBlocked, platformDisabled] =
+    // One parallel fan-out, so the account-status read added by B9 (A2-1) costs no
+    // serial time — it lands beside the five that were already here, and the whole
+    // context resolution sits behind the per-user decision cache above.
+    const [permissions, trust, storyRole, isInteractionBlocked, platformDisabled, accountClosed] =
       await Promise.all([
         this.permissions.resolve(subject.role, subject.userId),
         this.resolveTrust(subject.userId),
         this.resolveStoryRole(resource.storyId ?? null, subject.userId, isOwner),
         this.resolveBlock(subject.userId, resource.targetUserId ?? null),
         this.resolvePlatformDisabled(),
+        this.resolveAccountClosed(subject.userId),
       ]);
 
     return {
@@ -194,7 +203,27 @@ export class PolicyEngineService {
       isResourceOwner,
       isInteractionBlocked,
       platformDisabled,
+      accountClosed,
     };
+  }
+
+  /**
+   * Whether the account itself is closed. `undefined` when no port is registered, so
+   * {@link AccountStatusRule} defers instead of denying — and `undefined` again if the
+   * port throws, because failing CLOSED here would lock every user out of every
+   * policy-gated action the moment the users table was unreachable. Every other port
+   * on this path makes the same trade.
+   */
+  private async resolveAccountClosed(userId: string): Promise<boolean | undefined> {
+    if (this.accountStatusPort === undefined) {
+      return undefined;
+    }
+    try {
+      return await this.accountStatusPort.isAccountClosed(userId);
+    } catch (error) {
+      this.logger.warn(`account-status port failed for ${userId}: ${(error as Error).message}`);
+      return undefined;
+    }
   }
 
   private async resolveTrust(userId: string) {

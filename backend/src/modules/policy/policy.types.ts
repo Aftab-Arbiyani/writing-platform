@@ -77,6 +77,15 @@ export interface PolicyEvaluationContext {
   readonly isInteractionBlocked: boolean;
   /** True if the collaboration platform is disabled by feature flag. */
   readonly platformDisabled: boolean;
+  /**
+   * True when the subject's ACCOUNT is closed (`users.status = suspended`) — B9,
+   * A2-1. Distinct from `trust.status`: that is a participation sanction the Trust
+   * Platform owns, this is the account itself. `undefined` means the port is not
+   * registered, i.e. unknown — and an unknown account status must never deny, or a
+   * standalone engine would refuse everyone (the same fail-open rule every other
+   * port here follows).
+   */
+  readonly accountClosed?: boolean;
 }
 
 /**
@@ -113,6 +122,22 @@ export interface PolicyEntitlementPort {
 /** Settings → engine. Implemented by an adapter over the feature-flag service. */
 export interface PolicyFeatureFlagPort {
   isEnabled(flagKey: string): Promise<boolean>;
+}
+
+/**
+ * Users → engine (B9, closing half of A2-1). Implemented by the Users module's
+ * `AccountStatusService`.
+ *
+ * Account suspension was enforced ONLY at the auth edge — `auth.service.ts:123`
+ * refuses the login and the suspend endpoints revoke the sessions — and nothing
+ * downstream ever re-checked. So a suspended account was in *good standing* for
+ * every policy decision it could still reach: within the access-token TTL after
+ * suspension, and indefinitely whenever the un-transacted `logoutAll` that follows
+ * the status write does not complete. This port is the defence in depth for that.
+ */
+export interface AccountStatusPort {
+  /** Whether the account is closed by an operator (`users.status = suspended`). */
+  isAccountClosed(userId: string): Promise<boolean>;
 }
 
 export type { PolicyDecision };

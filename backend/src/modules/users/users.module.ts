@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { TaxonomyModule } from '../taxonomy/taxonomy.module';
+import { AccountStatusService } from './account-status.service';
 import { Follow } from './entities/follow.entity';
 import { Profile } from './entities/profile.entity';
 import { ProfileGenre } from './entities/profile-genre.entity';
@@ -47,6 +48,13 @@ import { UsersService } from './users.service';
     FollowService,
     UserSettingsRepository,
     SettingsService,
+    /**
+     * B9 (A2-1): self-registers the account-status port with the `@Global`
+     * `PolicyEngineService` at bootstrap, so the engine stops treating a suspended
+     * account as being in good standing. Injected, never imported — the same
+     * no-cycle arrangement `TrustStatusService` uses from the other side.
+     */
+    AccountStatusService,
   ],
   /**
    * `SettingsService` is exported for B5 (docs/45 §4.10): the AI gate
