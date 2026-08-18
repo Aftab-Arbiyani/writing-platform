@@ -73,7 +73,9 @@ export function RefundForm(): ReactElement {
   };
 
   return (
-    <QCard padding="md" className="flex flex-col gap-4">
+    // See `credit-adjust-form.tsx` — the two cards share field labels, so each carries a scoping
+    // hook for the browser suite (docs/e2e/05 §3).
+    <QCard padding="md" className="flex flex-col gap-4" data-testid="refund-form">
       <QSectionHeader
         title="Refund a payment"
         description="Sends a refund to the payment's original provider. Look the account up to pick the charge."

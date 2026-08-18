@@ -77,7 +77,10 @@ export function CreditAdjustForm(): ReactElement {
   };
 
   return (
-    <QCard padding="md" className="flex flex-col gap-4">
+    // `data-testid`: this card and the refund card sit side by side on /billing/actions and share
+    // field labels ("User ID", "Amount"), so a page-wide label locator is ambiguous by construction.
+    // The hook is the scoping container the browser suite needs (docs/e2e/05 §3).
+    <QCard padding="md" className="flex flex-col gap-4" data-testid="credit-adjust-form">
       <QSectionHeader
         title="Adjust credits"
         description="Positive grants, negative deducts. Both are written to the audit trail."

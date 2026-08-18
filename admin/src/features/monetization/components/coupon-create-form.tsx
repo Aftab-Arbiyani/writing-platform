@@ -80,7 +80,10 @@ export function CouponCreateForm(): ReactElement {
   };
 
   return (
-    <QCard padding="md" className="flex flex-col gap-4">
+    // `data-testid`: the code field's `role="alert"` error shares that role with AntD's toast
+    // notifications, which render in a body portal — so assertions on it scope to this card
+    // (docs/e2e/05 §3).
+    <QCard padding="md" className="flex flex-col gap-4" data-testid="coupon-create-form">
       <QSectionHeader
         title="Create a coupon"
         description="Codes are normalised server-side, so case and surrounding spaces do not matter."

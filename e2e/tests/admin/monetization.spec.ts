@@ -100,7 +100,12 @@ test.describe('@phase4 admin monetization — A1b, the money actions', () => {
     await monetization.goto(MONETIZATION_ROUTES[2]!);
 
     const code = `E2E${data.username().slice(-8).toUpperCase()}`;
-    const codeInput = page.getByLabel('Code');
+    // Scoped to the create card: the code field's error and AntD's toast notifications BOTH carry
+    // `role="alert"`, and the toast for the first (successful) create is still on screen when the
+    // second create fails — so a page-wide `getByRole('alert')` matched two nodes. The claim is about
+    // the FIELD error, which is the whole point of this test.
+    const couponForm = monetization.couponForm;
+    const codeInput = couponForm.getByLabel('Code');
 
     // First create succeeds.
     await codeInput.fill(code);
@@ -111,7 +116,7 @@ test.describe('@phase4 admin monetization — A1b, the money actions', () => {
     // lands on the input and marks it invalid rather than flashing past in a toast.
     await codeInput.fill(code);
     await page.getByRole('button', { name: 'Create coupon' }).click();
-    await expect(page.getByRole('alert')).toContainText('That code already exists');
+    await expect(couponForm.getByRole('alert')).toContainText('That code already exists');
     await expect(codeInput).toHaveAttribute('aria-invalid', 'true');
 
     // And it clears the moment the operator edits the code.
@@ -138,11 +143,14 @@ test.describe('@phase4 admin monetization — A1b, the money actions', () => {
     const monetization = new MonetizationPage(page);
     await monetization.goto(MONETIZATION_ROUTES[3]!);
 
-    await page.getByLabel('User ID').first().fill('00000000-0000-4000-8000-000000000000');
+    // Scoped to the credit card rather than `.first()`: the refund card beside it has its own
+    // "User ID" and an "Amount (optional)", so both labels are ambiguous page-wide.
+    const creditForm = monetization.creditForm;
+    await creditForm.getByLabel('User ID').fill('00000000-0000-4000-8000-000000000000');
     // Wait for the balance: until it lands the form cannot project, and asserting the projected
     // copy before the read settles would be asserting the fallback.
-    await expect(page.getByText(/has no wallet yet/i)).toBeVisible({ timeout: 15_000 });
-    await page.getByLabel('Amount').fill('-500');
+    await expect(creditForm.getByText(/has no wallet yet/i)).toBeVisible({ timeout: 15_000 });
+    await creditForm.getByLabel('Amount').fill('-500');
     await page.getByRole('button', { name: 'Deduct credits' }).click();
 
     const dialog = page.getByRole('dialog');
@@ -171,8 +179,10 @@ test.describe('@phase4 admin monetization — A1b, the money actions', () => {
     const monetization = new MonetizationPage(page);
     await monetization.goto(MONETIZATION_ROUTES[3]!);
 
-    await page.getByLabel('User ID').fill('00000000-0000-4000-8000-000000000000');
-    await page.getByLabel('Amount').fill('250');
+    // Same two ambiguous labels as the deduction test above, scoped the same way.
+    const creditForm = monetization.creditForm;
+    await creditForm.getByLabel('User ID').fill('00000000-0000-4000-8000-000000000000');
+    await creditForm.getByLabel('Amount').fill('250');
 
     // Confirming both would train the operator to click through dialogs.
     await expect(page.getByRole('button', { name: 'Grant credits' })).toBeVisible();
@@ -259,7 +269,10 @@ test.describe('@phase4 admin monetization — A1c, the dashboards', () => {
 
     // No subscription row → the free-plan card, which is a statement and not an error. This is the
     // platform's commonest account state and it must never render as a failure.
-    await expect(page.getByText('Free plan')).toBeVisible({ timeout: 15_000 });
+    // The CARD's heading, not a substring: the card's own explanatory paragraph ("This account has
+    // no subscription record, which is the free plan…") contains the phrase too, so the loose match
+    // found both. The heading is the thing that says "this account is on free".
+    await expect(page.getByRole('heading', { name: 'Free plan' })).toBeVisible({ timeout: 15_000 });
     await expect(page.getByRole('alert')).toHaveCount(0);
     await monetization.expectNoErrorPanel();
   });

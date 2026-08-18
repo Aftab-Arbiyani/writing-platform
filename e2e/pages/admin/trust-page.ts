@@ -93,8 +93,34 @@ export class TrustPage {
     return this.panel.getByText('Revoked', { exact: true });
   }
 
+  /**
+   * The panel's sections, scoped by their HEADING rather than by a text substring.
+   *
+   * `filter({ hasText })` is a case-insensitive SUBSTRING match over a section's whole subtree, which
+   * is far looser than it reads. `filter({ hasText: 'Apply a restriction' })` matched two sections,
+   * because the strike form's own description says "…can apply a restriction automatically" — so
+   * `getByLabel(/^Reason/)` inside it resolved to both `#strike-reason` and `#restriction-reason`.
+   * A heading is the section's identity, and `getByRole('heading', { name })` matches the whole
+   * accessible name, so each of these resolves to exactly one section.
+   */
+  private section(heading: string): Locator {
+    return this.panel
+      .locator('section')
+      .filter({ has: this.page.getByRole('heading', { name: heading }) });
+  }
+
+  /** The standing card — the score, the trust status, and (since B9) the account-status badge. */
+  get standingSection(): Locator {
+    return this.section('Standing');
+  }
+
+  /** The restriction history list, which is NOT the restriction form below it. */
+  get restrictionListSection(): Locator {
+    return this.section('Restrictions');
+  }
+
   private get strikeListSection(): Locator {
-    return this.panel.locator('section').filter({ hasText: 'Every strike ever issued' });
+    return this.section('Strikes');
   }
 
   /** Revoke the first strike still counting, and hand back its confirmation (B9, A2-2). */
@@ -148,11 +174,11 @@ export class TrustPage {
   }
 
   private get strikeSection(): Locator {
-    return this.panel.locator('section').filter({ hasText: 'Issue a strike' });
+    return this.section('Issue a strike');
   }
 
   private get restrictionSection(): Locator {
-    return this.panel.locator('section').filter({ hasText: 'Apply a restriction' });
+    return this.section('Apply a restriction');
   }
 
   /** Lift the first restriction still in force, and hand back its confirmation. */

@@ -1,4 +1,4 @@
-import { type Page, expect } from '@playwright/test';
+import { type Locator, type Page, expect } from '@playwright/test';
 
 /**
  * The admin monetization surface (A1). Seven routes across three slices, all behind
@@ -80,6 +80,34 @@ export const MONETIZATION_ROUTES: readonly MonetizationRoute[] = [
 
 export class MonetizationPage {
   constructor(private readonly page: Page) {}
+
+  /**
+   * The three write forms on this surface, each scoped by its own `data-testid`.
+   *
+   * **Why a testid and not a label or a heading.** `/billing/actions` renders two independent forms
+   * side by side — "Adjust credits" and "Refund a payment" — and they share field labels: each has a
+   * "User ID" and each has an "Amount". A page-wide `getByLabel('User ID')` is therefore ambiguous by
+   * construction rather than by accident, and the only thing distinguishing the two accessible names
+   * is the refund field's description hint, which would couple these locators to hint copy. Scoping
+   * by heading does not work either: these cards render as plain `<div>`s with no landmark, so
+   * `locator('div').filter({ has: heading })` matches every ancestor as well.
+   *
+   * So the containers carry an explicit test hook, on the docs/e2e/05 §3 precedent already set by
+   * `data-testid="trust-panel"` and `data-testid="user-detail-drawer"`. Nothing user-facing changed.
+   */
+  get creditForm(): Locator {
+    return this.page.getByTestId('credit-adjust-form');
+  }
+
+  /** `/billing/actions` — the refund form, which carries the payment picker. */
+  get refundForm(): Locator {
+    return this.page.getByTestId('refund-form');
+  }
+
+  /** `/billing/coupons` — the create form, whose code field owns the taken-code error. */
+  get couponForm(): Locator {
+    return this.page.getByTestId('coupon-create-form');
+  }
 
   async goto(route: MonetizationRoute): Promise<void> {
     await this.page.goto(route.path);

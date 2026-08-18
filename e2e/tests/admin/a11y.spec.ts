@@ -147,7 +147,10 @@ test.describe('@phase5 @a11y admin accessibility (authenticated)', () => {
     const monetization = new MonetizationPage(page);
     await monetization.goto(MONETIZATION_ROUTES[5]!);
     await page.getByLabel('User ID').fill('00000000-0000-4000-8000-000000000000');
-    await expect(page.getByText('Free plan')).toBeVisible({ timeout: 15_000 });
+    // The card's HEADING. `getByText('Free plan')` also matched the card's own explanation ("This
+    // account has no subscription record, which is the free plan…"), so the scan's readiness wait was
+    // ambiguous and threw before axe ever ran.
+    await expect(page.getByRole('heading', { name: 'Free plan' })).toBeVisible({ timeout: 15_000 });
 
     await expectNoSeriousA11yViolations(page, { label: 'admin /billing/subscriptions' });
   });

@@ -44,7 +44,21 @@ test.describe('@phase4 admin trust — the reads', () => {
     // The defect this closes, asserted from the operator's side: a mistyped id used to render a
     // brand-new account in good standing, and an operator could go on to strike it.
     await expect(trust.panel.getByText('Good standing')).toHaveCount(0);
-    await expect(trust.panel.getByText(/No such user/i)).toBeVisible({ timeout: 15_000 });
+    // What the panel ACTUALLY renders. The original assertion here expected /No such user/i — the
+    // server's own message — and that copy exists nowhere in the client: `TrustPanel` renders
+    // `getErrorMessage(error)`, which maps an `ApiError.code` through the admin's catalogue
+    // (`lib/error-messages.ts`), and that catalogue has no `USER_NOT_FOUND` entry, so it falls back.
+    // The spec was guessing; B9's 404 itself works. That the operator is told nothing specific about
+    // a mistyped id is a real but SEPARATE copy defect — recorded in docs/48 §3.20, not smuggled in
+    // here as a product change.
+    //
+    // Asserted as a COUNT, not with `.first()`: all three per-account reads 404 for an unknown id —
+    // the standing, the strike list and the restriction list — so the message renders exactly three
+    // times. `.first()` would have hidden that and proved only that *something* failed; the count is
+    // the sharper claim, and it fails if a fourth read is added without anyone thinking about it.
+    await expect(trust.panel.getByText('Something went wrong. Please try again.')).toHaveCount(3, {
+      timeout: 15_000,
+    });
   });
 
   test('a clean record renders as a calm empty state, not an error', async ({
@@ -172,7 +186,12 @@ test.describe('@phase4 admin trust — the reads', () => {
     const trust = new TrustPage(page);
     await trust.open(target.id);
 
-    await expect(trust.panel.getByText('Trust standing')).toBeVisible();
+    // `exact: true` because the app is CORRECT here and the locator was not: the account-suspended
+    // warning below the badge reads "The ACCOUNT is suspended: they cannot sign in…", which contains
+    // the substring "trust standing" further along, so the default substring match found two nodes.
+    // The claim is about the field LABEL beside the badge, and that label's whole text is these two
+    // words.
+    await expect(trust.standingSection.getByText('Trust standing', { exact: true })).toBeVisible();
     await expect(trust.panel.getByText(/The ACCOUNT is suspended/)).toBeVisible();
     await expect(
       trust.panel.getByText(/lift it from the account actions, not from this tab/i),
@@ -210,8 +229,15 @@ test.describe('@phase4 admin trust — the reads', () => {
     await expect(trust.inForceTags).toHaveCount(1);
     await expect(trust.panel.getByText('Lifted', { exact: true })).toHaveCount(1);
     // The live row says what it stops; the lifted one does not pretend to.
+    //
+    // Scoped to the restriction LIST. The same sentence is also the effect hint inside the restriction
+    // FORM further down the panel — which is correct, since the form explains what the type you are
+    // about to apply will do — so a panel-wide match found the list's `<p>` and the form's `<span>`.
+    // The claim is about the list row, so the locator says so.
     await expect(
-      trust.panel.getByText('Cannot comment or suggest. Other writes are unaffected.'),
+      trust.restrictionListSection.getByText(
+        'Cannot comment or suggest. Other writes are unaffected.',
+      ),
     ).toBeVisible();
   });
 
@@ -442,7 +468,13 @@ test.describe('@phase4 admin trust — the mutations', () => {
     await expect(trust.countingTags).toHaveCount(0, { timeout: 15_000 });
     await expect(trust.revokedTags).toHaveCount(1);
     await expect(trust.panel.getByText('e2e strike to revoke')).toBeVisible();
-    await expect(trust.panel.getByText('50')).toBeVisible({ timeout: 15_000 });
+    // The SCORE reads 50 — scoped to the standing card and exact, because "50" as a substring across
+    // the whole panel matched four nodes: the score itself, "of 100 · Member (50–79)", the band
+    // legend's "Member 50–79 — current", and "Scores run 0–100 and start at 50" in the explanation.
+    // Only the score element's whole text is the bare number, which is precisely the thing asserted.
+    await expect(trust.standingSection.getByText('50', { exact: true })).toBeVisible({
+      timeout: 15_000,
+    });
   });
 
   test('revoking says it will NOT lift a restriction already in force (A2-3)', async ({
