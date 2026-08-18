@@ -1,20 +1,24 @@
 import {
+  ERROR_CODES,
   RestrictionScope,
   RestrictionType,
   Role,
   StrikeSeverity,
   TrustLevel,
   TrustStatus,
+  UserStatus,
 } from '@qalam/shared';
 
 import type { AuditService } from '../audit/audit.service';
 import type { PolicyEngineService } from '../policy';
 import type { NotificationsService } from '../notifications';
+import type { UsersService } from '../users/users.service';
 
 import type { TrustProfile } from './entities/trust-profile.entity';
 import type { UserBlock } from './entities/user-block.entity';
 import type { UserRestriction } from './entities/user-restriction.entity';
 import type { UserStrike } from './entities/user-strike.entity';
+import { TRUST_AUDIT_ACTIONS } from './trust.constants';
 import { TrustRepository } from './trust.repository';
 import { TrustService, type TrustActor } from './trust.service';
 
@@ -86,12 +90,15 @@ function makeService(
     audit?: Partial<AuditService>;
     engine?: Partial<PolicyEngineService>;
     notifications?: Partial<NotificationsService>;
+    users?: Partial<UsersService>;
   } = {},
 ) {
   const repo = {
     findProfile: jest.fn().mockResolvedValue(profile()),
     saveProfile: jest.fn((p: TrustProfile) => Promise.resolve(p)),
     listActiveStrikes: jest.fn().mockResolvedValue([]),
+    listStrikesForUser: jest.fn().mockResolvedValue([]),
+    findStrike: jest.fn().mockResolvedValue(strike()),
     sumActiveStrikeWeight: jest.fn().mockResolvedValue(0),
     createStrike: jest.fn((input) => Promise.resolve(strike(input))),
     revokeStrike: jest.fn(),
@@ -110,13 +117,17 @@ function makeService(
   const audit = { record: jest.fn(), ...over.audit };
   const engine = { invalidateUser: jest.fn(), ...over.engine };
   const notifications = { create: jest.fn().mockResolvedValue(undefined), ...over.notifications };
+  // A real account by default (B9, A2-4): the admin reads now prove the id exists, so a
+  // spec that wants the unknown-id case overrides `findById` with `null` explicitly.
+  const users = { findById: jest.fn().mockResolvedValue({ id: 'user1' }), ...over.users };
   const service = new TrustService(
     repo as unknown as TrustRepository,
     audit as unknown as AuditService,
     engine as unknown as PolicyEngineService,
+    users as unknown as UsersService,
     notifications as unknown as NotificationsService,
   );
-  return { service, repo, audit, engine, notifications };
+  return { service, repo, audit, engine, notifications, users };
 }
 
 describe('TrustService.computeStatus (via getSummary / resolveTrustContext)', () => {
@@ -195,6 +206,200 @@ describe('TrustService.resolveTrustContext', () => {
     });
     // Hot path: reads only, must not write a default profile row.
     expect(saveProfile).not.toHaveBeenCalled();
+  });
+});
+
+describe('TrustService.getSummary / inspectSummary — a read is a read (B9, A2-4)', () => {
+  it('writes NO profile row for a user who has never been struck', async () => {
+    // The test that would have caught A2-4. `getSummary` called `getOrCreateProfile`, so
+    // every read of an untouched account INSERTED a row — and since `trust_profiles` has
+    // no FK to `users`, a mistyped UUID minted one for an account that does not exist.
+    const saveProfile = jest.fn();
+    const { service } = makeService({
+      repo: { findProfile: jest.fn().mockResolvedValue(null), saveProfile },
+    });
+
+    const summary = await service.getSummary('user1');
+
+    expect(saveProfile).not.toHaveBeenCalled();
+    // And the answer is unchanged: the defaults are derived in memory, exactly as
+    // `resolveTrustContext` already derived them.
+    expect(summary).toEqual({
+      score: 50,
+      level: TrustLevel.Member,
+      status: TrustStatus.Normal,
+      activeStrikeWeight: 0,
+      restrictions: [],
+    });
+  });
+
+  it('404s an id that belongs to nobody instead of inventing a clean standing', async () => {
+    const saveProfile = jest.fn();
+    const { service, repo } = makeService({
+      repo: { findProfile: jest.fn().mockResolvedValue(null), saveProfile },
+      users: { findById: jest.fn().mockResolvedValue(null) },
+    });
+
+    await expect(service.inspectSummary('user1')).rejects.toMatchObject({
+      code: ERROR_CODES.USER_NOT_FOUND,
+    });
+    // Nothing was read from the trust tables either — the existence check comes first,
+    // so a mistyped id cannot leave a trace of any kind.
+    expect(repo.findProfile).not.toHaveBeenCalled();
+    expect(saveProfile).not.toHaveBeenCalled();
+  });
+
+  it('carries the ACCOUNT status so the admin surface cannot read "good standing" for a suspended account (A2-1)', async () => {
+    const { service } = makeService({
+      users: {
+        findById: jest.fn().mockResolvedValue({ id: 'user1', status: UserStatus.Suspended }),
+      },
+    });
+
+    const summary = await service.inspectSummary('user1');
+
+    // The trust standing is genuinely clean — a suspension writes no restriction. That
+    // is precisely why the account status has to travel beside it.
+    expect(summary.status).toBe(TrustStatus.Normal);
+    expect(summary.accountStatus).toBe(UserStatus.Suspended);
+  });
+
+  it('leaves the SELF read without an account status — its id came from the JWT', async () => {
+    const { service } = makeService();
+    await expect(service.getSummary('user1')).resolves.not.toHaveProperty('accountStatus');
+  });
+
+  it('404s the restriction list for an unknown id rather than returning an empty history', async () => {
+    const { service, repo } = makeService({
+      users: { findById: jest.fn().mockResolvedValue(null) },
+    });
+
+    await expect(service.listRestrictions('user1')).rejects.toMatchObject({
+      code: ERROR_CODES.USER_NOT_FOUND,
+    });
+    expect(repo.listRestrictionsForUser).not.toHaveBeenCalled();
+  });
+});
+
+describe('TrustService.listStrikes / revokeStrike — strikes are no longer write-only (B9, A2-2)', () => {
+  it('lists ACTIVE and HISTORICAL strikes, so a weight can be explained', async () => {
+    // The test that would have caught A2-2: nothing could read a strike back, so the
+    // admin surface had to project what one WOULD do. The revoked row travels because
+    // `activeStrikeWeight` counts only the live ones — a list of live strikes alone
+    // could never explain a total an operator disagrees with.
+    const rows = [
+      strike({ id: 's1', revokedAt: null }),
+      strike({ id: 's2', revokedAt: NOW }),
+      strike({ id: 's3', expiresAt: new Date('2026-01-01T00:00:00.000Z') }),
+    ];
+    const { service } = makeService({
+      repo: { listStrikesForUser: jest.fn().mockResolvedValue(rows) },
+    });
+
+    const strikes = await service.listStrikes('user1');
+
+    expect(strikes.map((s) => s.id)).toEqual(['s1', 's2', 's3']);
+    expect(strikes[1]?.revokedAt).not.toBeNull();
+  });
+
+  it('404s the strike list for an unknown user id (A2-4)', async () => {
+    const { service } = makeService({ users: { findById: jest.fn().mockResolvedValue(null) } });
+    await expect(service.listStrikes('user1')).rejects.toMatchObject({
+      code: ERROR_CODES.USER_NOT_FOUND,
+    });
+  });
+
+  it('revokes, audits with the DECLARED StrikeRevoke action, and invalidates the cache', async () => {
+    // `revokeStrike` and `TRUST_AUDIT_ACTIONS.StrikeRevoke` were both declared and never
+    // called; a jest mock was the only reference to either outside its definition.
+    const { service, repo, audit, engine } = makeService({
+      repo: {
+        findStrike: jest.fn().mockResolvedValue(strike({ id: 's1', weight: 4 })),
+        sumActiveStrikeWeight: jest.fn().mockResolvedValue(0),
+        findProfile: jest.fn().mockResolvedValue(profile({ score: 30, activeStrikeWeight: 4 })),
+      },
+    });
+
+    const revoked = await service.revokeStrike('s1', actor);
+
+    expect(repo.revokeStrike).toHaveBeenCalledWith('s1');
+    expect(revoked.revokedAt).not.toBeNull();
+    expect(audit.record).toHaveBeenCalledWith(
+      expect.objectContaining({ action: TRUST_AUDIT_ACTIONS.StrikeRevoke, targetId: 's1' }),
+    );
+    // A revoke can only widen what a user may do, so a cached deny must not outlive it.
+    expect(engine.invalidateUser).toHaveBeenCalledWith('user1');
+  });
+
+  it('recomputes weight and score FROM THE LEDGER, not by adding the penalty back', async () => {
+    // The clamp is why. A severe strike (weight 4 → 20 points) against a score of 3 lands
+    // on 0, taking 3 points, not 20. Adding 20 back would hand out points the strike never
+    // took; re-deriving from the remaining active weight cannot.
+    const { service, repo } = makeService({
+      repo: {
+        findStrike: jest.fn().mockResolvedValue(strike({ id: 's1', weight: 4 })),
+        sumActiveStrikeWeight: jest.fn().mockResolvedValue(1),
+        findProfile: jest.fn().mockResolvedValue(profile({ score: 0, activeStrikeWeight: 5 })),
+      },
+    });
+
+    await service.revokeStrike('s1', actor);
+
+    const saved = (repo.saveProfile as jest.Mock).mock.calls[0]?.[0] as TrustProfile;
+    expect(saved.activeStrikeWeight).toBe(1);
+    // TRUST_SCORE_DEFAULT (50) - 1 remaining weight * 5 = 45, not 0 + 20.
+    expect(saved.score).toBe(45);
+    expect(saved.level).toBe(TrustLevel.Basic);
+  });
+
+  it('404s an unknown strike and 409s one already revoked', async () => {
+    const { service: missing } = makeService({
+      repo: { findStrike: jest.fn().mockResolvedValue(null) },
+    });
+    await expect(missing.revokeStrike('s1', actor)).rejects.toMatchObject({
+      code: ERROR_CODES.STRIKE_NOT_FOUND,
+    });
+
+    const { service: already, repo } = makeService({
+      repo: { findStrike: jest.fn().mockResolvedValue(strike({ revokedAt: NOW })) },
+    });
+    await expect(already.revokeStrike('s1', actor)).rejects.toMatchObject({
+      code: ERROR_CODES.STRIKE_ALREADY_REVOKED,
+    });
+    // A silent second success would leave an operator unable to tell whether their
+    // action did anything, since the ledger did not move.
+    expect(repo.saveProfile).not.toHaveBeenCalled();
+  });
+});
+
+describe('the two remedies stay apart (B9, A2-3)', () => {
+  it('lifting a restriction does NOT reduce the active strike weight', async () => {
+    // A2-3, pinned as the DESIGN rather than fixed as a defect: a lift means "you may act
+    // again", not "that strike was wrong". The weight survives, so the next strike of any
+    // severity re-crosses the threshold and re-applies the restriction.
+    const { service, repo } = makeService({
+      repo: { findRestriction: jest.fn().mockResolvedValue(restriction()) },
+    });
+
+    await service.liftRestriction('ur1', actor);
+
+    expect(repo.saveProfile).not.toHaveBeenCalled();
+    expect(repo.sumActiveStrikeWeight).not.toHaveBeenCalled();
+  });
+
+  it('and revoking the strike IS what reduces it — the same scenario, the other remedy', async () => {
+    const { service, repo } = makeService({
+      repo: {
+        findStrike: jest.fn().mockResolvedValue(strike({ weight: 4 })),
+        sumActiveStrikeWeight: jest.fn().mockResolvedValue(2),
+        findProfile: jest.fn().mockResolvedValue(profile({ activeStrikeWeight: 6 })),
+      },
+    });
+
+    await service.revokeStrike('s1', actor);
+
+    const saved = (repo.saveProfile as jest.Mock).mock.calls[0]?.[0] as TrustProfile;
+    expect(saved.activeStrikeWeight).toBe(2);
   });
 });
 

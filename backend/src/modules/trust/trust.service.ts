@@ -20,6 +20,9 @@ import { AuditService } from '../audit/audit.service';
 import { NotificationsService } from '../notifications';
 import { PolicyEngineService } from '../policy';
 import type { TrustContext } from '../policy';
+import type { User } from '../users/entities/user.entity';
+import { UserNotFoundException } from '../users/exceptions/users.exceptions';
+import { UsersService } from '../users/users.service';
 
 import type { ApplyRestrictionDto, IssueStrikeDto } from './dto/trust-request.dto';
 import type {
@@ -41,6 +44,8 @@ import {
   BlockNotFoundException,
   BlockSelfException,
   RestrictionNotFoundException,
+  StrikeAlreadyRevokedException,
+  StrikeNotFoundException,
 } from './trust.exceptions';
 import { TrustRepository } from './trust.repository';
 
@@ -93,6 +98,9 @@ export class TrustService {
     private readonly repository: TrustRepository,
     private readonly audit: AuditService,
     private readonly engine: PolicyEngineService,
+    // Read-only, and for one question: does this id belong to a real account (A2-4).
+    // `UsersModule` does not import `TrustModule`, so this direction adds no cycle.
+    private readonly users: UsersService,
     // Best-effort: the Trust module wires NotificationsModule, but unit tests
     // construct without it and simply skip delivery.
     @Optional() private readonly notifications?: NotificationsService,
@@ -100,7 +108,12 @@ export class TrustService {
 
   // ── Profile / summary ─────────────────────────────────────────────────────────
 
-  /** Loads a user's trust profile, creating a default one on first touch. */
+  /**
+   * Loads a user's trust profile, creating a default one on first touch.
+   *
+   * Called from the WRITE paths only ({@link issueStrike}), which is where a row
+   * earns its existence. Reads must never reach this — see {@link getSummary}.
+   */
   async getOrCreateProfile(userId: string): Promise<TrustProfile> {
     const existing = await this.repository.findProfile(userId);
     if (existing !== null) {
@@ -114,19 +127,56 @@ export class TrustService {
     return this.repository.saveProfile(profile);
   }
 
-  /** The trust summary shown on the account/admin screens. */
+  /**
+   * The trust summary shown on the account/admin screens.
+   *
+   * **A GET writes nothing (A2-4).** This used to call `getOrCreateProfile`, so
+   * every read of a user who had never been struck INSERTED a `trust_profiles`
+   * row — and since `trust_profiles` has no FK to `users` (deliberately: the trail
+   * must outlive a hard-deleted account), a mistyped UUID minted a row for an
+   * account that does not exist. The defaults are now derived in memory exactly as
+   * {@link resolveTrustContext} already derived them, so a user with no profile
+   * reads the same standing they always did without one being manufactured. The
+   * row is created by the first write instead, which is when it means something.
+   */
   async getSummary(userId: string): Promise<TrustSummaryDto> {
     const [profile, restrictions] = await Promise.all([
-      this.getOrCreateProfile(userId),
+      this.repository.findProfile(userId),
       this.repository.listActiveRestrictions(userId),
     ]);
+    const score = profile?.score ?? TRUST_SCORE_DEFAULT;
     return {
-      score: profile.score,
-      level: profile.level,
-      status: this.computeStatus(profile.score, restrictions),
-      activeStrikeWeight: profile.activeStrikeWeight,
+      score,
+      level: profile?.level ?? trustLevelForScore(TRUST_SCORE_DEFAULT),
+      status: this.computeStatus(score, restrictions),
+      activeStrikeWeight: profile?.activeStrikeWeight ?? 0,
       restrictions: restrictions.map(toRestrictionDto),
     };
+  }
+
+  /**
+   * The admin/moderator read of someone ELSE's standing — the same summary, but it
+   * first proves the account exists (A2-4, second half).
+   *
+   * `GET /admin/users/:id/trust` answered a clean standing for any well-formed
+   * UUID, so a mistyped id was indistinguishable from a real account with a spotless
+   * record — and an operator could go on to strike it. The self read (`me/trust`)
+   * needs no such check: its id comes from the JWT.
+   *
+   * This 404s where B8-1 (docs/48 §3) chose a nullable shape on the monetization
+   * per-account reads. That divergence is deliberate and recorded in §6.17: those
+   * reads only return an ambiguous empty, while this one used to WRITE. A 404 is the
+   * answer B8-1 should adopt when its own row comes up, not a second convention.
+   */
+  async inspectSummary(userId: string): Promise<TrustSummaryDto> {
+    const user = await this.requireUser(userId);
+    const summary = await this.getSummary(userId);
+    // The account's own status travels with the standing (A2-1, display half). Without
+    // it the Trust tab renders "Good standing" for an account an operator suspended
+    // ten minutes ago, because a suspension writes no trust restriction — and an
+    // operator reading a clean trust record beside a suspend button is being invited
+    // to make the wrong call.
+    return { ...summary, accountStatus: user.status };
   }
 
   /**
@@ -198,6 +248,80 @@ export class TrustService {
     return toStrikeDto(strike);
   }
 
+  /**
+   * Every strike on a user (active + revoked + expired), newest first — B9's read
+   * half of A2-2.
+   *
+   * Strikes were write-only: `POST users/:id/strikes` existed and nothing could read
+   * one back, so the admin surface had to PROJECT what a strike would do
+   * (`escalationCopy`) instead of stating what the account already carries. The
+   * revoked and expired rows travel too: `activeStrikeWeight` counts only the live
+   * ones, so a list of live strikes alone could never explain a weight an operator
+   * disagrees with.
+   */
+  async listStrikes(userId: string): Promise<StrikeDto[]> {
+    await this.assertUserExists(userId);
+    const rows = await this.repository.listStrikesForUser(userId);
+    return rows.map(toStrikeDto);
+  }
+
+  /**
+   * Revokes a strike — B9's write half of A2-2, and the answer to A2-3.
+   *
+   * **This is the only thing that reduces a user's active strike weight**, and that
+   * is deliberate. Lifting a restriction says "you may act again"; revoking a strike
+   * says "that strike should not have been issued". Lifting an auto-applied
+   * suspension therefore leaves the weight at or over the threshold, so the next
+   * strike of ANY severity re-applies it (`maybeEscalate` → `ensureGlobalRestriction`).
+   * That is not a bug once a revoke route exists — it is the two remedies staying
+   * distinct — but it IS invisible, so the admin surface says it out loud and this
+   * comment is here for the next reader who rediscovers it.
+   *
+   * The weight is recomputed from the strike rows, never decremented, for the reason
+   * {@link issueStrike} gives. The score is recomputed from the SAME ledger rather
+   * than having the weight added back, because `issueStrike` clamps at
+   * `TRUST_SCORE_MIN`: a strike that drove the score to 0 removed less than its full
+   * penalty, and adding the penalty back would hand out points the strike never took.
+   */
+  async revokeStrike(strikeId: string, actor: TrustActor): Promise<StrikeDto> {
+    const strike = await this.repository.findStrike(strikeId);
+    if (strike === null) {
+      throw new StrikeNotFoundException();
+    }
+    if (strike.revokedAt !== null) {
+      throw new StrikeAlreadyRevokedException();
+    }
+    await this.repository.revokeStrike(strikeId);
+    strike.revokedAt = new Date();
+
+    const userId = strike.userId;
+    const totalWeight = await this.repository.sumActiveStrikeWeight(userId);
+    const profile = await this.getOrCreateProfile(userId);
+    profile.activeStrikeWeight = totalWeight;
+    profile.score = this.clampScore(TRUST_SCORE_DEFAULT - totalWeight * SCORE_PENALTY_PER_WEIGHT);
+    profile.level = trustLevelForScore(profile.score);
+    await this.repository.saveProfile(profile);
+
+    await this.record(actor, TRUST_AUDIT_ACTIONS.StrikeRevoke, strikeId, TRUST_AUDIT_TARGET.User, {
+      userId,
+      severity: strike.severity,
+      weight: strike.weight,
+      totalWeight,
+    });
+    // A revoke can only ever WIDEN what the user may do, so a cached deny must go —
+    // the same reason every other standing change invalidates here and not in the
+    // controller. Any auto-applied restriction stays in force until it is lifted:
+    // dropping the weight below the threshold does not undo a sanction an operator
+    // may have separately confirmed.
+    this.engine.invalidateUser(userId);
+    this.notify(userId, NotificationType.TrustWarning, {
+      revoked: true,
+      severity: strike.severity,
+      totalWeight,
+    });
+    return toStrikeDto(strike);
+  }
+
   // ── Restrictions ────────────────────────────────────────────────────────────
 
   /** Applies a manual account restriction (moderator action). */
@@ -230,7 +354,19 @@ export class TrustService {
     return toRestrictionDto(restriction);
   }
 
-  /** Lifts an active restriction. 404 when the restriction does not exist. */
+  /**
+   * Lifts an active restriction. 404 when the restriction does not exist.
+   *
+   * **Lifting does NOT reduce the active strike weight, and that is the design
+   * (A2-3).** If the restriction was applied automatically by {@link maybeEscalate},
+   * the weight that earned it is still on the account, so the next strike of any
+   * severity re-crosses the threshold and re-applies it. The remedy for a weight an
+   * operator disagrees with is {@link revokeStrike} — "that strike was wrong" — not a
+   * lift, which only ever means "you may act again". Two different intents, kept
+   * apart. The admin surface states the consequence at the lift, because an operator
+   * who lifts a suspension and watches it come back on the next minor strike would
+   * otherwise have no way to learn why.
+   */
   async liftRestriction(id: string, actor: TrustActor): Promise<RestrictionDto> {
     const restriction = await this.repository.findRestriction(id);
     if (restriction === null) {
@@ -249,8 +385,13 @@ export class TrustService {
     return toRestrictionDto(restriction);
   }
 
-  /** Every restriction for a user (active + historical). */
+  /**
+   * Every restriction for a user (active + historical). Admin-only, so it proves the
+   * account exists first — an empty list for a mistyped id would read as a clean
+   * record (A2-4).
+   */
   async listRestrictions(userId: string): Promise<RestrictionDto[]> {
+    await this.assertUserExists(userId);
     const rows = await this.repository.listRestrictionsForUser(userId);
     return rows.map(toRestrictionDto);
   }
@@ -397,6 +538,28 @@ export class TrustService {
 
   private clampScore(score: number): number {
     return Math.max(TRUST_SCORE_MIN, Math.min(TRUST_SCORE_MAX, Math.round(score)));
+  }
+
+  /**
+   * 404s an id that belongs to nobody (A2-4). Guards the three admin reads and the
+   * revoke, not the self-service paths whose id comes from the JWT.
+   *
+   * `trust_profiles` has no FK to `users` on purpose — the trail must outlive a
+   * hard-deleted account — so this is the only place the two can be reconciled, and
+   * it reads `users` rather than `trust_profiles` because "has no trust profile" and
+   * "is not a user" are different answers.
+   */
+  private async assertUserExists(userId: string): Promise<void> {
+    await this.requireUser(userId);
+  }
+
+  /** As {@link assertUserExists}, but hands back the row when the caller needs a field. */
+  private async requireUser(userId: string): Promise<User> {
+    const user = await this.users.findById(userId);
+    if (user === null) {
+      throw new UserNotFoundException();
+    }
+    return user;
   }
 
   private async record(

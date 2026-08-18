@@ -101,6 +101,25 @@ export class TrustRepository {
     return Number(row?.total ?? 0);
   }
 
+  /**
+   * Every strike for a user (active + revoked + expired), newest first — the
+   * operator read added by B9 (A2-2). Mirrors {@link listRestrictionsForUser}: the
+   * caller decides what each row currently IS, because a revoked or expired strike
+   * still has to be visible or the history is a lie by omission.
+   */
+  listStrikesForUser(userId: string): Promise<UserStrike[]> {
+    return this.strikes
+      .createQueryBuilder('s')
+      .where('s.user_id = :userId', { userId })
+      .orderBy('s.created_at', 'DESC')
+      .addOrderBy('s.id', 'DESC')
+      .getMany();
+  }
+
+  findStrike(id: string): Promise<UserStrike | null> {
+    return this.strikes.findOne({ where: { id } });
+  }
+
   createStrike(input: NewStrike): Promise<UserStrike> {
     return this.strikes.save(this.strikes.create(input));
   }

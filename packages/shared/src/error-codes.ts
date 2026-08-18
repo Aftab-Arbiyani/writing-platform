@@ -413,6 +413,10 @@ export const ERROR_CODES = {
   TRUST_PROFILE_NOT_FOUND: 'TRUST_PROFILE_NOT_FOUND',
   /** No such restriction (404). */
   RESTRICTION_NOT_FOUND: 'RESTRICTION_NOT_FOUND',
+  /** No such strike (404). */
+  STRIKE_NOT_FOUND: 'STRIKE_NOT_FOUND',
+  /** The strike has already been revoked (409). */
+  STRIKE_ALREADY_REVOKED: 'STRIKE_ALREADY_REVOKED',
   /** The action is blocked by an active restriction on the caller (403). */
   RESTRICTION_ACTIVE: 'RESTRICTION_ACTIVE',
   /** Interaction blocked — one party has blocked the other (403). */

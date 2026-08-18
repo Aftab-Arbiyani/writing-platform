@@ -21,6 +21,28 @@ export class RestrictionNotFoundException extends AppException {
   }
 }
 
+/** The strike referenced by id does not exist. */
+export class StrikeNotFoundException extends AppException {
+  constructor() {
+    super(ERROR_CODES.STRIKE_NOT_FOUND, 'No such strike.', HttpStatus.NOT_FOUND);
+  }
+}
+
+/**
+ * The strike is already revoked. A 409 rather than a silent success: revoking twice
+ * would recompute the weight from a ledger that did not change, so an operator who
+ * saw "revoked" twice would have no way to tell whether their action did anything.
+ */
+export class StrikeAlreadyRevokedException extends AppException {
+  constructor() {
+    super(
+      ERROR_CODES.STRIKE_ALREADY_REVOKED,
+      'That strike has already been revoked.',
+      HttpStatus.CONFLICT,
+    );
+  }
+}
+
 /** A user tried to block or mute themselves. */
 export class BlockSelfException extends AppException {
   constructor() {

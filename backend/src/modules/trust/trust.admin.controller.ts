@@ -51,7 +51,19 @@ export class TrustAdminController {
   @ApiOperation({ summary: "Inspect a user's trust standing." })
   @ApiOkResponse({ type: TrustSummaryDto })
   summary(@Param('id', ParseUUIDPipe) id: string): Promise<TrustSummaryDto> {
-    return this.trust.getSummary(id);
+    // `inspectSummary`, not `getSummary`: this id came from a URL a human typed, so it
+    // is proved against `users` before an answer is given, and no row is written on the
+    // way (A2-4).
+    return this.trust.inspectSummary(id);
+  }
+
+  @Get('users/:id/strikes')
+  @Permissions(PERMISSIONS.TrustView)
+  @RateLimit('read')
+  @ApiOperation({ summary: "List a user's strikes (active + revoked + expired)." })
+  @ApiOkResponse({ type: [StrikeDto] })
+  strikes(@Param('id', ParseUUIDPipe) id: string): Promise<StrikeDto[]> {
+    return this.trust.listStrikes(id);
   }
 
   @Get('users/:id/restrictions')
@@ -91,6 +103,22 @@ export class TrustAdminController {
     @Req() req: Request,
   ): Promise<RestrictionDto> {
     return this.trust.applyRestriction(id, body, buildActor(user, req));
+  }
+
+  @Delete('strikes/:id')
+  @Permissions(PERMISSIONS.TrustManage)
+  @RateLimit('write')
+  @ApiOperation({
+    summary:
+      'Revoke a strike (the only action that lowers active strike weight). Errors: NOT_FOUND (404), CONFLICT (409) if already revoked.',
+  })
+  @ApiOkResponse({ type: StrikeDto })
+  revokeStrike(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() req: Request,
+  ): Promise<StrikeDto> {
+    return this.trust.revokeStrike(id, buildActor(user, req));
   }
 
   @Delete('restrictions/:id')

@@ -5,6 +5,7 @@ import type {
   StrikeSeverity,
   TrustLevel,
   TrustStatus,
+  UserStatus,
 } from '@qalam/shared';
 
 import type { BlockKind } from '../trust.constants';
@@ -55,4 +56,18 @@ export class TrustSummaryDto {
   activeStrikeWeight!: number;
   @ApiProperty({ type: [RestrictionDto], description: 'Currently-active restrictions.' })
   restrictions!: RestrictionDto[];
+
+  /**
+   * The ACCOUNT's status (`users.status`) — present on the admin read only (B9, A2-1).
+   *
+   * Trust standing and account status are two different sanctions, and the trust
+   * standing alone would render "Good standing" for an account an operator had
+   * already suspended. It is optional because the self read (`me/trust`) has no use
+   * for it: a suspended account cannot hold a session to ask with.
+   */
+  @ApiProperty({
+    required: false,
+    description: "The account's own status — admin read only. Absent on `me/trust`.",
+  })
+  accountStatus?: UserStatus;
 }
