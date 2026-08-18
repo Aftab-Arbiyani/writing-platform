@@ -2776,10 +2776,17 @@ to confirm. Worth doing deliberately, with a baseline run, by whoever owns the n
 whether it sits inside an AntD component's hash-scoped subtree, which was not measured — this row is
 admin-scoped and the frontend shards were not re-run. Its own a11y specs are where that gets proved.
 
-### 3.18b · **medium** · **OPEN** · a row action-menu item click is lost under parallel load, on every engine
+### 3.18b · **medium** · **CLOSED 2026-08-18** · a row action-menu item click is lost under parallel load, on every engine
+
+**Verdict: a HARNESS race, in the popup's entrance frame. Fixed in one place —
+`clickAntdMenuItem` in `e2e/pages/shared/antd.ts`, used by all five call sites.** The experiment
+this row asked for was run; §3.18b's own rubric ("if the event never reaches the item, it is a
+coordinate race in the harness") resolved to **branch (a)**, though not for the reason that phrase
+suggests — the coordinates were right and never moved. See the sweep in [§6.19](#619-3.18b-the-lost-action-menu-click-closed-2026-08-18)
+for the full record; the diagnosis and the fix are the two commits named there.
 
 The triage note called this "the firefox drawer defect", deterministic on firefox and passing on
-chromium. **Neither half survived measurement, so the finding is re-characterised rather than fixed.**
+chromium. **Neither half survived measurement, so the finding was re-characterised rather than fixed.**
 
 **What actually happens.** Click the row "⋯" trigger, click an item, and nothing occurs: no exception,
 the click is dispatched and accepted, the menu stays OPEN, and the portal the item should open — the
@@ -2809,18 +2816,81 @@ loses a "Suspend" click and `users.spec.ts:86` loses an "Edit user" click, so th
 3. _The click lands mid-entrance-animation, so hit-testing resolves the wrong element._ No. 20 opens
    under 14 busy cores: 0 failures, and 0 again with all animations forced to `0s`.
 
-**What would settle it**, and was not available here: instrument whether rc-menu's React `onClick`
-fires while the DOM click reaches the `<li>`. If the event reaches the item and the handler does not
-run, it is a product/library defect; if the event never reaches the item, it is a coordinate race in
-the harness. That needs the failure reproduced under instrumentation, and it only reproduces inside a
-full parallel run.
+**The three above are kept deliberately: they are why this was solvable.** Each one removed a whole
+class of cause, and #3 in particular came within one experiment of the answer — see "what #3 missed"
+below. Do not re-run them.
 
-**Not "fixed" by loosening anything.** No timeout was raised and no assertion weakened. Reported as
-FLAKY, which under [e2e/00 §4.6](./e2e/00_Overview.md) means failing.
+**What settled it**, exactly as this row predicted: instrument whether rc-menu's React `onClick` fires
+while the DOM click reaches the `<li>`. It only reproduces inside a full parallel run, so the
+instrumentation was passive (capture-phase listeners + a `MutationObserver`, drained to `e2e/.diag/`,
+which Playwright does not wipe) and opt-in behind `E2E_DIAG=1` so the baseline stayed unperturbed.
+**10 recorded occurrences over 3 instrumented `admin-firefox` runs, every one identical**, across three
+items ("View profile", "Edit user", "Suspend") and four specs:
+
+```
+8974  popup:add    ant-slide-up-appear-PREPARE   ulItems=6   ul height 248
+9374  pointerdown  @1147,495 → SPAN in <li> "View profile"   height 248
+9376  mousedown    @1147,495 → the same <li>
+9398  popup:class  ant-slide-up-appear-START     ulItems=6   ul height 0
+9405  mouseup      @1147,495 → the <UL>; no <li> under a pointer that never moved
+9408  click        @1147,495 → the <UL>, never an <li>
+      react:menu-onclick   NEVER RAN
+```
+
+**The cause.** AntD's `Dropdown` mounts its popup through rc-motion, which steps
+`appear-prepare → appear-start → appear-active`. In **`appear-prepare`** the popup is mounted, laid out
+at FULL height, visible, and unchanged across frames — so every one of Playwright's actionability checks
+(visible, **stable**, enabled, receives-events) passes _honestly_. `appear-start` then applies the
+entrance transform and collapses the `<ul>` to zero height. Under parallel load those two states are
+tens of milliseconds apart, which is long enough to land between `mousedown` and `mouseup`. The browser
+fires `click` at the common ancestor of the two targets — the `<ul>` — so the `<li>` is never in the
+path and rc-menu's item handler never runs: menu stays open, portal never mounts, no exception.
+
+**Why Playwright called it a success**, which is what made this invisible for so long:
+`setupHitTargetInterceptor` (playwright-core 1.61.1) verifies the hit target for the **first**
+intercepted event only — `if (result === void 0 …)`. `pointerdown` is checked; `mouseup` and the
+resulting `click` never are.
+
+**What #3 missed, and why it was not a wasted experiment.** #3 tested "mid-animation" by forcing
+durations to `0s`. That does not remove rc-motion's class sequence, nor the transform the `-start` class
+carries — and the click does not land mid-animation at all, it lands in the frame _before_ the animation,
+where the element is at full size and stable. #3 also explains an artifact this row recorded without
+placing: with `transform-origin: top` and a partial `scaleY`, a fixed y maps onto a **different** item,
+which is why one failure screenshot shows the hover highlight on the item _above_ the one clicked.
+
+**Harness, not product — and that conclusion is load-bearing.** `appear-prepare` is over before the menu
+is on screen to be aimed at, so a human cannot press a button inside it. The engine-independence follows
+(every engine retargets `click` to the common ancestor) and so does the load-dependence (the two motion
+states are one starved animation frame apart). The operator-facing "silently ignored Suspend" this row
+was priced on is therefore **not** reachable in the product; the cost was real, but it was paid in the
+suite, not the panel.
+
+**The fix — one place.** `clickAntdMenuItem` in `e2e/pages/shared/antd.ts` (the file that already owns
+this lesson for rc-select) resolves the item and dispatches the click **on** it: no coordinates to go
+stale, one event instead of a pair, locator resolved at dispatch time. Five call sites use it — three in
+`users-page.ts`, one in `moderation-page.ts`, and `app-nav.ts`. The easy fix (wait out
+`ant-slide-up-appear-*`) was rejected on purpose: it avoids the window rather than the mechanism, and a
+wait keyed on a motion class name degrades **silently** into this same flake the day AntD renames it —
+having been hidden once already is why this row existed. It trades exactly one thing, stated: the
+pointer-level `receives-events` hit test, which is the check whose unreliability _is_ the defect.
+Visibility and enabled-ness are asserted in the helper; every caller still asserts the portal.
+
+**Not "fixed" by loosening anything.** No timeout raised, nothing sleeps, nothing retries, no `.first()`,
+no `test.slow()`, and no assertion weakened. It was reported as FLAKY, which under
+[e2e/00 §4.6](./e2e/00_Overview.md) means failing — and it was fixed on that basis, not re-run away.
+
+**Two exposed surfaces the five failing specs never reached.** There are **five menu-item call sites** in
+the page objects, and only three of them (all in `users-page.ts`) are covered by the five specs above.
+The other two were exposed to the same race and nothing was watching them: `moderation-page.ts:45`
+("Resolve…" → the Resolve-report dialog), which this row's repro loop did catch failing on
+`admin-chromium`, and `app-nav.ts:27`, which drives the **frontend's** account menu through the same AntD
+`Dropdown` and would have started losing "Sign out" as soon as that shard got busy enough. Both are fixed
+by the same helper.
 
 **It is not new, and it was already mislabelled.** `docs/e2e/README.md` has carried it since 2026-08-03
 as "fails on **WebKit only**, reproducibly at `--workers=1` — the Edit-user modal never opens after the
-row menu's 'Edit user'". Same symptom, same component; both qualifiers are wrong. That note is corrected.
+row menu's 'Edit user'". Same symptom, same component; both qualifiers are wrong. That note is corrected
+again, now to say it is closed.
 
 ### 3.19 · **low** · **OPEN** · the admin error catalogue has no `USER_NOT_FOUND`, so B9's 404 reads as "something went wrong"
 
@@ -4807,3 +4877,80 @@ them in the pinned image.
 
 A local `admin-users` diff, if anyone sees one, is **not evidence of a regression**: a CI-minted baseline
 cannot be compared against a locally rendered screenshot ([10 §5](./e2e/10_UIQuality.md), T-8).
+
+---
+
+### 6.19 §3.18b — the lost action-menu click, closed (2026-08-18)
+
+**The row's subject is a DEFECT, not a feature, and the deliverable was a diagnosis.** §3.18b had
+already been measured honestly and re-characterised once; it named the one experiment that would settle
+it and recorded that it could not run it. This ran it. Commits: `6482789` (instrumentation + the finding)
+and `155d2cd` (the fix). Kept deliberately separate — the evidence has to stand on its own, because a fix
+committed alongside its own justification is unreviewable.
+
+**Reproduction first, fix second — and the gate mattered.** The first attempt to reproduce ran all three
+admin projects concurrently and produced 20 failures, none of them this defect: at that load the whole
+suite times out generically, and 7 of the 20 were _at_ the five §3.18b specs but failing at unrelated
+assertions (`searchFor`'s row wait, a confirm dialog, an axe scan). Counting those as the defect would
+have "fixed" it by fixing nothing. So the signature was pinned to the failing assertion that
+distinguishes it — the one **immediately after** a menu-item click, i.e. the portal that item should
+open — and the load returned to per-project, which is what the earlier run had actually used.
+
+**Rates. Full parallel, `@visual` excluded, no `CI=1` (so a lost click is a plain failure, not "flaky").**
+
+| Project          | Before                                                                            | After                                             |
+| ---------------- | --------------------------------------------------------------------------------- | ------------------------------------------------- |
+| `admin-firefox`  | **7 in 4 runs** (1.75/run), in **4/4** runs                                       | **0 in 8 runs**                                   |
+| `admin-chromium` | **1 in 3 runs** (0.33/run)                                                        | **0 in 4 runs**                                   |
+| `admin-dark`     | not observed                                                                      | **0 in 2 runs** (0 failures of any kind)          |
+| `admin-webkit`   | **3 in 1 run** — §6.18's run, 2 failed + 1 flaky; **not re-measured by this row** | **0 in 2 runs** (pinned image, `CI=1`, 2 workers) |
+
+Totals across **all attempts, retries included**: baseline **8 signature occurrences in 483 attempts**
+(firefox + chromium, `retries: 0`); after the fix, **0 in 995 attempts** over 16 runs of all four admin
+projects. The webkit runs are read at the attempt level on purpose — `CI=1` there enables 2 retries, so a
+lost click would surface as **flaky**, and flaky is failing ([e2e/00 §4.6](./e2e/00_Overview.md)). Both
+webkit runs had flaky tests (3 in total) and **none of them was this signature**; they were an a11y
+violation on `/billing/actions` and two contention waits.
+
+**The margin, stated.** Eight post-fix firefox runs at the measured 1.75/run predict **~14** occurrences;
+**0** were seen, and the signature had appeared in **every** baseline run. Under a Poisson model that is
+p ≈ 8×10⁻⁷. Under instrumentation — which loads the page slightly and reproduced it _harder_, 10
+occurrences in 3 runs — the same code path now records `react:menu-onclick … matched=true` on **15 of 15**
+menu clicks. That is the fix verified by mechanism, not only by absence: the handler that never ran now
+always runs. Absence alone would not have been enough, and this row was told so.
+
+**What did NOT go away, so the after-column is not read as "green".** These runs still carry unrelated
+failures, at rates unchanged by this fix — `moderation.spec.ts:19` and `rbac.spec.ts:51` fail under
+firefox parallel load before and after, `users-page.ts:103` (the post-save toast) intermittently, and
+`trust.spec.ts:276` on both firefox and webkit. None involves a menu click. They are the "30s contention
+timeout" population §6.18 already named, and they are not this row's subject.
+
+**What it was.** See §3.18b in full. In one line: Playwright clicked the popup during rc-motion's
+`appear-prepare` frame — mounted, full height, visible, and **stable** — and `appear-start` then collapsed
+the `<ul>` between `mousedown` and `mouseup`, so the browser fired `click` on the `<ul>` and rc-menu's
+item handler never ran. Playwright reported success because it verifies the hit target for the first
+intercepted event only.
+
+**The three disproved hypotheses are kept in §3.18b, and they earned their place.** Each removed a class
+of cause, and #3 ("mid-entrance-animation") was one experiment away: it tested durations forced to `0s`,
+which leaves rc-motion's class sequence and the `-start` transform intact — and the click turns out to
+land _before_ the animation, not during it. That is the difference between a nearly-right hypothesis and
+a wrong one, and it is why the note said "disproved" rather than "unlikely".
+
+**Scope discipline, in both directions.** The fix is one helper used by seven call sites, so it lands
+everywhere at once rather than at one spec. But it also _found_ two sites §3.18b never listed —
+`moderation-page.ts:45` and, in the **frontend**, `app-nav.ts:27` — and one defect it did not fix:
+`users-page.ts:71`, where the Suspend **confirm** dialog stays open after its confirm button is clicked
+(2 occurrences in 20 runs, present before AND after this change). That may be the same entrance-frame
+race on an AntD **Modal** (`ant-zoom-enter`) rather than a `Dropdown`, but it was **never instrumented**,
+so that is a hypothesis and is recorded as one — the exact mistake §3.18b's own history warns about.
+
+**Where the lesson lives, so the next author does not pay for it again.** The mechanism is written up in
+[e2e/05 §5.1](./e2e/05_Selectors.md) (the recipe, and the two things not to "fix" it with) and
+[e2e/08 §6.2](./e2e/08_Runbook.md) (why a successful Playwright click is not evidence the handler ran, and
+why `stable` does not mean geometry has settled). `docs/e2e/README.md` carried this defect mislabelled
+from 2026-08-03 and was corrected once by §6.18; it now says it is closed.
+
+**Visual baselines: none minted, none compared.** `@visual` was excluded from every run in this row.
+Three admin baselines remain deliberately unminted and CI's visual job still owns minting ([10 §8.3],
+T-8). Nothing here changes rendering — the app-source diff is zero.

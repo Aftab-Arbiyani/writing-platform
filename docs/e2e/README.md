@@ -71,24 +71,29 @@ Playwright _projects_ so they share fixtures, auth setup, and helpers.
   started before its migrations (fatal at bootstrap). Both are fixed; the remaining step is three
   green runs, then flipping on `pull_request` — see [07 §6.1](./07_CI.md). The release-gate
   checklist itself is written up in [docs/22](../22_ReleaseChecklist.md).
-- **Known failure blocking a green run — ~~WebKit only, reproducibly at `--workers=1`~~ CORRECTED
-  2026-08-18.** `tests/admin/users.spec.ts` "grants then revokes a role" fails because the Edit-user
-  modal never opens after the row menu's "Edit user". That symptom is real and still open, but **both
-  qualifiers on it were wrong**, and they were never measured — see
-  [48 §3.18b](../48_PlatformParityRegister.md) and the sweep in §6.18.
+- **~~Known failure blocking a green run — WebKit only, reproducibly at `--workers=1`~~ FIXED
+  2026-08-18.** The lost row action-menu click is **closed**, and the note that stood here was wrong in
+  every qualifier it carried — engine, reproduction mode, and which portal — for the fifteen days it
+  stood. Full record: [48 §3.18b](../48_PlatformParityRegister.md) and the sweep in §6.19.
 
-  It is **not WebKit-only**: the identical signature (menu stays open, click accepted, portal never
-  mounts) occurs on Chromium and Firefox too, and it is not specific to the Edit-user modal — the same
-  row menu loses a "View profile" click and a "Suspend" click. The shared subject is
-  `admin/src/components/action-menu.tsx`, the AntD `Dropdown` behind every per-row "⋯".
+  **What it actually was: a harness race in the popup's entrance frame, on every engine.** AntD's
+  `Dropdown` mounts through rc-motion's `appear-prepare → appear-start → appear-active`. In
+  `appear-prepare` the popup is at full height, visible and stable, so all of Playwright's actionability
+  checks pass honestly; `appear-start` then collapses the `<ul>` to zero height. Under parallel load that
+  gap is wide enough to fall between `mousedown` and `mouseup`, and the browser then fires `click` on the
+  `<ul>` instead of the `<li>` — so rc-menu's handler never runs, the menu stays open, the portal never
+  mounts, and **Playwright reports the click as successful** (it verifies the hit target for the first
+  intercepted event only). Not reachable by a human: `appear-prepare` is over before the menu is on
+  screen to aim at.
 
-  It is **not reproducible at `--workers=1`**: 10/10 pass serially on Firefox, and 44/44 pass serially
-  across the five files that fail in a parallel Firefox run. It is load-dependent, which is why a
-  serial re-run is not a valid way to dismiss it either.
+  **Fixed in one place** — `clickAntdMenuItem` in `pages/shared/antd.ts`, used by all five menu-item call
+  sites (three in `users-page.ts`, one in `moderation-page.ts`, one in the frontend's `app-nav.ts`). It
+  dispatches the click on the resolved element, so there are no coordinates to go stale. No timeout was
+  raised and no assertion weakened. **If you are about to click an AntD menu item, use that helper** —
+  see [05 §5](./05_Selectors.md) and [08 §6.2](./08_Runbook.md).
 
-  Three candidate mechanisms were tested and disproved (a background refetch closing the menu; a CSS
-  cascade change; the click landing mid-entrance-animation). Recorded as FLAKY, which under
-  [00 §4.6](./00_Overview.md) means failing. Still must be fixed before the gate can go blocking.
+  Rates, full parallel `admin-firefox` runs with no `CI=1`: **before 1.75 occurrences/run, present in
+  4/4 runs; after 0 in 8 runs.**
 
 ## The one-paragraph summary
 

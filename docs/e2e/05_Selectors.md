@@ -110,6 +110,7 @@ AntD renders semantic roles for most components, so role/label usually works —
 | **Modal / Dialog**               | `getByRole('dialog')`, then scope: `dialog.getByRole('button', { name: 'Confirm' })`. **Why scope:** the trigger button and the modal's confirm button often share a name.                            |
 | **Select / Dropdown**            | `getByRole('combobox')` → open → `getByRole('option', { name })`. AntD renders options in a portal at `<body>` end — role selectors handle the portal; CSS often won't.                               |
 | **Menu (nav)**                   | `getByRole('menuitem', { name })`, or `getByRole('link', { name })` for router links.                                                                                                                 |
+| **Menu item in a `Dropdown`**    | **`clickAntdMenuItem(page, name)`** from `pages/shared/antd.ts`. **Never `getByRole('menuitem', …).click()`** — see the callout below. Nav menus are inline, not popups, and are unaffected.          |
 | **Message/Notification (toast)** | `getByText('Saved')` / `getByRole('alert')`. These auto-dismiss — assert _presence_, don't depend on them lingering.                                                                                  |
 | **Tabs**                         | `getByRole('tab', { name })`.                                                                                                                                                                         |
 | **Popconfirm**                   | Click trigger → the confirm popup is a small dialog; scope to its "OK" (`getByRole('button', { name: 'OK' })`).                                                                                       |
@@ -117,6 +118,32 @@ AntD renders semantic roles for most components, so role/label usually works —
 **Portals note:** AntD renders modals, dropdowns, tooltips, and popconfirms into portals at the end of
 `<body>`, not inline. Role/text selectors find them anywhere in the DOM; **CSS scoped to a parent will
 miss them** — another reason role selectors win.
+
+### 5.1 Never `.click()` an item in a freshly-opened AntD popup
+
+Use **`clickAntdMenuItem`** (`pages/shared/antd.ts`) for `Dropdown` menu items, and `selectAntdOption`
+for `Select` options. Both exist because a coordinate click into an AntD popup is unsound, and the menu
+case cost five specs on three engines before it was diagnosed ([48 §3.18b](../48_PlatformParityRegister.md)).
+
+**The mechanism, because it will recur on any new AntD popup surface.** AntD mounts popups through
+rc-motion, which steps `appear-prepare → appear-start → appear-active`. In **`appear-prepare`** the popup
+is mounted, laid out at full size, visible, and its box is unchanged across animation frames — so
+`visible`, **`stable`**, `enabled` and `receives-events` all pass, correctly. `appear-start` then applies
+the entrance transform and collapses the element. Under parallel load those two states are tens of
+milliseconds apart, which is long enough to fall **between `mousedown` and `mouseup`**; the browser then
+fires `click` at the common ancestor of the two targets, the item is not in the path, and its handler
+never runs.
+
+**And Playwright will tell you the click succeeded.** `setupHitTargetInterceptor` verifies the hit target
+for the _first_ intercepted event only, so a `mouseup` that lands elsewhere is never checked. The symptom
+is therefore: no exception, the popup still open, and the thing it should have opened simply absent.
+
+**So `stable` is not a promise that geometry has settled** — only that it has not changed _yet_. That is
+the general lesson: for anything that animates in, prefer an interaction that resolves the element at
+dispatch time over one that resolves a point. Do **not** "fix" it with a raised timeout, a
+`waitForTimeout`, a retry, or `.first()`; and do not wait on `ant-slide-up-appear-*` either — a wait
+keyed on a motion class name silently becomes a no-op when AntD renames it, and the flake returns
+unannounced.
 
 ---
 

@@ -150,6 +150,36 @@ The `playwright-report/` HTML report survives longer, but it does not carry the 
 `error-context.md` DOM snapshot, which is usually the thing that tells you what the page was actually
 showing.
 
+### 6.2 "The click was accepted and nothing happened" — read this before you re-run
+
+Learned closing [48 §3.18b](../48_PlatformParityRegister.md), which took fifteen days and four
+hypotheses because the harness reported the failing action as a success.
+
+**A successful Playwright click is not evidence the handler ran.** `setupHitTargetInterceptor` verifies
+the hit target for the **first** intercepted event only, so `mouseup` and the resulting `click` are never
+re-checked. If the element moves or resizes between `mousedown` and `mouseup` — which is exactly what an
+entrance animation does — the browser fires `click` at the common ancestor of the two targets, the
+element's own handler never runs, and **the action still reports as done**. Symptom: no exception, the
+popup still open, and whatever it should have opened simply absent.
+
+**`stable` does not mean "geometry has settled."** It means "unchanged across two animation frames." A
+popup in rc-motion's `appear-prepare` state is at full size and perfectly still because the animation has
+not begun; it passes every actionability check and then collapses. So a passing actionability check
+before an animation proves nothing about geometry during it.
+
+**What to do.** For AntD popups, use `clickAntdMenuItem` / `selectAntdOption` from
+`pages/shared/antd.ts` ([05 §5.1](./05_Selectors.md)). For a new animated surface, prefer an interaction
+that resolves the **element** at dispatch time over one that resolves a **point**. What NOT to do, per §6
+above: raise the timeout, add a `waitForTimeout`, wrap it in a retry, reach for `.first()`, or wait on the
+library's motion class names — that last one works today and silently stops working when the class is
+renamed.
+
+**And instrument before you theorise.** Three plausible mechanisms were disproved before the right one,
+and the deciding evidence took a passive diagnostic that could survive a full parallel run: capture-phase
+listeners plus a `MutationObserver`, drained to a directory Playwright does **not** wipe, opt-in behind an
+env var so the baseline rate stays unperturbed. A load-dependent defect cannot be debugged in a headed
+session, and "it passed at `--workers=1`" is not a diagnosis.
+
 ---
 
 ## 7. Common problems → fixes
