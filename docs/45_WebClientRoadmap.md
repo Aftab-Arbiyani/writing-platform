@@ -1047,9 +1047,14 @@ that would have minted an unstable baseline. Those two users now get fixed pen n
 
 ## 5. Track A — admin (parallel with W, independent)
 
-`A1` monetization · `A2` collaboration/trust · `A3` retrieval · `A4` story graph. All **M**, all
-consuming shipped backends. Deliberately lower priority: admin already covers the operational surface
+`A1` monetization · `A2` ~~collaboration/trust~~ **trust** · `A3` retrieval · `A4` story graph. All **M**,
+all consuming shipped backends. Deliberately lower priority: admin already covers the operational surface
 (31 route modules), so these add reach, not readiness.
+
+**A2's name in that list was wrong** and is struck through above rather than silently edited, because the
+row was scoped from it. Collaboration has **no admin controller**: `collaboration.controller.ts` is
+`@Controller()`, user-scoped, and the module contains no admin equivalent. There was never a
+collaboration admin screen to build.
 
 ### A1 — monetization ✅ **DONE 2026-08-17** (sweep [48 §6.14](./48_PlatformParityRegister.md))
 
@@ -1105,6 +1110,37 @@ upstream, and the confirmation now projects the clamped result honestly), and th
 still read-only — `updatePlans` is unexposed, which is not one of the seven. One new gap was opened
 and not fixed: **B8-1**, an admin per-account read cannot distinguish an unknown user from one with no
 data.
+
+### A2 — trust ✅ **DONE 2026-08-18** (sweep [48 §6.16](./48_PlatformParityRegister.md))
+
+**Trust admin, not "collaboration/trust"** — see the correction above §5's list. Five shipped routes on
+`trust.admin.controller.ts`, all consumed, no backend change.
+
+| Commit    | What shipped                                                                                                                                                                                              |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `d0fa3fa` | The reads: `GET users/:id/trust` + `GET users/:id/restrictions`, one panel with two entry points — a Trust tab on the user detail drawer and a `/trust` route — plus the clients' own vocabulary, copied. |
+| `c865737` | The mutations: `POST users/:id/strikes`, `POST users/:id/restrictions`, `DELETE restrictions/:id`. Each confirmed; all three gated on `trust.manage` while the reads gate on `trust.view`.                |
+| `d22343b` | Browser coverage: `tests/admin/trust.spec.ts`, two RBAC tests, two a11y scans (light + dark, via the `admin-dark` project), one visual baseline named and unminted.                                       |
+
+**Two entry points, and the second one is not decoration.** The drawer tab is the right place to READ a
+standing — it is where an operator suspends the account, so the two sanctions can be told apart there.
+But `/users` is gated `RequireRole min={Role.Admin}` while `Role.Moderator` is the one role whose grants
+explicitly name `trust.view` + `trust.manage`, so a drawer-only surface would have been invisible to its
+primary operator. The `/trust` route carries `RequirePermission(trust.view)` and sits below the admin
+floor. Same panel, same words, same actions.
+
+**Gates:** admin `eslint --max-warnings=0` clean, **67 test files / 347 tests** (from 63 / 290),
+`vite build` clean. **`pnpm typecheck` and `pnpm build` are RED with 18 pre-existing errors**, all in
+`features/monetization` and identical with this row's diff stashed — recorded as **A2-6** (48 §3), and
+the reason §6.15's "Admin `tsc` clean" was not true when written. **E2E:** `admin-chromium` 69 tests
+(was 53), `admin-dark` 18 (was 15); `admin-trust.png` is deliberately unminted, one candidate of four
+after a determinism check. The browser suite was **NOT executed** — no stack on this machine.
+
+**The audit corrected the brief in five places and found six gaps** (A2-1 … A2-6, all in 48 §3, none
+fixed — the backend is frozen). The two that shaped the UI: **A2-1**, the account suspension and the
+trust `suspended` restriction are disjoint and neither implies the other, so the panel explains the
+difference in three places instead of reconciling it; and **A2-2**, no route lists or revokes a strike,
+so the escalation figure in the confirmation is an honest projection rather than a confirmed total.
 
 ## 6. Track M — marketing site
 

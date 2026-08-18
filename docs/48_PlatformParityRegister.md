@@ -2404,6 +2404,124 @@ would read. Both are design decisions larger than the row that surfaced them, an
 itself. The client says it instead: the free-plan card ends with a sentence telling the operator that
 a non-existent id reads the same way and to confirm it on the Users screen.
 
+## 3.16 A2 pre-flight + build — the sanction map, and five paths to one word (2026-08-18)
+
+Found while building the admin Trust surface (docs/45 §5, row A2). **None is fixed**: the backend is
+frozen (§7 of the roadmap), and the two client-side ones are other rows' code. Full reasoning in
+[§6.16](#616-a2s-sweep-2026-08-18).
+
+### A2-1 · **medium** · two sanctions are both called "suspend", enforced in different places, and neither implies the other (opened 2026-08-18)
+
+The row's DECISION 0.2, answered from the code. `POST /admin/users/:id/suspend` writes
+`users.status = 'suspended'` (`users.service.ts:154`) and revokes every session
+(`admin-users.controller.ts:424`); the only readers of that column are `auth.service.ts:123` and
+`:126`, both on the login path. A trust `suspended` restriction writes a `user_restrictions` row,
+which `computeStatus` (`trust.service.ts:376`) turns into `TrustStatus.Suspended` and the Policy
+Engine's rule 1 (`policy.rules.ts:66`) turns into a DENY on every gated action.
+
+|              | account suspension                                    | trust `suspended` restriction    |
+| ------------ | ----------------------------------------------------- | -------------------------------- |
+| enforced at  | login only                                            | every policy-gated action        |
+| sessions     | revoked                                               | untouched                        |
+| can sign in? | **no**                                                | **yes**                          |
+| can write?   | (cannot get in)                                       | **no**                           |
+| audit action | `user.suspend`                                        | `trust.restriction_apply`        |
+| lifted by    | `POST /unsuspend` (409s unless status is `suspended`) | `DELETE /admin/restrictions/:id` |
+
+**The Policy Engine never reads `users.status`, and trust never writes it.** So a trust-suspended user
+can still sign in, and an account-suspended user's Trust tab reads "Good standing". Both are correct
+per their own mechanism and both will read as a bug to an operator who has not been told.
+
+Not reconciled in A2, because reconciling means choosing which of the two is authoritative — an AF6
+design decision, not a UI one. The client says it instead: a persistent note at the top of the trust
+panel states which sanction is which and that lifting one leaves the other in force, and the
+`suspended` restriction's own confirmation repeats it.
+
+### A2-2 · **medium** · a strike can be issued and then never listed, revoked, or verified (opened 2026-08-18)
+
+`POST /admin/users/:id/strikes` is the ONLY strike route in the backend (`grep` on
+`--include=*.controller.ts` returns exactly that one). Yet:
+
+- `TrustRepository.revokeStrike` (`trust.repository.ts:108`) has **no caller** outside its own spec,
+  and `TRUST_AUDIT_ACTIONS.StrikeRevoke` (`trust.constants.ts:9`) is recorded by nothing. A strike
+  issued in error is permanent unless it was given an `expiresAt` at issue time.
+- Nothing reads strikes back. `TrustSummaryDto` carries `activeStrikeWeight` and no strike list, so no
+  client can show what the weight is made of, or check its own arithmetic against the server's
+  `sumActiveStrikeWeight`.
+
+The consequence lands squarely on the one thing this row exists to prevent. The strike confirmation has
+to tell an operator what their strike will do, and the escalation thresholds are compared against a
+total the client can only PROJECT (`activeStrikeWeight + STRIKE_WEIGHTS[severity]`). If a strike expired
+since the standing was fetched, the real total is lower and the projection over-states it.
+
+Not fixed: a `GET users/:id/strikes` and a `DELETE strikes/:id` are two small routes on a frozen
+controller. The UI compensates honestly instead — the copy says "projected", and says in as many words
+that a strike cannot be revoked.
+
+### A2-3 · **low** · a lifted auto-escalation comes straight back with the next strike (opened 2026-08-18)
+
+`maybeEscalate` runs on every `issueStrike` against the CURRENT total, and `ensureGlobalRestriction`
+skips only when a matching restriction is already **active** (`trust.service.ts:344`). Lifting the
+auto-applied restriction does not reduce `activeStrikeWeight`, so an account still over the threshold
+earns the same restriction again on the next strike of any severity.
+
+This is defensible behaviour — the weight is the standing, and lifting a restriction is not a pardon —
+but it is invisible from either endpoint. Recorded rather than changed; the lift confirmation states it.
+
+### A2-4 · **low** · `GET /admin/users/:id/trust` WRITES, and manufactures a clean standing for an unknown id (opened 2026-08-18)
+
+`getSummary` calls `getOrCreateProfile`, which inserts a `trust_profiles` row on first touch
+(`trust.service.ts:104-115`), and the entity carries **no SQL FK to `users`** — deliberately, so the
+trail outlives a hard-deleted account (`trust-profile.entity.ts:12`). Two consequences:
+
+1. A read has a side effect. Any UUID an operator pastes — or any id a crawler guesses — creates a row.
+2. It is **B8-1's shape, one degree worse**. B8-1's reads answer `null` for both an unknown id and an
+   account with no data; this one answers a plausible, fully-populated default (score 50, Member,
+   normal, weight 0, no restrictions). A mistyped character reads as a real account in good standing.
+
+Not re-opened as a new class and not fixed (see B8-1 for why the existence check is bigger than either
+row). The `/trust` page states it at the lookup field, in stronger terms than B8's copy because the
+answer here is a manufactured record rather than an empty one. Note that
+`resolveTrustContext` — the hot path the Policy Engine uses — correctly READS only (`:136`), so this is
+confined to the admin/account summary path.
+
+### A2-5 · **low** · `TrustStatus.Banned` is unreachable, and `user_banned` is the same status as `user_suspended` (opened 2026-08-18)
+
+`TrustStatus.Banned` is ranked most severe in `STATUS_SEVERITY` (`trust.service.ts:59`) and denied
+first by rule 1, but no `RestrictionType` maps to it (`trustStatusForRestriction` has no `Banned`
+branch) and nothing else assigns it — so no code path can produce it. Separately, the moderation
+resolution `user_banned` calls the same `suspendUser` as `user_suspended` and writes the same
+`users.status = 'suspended'`, differing only in the audit action and a `permanent: true` flag
+(`moderation.service.ts:306-325`). "Banned" therefore exists in three vocabularies and as a distinct
+state in none of them. Both clients already label it, so nothing changes on screen; A2 simply does not
+offer it, because `ApplyRestrictionDto` cannot express it.
+
+### A2-6 · **high** · the admin `typecheck` and `build` gates have been RED since B8 landed (opened 2026-08-18)
+
+`pnpm typecheck` in `admin/` reports **18 errors**, all in `features/monetization`, and `pnpm build`
+(`tsc -b && vite build`) fails on the same set. Verified as pre-existing by stashing A2's diff: the
+error count and file list are identical with and without this row's changes.
+
+| File                                | n   | Cause                                                |
+| ----------------------------------- | --- | ---------------------------------------------------- |
+| `lib/config-tables.spec.ts`         | 13  | `TABLE_SPECS[0..2]` under `noUncheckedIndexedAccess` |
+| `hooks/use-monetization.ts`         | 3   | **production code** — see below                      |
+| `components/config-tables.spec.tsx` | 1   | `HTMLElement \| undefined` passed to `within()`      |
+| `lib/analytics-emptiness.spec.ts`   | 1   | optional `byCurrency` against a required field       |
+
+The one that is not a test-typing nit: `useRefundPayment` declares its variables as
+`{ paymentId, payload, userId? }` but annotates the inline `mutationFn` parameter as
+`{ paymentId, payload }`, which narrows `TVariables` and makes `variables.userId` a type error in its
+own `onSuccess` (`use-monetization.ts:188-197`). The runtime behaviour is fine — the value is passed
+and read — so the per-account payment list does get invalidated; the fix is to delete the redundant
+inline annotation.
+
+**§6.15 records "Admin `tsc` clean · lint clean" for B8, and that was not true when it was written.**
+`lint` and `vitest` ARE clean, which is the likely explanation: the gate that was actually run was not
+the one recorded. Not fixed here — 18 errors across another row's feature, including a production-file
+change, is not A2's diff to make — and A2's own gate result is reported as what it is: 18 pre-existing
+errors, 0 in any file this row touches, with `vite build` clean on its own.
+
 ---
 
 ## 4. Divergences that are NOT gaps (platform-inherent)
@@ -3962,3 +4080,181 @@ permission, mobile ships no admin surface, and the web frontend is the customer 
 The three new routes are admin-only; nothing on either client can or should call them. The
 `PAYMENT_NOT_REFUNDABLE` split is the one change with a theoretical second consumer, and it has none:
 `POST payments/:id/refund` is on the admin controller, so no user-facing client can reach the code.
+
+---
+
+### 6.16 A2's sweep (2026-08-18)
+
+The second **Track A** row, and the first whose brief named the wrong subject. Two build commits, one
+browser commit, and a Phase 0 that changed the shape of the UI before any of it was written.
+
+**What shipped**, three commits, one concern each:
+
+| Commit    | What                                                                                                                                                               |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `d0fa3fa` | The two reads. `GET users/:id/trust` + `GET users/:id/restrictions`, the shared panel, its two entry points (drawer tab + `/trust` route), and the vocabulary map. |
+| `c865737` | The three mutations. Issue a strike (with the escalation projection), apply a restriction, lift one — each behind a confirmation, all gated on `trust.manage`.     |
+| `d22343b` | The browser suite: `tests/admin/trust.spec.ts`, two RBAC tests in the existing `rbac.spec.ts`, two a11y scans in `a11y.spec.ts`, one named visual candidate.       |
+
+**Gates.** Admin `eslint --max-warnings=0` clean · **67 files / 347 tests** (from 63 / 290: +4 files,
++57 tests) · `vite build` clean. E2E `tsc` + lint clean; `admin-chromium` collects **69** tests (was
+53), `admin-dark` **18** (was 15).
+
+**`pnpm typecheck` and `pnpm build` are RED, and were RED before this row.** 18 errors, every one in
+`features/monetization`, verified identical with A2's diff stashed and applied — recorded as **A2-6**
+(§3), which also names the one production-code error among them. A2's own contribution is 0 errors, and
+`vite build` passes on its own; the `tsc -b` half of `build` fails on the same 18. Reporting "typecheck
+clean" here would have been repeating §6.15's mistake rather than finding it.
+
+**The browser suite was NOT executed for this row.** No Qalam stack runs on this machine (nothing on
+:4000 or :5174, and no Qalam containers) and the visual job's pinned image is CI-only, so what is
+verified is that the specs typecheck, lint and collect — not that they pass. Same standing position as
+every row since the E2E deferral (§3, "E2E browser testing"), stated rather than implied.
+
+#### Did the row deliver only what it named?
+
+**Yes for the five routes, with one addition the audit forced and two declined.**
+
+**Added, because the code made the brief's placement unusable on its own: a `/trust` route beside the
+drawer tab.** The brief's default was a Trust tab on the user detail drawer, and its argument is right —
+that is the screen where an operator suspends an account, so it is where the difference between the two
+suspends can be shown. But `/users` is gated `RequireRole min={Role.Admin}` (`router.tsx:63`), and
+`Role.Moderator`'s explicit grant list is `report.*`, piece/comment moderation, publishing review — **and
+`TrustView` + `TrustManage`** (`permissions.ts:346-357`). Trust is one of only two things a moderator is
+uniquely granted, and a drawer-only surface would have been invisible to exactly that role. So the panel
+is one component with two entry points: the tab for viewers who can reach `/users`, and a
+`RequirePermission(trust.view)` route below the admin floor for everyone else who holds the grant. The
+RBAC spec executes the claim — the same moderator is refused `/users` and admitted to `/trust`.
+
+**Declined: a strike history table.** There is no route to build it from (A2-2), and inventing one from
+`activeStrikeWeight` would be fabricating rows.
+
+**Declined: a link from the report detail drawer to a reported user's trust.** It is the moderator's
+most natural entry point and it is one `<Link>` — but it is a change to `features/moderation`'s screen
+for a row that owns neither, and the nav entry already makes the surface reachable.
+
+#### What the audit corrected
+
+**The row's name.** §5 calls A2 "collaboration/trust". Collaboration has **no admin controller** —
+`collaboration.controller.ts` is `@Controller()`, user-scoped, and there is no admin equivalent in the
+module. A2 is trust admin and nothing else; docs/45 §5 now says so.
+
+**There are five sanction mechanisms, not three.** The brief's three (account suspend, moderation warn,
+trust strikes/restrictions) are all real, and the code has two more paths into the same
+`users.status = 'suspended'` column: `PATCH /admin/users/:id` with `{status}`, which is the Status select
+in the Edit-user modal and does **not** revoke sessions (`admin-users.controller.ts:363` calls
+`setStatus` with no `logoutAll`), and the report resolutions `user_suspended` / `user_banned`, which do
+(`moderation.service.ts:306-325`). Three of the five are already in the admin UI. `user_banned` writes
+the same status as `user_suspended`, differing only in the audit action (A2-5).
+
+**The moderation warning is not absent from the admin UI, it is unreachable directly.** `POST
+/admin/moderation/users/:id/warn` has no control of its own, but resolving a report as `user_warned`
+issues one (`moderation.service.ts:252`). It also carries `report.resolve` / `report.review`, **not**
+`trust.*` — so it is not part of this row's permission surface at all.
+
+**`STRIKE_WEIGHTS.minor` IS 1.** The brief said "a strike's weight is NOT 1"; minor is 1, moderate 2,
+severe 4. And `IssueStrikeDto` has **two** optional fields (`reportId`, `expiresAt`), not one.
+
+**The two permissions cannot be told apart by any seeded role.** The brief asked for a `trust.view`-only
+operator who sees the surface with no action affordances. That branch is written — the reads and the
+mutations gate separately, because the server checks them separately — but no role can reach it:
+Moderator holds both, Admin holds `trust.*`, SuperAdmin `*`, User neither, and the admin shell's floor is
+Moderator. `usePermissions().can()` also reads the static `DEFAULT_ROLE_PERMISSIONS` map rather than the
+editable `role_permissions` table, so even a runtime grant edit would not produce it in the client. The
+branch is pinned by component specs with a synthesised grant set, and `rbac.spec.ts` says in writing what
+it cannot prove with an account. It is worth keeping because the server's check is per-permission and the
+grant table is editable.
+
+#### The suspend problem, and what the UI does about it
+
+This is the row's DECISION 0.2 and its answer is in §3 as **A2-1**: the two suspends are disjoint —
+different table, different enforcement point, different reversal — and **neither implies the other**. A
+trust-suspended user can still sign in; an account-suspended user's trust standing reads "Good standing".
+
+Reconciling them would mean deciding which is authoritative, which is an AF6 design decision. So A2
+ships the distinction instead of the fix, in three places: a persistent note at the top of the panel
+(present under BOTH entry points, because it lives in the panel and not in the drawer wrapper) saying
+which sanction decides what an account may _do_ and which one blocks sign-in; the `suspended`
+restriction's own confirmation repeating it at the moment of commitment; and the lift confirmation saying
+that lifting one leaves the other in force. That is the minimum that makes two "suspend" affordances on
+one screen honest rather than a trap.
+
+#### The escalation copy, and why it is a projection
+
+The failure this row exists to prevent is an operator issuing what reads as a warning and silently
+suspending an account. `issueStrike` recomputes the total, then `maybeEscalate` applies a **permanent,
+global** `Restricted` restriction at weight 3 and a `Suspended` one at 6, inside the same request, and
+neither the request nor the response mentions it.
+
+So the strike confirmation always states three things — this strike's weight, the projected total, and
+both thresholds — and its **title changes** when this strike is the one that crosses ("This strike will
+also suspend the account"). When a matching global restriction is already active the copy says so
+instead, because `ensureGlobalRestriction` will not stack one.
+
+The total is labelled a **projection** and that word is load-bearing: with no route listing strikes
+(A2-2), the client computes `activeStrikeWeight + STRIKE_WEIGHTS[severity]` and cannot check it against
+the server's `sumActiveStrikeWeight`. A strike that expired since the standing was fetched makes the real
+total lower. Claiming a confirmed figure there would be the more comfortable copy and the false one.
+
+The thresholds, weights and band boundaries are all read from `@qalam/shared`, never inlined, and the
+component spec asserts the copy at exactly weight 2→3 and 5→6 so a change to either constant fails a
+test rather than quietly rewording a dialog.
+
+#### Two reads, two meanings, and a clean record that is not an error
+
+`TrustSummaryDto.restrictions` carries the **active** rows; `GET users/:id/restrictions` returns active
+**and** historical. Merging them would destroy the only thing the second read adds, so the panel fetches
+both, fails them separately, and renders them in different places: the standing counts the active ones,
+the list shows everything with a lifted row dated by its `liftedAt` and an expired one by its
+`expiresAt`, both neutral-tagged and muted, never the danger tag or the clients' word "In force".
+
+The commonest account has nothing on its record, so an empty list is a calm statement — "No restrictions
+on record. This account has never been restricted. Nothing is wrong." — with no `alert` role and no
+error styling. Which is also where **A2-4** bites: for an unknown id that same calm screen is a
+manufactured default profile, so the lookup field says a non-existent id reads exactly this way.
+
+#### The score, against its scale
+
+`62` on its own tells an operator nothing. The card draws all four bands in order (Trusted 80–100,
+Member 50–79, Basic 25–49, New 0–24) with the current one marked in **text as well as weight**, states
+the score as "62 of 100 · Member (50–79)", and puts the two escalation thresholds beside the strike
+weight they act on. The bands are asserted against `trustLevelForScore` for every score 0–100, so they
+cannot drift from the server's tiering. When the stored `trust_profiles.level` disagrees with the band
+the score falls in, the stored value is shown as authoritative and the disagreement is surfaced — it is
+what the rest of the platform reads.
+
+#### Vocabulary: nothing invented
+
+Both customer clients already name these states, and they already agree with each other —
+`frontend/.../publishing-labels.ts` was ported from mobile's `domain_labels.dart`. The admin copies both
+maps verbatim: "Good standing" for `normal`, "Restricted" for `shadowed`, "Shadow-restricted" for the
+`shadow` restriction type, "Everywhere" for `global` scope, "In force" for a live restriction, "No end
+date" / "Until <date>" for the expiry, "Standing" for the status field.
+
+The duplication is deliberate. `@qalam/shared` is a contract package and carries no copy, and there is
+no cross-app import to reach for, so the alternative was letting an operator and a writer describe the
+same restriction in two vocabularies. Three fields have **no** client wording to inherit — `score`,
+`level` and `activeStrikeWeight` are rendered by neither client — so those use the enum's own words
+rather than invented synonyms.
+
+#### Where the files live, and the feature-boundary rule
+
+The panel has two consumers: the user detail drawer (`features/users`) and the `/trust` route. The
+deletability rule in `features/README.md` forbids one feature importing another, and the usual escape —
+lifting the shared piece to `src/components/` — would have put TanStack Query hooks in a layer the same
+README says has none.
+
+So the trust surface is **owned by `features/users`**, and the `/trust` route is served by a page in that
+feature. Trust standing is per-account sanction state, and `features/users` already owns the other
+sanction path, so there is one owner, one `rm -rf`, and nothing imported sideways. Nothing moved up,
+because nothing is shared across features.
+
+#### Does any other client need this?
+
+**No, by construction — the same structural answer §6.14 and §6.15 gave.** `trust.view` and
+`trust.manage` are operator permissions held by moderator and above; mobile ships no admin surface, and
+the web frontend is the customer side. The customer half of AF6 trust already exists on both clients and
+reads a different endpoint (`GET /me/trust`, W3c and mobile's `trust_controller.dart`) — this row's five
+routes are `@Controller('admin')` and no user-facing client can reach them. The parity obligation A2 does
+carry is the vocabulary one, and it is discharged by copying the clients' words rather than by shipping
+anything to them.
