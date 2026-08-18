@@ -24,6 +24,9 @@ describe('revenueIsEmpty', () => {
     last30dRevenue: 0,
     refunded: 0,
     paymentsCount: 0,
+    // Required on `RevenueAnalytics` since B8 added the per-currency breakdown. Omitting it left the
+    // spread producing `RevenueByCurrency[] | undefined`, which is not the shape the endpoint returns.
+    byCurrency: [],
     ...over,
   });
 

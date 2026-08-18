@@ -189,8 +189,10 @@ export function useRefundPayment(): UseMutationResult<
 > {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: ({ paymentId, payload }: { paymentId: string; payload: RefundPayload }) =>
-      monetizationApi.refundPayment(paymentId, payload),
+    // No annotation on the destructured param: re-declaring it here narrowed `TVariables` to the two
+    // fields this call needs and dropped `userId`, which `onSuccess` below is the whole reason for.
+    // The type comes from the hook's own `UseMutationResult` signature.
+    mutationFn: ({ paymentId, payload }) => monetizationApi.refundPayment(paymentId, payload),
     onSuccess: (_payment, variables) => {
       if (variables.userId !== undefined && variables.userId !== '') {
         void client.invalidateQueries({

@@ -326,6 +326,11 @@ function TableEditor({
         <QButton
           variant="secondary"
           size="sm"
+          // Three tables sit on this screen, so three buttons reading only "Add" gave a screen-reader
+          // user no way to tell which table they were adding to. Naming the table keeps the visible
+          // word "Add" at the front of the accessible name (WCAG 2.5.3) and lets a test address one
+          // table instead of trusting the render order.
+          aria-label={`Add ${spec.label} row`}
           disabled={newKey.trim() === '' || rows.some((row) => row.key === newKey.trim())}
           onClick={() => {
             onChange([...rows, { key: newKey.trim(), value: spec.newRowDefault }]);

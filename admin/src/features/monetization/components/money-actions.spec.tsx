@@ -330,6 +330,48 @@ describe('RefundForm — every refund confirms, and the four failures stay apart
     expect(screen.getByLabelText('Payment ID')).toHaveValue('p-42');
   });
 
+  it('refreshes the account’s payment list after the refund lands (A2-6)', async () => {
+    // The regression test for the type error that sat in `useRefundPayment` from B8 until B9: the
+    // inline `mutationFn` param was re-annotated as `{paymentId, payload}`, which narrowed
+    // `TVariables` and made `variables.userId` — the key this invalidation is built from — fail to
+    // compile in the hook's own `onSuccess`. Runtime was always correct, so lint and vitest stayed
+    // green and only `tsc` complained; nothing asserted the BEHAVIOUR the broken type described.
+    // A refund is a new negative row on the same account, so a list that does not refetch is stale
+    // the instant this succeeds.
+    getUserPayments.mockResolvedValue({
+      items: [
+        {
+          id: 'p-1',
+          provider: 'stripe',
+          method: 'card',
+          status: 'succeeded',
+          amount: 2000,
+          currency: 'usd',
+          description: 'Plus, monthly',
+          createdAt: '2026-08-17T10:00:00.000Z',
+        },
+      ],
+      nextCursor: null,
+      hasMore: false,
+    });
+    refundPayment.mockResolvedValue(REFUND);
+    renderWithProviders(<RefundForm />);
+
+    fireEvent.change(screen.getByLabelText('User ID'), { target: { value: 'u-1' } });
+    fireEvent.click(await screen.findByRole('button', { name: 'Select' }));
+    const beforeRefund = getUserPayments.mock.calls.length;
+
+    fireEvent.click(screen.getByRole('button', { name: 'Refund payment' }));
+    fireEvent.click(dialogButton('Send refund'));
+    await screen.findByRole('status');
+
+    await waitFor(() => {
+      expect(getUserPayments.mock.calls.length).toBeGreaterThan(beforeRefund);
+    });
+    // Refetched for the SAME account — the userId in `variables` is what builds the key.
+    expect(getUserPayments).toHaveBeenLastCalledWith('u-1', expect.anything());
+  });
+
   it('lists a refund row but refuses to select it', async () => {
     // A refund is its own negative payment row on the same account. Hiding it would make an
     // already-refunded charge look untouched; offering it would invite refunding a refund.

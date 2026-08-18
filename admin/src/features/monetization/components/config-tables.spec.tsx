@@ -59,7 +59,9 @@ describe('ConfigForm — the tax and currency tables are editable (A1-2)', () =>
     renderWithProviders(<ConfigForm config={CONFIG} />);
 
     fireEvent.change(screen.getByLabelText('Add a Tax rates key'), { target: { value: 'DE' } });
-    fireEvent.click(screen.getAllByRole('button', { name: /Add/ })[0]);
+    // Addressed by name, not by position: `getAllByRole(/Add/)[0]` trusted the render order of three
+    // identically-named buttons, and typed as `HTMLElement | undefined` because it could match none.
+    fireEvent.click(screen.getByRole('button', { name: 'Add Tax rates row' }));
     fireEvent.change(screen.getByLabelText('DE', { selector: '#config-taxRates-DE' }), {
       target: { value: '0.19' },
     });

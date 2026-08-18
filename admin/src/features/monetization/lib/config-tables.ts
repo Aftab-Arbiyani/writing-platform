@@ -34,7 +34,13 @@ export interface TableSpec {
   invalidMessage: string;
 }
 
-export const TABLE_SPECS: readonly TableSpec[] = [
+/**
+ * `satisfies`, not a `readonly TableSpec[]` annotation: there are exactly three config tables and
+ * the list is `as const`, so widening it to an unbounded array made every index read
+ * `TableSpec | undefined` under `noUncheckedIndexedAccess` — a possibility the data does not have.
+ * `satisfies` keeps the tuple while still checking each entry against {@link TableSpec}.
+ */
+export const TABLE_SPECS = [
   {
     key: 'taxRates',
     label: 'Tax rates',
@@ -63,7 +69,7 @@ export const TABLE_SPECS: readonly TableSpec[] = [
     newRowDefault: 'usd',
     invalidMessage: 'Enter a currency code.',
   },
-] as const;
+] as const satisfies readonly TableSpec[];
 
 /** `null` when the raw text is not something this table can hold. */
 export function parseTableValue(spec: TableSpec, raw: string): number | string | null {

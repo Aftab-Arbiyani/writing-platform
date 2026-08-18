@@ -3973,9 +3973,21 @@ subject is another row's recorded debt rather than a new surface.
 | `7be6b9f` | the two new flows          | Browser coverage for the refund picker and the subscription drill-through.                         |
 
 **Gates.** Backend `tsc` clean · `eslint --max-warnings=0` clean · **150 suites / 1254 tests** (from
-146 / 1216: +4 spec files, +38 tests) · `nest build` clean. Admin `tsc` clean · lint clean · **63 files
-/ 290 tests** (from 61 / 259: +2 files, +31 tests) · `vite build` clean. E2E `tsc` + lint clean;
+146 / 1216: +4 spec files, +38 tests) · `nest build` clean. ~~Admin `tsc` clean~~ · lint clean · **63 files
+/ 290 tests** (from 61 / 259: +2 files, +31 tests) · ~~`vite build` clean~~. E2E `tsc` + lint clean;
 `admin-chromium` collects **53** tests (was 47), `admin-dark` **15** (was 14).
+
+> **CORRECTION — 2026-08-18, by B9 (finding A2-6).** The two struck claims above were false when
+> written and stayed false for a day. Admin `pnpm typecheck` reported **18 errors** and `pnpm build`
+> failed with the same 18 (`tsc -b` runs first), from the moment B8's commit `de85f6b` landed:
+> 15 in four monetization spec files under `noUncheckedIndexedAccess`, and **3 in production code** —
+> `hooks/use-monetization.ts:195-197`, where `useRefundPayment`'s inline `mutationFn` param was
+> re-annotated as `{paymentId, payload}`, narrowing `TVariables` so the hook's own `onSuccess` could
+> not read `variables.userId`. What was true is the rest of the line: `eslint --max-warnings=0` exited
+> 0 and vitest passed **67 files / 347 tests**, which is very likely how a red build gate went a day
+> unnoticed — three of four gates were genuinely green. A2 found the misreport (§3.16, A2-6) and
+> deliberately did not repeat it (§6.16); **B9** fixed the 18 and corrected this line. Do not read a
+> "clean" in this document as evidence that the command was run.
 
 **The browser suite was NOT executed for this row.** No Qalam stack is running on this machine and the
 visual job's pinned image is CI-only, so what is verified here is that the specs typecheck, lint, and
