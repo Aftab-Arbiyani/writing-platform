@@ -59,16 +59,36 @@ Playwright _projects_ so they share fixtures, auth setup, and helpers.
   (36 baselines total: 27 light, 9 dark), and every defect they found is fixed — see
   [10 §3.3 + §8.4](./10_UIQuality.md). Same root cause as the responsive bug in two of the cases:
   the skipped Tailwind preflight.
+- **WebKit, measured (2026-08-18):** in the **admin** suite WebKit shows **no engine-specific
+  deterministic failure**. Its two hard failures and three of its five flaky tests are the
+  cross-engine menu defect above; the remainder is parallel-run contention. Limits, because this is
+  the kind of label that gets over-read: admin only, against **dev servers** rather than CI's
+  `preview` builds, run in the pinned image with `CI=1` so **2 retries were on**, and the **frontend
+  shards were not re-run** — which is where the 2026-08-03 deferral actually lived. See
+  [48 §6.18](../48_PlatformParityRegister.md).
 - **CI gate (open):** the suite has been validated locally only — `web-e2e.yml` had **never run**,
   because its `push: [main]` trigger could not match this repo's `develop` work and the backend was
   started before its migrations (fatal at bootstrap). Both are fixed; the remaining step is three
   green runs, then flipping on `pull_request` — see [07 §6.1](./07_CI.md). The release-gate
   checklist itself is written up in [docs/22](../22_ReleaseChecklist.md).
-- **Known failure blocking a green run:** `tests/admin/users.spec.ts` "grants then revokes a role"
-  fails on **WebKit only**, reproducibly at `--workers=1` — the Edit-user modal never opens after the
-  row menu's "Edit user". Firefox and Chromium are green. This surfaced the first time the functional
-  suite was ever run on WebKit (the host lacked its OS libs, so only `@visual` had run in the pinned
-  image); it is a pre-existing gap, not a regression. Must be fixed before the gate can go blocking.
+- **Known failure blocking a green run — ~~WebKit only, reproducibly at `--workers=1`~~ CORRECTED
+  2026-08-18.** `tests/admin/users.spec.ts` "grants then revokes a role" fails because the Edit-user
+  modal never opens after the row menu's "Edit user". That symptom is real and still open, but **both
+  qualifiers on it were wrong**, and they were never measured — see
+  [48 §3.18b](../48_PlatformParityRegister.md) and the sweep in §6.18.
+
+  It is **not WebKit-only**: the identical signature (menu stays open, click accepted, portal never
+  mounts) occurs on Chromium and Firefox too, and it is not specific to the Edit-user modal — the same
+  row menu loses a "View profile" click and a "Suspend" click. The shared subject is
+  `admin/src/components/action-menu.tsx`, the AntD `Dropdown` behind every per-row "⋯".
+
+  It is **not reproducible at `--workers=1`**: 10/10 pass serially on Firefox, and 44/44 pass serially
+  across the five files that fail in a parallel Firefox run. It is load-dependent, which is why a
+  serial re-run is not a valid way to dismiss it either.
+
+  Three candidate mechanisms were tested and disproved (a background refetch closing the menu; a CSS
+  cascade change; the click landing mid-entrance-animation). Recorded as FLAKY, which under
+  [00 §4.6](./00_Overview.md) means failing. Still must be fixed before the gate can go blocking.
 
 ## The one-paragraph summary
 

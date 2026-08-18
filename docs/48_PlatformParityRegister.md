@@ -2723,6 +2723,120 @@ is reads and any write not routed through the engine — no longer everything.
 
 ---
 
+## 3.18 The first real execution of the admin browser suite (2026-08-18)
+
+Five rows of admin specs (A1, B8, A2, B9 and the phase-2/3 originals) had been **written and never
+run** — every row since the E2E deferral recorded "typecheck, lint and collect" and nothing more. They
+were executed on 2026-08-18 against a real stack on four engines. Sweep: [§6.18](#618-the-first-real-execution-of-the-admin-suite-2026-08-18).
+
+Two real product defects came out of it, plus a copy gap; the other 11 failures were defects in the
+specs themselves and are recorded in the sweep rather than here, because a spec that has never run is
+not a finding about the product.
+
+### 3.18a · **serious (a11y)** · ~~OPEN~~ · **CLOSED 2026-08-18, `99fe164`** · every `underline` on a link in the admin app was inert
+
+**Reproduction.** `pnpm playwright test --project=admin-chromium a11y.spec.ts -g "plan catalogue"`, and
+the same on `admin-dark`. axe fails `/billing/plans` with `link-in-text-block` (serious, WCAG 1.4.1):
+
+```
+The link has insufficient color contrast of 1.04:1 with the surrounding text.
+(Minimum contrast is 3:1, link text: #9e4b28, surrounding text: #6b655a)
+The link has no styling (such as underline) to distinguish it from the surrounding text
+```
+
+Dark measures 1.31:1. **One node, not 70** — the "70" in the triage note is expect's diff LINE count
+(`+ Received + 70`); the violation's `nodes` array has a single entry, the "Settings" link at
+`plan-catalogue.tsx:50`. Shipped with A1 and failing in both themes ever since, which is what marks it
+a token/style decision rather than a dark-mode slip.
+
+**Cause, and it is broader than the one link.** The markup already asked for the fix — the link carries
+`class="text-accent underline"` — and the computed style was `text-decoration-line: none`. AntD's
+cssinjs reset injects `:where(.css-…) a { text-decoration: none }` into a plain `<style>` element, i.e.
+**outside every cascade layer**, and unlayered declarations beat layered ones regardless of specificity.
+Tailwind's `.underline` lives in `@layer utilities`. So **no `underline` or `hover:underline` on an
+`<a>` has ever applied in this app**; `user-columns.tsx:78`'s `hover:underline` is inert too, it simply
+is not in a text block so axe never flagged it.
+
+**Fix.** One unlayered rule in `admin/src/styles/global.css` restoring the underline the author asked
+for. WCAG 1.4.1 accepts contrast ≥ 3:1 OR a non-colour cue; the non-colour cue is theme-independent, so
+it fixes both themes at once, whereas moving the accent token to 3:1 against `--q-text-secondary` would
+change the brand colour everywhere accent appears (focus rings, icons, tags, active nav) and still
+leave links leaning on colour. Verified green on `admin-chromium` and `admin-dark` by a real run.
+
+**The structural fix, recorded and NOT taken.** `@ant-design/cssinjs` 1.24.0 supports
+`StyleProvider layer`, which would put AntD's own CSS into the `antd` layer `global.css` already
+declares — making that declared layer order real instead of aspirational, and fixing this class of
+conflict at the root. It is not a drop-in: it lets every Tailwind utility win over every AntD style at
+once, which changes far more than links and needs the visual baselines regenerated in the pinned image
+to confirm. Worth doing deliberately, with a baseline run, by whoever owns the next UI-quality pass.
+
+**Frontend exposure, unmeasured.** The frontend is also AntD + Tailwind without preflight and carries
+~20 `hover:underline` links (`login-page.tsx:68`, `piece-page.tsx:107`, `search-page.tsx:140`,
+`billing-history-page.tsx:197` and 199 use a bare `underline`, …). Whether each is inert depends on
+whether it sits inside an AntD component's hash-scoped subtree, which was not measured — this row is
+admin-scoped and the frontend shards were not re-run. Its own a11y specs are where that gets proved.
+
+### 3.18b · **medium** · **OPEN** · a row action-menu item click is lost under parallel load, on every engine
+
+The triage note called this "the firefox drawer defect", deterministic on firefox and passing on
+chromium. **Neither half survived measurement, so the finding is re-characterised rather than fixed.**
+
+**What actually happens.** Click the row "⋯" trigger, click an item, and nothing occurs: no exception,
+the click is dispatched and accepted, the menu stays OPEN, and the portal the item should open — the
+detail drawer, or the Edit-user modal — never mounts. The failure artifact shows the menu present with
+all six items on every occurrence.
+
+**Evidence, and what it contradicts.**
+
+| Claim in the triage note                  | What the runs show                                                                                                                           |
+| ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| deterministic on firefox at `--workers=1` | **10/10 PASS** serially on firefox, with and without the a11y fix. Reproduced once as the first run of a session, then never again serially. |
+| passes on chromium                        | **Fails on chromium** under a full parallel run — `trust.spec.ts:244` and `a11y.spec.ts:121`, same signature.                                |
+| firefox-specific                          | Seen on chromium, firefox AND webkit. Engine-independent.                                                                                    |
+
+It is **load-dependent**: it appears in full-project runs and disappears at `--workers=1` (firefox:
+44/44 green serially across the five failing files). It is not "the drawer" either — `users.spec.ts:22`
+loses a "Suspend" click and `users.spec.ts:86` loses an "Edit user" click, so the shared subject is
+`admin/src/components/action-menu.tsx`, the AntD `Dropdown` behind every per-row "⋯".
+
+**Hypotheses tested and DISPROVED**, so the next person does not repeat them:
+
+1. _A background table refetch closes the open menu._ No. Delaying `GET /admin/users` so the
+   debounced-search refetch resolves with the menu open leaves the menu open, focus intact, and the
+   drawer opens normally. (Clicking the Refresh button DOES close it — but that is an outside click, and
+   closing is correct.)
+2. _The a11y CSS fix was involved._ No. 5/5 pass with it reverted.
+3. _The click lands mid-entrance-animation, so hit-testing resolves the wrong element._ No. 20 opens
+   under 14 busy cores: 0 failures, and 0 again with all animations forced to `0s`.
+
+**What would settle it**, and was not available here: instrument whether rc-menu's React `onClick`
+fires while the DOM click reaches the `<li>`. If the event reaches the item and the handler does not
+run, it is a product/library defect; if the event never reaches the item, it is a coordinate race in
+the harness. That needs the failure reproduced under instrumentation, and it only reproduces inside a
+full parallel run.
+
+**Not "fixed" by loosening anything.** No timeout was raised and no assertion weakened. Reported as
+FLAKY, which under [e2e/00 §4.6](./e2e/00_Overview.md) means failing.
+
+**It is not new, and it was already mislabelled.** `docs/e2e/README.md` has carried it since 2026-08-03
+as "fails on **WebKit only**, reproducibly at `--workers=1` — the Edit-user modal never opens after the
+row menu's 'Edit user'". Same symptom, same component; both qualifiers are wrong. That note is corrected.
+
+### 3.19 · **low** · **OPEN** · the admin error catalogue has no `USER_NOT_FOUND`, so B9's 404 reads as "something went wrong"
+
+Found while fixing a spec that asserted invented copy. B9 made the three admin trust reads answer
+404 `USER_NOT_FOUND` for an id belonging to nobody (§3.16, A2-4), and **that works**. But `TrustPanel`
+renders `getErrorMessage(error)`, which maps `ApiError.code` through `admin/src/lib/error-messages.ts`,
+and that catalogue has no `USER_NOT_FOUND` entry — so the panel falls back to
+`"Something went wrong. Please try again."`, three times, once per failed read.
+
+So the operator who mistypes one character of a UUID is told the screen is broken rather than that the
+account does not exist, which is most of the value A2-4 was closed for. The fix is one catalogue entry;
+it is **not** made here because changing product copy inside a test-fixing commit is exactly the
+smuggling this row was told not to do. The spec now asserts the fallback the app really renders.
+
+---
+
 ## 4. Divergences that are NOT gaps (platform-inherent)
 
 These are accepted permanently and need no epic. They exist because the platforms genuinely differ.
@@ -4573,3 +4687,123 @@ one: it produces `PolicyEffect.Suspended`, which both clients already render, so
 screen a suspended account now meets is the screen they already ship. The parity obligation is discharged
 by not needing to ship anything, and the customer-facing `GET /me/trust` shape is unchanged — the
 `accountStatus` field is optional and populated only on the admin read.
+
+---
+
+### 6.18 The first real execution of the admin suite (2026-08-18)
+
+**The row's subject is the RUN, not a feature.** Five rows of admin specs — the phase-2/3 originals plus
+A1, B8, A2 and B9 — had been written and never executed. Every one of those rows recorded the same
+caveat honestly ("the specs typecheck, lint and collect — not that they pass"), and every one of them
+was right to. This is what happened when they were finally run against a real stack on four engines.
+
+**Why they were never run, which turns out to have a single mechanical cause.** `pnpm e2e:up` has been
+dead on current Docker. Its `docker compose up -d --wait` list included `minio-init`, a one-shot `mc`
+container that creates the bucket and exits 0, and Compose v5.4.0 on Docker 29.7.2 treats an exited
+dependency as a `--wait` **failure**: it prints `container qalam-minio-init-1 exited (0)` and returns 1.
+Under `set -e` that killed the script before the migrations ran, so migrate, seed, seed:e2e and the
+backend start were all unreachable and the command could never produce a runnable stack. Anyone who
+tried locally got a non-zero exit and no stack. Fixed in `91aba23`, proven end to end on this machine
+including the branch that had been unreachable.
+
+**The results, per engine.** `@visual` excluded throughout — three admin baselines are deliberately
+unminted and only CI's visual job may mint them.
+
+| Project                                          | Before                          | After                              | Notes                                                                                                                         |
+| ------------------------------------------------ | ------------------------------- | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `admin-chromium`                                 | 59 passed · 16 failed           | **68 passed · 1 failed**           | The one failure is intermittent and differs per run — the §3.18b menu flake in one run, a 30s contention timeout in the next. |
+| `admin-dark`                                     | 12 passed · 6 failed            | **12 passed · 0 failed**           | Green.                                                                                                                        |
+| `admin-firefox`                                  | 52 passed · 23 failed           | **60 passed · 9 failed**           | All nine are 30s test timeouts under parallel load: **44/44 pass at `--workers=1`** across the same five files.               |
+| `admin-webkit` (pinned image, `CI=1`, 2 workers) | 51 passed · 13 failed · 5 flaky | **62 passed · 2 failed · 5 flaky** | Both failures and one flaky are §3.18b. The other four flaky are contention.                                                  |
+
+**The 11 spec defects, and their single cause.** Ten were Playwright strict-mode violations and one
+asserted copy that exists nowhere in the client. The cause is not carelessness about locators — it is
+that **a locator's ambiguity is invisible until the locator runs**. Nothing in `tsc`, `eslint` or
+`playwright test --list` can tell you that `getByText('50')` will match four nodes, and every one of
+these rows verified exactly those three things. Grouped by what actually went wrong:
+
+- **`filter({ hasText })` is a case-insensitive SUBSTRING match over a whole subtree.**
+  `hasText: 'Apply a restriction'` matched two sections of the trust panel, because the strike form's own
+  description reads "…can apply a restriction automatically". Sections are now scoped by their heading.
+- **Two forms on one screen share field labels.** `/billing/actions` renders "Adjust credits" beside
+  "Refund a payment"; each has a "User ID" and an "Amount". Ambiguous by construction. The cards now
+  carry `data-testid` hooks, on the precedent `trust-panel` and `user-detail-drawer` already set.
+- **Substrings of longer sentences.** `'Free plan'` also matched the card's explanation of what a free
+  plan is; `'Trust standing'` also matched the account-suspended warning; `'50'` matched the score, the
+  band range, the legend row and the sentence explaining the scale. **In two of these the app is
+  correct and the assertion was ambiguous** — the fix is a sharper locator, never a weaker claim.
+- **`role="alert"` is not unique.** The coupon code's field error shares that role with AntD's toast
+  notifications, and the toast from the first successful create is still on screen when the second fails.
+- **The invented copy.** A spec expected the server's `/No such user/i`; the client never shows it. See
+  §3.19 — B9's 404 works, the spec guessed, and the underlying copy gap is recorded rather than patched
+  inside a test fix.
+
+**None of the eleven is silenced with `.first()`.** Strict mode reporting two matches is the signal that
+an assertion does not yet say what it means; `.first()` keeps the ambiguity and hides it. Where the
+honest answer was a count rather than a single node, a count is what is asserted — the not-found spec
+now expects the fallback message exactly three times, one per per-account read, which additionally fails
+if a fourth read is ever added without thought.
+
+**Two harness defects beyond the specs**, both fixed in `91aba23`:
+
+- `UsersPage.searchFor` returned before the search had HAPPENED. It waited for the row, but the box
+  commits to the URL after a 350ms debounce, the query key is built from the URL, and `useUsers` holds
+  `keepPreviousData` — so on a small database the row is often already on the unfiltered first page and
+  goes visible while the commit is still pending. Every caller then acted on a table about to re-render.
+  It now waits for the committed `?q=`. `TrustPage.openDrawerTab` was worse (no wait at all) and now
+  delegates, so the rule lives in one place.
+- `rbac.spec.ts:99` reloaded mid-session. B9 arranged a strike part-way through and called
+  `page.reload()` to pick the row up; the reload intermittently returned the SIGN-IN page, because the
+  moderator's session comes from a login inside the page context and a full reload re-runs the app's boot
+  refresh against a rotating refresh-token family. Arranging before the login needs no reload. 3/3 where
+  it used to fail — a real cause found for one of the five "flaky" tests.
+
+#### Did the run open anything new?
+
+**Two product findings and one copy gap: §3.18a (fixed), §3.18b (open, re-characterised) and §3.19
+(open).** Nothing else. Every other failure is either one of the eleven spec defects or local
+parallel-run contention, and the contention claim is measured rather than asserted: firefox's nine
+failures are 44/44 green at one worker.
+
+#### The webkit question, answered with its limits
+
+`docs/e2e/README.md` has carried a "**WebKit only**, reproducibly at `--workers=1`" label since
+2026-08-03, and the register's §3.4/T-7 note that such labels have to be measured rather than assumed.
+Measured now: **in the admin suite webkit shows no engine-specific deterministic failure.** Its two hard
+failures and three of its five flaky tests are §3.18b, which occurs on chromium and firefox too; the rest
+is contention. Both qualifiers on the old label are wrong, and it is corrected there.
+
+**The limits of that evidence, stated plainly rather than left to be inferred:** admin only; against
+**dev servers**, not the `preview` builds CI uses; webkit ran in the pinned image with `CI=1`, so **2
+retries were on** and five tests passed only because of them; and the **frontend shards were not
+re-run**, so nothing here says anything about webkit on the frontend suite, which is where the
+2026-08-03 deferral originally lived.
+
+#### Two process facts worth not rediscovering
+
+1. **Playwright wipes `e2e/test-results/` at the start of every run.** Per-failure artifacts —
+   screenshots, videos, traces, `error-context.md` — from the previous run are gone the moment the next
+   project starts. The triage this row began from had already lost them. Copy the directory out between
+   projects, or the evidence for the run you are diagnosing will not survive the run you diagnose it with.
+2. **`CI=1` enables `retries: 2`** (`playwright.config.ts`, `retries: CI ? 2 : 0`). So "flaky" in an
+   in-image run means "would be a plain failure locally", where retries are 0. A test reported flaky is
+   reported failing under [e2e/00 §4.6](./e2e/00_Overview.md) and is never counted as passed here.
+
+#### Visual baselines
+
+**None minted, none updated** — not with `--update-snapshots`, not by hand. `admin-billing-plans`,
+`admin-billing-actions` and `admin-trust` remain deliberately unminted, and only CI's visual job may mint
+them in the pinned image.
+
+**Which baselines this row's changes will affect when CI next mints or compares:**
+
+- **`admin-billing-plans`** (still unminted) — the a11y fix puts a visible underline on the "Settings"
+  link in the cross-cutting-config card. Whenever this is first minted it will simply include it.
+- **`admin-users`** — unaffected in its resting state. The other inert utility restored is
+  `hover:underline` on the username cell link (`user-columns.tsx:78`), which renders only on hover, and
+  the baseline masks the table anyway. The `data-testid` attributes added to three monetization cards
+  change no rendering at all.
+- **`admin-billing-actions`** (still unminted) — unaffected; a `data-testid` is not a visual change.
+
+A local `admin-users` diff, if anyone sees one, is **not evidence of a regression**: a CI-minted baseline
+cannot be compared against a locally rendered screenshot ([10 §5](./e2e/10_UIQuality.md), T-8).

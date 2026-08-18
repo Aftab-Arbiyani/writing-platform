@@ -123,6 +123,33 @@ A test that passes only on retry is **flaky = failing**. Procedure:
 There is no "re-run until green" as a resolution. CI retries exist to _surface_ flake in the report, not
 to hide it.
 
+### 6.1 Two mechanics of this harness that change how you read a result
+
+Both were learned the hard way while triaging the first real execution of the admin suite
+([48 §6.18](../48_PlatformParityRegister.md)).
+
+**`CI=1` turns retries on — so "flaky" in an in-image run means "would fail locally."**
+`playwright.config.ts` sets `retries: CI ? 2 : 0`. The pinned-image invocation passes `CI=1`, so a test
+listed as **flaky** there failed at least once and passed on a retry; run the same test locally, where
+retries are 0, and it is a plain failure. Never report a flaky test as passing, and never quote a
+retried pass as verification — §6 above already makes flaky equal to failing, and this is how the two
+numbers differ between a local run and an in-image one.
+
+**Playwright WIPES `e2e/test-results/` at the start of every run.** Every per-failure artifact from the
+previous run — screenshot, video, trace, `error-context.md` — is deleted the moment the next project
+starts. So a four-engine sweep run back to back leaves you the artifacts of the LAST project only, and
+the failures you actually wanted to read are gone. **Copy the directory out between projects:**
+
+```bash
+npx playwright test --project=admin-chromium
+cp -r e2e/test-results /tmp/run-chromium        # BEFORE the next project starts
+npx playwright test --project=admin-firefox
+```
+
+The `playwright-report/` HTML report survives longer, but it does not carry the per-failure
+`error-context.md` DOM snapshot, which is usually the thing that tells you what the page was actually
+showing.
+
 ---
 
 ## 7. Common problems → fixes
