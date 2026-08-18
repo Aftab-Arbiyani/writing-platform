@@ -1142,6 +1142,46 @@ trust `suspended` restriction are disjoint and neither implies the other, so the
 difference in three places instead of reconciling it; and **A2-2**, no route lists or revokes a strike,
 so the escalation figure in the confirmation is an honest projection rather than a confirmed total.
 
+#### B9 — A2's six findings, closed ✅ **DONE 2026-08-18** (sweep [48 §6.17](./48_PlatformParityRegister.md))
+
+A2's follow-up row, same day. **The premise A2 built on was wrong in one place, and correcting it is what
+made the row small:** A2 recorded "the backend is frozen" as the reason its six findings could not be
+fixed, but the Trust module is AF6, added after the 102-path `v1` baseline — so the two missing routes
+were always additive and always available. `admin/trust` is in the freeze log at
+[25 §9](./25_BackendFreeze.md) with no ADR and no version bump, exactly as B7 and B8 were.
+
+| Commit    | Closes                    | What shipped                                                                                                                                                 |
+| --------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `6a7a102` | **A2-6**                  | All 18 admin type errors, the production one by deleting a redundant annotation, plus the regression test that was missing. §6.15 struck in place and dated. |
+| `acaf5a7` | **A2-5**                  | `TrustStatus.Banned` marked RESERVED where it is declared, with where a ban actually lives.                                                                  |
+| `045c28f` | **A2-1** (backend)        | The Policy Engine's fifth self-registered port: `users.status` is read, `AccountStatusRule` ordered above the trust rule.                                    |
+| `86fbe37` | **A2-4, A2-2, A2-3**      | The trust GET stops writing and 404s an unknown id; `GET users/:id/strikes` and `DELETE strikes/:id`; the lift/revoke split documented.                      |
+| `8f86d16` | **A2-2, A2-1, A2-3** (UI) | The strike list with a revoke action, the account-status badge, and every hedge this row invalidated deleted.                                                |
+| `fae7ee5` | the new routes            | Browser coverage for the list and the revoke — and four specs repaired that had been using A2-4 as a fixture.                                                |
+
+**Three decisions, answered before any Phase-2 code.** The one worth reading is DECISION 1: convergence
+went ONE way. The Policy Engine now refuses a suspended ACCOUNT — the direction that was a security hole,
+since a closed account read as being in good standing for every decision it could reach. A trust
+suspension still does **not** refuse a login, and that was declined with reasons rather than deferred:
+`assertCanSuspend` reserves account closure for admins while trust restrictions need only `trust.manage`,
+`maybeEscalate` reaches the trust suspension automatically at six strike weight with no human deciding,
+and `TokenService.rotate` reads neither status nor trust so a login block would stop only people who log
+out. **Nobody's ability to sign in changed.** DECISION 2 found A2-3 dissolves once a revoke exists — the
+two remedies are distinct on purpose — and DECISION 3 marked `Banned` reserved rather than standing up a
+third sanction system.
+
+**Gates, before → after.** Backend jest **150 suites / 1254 tests → 152 / 1288**; `tsc`, `nest build` and
+lint clean throughout. Admin `pnpm typecheck` **18 errors → 0**, `pnpm build` **failing → clean**, lint
+clean throughout, vitest **67 files / 347 tests → 67 / 363**. E2E `tsc` + lint clean; `admin-chromium`
+**69 → 75**, `admin-dark` 18 unchanged. The browser suite was **NOT executed** — no stack on this machine,
+so the specs typecheck, lint and collect, and nothing more is claimed.
+
+**One new gap: B9-1** (48 §3.17) — `POST /admin/users/:id/suspend` is not retryable. `setStatus` commits,
+then `logoutAll` runs un-transacted, and a retry throws `UserStatusConflictException` before reaching the
+revocation — so a failed suspend leaves the account closed with live sessions and no path that completes.
+Same shape in five places. Not fixed: frozen v1 paths, and the fix is a design choice. A2-1's port shrinks
+its blast radius, which is why it is medium.
+
 ## 6. Track M — marketing site
 
 Config only: real `NEXT_PUBLIC_FIREBASE_*` values for the waitlist, the production domain, and social

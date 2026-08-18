@@ -167,12 +167,13 @@ Changing anything in §1–§3 (the contract) requires: (a) an ADR entry in `doc
 a new API version per §8. Additive changes update the relevant doc + `openapi.json`
 and are noted here.
 
-| Date       | Change                                                                                                                 | By  |
-| ---------- | ---------------------------------------------------------------------------------------------------------------------- | --- |
-| 2026-07-09 | Initial freeze at `v1` (post Epic 12)                                                                                  | —   |
-| 2026-07-27 | **Additive:** `GET /pieces/by-slug/:slug` (B1, [45 §3](./45_WebClientRoadmap.md))                                      | —   |
-| 2026-08-08 | **Post-freeze surface, shape change:** `GET /stories/:id/snapshots` (B7, [45 §4.12](./45_WebClientRoadmap.md))         | —   |
-| 2026-08-17 | **Post-freeze surface, additive + one error code split:** `admin/monetization` (B8, [45 §5](./45_WebClientRoadmap.md)) | —   |
+| Date       | Change                                                                                                                                                      | By  |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | --- |
+| 2026-07-09 | Initial freeze at `v1` (post Epic 12)                                                                                                                       | —   |
+| 2026-07-27 | **Additive:** `GET /pieces/by-slug/:slug` (B1, [45 §3](./45_WebClientRoadmap.md))                                                                           | —   |
+| 2026-08-08 | **Post-freeze surface, shape change:** `GET /stories/:id/snapshots` (B7, [45 §4.12](./45_WebClientRoadmap.md))                                              | —   |
+| 2026-08-17 | **Post-freeze surface, additive + one error code split:** `admin/monetization` (B8, [45 §5](./45_WebClientRoadmap.md))                                      | —   |
+| 2026-08-18 | **Post-freeze surface, additive + one status change + one enforcement change:** `admin/trust` and the Policy Engine (B9, [45 §5](./45_WebClientRoadmap.md)) | —   |
 
 **2026-07-27 — `GET /pieces/by-slug/:slug`.** Additive per §8; no existing endpoint, DTO, or
 behaviour changed. **Why:** the web reader addresses pieces by slug (`/p/:slug` — already emitted by
@@ -238,3 +239,80 @@ per the B7 precedent, and both its unit and browser specs assert the two codes s
 **Nothing existing was removed, renamed or retyped.** The four numeric config fields, the coupon
 fields that already shipped, the four revenue scalars, `PAYMENT_NOT_FOUND` itself, and every one of
 A1's fourteen routes are untouched.
+
+**2026-08-18 — `admin/trust` gains two routes, one read stops writing, one unknown id becomes a 404,
+and the Policy Engine starts reading `users.status`.** Recorded here for discoverability, in the B7 and
+B8 style and **not** as a freeze amendment: the Trust module is AF6, added 2026-07-20, and is therefore
+outside the `v1` baseline of 102 paths frozen on 2026-07-09 — §8 names admin explicitly as a future
+concern that "enters additively". Its only consumer is the admin app, updated in the same commits. No ADR
+and no version bump. Closes findings A2-1 … A2-5 in [48 §3.16](./48_PlatformParityRegister.md).
+
+**The two new routes**, both on the existing `TrustAdminController`, both thin plumbing over the service,
+both audited through the shared trail and both invalidating the Policy Engine cache in the service rather
+than the controller:
+
+| Route                         | Permission     | Answers       | Notes                                                                      |
+| ----------------------------- | -------------- | ------------- | -------------------------------------------------------------------------- |
+| `GET admin/users/:id/strikes` | `trust.view`   | `StrikeDto[]` | Active AND historical, newest first. Mirrors the restriction list.         |
+| `DELETE admin/strikes/:id`    | `trust.manage` | `StrikeDto`   | Wires the existing `TrustRepository.revokeStrike`; 409 if already revoked. |
+
+Two new error codes travel with them: `STRIKE_NOT_FOUND` (404) and `STRIKE_ALREADY_REVOKED` (409). Both
+are additions to `ERROR_CODES`; nothing existing was renamed or remapped.
+
+**One shape change, additive and optional.** `TrustSummaryDto` gains `accountStatus?: UserStatus`,
+populated only on the admin read and absent from `GET /me/trust`. It is optional precisely so the
+customer-facing shape is byte-identical to what shipped: no client needs a change, and the field exists
+because the admin standing card was rendering "Good standing" for an account an operator had already
+suspended.
+
+**One status-code change: `GET admin/users/:id/trust` and its two sibling admin reads now answer 404
+`USER_NOT_FOUND` for an id that belongs to no account.** They used to answer 200 with a fabricated clean
+standing, because the read called `getOrCreateProfile` and `trust_profiles` carries no FK to `users` — so
+a mistyped UUID both created a row and read as a real account in good standing (finding A2-4). The read
+now writes nothing. Only the admin app consumes these routes, and its copy is corrected in the same
+commits. `GET /me/trust` keeps answering 200 for every caller, since its id comes from the JWT.
+
+### The enforcement change: a suspended account is now refused by the Policy Engine
+
+**This is the loudest thing in the row and it gets its own paragraph.** Before B9, `users.status` was
+read in exactly three places — `auth.service.ts:123` and `:126` on the login path, plus a moderation
+idempotency check — and `grep UserStatus` over `modules/policy` returned nothing at all. Account
+suspension was enforced entirely at the auth edge: the login is refused, and the suspend endpoints call
+`logoutAll`. Nothing downstream re-checked, so a suspended account that still held a live access token
+was treated as being in **good standing** by every policy decision it could reach.
+
+The Policy Engine now reads it, through a fifth self-registered port (`AccountStatusService` in the Users
+module, registered at bootstrap exactly as `TrustStatusService` registers the trust port — the engine
+gains no compile-time dependency and there is no cycle). `AccountStatusRule` is ordered above the trust
+rule, and therefore above ownership and permission too, because a closed account outranks every grant
+below it: a suspended author must not keep editing their own story and a suspended admin must not keep
+acting as one. It resolves inside the parallel fan-out `buildContext` already performed, so no serial
+latency is added, and it fails OPEN on a missing or throwing port like every other port on that path —
+refusing every user when the users table is unreachable would be a worse failure than the one it guards.
+
+**What changes for a real person.** A suspended account is refused publishing, collaboration, comment and
+invitation actions within 30 seconds (the decision-cache TTL) rather than being allowed for up to one
+access-token TTL. They see the restricted-state screen both clients already render for
+`PolicyEffect.Suspended`; the reason string is "This account has been suspended", deliberately distinct
+from the trust rule's wording so an audit trail can tell which system spoke. **Nobody's ability to sign in
+changed.** No non-suspended account is affected in any way. `deactivated` is deliberately NOT treated as
+closed: that is the user's own doing, login already makes it indistinguishable from wrong credentials, and
+a moderation-flavoured screen would be the wrong answer for someone who closed their own account.
+
+**What was deliberately NOT changed: a trust `suspended` restriction still does not refuse a login.** The
+symmetry is tempting and it was rejected for three reasons. `ModerationService.assertCanSuspend` reserves
+account closure for admins while trust restrictions need only `trust.manage`, held by moderators — so that
+wiring would silently grant every moderator an admin-only power through a route built as a participation
+sanction. `TrustService.maybeEscalate` applies the global `suspended` restriction automatically at six
+active strike weight with no human deciding, so a counter could close an account. And it would not work
+alone in any case: `TokenService.rotate` reads neither status nor trust, so a login block stops only
+people who log out. A structural test asserts `modules/auth` still imports nothing from the trust module,
+so the next reader who notices the asymmetry finds the reasoning before rewiring it. Full argument in
+[48 §6.17](./48_PlatformParityRegister.md).
+
+**Nothing existing was removed, renamed or retyped.** `TrustStatus.Banned` is untouched and marked
+RESERVED where it is declared (finding A2-5) rather than deleted — removing an enum member is breaking
+regardless of the baseline. `getOrCreateProfile` still exists and is still called by the write paths.
+`TrustSummaryDto`'s five original fields, all five original admin trust routes, the six self-service trust
+routes, `PolicyEffect`, and every `TrustStatus` and `RestrictionType` member keep their exact former types
+and meanings.

@@ -1,6 +1,6 @@
 # 48 — Platform Parity Register (web ↔ mobile)
 
-**Status:** 🔒 Binding · **Owner:** every client epic · **Last swept:** 2026-08-17 (after **B8** — the A1 enablers: all seven of A1's recorded gaps closed and their compensating copy deleted; one new gap, B8-1; sweep **§6.15**. Earlier the same day, **A1** — the admin monetization surface, three slices; sweep **§6.14**, and seven backend gaps recorded as **A1-1 … A1-7** in §3. Earlier the same day, **D3** — AI writing is now an enforced paid capability on the server and gated on both clients; the free-tier regression is LIVE, and §5.2 item 4 is rewritten. Sweep **§6.13**. Earlier the same day, **M7-3** — mobile's clap, sweep **§6.12**. Before those, 2026-08-10 after **W7c** —
+**Status:** 🔒 Binding · **Owner:** every client epic · **Last swept:** 2026-08-18 (after **B9** — A2's six findings all closed: the admin build gate is green again and **§6.15's false "typecheck clean" is struck in place and dated**, the Policy Engine reads `users.status`, strikes have a list and a revoke, the trust GET stops writing, and A2-3/A2-5 close as documented decisions. One new gap, **B9-1**; sweep **§6.17**. Earlier the same day, **A2** — the admin Trust surface, three slices; sweep **§6.16**, and six gaps recorded as **A2-1 … A2-6** in §3, all since closed by B9. Before that, 2026-08-17 after **B8** — the A1 enablers: all seven of A1's recorded gaps closed and their compensating copy deleted; one new gap, B8-1; sweep **§6.15**. Earlier the same day, **A1** — the admin monetization surface, three slices; sweep **§6.14**, and seven backend gaps recorded as **A1-1 … A1-7** in §3. Earlier the same day, **D3** — AI writing is now an enforced paid capability on the server and gated on both clients; the free-tier regression is LIVE, and §5.2 item 4 is rewritten. Sweep **§6.13**. Earlier the same day, **M7-3** — mobile's clap, sweep **§6.12**. Before those, 2026-08-10 after **W7c** —
 reader analytics + the privacy-prefs row, closing §2 rows **6 and 8** and leaving **onboarding as the
 only unowned §2 row**. Its sweep is **§6.10**, and it is the slice that shrank on contact with the code
 — twice, both reductions recorded in §4 rather than in a commit message. Row 4's premise was **wrong**:
@@ -2404,11 +2404,33 @@ would read. Both are design decisions larger than the row that surfaced them, an
 itself. The client says it instead: the free-plan card ends with a sentence telling the operator that
 a non-existent id reads the same way and to confirm it on the Users screen.
 
+> **STILL OPEN, and now INCONSISTENT with the trust surface — B9, 2026-08-18.** B9 was asked to decide
+> A2-4 (the same question on the trust reads) together with this entry, and decided differently: the
+> three admin trust reads 404 `USER_NOT_FOUND` for an id that belongs to nobody, while these four
+> monetization reads still answer a nullable shape.
+>
+> The reason is that they are not the same defect. A2-4's read WROTE a row and answered a plausible
+> fully-populated default; these answer an honest empty. So A2-4 had to close and this did not — but the
+> result is that two admin surfaces answer "does this id exist?" two different ways, which is worse than
+> either answer on its own. **The 404 is the answer this entry should adopt when its own row comes up**,
+> not a second convention to reconcile later. Note that the trust module took the option this entry
+> called "a cross-module user existence check" and it cost one `UsersModule` import with no cycle
+> (`UsersModule` imports only `TaxonomyModule`), which is smaller than this entry assumed — the reason
+> to defer is now the four response contracts and the copy that depends on them, not the dependency.
+> See [§6.17](#617-b9s-sweep-2026-08-18).
+
 ## 3.16 A2 pre-flight + build — the sanction map, and five paths to one word (2026-08-18)
 
 Found while building the admin Trust surface (docs/45 §5, row A2). **None is fixed**: the backend is
 frozen (§7 of the roadmap), and the two client-side ones are other rows' code. Full reasoning in
 [§6.16](#616-a2s-sweep-2026-08-18).
+
+> **ALL SIX CLOSED by B9, 2026-08-18** — same day, the row that followed. Trust is AF6 and therefore
+> outside the frozen v1 baseline (docs/25:155), so the additive routes needed no ADR or version bump;
+> the freeze log at docs/25:173 records them. Each entry below keeps its diagnosis and gains a closure
+> line. Three closed as fixes, one as a fix plus a corrected record, and two as documented decisions —
+> A2-3 dissolved once A2-2 shipped a revoke, and A2-5 is marked reserved rather than wired.
+> B9's own sweep, including whether it opened a seventh, is [§6.17](#617-b9s-sweep-2026-08-18).
 
 ### A2-1 · **medium** · two sanctions are both called "suspend", enforced in different places, and neither implies the other (opened 2026-08-18)
 
@@ -2437,6 +2459,36 @@ design decision, not a UI one. The client says it instead: a persistent note at 
 panel states which sanction is which and that lifting one leaves the other in force, and the
 `suspended` restriction's own confirmation repeats it.
 
+> **CLOSED — B9, `045c28f` (backend) + `8f86d16` (admin), 2026-08-18. Converged in ONE direction, and
+> the other was declined with reasons.**
+>
+> **Fixed:** the Policy Engine now reads `users.status`, through a fifth self-registered port
+> (`users/account-status.service.ts` → `AccountStatusRule`, ordered above the trust rule so a closed
+> account outranks ownership and permission too). This was the direction that was a HOLE rather than a
+> naming problem: "account-suspended user's Trust tab reads Good standing" was the visible half, and
+> the invisible half was that every policy decision for a closed account came back clean. It resolves
+> inside the parallel fan-out `buildContext` already ran, so no serial latency is added, and the 30s
+> decision cache means the write path needs no dependency on the engine. It fails open on a missing or
+> throwing port, like every other port there.
+>
+> **Also fixed (display, both directions):** the admin read carries `accountStatus`, the standing card
+> labels the two states separately and describes what the account state does, and the panel's note —
+> which said the Policy Engine never sees an account suspension, true when written and part of this
+> very defect — is corrected.
+>
+> **DECLINED: making a trust suspension refuse a login.** Three reasons, in order of weight.
+> (1) `ModerationService.assertCanSuspend` reserves account closure for admins, while trust
+> restrictions need only `trust.manage`, which moderators hold — so that wiring would silently hand
+> every moderator an admin-only power through a route built as a participation sanction.
+> (2) `maybeEscalate` applies the global `suspended` restriction AUTOMATICALLY at six strike weight,
+> with no human deciding, so a counter could close an account. (3) It would not work alone anyway:
+> `TokenService.rotate` reads neither status nor trust, so a login block stops only people who log
+> out, and making it real would need moderator-triggered force-logout — the same escalation again.
+> **Nobody who can sign in today lost that ability.** A closed account now stops passing policy-gated
+> actions within 30s instead of one access-token TTL, which is strictly tighter than before. Pinned by
+> a structural test (`users/account-status.service.spec.ts`) asserting `modules/auth` still imports
+> nothing from trust, so the next reader who notices the asymmetry finds this record first.
+
 ### A2-2 · **medium** · a strike can be issued and then never listed, revoked, or verified (opened 2026-08-18)
 
 `POST /admin/users/:id/strikes` is the ONLY strike route in the backend (`grep` on
@@ -2458,6 +2510,28 @@ Not fixed: a `GET users/:id/strikes` and a `DELETE strikes/:id` are two small ro
 controller. The UI compensates honestly instead — the copy says "projected", and says in as many words
 that a strike cannot be revoked.
 
+> **CLOSED — B9, `86fbe37` (backend) + `8f86d16` (admin) + `fae7ee5` (e2e), 2026-08-18.** Both routes
+> shipped, exactly as scoped: `GET users/:id/strikes` at `trust.view`, `DELETE strikes/:id` at
+> `trust.manage`, on the existing controller, audited with the `StrikeRevoke` action that was already
+> declared, and invalidating the Policy Engine cache in the service rather than the controller.
+> `TrustRepository.revokeStrike` was WIRED, not rewritten. The controller was never frozen — trust is
+> AF6, outside the v1 baseline (docs/25:155) — which A2 had not established.
+>
+> The list carries revoked and expired rows, because `activeStrikeWeight` counts only the live ones and
+> a list of live strikes could not explain a total an operator disagrees with. The revoke recomputes the
+> weight from the rows and the score from the SAME ledger rather than adding the penalty back, because
+> `issueStrike` clamps at zero: a strike that drove a score to 0 took less than its full penalty.
+> A second revoke is a 409, not a silent success, so an operator can tell whether their action did
+> anything; the UI cannot reach it, since the affordance is offered only on rows still counting.
+>
+> **And the compensating copy is deleted.** The projection hedge is gone from `escalationCopy` and its
+> doc comment, "a strike cannot be revoked or edited once issued" is replaced by a sentence naming
+> where the revoke is, and the strike form no longer claims an expiry is the only way a weight is
+> released. `countedStrikeWeight` re-derives the total client-side and the standing card names the
+> source of each figure when the two disagree — which now means one thing, a strike that expired between
+> two reads. The three tests that pinned the old sentences assert the new ones AND the absence of the
+> old.
+
 ### A2-3 · **low** · a lifted auto-escalation comes straight back with the next strike (opened 2026-08-18)
 
 `maybeEscalate` runs on every `issueStrike` against the CURRENT total, and `ensureGlobalRestriction`
@@ -2467,6 +2541,23 @@ earns the same restriction again on the next strike of any severity.
 
 This is defensible behaviour — the weight is the standing, and lifting a restriction is not a pardon —
 but it is invisible from either endpoint. Recorded rather than changed; the lift confirmation states it.
+
+> **CLOSED — B9, `86fbe37` + `8f86d16`, 2026-08-18. It DISSOLVED, and was documented rather than
+> changed.**
+>
+> B9's DECISION 2 asked whether the un-reduced weight is a defect or the design, and it is the design —
+> but only once A2-2 exists. The two operator intents are genuinely different: lifting says "you may act
+> again", revoking a strike says "that strike should not have been issued". With a revoke route in place,
+> the correct remedy for a weight an operator disagrees with is revoking, and making a lift reduce the
+> weight would conflate the two and erase a real violation record. **The finding was only ever a defect
+> because there was no other remedy.**
+>
+> What did NOT dissolve is that nothing said so, so this ships as documentation in three places rather
+> than a code change: a comment at `TrustService.liftRestriction` for the next reader, the lift
+> confirmation now naming the revoke instead of only warning about the consequence, and the revoke
+> confirmation stating the converse — that dropping below a threshold does NOT lift a restriction
+> already applied, which is the surprise in the other direction. Two tests assert each remedy does only
+> its own job: a lift touches neither the weight nor the profile, a revoke recomputes both.
 
 ### A2-4 · **low** · `GET /admin/users/:id/trust` WRITES, and manufactures a clean standing for an unknown id (opened 2026-08-18)
 
@@ -2485,6 +2576,35 @@ answer here is a manufactured record rather than an empty one. Note that
 `resolveTrustContext` — the hot path the Policy Engine uses — correctly READS only (`:136`), so this is
 confined to the admin/account summary path.
 
+> **CLOSED — B9, `86fbe37` + `8f86d16` + `fae7ee5`, 2026-08-18. Both halves, and it DIVERGES from B8-1
+> deliberately.**
+>
+> `getSummary` derives the defaults in memory now, exactly as `resolveTrustContext` already did — same
+> answer, no write — and the row is created by the first write, where it means something.
+> `getOrCreateProfile` survives untouched for `issueStrike` and `revokeStrike`. The three admin reads
+> additionally prove the id against `users` first and 404 `USER_NOT_FOUND`; the self read (`me/trust`)
+> does not, because its id comes from the JWT. A test asserts no row is written by a GET, and another
+> that the existence check runs BEFORE the trust tables are touched at all.
+>
+> **The divergence from B8-1, stated rather than left to be discovered.** B9 was asked to decide this
+> WITH B8-1, and decided differently: trust 404s, while the monetization per-account reads still answer
+> a nullable shape for an unknown id. The reason is that these are not the same defect. B8-1's reads
+> return an ambiguous EMPTY — annoying, honest about having no data, and harmless. This one WROTE, and
+> answered a plausible fully-populated default that an operator could then act on. Leaving trust to
+> invent accounts so that two surfaces stay symmetric is the wrong trade, and closing B8-1 properly
+> means changing four response contracts and the copy that depends on them — B8-1's own row, not a
+> finding of A2's.
+>
+> **The inconsistency is therefore real and recorded**: two admin surfaces answer "does this id exist?"
+> differently until B8-1 is closed. The 404 is the answer B8-1 should adopt, not a second convention to
+> reconcile later, and B8-1's entry above now points here.
+>
+> **Bonus, worth naming because nobody had noticed it:** A2's own E2E suite used this defect as a
+> fixture. Four specs across three files passed a UUID matching no account and asserted a clean
+> standing, which worked only because the read manufactured a row — and the visual baseline was
+> inserting a `trust_profiles` row for the zero UUID on every run. All four now arrange a real throwaway
+> account (`fae7ee5`).
+
 ### A2-5 · **low** · `TrustStatus.Banned` is unreachable, and `user_banned` is the same status as `user_suspended` (opened 2026-08-18)
 
 `TrustStatus.Banned` is ranked most severe in `STATUS_SEVERITY` (`trust.service.ts:59`) and denied
@@ -2495,6 +2615,23 @@ resolution `user_banned` calls the same `suspendUser` as `user_suspended` and wr
 (`moderation.service.ts:306-325`). "Banned" therefore exists in three vocabularies and as a distinct
 state in none of them. Both clients already label it, so nothing changes on screen; A2 simply does not
 offer it, because `ApplyRestrictionDto` cannot express it.
+
+> **CLOSED — B9, `acaf5a7`, 2026-08-18. Documented as RESERVED, not wired. Cheapest honest answer.**
+>
+> B9's DECISION 3 was: give it a distinct write path AND a distinct effect, or mark it reserved where
+> the next reader will hit it. Reserved, for one decisive reason — **a ban already lives elsewhere.**
+> `ReportResolution.UserBanned` resolves to `suspendUser(user, actor, permanent)`, i.e.
+> `users.status = 'suspended'` audited as `MODERATION_ACTIONS.UserBan`. Ban is an ACCOUNT sanction, and
+> A2's own finding says so. Wiring `TrustStatus.Banned` would stand up a THIRD sanction system beside
+> the two A2-1 caught talking past each other, and it would need a new `RestrictionType`, a new route,
+> a change to `trustStatusForRestriction`, and a distinct effect in `TrustRule` — plus a product answer
+> to what a ban means that a suspension does not. None of that is a defect fix.
+>
+> The note goes in `packages/shared/src/policy.ts` beside the member itself, which is where the last two
+> readers looked and found nothing. It states that the member is unreachable BY CONSTRUCTION rather than
+> by omission, that `TrustRule` would make it indistinguishable from `Suspended` even if reachable,
+> where ban actually lives, and that it must not be deleted either — removing an enum member is breaking
+> (docs/25 §8). No behaviour changed and no test was needed; the comment IS the deliverable.
 
 ### A2-6 · **high** · the admin `typecheck` and `build` gates have been RED since B8 landed (opened 2026-08-18)
 
@@ -2521,6 +2658,68 @@ inline annotation.
 the one recorded. Not fixed here — 18 errors across another row's feature, including a production-file
 change, is not A2's diff to make — and A2's own gate result is reported as what it is: 18 pre-existing
 errors, 0 in any file this row touches, with `vite build` clean on its own.
+
+> **CLOSED — B9, `6a7a102`, 2026-08-18, as its own commit before any other work.** All 18 fixed;
+> `typecheck` 0 errors, `build` clean, `eslint --max-warnings=0` clean, vitest **67 files / 348 tests**.
+> A2's diagnosis was exact — the count, the four-file distribution and the production cause all
+> reproduced verbatim.
+>
+> None was silenced. The 13 `TABLE_SPECS` errors came from annotating an `as const` list of exactly
+> three tables as `readonly TableSpec[]`, which widened it so every index read admitted an `undefined`
+> the data cannot produce — `as const satisfies readonly TableSpec[]` keeps the tuple and still checks
+> each entry. The revenue fixture was missing `byCurrency`, which B8 itself made required, so the
+> fixture was not the shape the endpoint returns. The `within()` one was a spec reaching the tax table's
+> Add button through `getAllByRole(/Add/)[0]`, trusting the render order of three buttons that all read
+> "Add" — which was also a real a11y defect, since a screen-reader user had no way to tell them apart;
+> naming each button fixed both. And the production one was fixed by DELETING the redundant annotation,
+> per A2's own diagnosis, not by casting past it.
+>
+> **The behaviour the broken type described now has a test.** Nothing asserted that a refund invalidates
+> the per-account payment list, which is why only `tsc` ever complained — and why the tempting fix
+> (deleting the `userId` branch) would have looked correct. The new test in `money-actions.spec.tsx` was
+> checked by mutation: removing the invalidation makes it fail.
+>
+> **§6.15 is corrected in place, struck and dated**, rather than quietly rewritten — see the CORRECTION
+> block there. A sweep that visibly records being wrong is why this register works; three of four gates
+> were genuinely green, which is exactly how the fourth went a day unnoticed.
+
+---
+
+## 3.17 B9 — the one finding closing A2's six opened (2026-08-18)
+
+Found while establishing B9's DECISION 1. Not in the trust module, and not fixed — see
+[§6.17](#617-b9s-sweep-2026-08-18).
+
+### B9-1 · **medium** · suspending an account is not retryable, and a failed attempt leaves live sessions (opened 2026-08-18)
+
+`POST /admin/users/:id/suspend` does two things that are not in one transaction, and cannot be:
+
+```ts
+const result = await this.users.setStatus(id, UserStatus.Suspended); // Postgres, commits
+await this.auth.logoutAll(id, this.tokenContext(req)); // Redis: deletes families, bumps sv
+```
+
+If `logoutAll` throws — it is a Redis call, so a connection blip is enough — the status is already
+committed and the request 500s. **The retry cannot recover**: `setStatus` throws
+`UserStatusConflictException` ("Account is already `suspended`") before execution reaches `logoutAll`
+again (`users.service.ts:151`). So the account sits suspended with every session live, and
+`TokenService.rotate` reads neither `users.status` nor trust — so those families keep rotating for the
+full 30-day refresh TTL. The operator saw a failure and has no action available that fixes it short of
+`POST /unsuspend` followed by a second `POST /suspend`, which is not an obvious remedy and is not
+documented anywhere.
+
+The same two-step appears in `deactivate` (`:472`), the account delete (`:540`) and the bulk status action
+(`:625`, `:635`, `:641`), so it is one shape in five places, not one endpoint.
+
+**Not fixed by B9.** It lives in `modules/admin` and `modules/auth`, both inside the frozen v1 baseline,
+and the fix is a real design choice rather than a patch: a cross-store transaction is not available, so it
+wants either a `setStatus` that tolerates a no-op transition (making the endpoint idempotent, which is the
+smaller change and the one this entry recommends) or revocation retried out of band by a worker. Either is
+larger than a finding closed in passing.
+
+**Its blast radius shrank in this row, which is why it is medium and not high.** A2-1's fix means the
+Policy Engine refuses a closed account regardless of what its sessions are doing, so the residual exposure
+is reads and any write not routed through the engine — no longer everything.
 
 ---
 
@@ -4270,3 +4469,107 @@ reads a different endpoint (`GET /me/trust`, W3c and mobile's `trust_controller.
 routes are `@Controller('admin')` and no user-facing client can reach them. The parity obligation A2 does
 carry is the vocabulary one, and it is discharged by copying the clients' words rather than by shipping
 anything to them.
+
+---
+
+### 6.17 B9's sweep (2026-08-18)
+
+The row that closes A2's hand-off. Six findings, six commits, and the first sweep in this document whose
+subject includes **this document being wrong** — A2-6 was a red build gate that §6.15 recorded as clean.
+
+**What shipped**, six commits, one concern each:
+
+| Commit    | Closes                    | What                                                                                                                 |
+| --------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `6a7a102` | **A2-6**                  | All 18 admin type errors, the production one by deletion, plus a regression test — and §6.15 struck in place.        |
+| `acaf5a7` | **A2-5**                  | `TrustStatus.Banned` marked reserved in the enum, with where a ban actually lives.                                   |
+| `045c28f` | **A2-1** (backend)        | The Policy Engine's fifth port: `users.status` is read, `AccountStatusRule` ordered above the trust rule.            |
+| `86fbe37` | **A2-4, A2-2, A2-3**      | The GET stops writing and 404s an unknown id; `GET users/:id/strikes` + `DELETE strikes/:id`; the lift/revoke split. |
+| `8f86d16` | **A2-2, A2-1, A2-3** (UI) | The strike list with a revoke action, the account-status badge, and every hedge this row invalidated deleted.        |
+| `fae7ee5` | the new routes            | Browser coverage for the list and the revoke — and four specs repaired that used A2-4 as a fixture.                  |
+
+**Gates, before and after** — stated as a pair because this row exists partly because a count was
+misreported.
+
+| Gate                              | Before (pre-B9)                       | After                                     |
+| --------------------------------- | ------------------------------------- | ----------------------------------------- |
+| Backend `tsc`                     | clean                                 | clean                                     |
+| Backend `nest build`              | clean                                 | clean                                     |
+| Backend `eslint --max-warnings=0` | clean                                 | clean                                     |
+| Backend jest                      | **150 suites / 1254 tests**           | **152 suites / 1288 tests**               |
+| Admin `pnpm typecheck`            | **18 errors** (RED since B8)          | **clean, exit 0**                         |
+| Admin `pnpm build`                | **FAILED** (same 18)                  | **clean**                                 |
+| Admin `eslint --max-warnings=0`   | clean, exit 0                         | clean, exit 0                             |
+| Admin vitest                      | **67 files / 347 tests**              | **67 files / 363 tests**                  |
+| E2E `tsc` + lint                  | clean                                 | clean                                     |
+| E2E collection                    | `admin-chromium` 69 · `admin-dark` 18 | `admin-chromium` **75** · `admin-dark` 18 |
+
+The backend before-figures match §6.15's exactly, which is the check that the +2 suites / +34 tests are
+this row's and nothing drifted in between. Admin gained +2 spec files' worth of tests without a new file
+(+16 across four existing specs). `admin-dark` is unchanged because this row added no a11y or visual
+test — it changed what two existing ones arrange.
+
+**The browser suite was NOT executed for this row.** No Qalam stack is running on this machine and the
+visual job's pinned image is CI-only, so what is verified is that the specs typecheck, lint, and
+collect — not that they pass. Same standing position as A1, B8 and A2. One thing this row can state
+positively: `admin-trust.png` was never minted by A2 either, so the panel gaining a strike list makes no
+baseline stale; the first CI visual run mints it against the new layout.
+
+#### Did closing these six open a seventh?
+
+**Yes, one, and it is not in the trust module: the suspend endpoint cannot be retried.**
+
+`POST /admin/users/:id/suspend` runs `setStatus` and then `logoutAll`, un-transacted
+(`admin-users.controller.ts:423-424`). If the session revocation fails — it is a Redis call — the status
+is already committed, the request 500s, and a retry throws `UserStatusConflictException` from `setStatus`
+**before** it reaches `logoutAll`. There is no path that completes the revocation, so the account is
+suspended with live sessions until every refresh family expires (30 days, rotating). The same shape
+applies to `deactivate`, `delete`, and the bulk action, which all follow the identical two-step.
+
+It was found while establishing DECISION 1 and it is **not fixed here** — it is in `modules/admin` and
+`modules/auth`, it is a v1 frozen path, and the fix is a genuine design choice (a transaction across
+Postgres and Redis is not available, so it wants either an idempotent `setStatus` that tolerates a
+no-op transition, or a revocation retried out of band). Recorded as **B9-1** in §3. It is worth noting
+that A2-1's fix reduces its blast radius considerably: the Policy Engine now refuses a closed account
+regardless of what its sessions are doing, so the residual exposure is reads and any non-policy-gated
+write rather than everything.
+
+**Nothing else new.** Two things that look like gaps are not. `TrustStatus.Banned` is still unreachable
+— that is A2-5's recorded decision, not a new finding. And the `trust.view`-without-`trust.manage`
+operator still has no reachable account behind it (the shell floor is Moderator and Moderator upward all
+hold `trust.*`), which is A2's standing gap, asserted in the component spec by synthesising the grant
+set and server-side as route metadata.
+
+#### Did any decision change observable behaviour, and is that stated where a user would notice?
+
+**Two did, and one of those is user-facing.**
+
+**A2-1 changes what a SUSPENDED account can do**, and the change is a tightening: a closed account is now
+refused every policy-gated action — publishing, collaboration, comments, invitations — instead of being
+treated as in good standing. In practice this is reachable only inside the window where a suspended
+account still holds a live token, which is bounded by the access-token TTL and, when `logoutAll`
+succeeded, is usually empty. **Nobody who could sign in before this row can no longer sign in**, and no
+non-suspended user is affected in any way. The person who hits it sees the restricted-state screen the
+clients already render for `PolicyEffect.Suspended` — existing copy, no client change needed — and its
+reason reads "This account has been suspended", distinct from the trust rule's wording so the audit trail
+can tell the two systems apart. It is stated in docs/25's log because a change to what a suspended
+account may do belongs beside the login rule it complements.
+
+**A2-4 changes an admin response from 200 to 404** for a user id that belongs to nobody, on three routes.
+Operator-facing only, and it removes a trap rather than a capability. It also removes a write from a GET,
+which is why four E2E specs had to change — they were relying on the write.
+
+**A2-2's new routes are additive** and A2-3 and A2-5 changed no behaviour at all; A2-6 changed no runtime
+behaviour either, only whether the code compiles. The A2-6 fix does alter one accessible name — the three
+"Add" buttons on the monetization config form are now named per table — which is an a11y improvement and
+the only rendered change outside the trust surface.
+
+#### Does any other client need this?
+
+**No, by construction, for the third time in this document.** Every route this row touched is
+`@Controller('admin')` and gated on `trust.view` / `trust.manage`, operator permissions no customer client
+holds. The one thing that COULD have reached a client is A2-1's enforcement change, and it does not need
+one: it produces `PolicyEffect.Suspended`, which both clients already render, so the restricted-state
+screen a suspended account now meets is the screen they already ship. The parity obligation is discharged
+by not needing to ship anything, and the customer-facing `GET /me/trust` shape is unchanged — the
+`accountStatus` field is optional and populated only on the admin read.
