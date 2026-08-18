@@ -1,6 +1,7 @@
 import { freshLoginAs } from '../../fixtures/auth';
 import { test, expect } from '../../fixtures/test';
 import { MONETIZATION_ROUTES, MonetizationPage } from '../../pages/admin/monetization-page';
+import { TrustPage, UNKNOWN_USER_ID } from '../../pages/admin/trust-page';
 
 /**
  * Admin RBAC boundary (docs/e2e/06 Phase 3). Mints a moderator, signs into the admin
@@ -75,5 +76,75 @@ test.describe('@phase3 admin RBAC', () => {
       // The page's own heading must never render — the guard sits above the route element.
       await expect(page.getByRole('heading', { level: 1, name: route.heading })).toHaveCount(0);
     }
+  });
+
+  /**
+   * A2's Trust boundary — and the one place in this file where the permission and the role floor
+   * genuinely come apart.
+   *
+   * `trust.*` is granted to `Role.Moderator` (`DEFAULT_ROLE_PERMISSIONS`), while `/users` — which
+   * hosts the Trust TAB — is gated `RequireRole min={Role.Admin}`. So the moderator is simultaneously
+   * the role the trust permission was written for and a role that cannot reach the drawer, which is
+   * why the surface also has a permission-gated route of its own. This test is that claim, executed:
+   * the same viewer is refused `/users` and admitted to `/trust`.
+   *
+   * **What CANNOT be proved with a real account, stated rather than implied:** there is no seeded
+   * role that reaches the admin shell without `trust.view`, and none that holds `trust.view` without
+   * `trust.manage` — the shell floor is Moderator, and Moderator upward all hold `trust.*`. So
+   * "no trust permission → no tab" and "view-only → no actions" are gate branches with no reachable
+   * account behind them, and they are pinned in the admin's own component specs
+   * (`trust-mutations.spec.tsx`, `user-trust-tab.spec.tsx`) by synthesising the grant set. They are
+   * worth having because `role_permissions` is editable at runtime.
+   */
+  test('a moderator is refused /users but reaches /trust — the permission, not the rank', async ({
+    page,
+    api,
+    data,
+  }) => {
+    const moderator = await api.createModerator({
+      email: data.email(),
+      username: data.username(),
+      password: data.password(),
+    });
+    await freshLoginAs(page, moderator.email, moderator.password);
+
+    await page.goto('/dashboard');
+    await expect(page.getByTestId('admin-header')).toBeVisible({ timeout: 30_000 });
+
+    // The admin floor refuses them, so the Trust TAB is out of reach for this role.
+    await page.goto('/users');
+    await expect(page.getByText(/access to this/i)).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Users' })).toHaveCount(0);
+
+    // The permission-gated route admits them, and the nav offers it.
+    await expect(page.getByRole('menuitem', { name: TrustPage.NAV_LABEL })).toBeVisible();
+    const trust = new TrustPage(page);
+    await trust.goto();
+    await expect(page.getByText('No account selected')).toBeVisible();
+
+    // And they hold `trust.manage` too, so the write affordances are theirs.
+    await trust.open(UNKNOWN_USER_ID);
+    await expect(trust.panel.getByRole('button', { name: 'Issue strike' })).toBeVisible();
+    await expect(trust.panel.getByRole('button', { name: 'Apply restriction' })).toBeVisible();
+  });
+
+  /**
+   * The negative case that IS reachable: an ordinary user holds no trust grant and no admin rank.
+   * They are stopped by the shell's Moderator floor before the trust guard is consulted, so this
+   * asserts the outer gate rather than `trust.view` itself — which is the honest description of what
+   * a plain user hitting `/trust` actually meets.
+   */
+  test('an ordinary user cannot reach /trust at all', async ({ page, api, data }) => {
+    const user = await api.createVerifiedUser({
+      email: data.email(),
+      username: data.username(),
+      password: data.password(),
+    });
+    await freshLoginAs(page, user.email, user.password);
+
+    await page.goto('/trust');
+    await expect(page.getByText(/access to this/i)).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Trust & safety' })).toHaveCount(0);
+    await expect(page.getByRole('menuitem', { name: TrustPage.NAV_LABEL })).toHaveCount(0);
   });
 });

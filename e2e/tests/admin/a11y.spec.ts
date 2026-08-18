@@ -4,6 +4,7 @@ import { test, expect } from '../../fixtures/test';
 import { ADMIN_DASHBOARDS, DashboardsPage } from '../../pages/admin/dashboards-page';
 import { ModerationPage } from '../../pages/admin/moderation-page';
 import { MONETIZATION_ROUTES, MonetizationPage } from '../../pages/admin/monetization-page';
+import { TrustPage, UNKNOWN_USER_ID } from '../../pages/admin/trust-page';
 import { UsersPage } from '../../pages/admin/users-page';
 import { LoginPage } from '../../pages/shared/login-page';
 
@@ -79,6 +80,48 @@ test.describe('@phase5 @a11y admin accessibility (authenticated)', () => {
   test('the revenue dashboard has no critical/serious a11y violations', async ({ page }) => {
     await new MonetizationPage(page).expectRenders(MONETIZATION_ROUTES[4]!);
     await expectNoSeriousA11yViolations(page, { label: 'admin /billing/revenue' });
+  });
+
+  /**
+   * A2's Trust surface, scanned in BOTH themes for free — the `admin-dark` project re-runs this file,
+   * so registering the scans here is what makes the dark pass happen. Two scans, chosen for what each
+   * one contains rather than for coverage of the same components twice:
+   *
+   *   • `/trust` **with a standing loaded** is the whole surface at once: the band strip (an ordered
+   *     list whose current band must be conveyed by text, not colour), the restriction list, and both
+   *     write FORMS with their labelled selects, date inputs and textareas. Scanned with a result on
+   *     screen rather than at rest, for the same reason B8 gave for the subscription lookup — an
+   *     empty search box would scan none of it. A well-formed UUID matching no account resolves to a
+   *     default standing on any database.
+   *   • The **drawer tab** is a different a11y question, not a repeat: the same panel inside an AntD
+   *     Drawer with a Tabs roving-tabindex and a focus trap, which is where a composition like this
+   *     usually breaks.
+   */
+  test('the trust standing has no critical/serious a11y violations', async ({ page }) => {
+    await new TrustPage(page).open(UNKNOWN_USER_ID);
+    await expectNoSeriousA11yViolations(page, { label: 'admin /trust' });
+  });
+
+  test('the trust drawer tab has no critical/serious a11y violations', async ({
+    page,
+    api,
+    data,
+  }) => {
+    // A restricted throwaway account, so the scan sees a populated restriction row with its Lift
+    // button — the interactive part of the list — rather than only the empty state.
+    const target = await api.createVerifiedUser({
+      email: data.email(),
+      username: data.username(),
+      password: data.password(),
+    });
+    await api.restrictUser(target.id, {
+      type: 'muted',
+      scope: 'comments',
+      reason: 'e2e a11y restriction',
+    });
+
+    await new TrustPage(page).openDrawerTab(target.username);
+    await expectNoSeriousA11yViolations(page, { label: 'admin /users → Trust tab' });
   });
 
   test('the subscription lookup has no critical/serious a11y violations', async ({ page }) => {

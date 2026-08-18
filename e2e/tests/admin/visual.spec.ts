@@ -1,6 +1,7 @@
 import { freshLogin } from '../../fixtures/auth';
 import { test, expect } from '../../fixtures/test';
 import { MONETIZATION_ROUTES, MonetizationPage } from '../../pages/admin/monetization-page';
+import { TrustPage, UNKNOWN_USER_ID } from '../../pages/admin/trust-page';
 import { UsersPage } from '../../pages/admin/users-page';
 import { LoginPage } from '../../pages/shared/login-page';
 
@@ -107,5 +108,40 @@ test.describe('@phase5 @visual admin (authenticated)', () => {
   test('the billing actions forms match their visual baseline', async ({ page }) => {
     await new MonetizationPage(page).goto(MONETIZATION_ROUTES[3]!);
     await expect(page).toHaveScreenshot('admin-billing-actions.png', { fullPage: true });
+  });
+
+  /**
+   * A2's trust surface. **Also DELIBERATELY UNMINTED**, on the same terms as the two above — only the
+   * web-e2e workflow's visual job may mint a baseline, in the pinned Playwright image ([10 §5]).
+   *
+   * Pending, across all four admin projects (chromium / firefox / webkit / dark):
+   *   • `admin-trust.png`
+   *
+   * **One candidate out of four, because determinism was checked first:**
+   *
+   *   • **`/trust` with the unknown-id standing** is deterministic, and it is the only shot here worth
+   *     minting. `00000000-0000-4000-8000-000000000000` matches no account, and the standing read
+   *     answers for ANY id with a freshly created default profile (score 50 → Member, status normal,
+   *     weight 0, no restrictions — `getOrCreateProfile`, and `trust_profiles` has no FK to `users`).
+   *     Nothing on the page renders a date or a live count in that state: the band strip, the two
+   *     empty forms and the empty restriction list are all fixed. No spec in this suite writes trust
+   *     rows for that id — the functional and a11y specs each mint a throwaway account precisely
+   *     because a strike is permanent — so nothing can race it. It does leave one
+   *     `trust_profiles` row behind for the zero UUID, which the read creates whether or not this
+   *     shot exists.
+   *   • **`/trust` for a REAL restricted account is excluded.** Every restriction row renders
+   *     "applied <timestamp>", the score and weight move with whatever the account has been through,
+   *     and the account itself is minted per run — three independent sources of drift, none of which
+   *     masking fixes, since the row count changes the page's height.
+   *   • **The drawer tab is excluded**: it is the same panel inside an animated AntD Drawer, so the
+   *     shot would race the open transition on top of the timestamp problem above. The a11y scan
+   *     already covers that composition, more cheaply and more usefully.
+   *   • **`/trust` at rest** (no id typed) is deterministic but nearly empty — a header, a search
+   *     card and an empty state. It would guard console chrome the users and analytics baselines
+   *     already guard, so it earns nothing.
+   */
+  test('the trust standing matches its visual baseline', async ({ page }) => {
+    await new TrustPage(page).open(UNKNOWN_USER_ID);
+    await expect(page).toHaveScreenshot('admin-trust.png', { fullPage: true });
   });
 });
