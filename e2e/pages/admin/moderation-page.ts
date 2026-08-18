@@ -1,6 +1,6 @@
 import { type Locator, type Page, expect } from '@playwright/test';
 
-import { selectAntdOption } from '../shared/antd';
+import { clickAntdMenuItem, selectAntdOption } from '../shared/antd';
 
 /**
  * Admin → Moderation (`/reports`, docs/e2e app map). The report queue is an AntD table
@@ -40,7 +40,7 @@ export class ModerationPage {
    */
   async resolve(reportId: string, decisionLabel: string): Promise<void> {
     await this.rowActions(reportId).click();
-    await this.page.getByRole('menuitem', { name: 'Resolve…' }).click();
+    await clickAntdMenuItem(this.page, 'Resolve…');
     const dialog = this.decisionDialog;
     await expect(dialog).toBeVisible();
 

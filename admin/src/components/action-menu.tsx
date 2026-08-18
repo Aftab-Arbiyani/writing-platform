@@ -39,11 +39,7 @@ export function ActionMenu({
   }));
 
   const onClick: MenuProps['onClick'] = ({ key }) => {
-    const matched = items.find((item) => item.key === key);
-    // TEMPORARY DIAGNOSTIC — docs/48 §3.18b. Distinguishes "rc-menu never dispatched
-    // onClick" (b) from "onClick ran and items.find missed" (c). Removed with the fix.
-    console.debug(`AMDIAG ${JSON.stringify({ t: 'react:menu-onclick', key, matched: !!matched })}`);
-    matched?.onClick();
+    items.find((item) => item.key === key)?.onClick();
   };
 
   return (

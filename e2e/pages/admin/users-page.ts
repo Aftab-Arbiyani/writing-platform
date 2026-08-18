@@ -1,6 +1,6 @@
 import { type Locator, type Page, expect } from '@playwright/test';
 
-import { selectAntdOption } from '../shared/antd';
+import { clickAntdMenuItem, selectAntdOption } from '../shared/antd';
 
 /**
  * Admin → Users management (docs/e2e app map). AntD table; per-row actions live
@@ -64,7 +64,7 @@ export class UsersPage {
   /** Suspend a user by username: open its row menu, click Suspend, confirm. */
   async suspend(username: string): Promise<void> {
     await this.rowActions(username).click();
-    await this.page.getByRole('menuitem', { name: 'Suspend' }).click();
+    await clickAntdMenuItem(this.page, 'Suspend');
     const confirm = this.page.getByRole('dialog');
     await expect(confirm).toBeVisible();
     await confirm.getByRole('button', { name: /suspend|confirm|yes/i }).click();
@@ -74,7 +74,7 @@ export class UsersPage {
   /** Open a user's detail drawer via the row menu's "View profile". */
   async openProfile(username: string): Promise<void> {
     await this.rowActions(username).click();
-    await this.page.getByRole('menuitem', { name: 'View profile' }).click();
+    await clickAntdMenuItem(this.page, 'View profile');
     await expect(this.detailDrawer).toBeVisible();
   }
 
@@ -94,7 +94,7 @@ export class UsersPage {
    */
   async changeRole(username: string, roleLabel: string): Promise<void> {
     await this.rowActions(username).click();
-    await this.page.getByRole('menuitem', { name: 'Edit user' }).click();
+    await clickAntdMenuItem(this.page, 'Edit user');
     const dialog = this.editDialog(username);
     await expect(dialog).toBeVisible();
 
