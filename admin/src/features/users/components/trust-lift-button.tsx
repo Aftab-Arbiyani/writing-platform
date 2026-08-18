@@ -20,9 +20,14 @@ import type { AdminRestriction } from '../types/trust.types';
  *
  * The confirmation says the one thing that is easy to get wrong about lifting: **the strike weight
  * does not move.** If the restriction was applied automatically at a strike threshold, the weight
- * that triggered it is still there, so the next strike re-applies it
- * (`maybeEscalate` runs on every strike and only skips when a matching restriction is already
- * ACTIVE).
+ * that triggered it is still there, so the next strike re-applies it (`maybeEscalate` runs on every
+ * strike and only skips when a matching restriction is already ACTIVE).
+ *
+ * That was recorded as defect A2-3 and B9 kept it, deliberately: lifting means "you may act again",
+ * revoking a strike means "that strike was wrong", and conflating them would erase a real violation
+ * record. What B9 changed is that the copy can now name the remedy instead of only warning about the
+ * consequence — the strike list below has a Revoke action, and it is the only thing that lowers the
+ * weight.
  */
 export interface TrustLiftButtonProps {
   restriction: AdminRestriction;
@@ -82,7 +87,7 @@ export function TrustLiftButton({ restriction }: TrustLiftButtonProps): ReactEle
             <span>
               It stops applying immediately and stays on the record as history. Their active strike
               weight is unchanged, so if a strike threshold applied this restriction, the next
-              strike applies it again.
+              strike applies it again. To lower the weight, revoke the strikes in the list above.
             </span>
           </span>
         }

@@ -61,6 +61,26 @@ export function useTrustRestrictions(
   });
 }
 
+/**
+ * `GET /admin/users/:id/strikes` — active AND historical (B9, closing A2-2).
+ *
+ * The third read, and the one that turned the strike form's escalation figure from a projection
+ * into a fact: until this route existed nothing could read a strike back, so the client could
+ * only state what a strike WOULD add and never what the account already carries.
+ */
+export function useTrustStrikes(
+  userId: string,
+  enabled = true,
+): UseQueryResult<AdminStrike[], Error> {
+  const { can } = usePermissions();
+  return useQuery<AdminStrike[], Error>({
+    queryKey: qk.trust.strikes(userId),
+    queryFn: ({ signal }) => trustApi.strikes(userId, signal),
+    enabled: userId !== '' && enabled && can(PERMISSIONS.TrustView),
+    staleTime: TRUST_STALE,
+  });
+}
+
 // ── Mutations (`trust.manage`) ──────────────────────────────────────────────────
 
 /**
@@ -127,6 +147,24 @@ export function useLiftRestriction(): UseMutationResult<
   return useMutation({
     mutationFn: ({ restrictionId }: { restrictionId: string }) =>
       trustApi.liftRestriction(restrictionId),
+    onSuccess: invalidate,
+  });
+}
+
+/**
+ * `DELETE /admin/strikes/:strikeId` — revoke one strike (B9, closing A2-2).
+ *
+ * **Keyed by the STRIKE's id**, on the same reasoning as the lift above.
+ *
+ * This is the only mutation on this surface that lowers the active strike weight, and the whole
+ * namespace has to be invalidated because it moves all three reads at once: the strike's own row,
+ * the standing's weight and score, and — via the score — the derived status. Lifting a restriction
+ * does NOT lower the weight; the two remedies are deliberately distinct, and the components say so.
+ */
+export function useRevokeStrike(): UseMutationResult<AdminStrike, Error, { strikeId: string }> {
+  const invalidate = useTrustInvalidation();
+  return useMutation({
+    mutationFn: ({ strikeId }: { strikeId: string }) => trustApi.revokeStrike(strikeId),
     onSuccess: invalidate,
   });
 }

@@ -5,6 +5,7 @@ import {
   STRIKE_WEIGHTS,
   TrustLevel,
   TrustStatus,
+  UserStatus,
 } from '@qalam/shared';
 import type { QTagColor } from '@qalam/ui';
 
@@ -38,6 +39,39 @@ const TRUST_STATUS: Record<string, { label: string; color: QTagColor }> = {
 /** The effective status the Policy Engine sees — the clients call this field "Standing". */
 export function trustStatusTag(status: string): { label: string; color: QTagColor } {
   return TRUST_STATUS[status] ?? { label: status, color: 'neutral' };
+}
+
+/**
+ * The ACCOUNT's status, in the terms that keep it apart from the trust standing above (B9, A2-1).
+ *
+ * These two were disjoint in both directions before B9: a trust suspension left sign-in working,
+ * and an account suspension was invisible to the Policy Engine — so the Trust tab rendered "Good
+ * standing" for an account that had been closed. The engine now reads `users.status`, and this is
+ * the display half: each description says what the state DOES, so an operator never has to infer
+ * which of the two sanctions they are looking at from the word "suspended" alone.
+ *
+ * Only the non-active states are described. An active account needs no note, and a row that appears
+ * only when something is wrong is a row that gets read.
+ */
+const ACCOUNT_STATUS: Record<string, { label: string; color: QTagColor; description: string }> = {
+  [UserStatus.Suspended]: {
+    label: 'Suspended',
+    color: 'danger',
+    description:
+      'The ACCOUNT is suspended: they cannot sign in, their sessions were revoked, and the Policy Engine refuses every action they could still reach. That is separate from the trust standing shown here, which a suspension does not change — lift it from the account actions, not from this tab.',
+  },
+  [UserStatus.Deactivated]: {
+    label: 'Deactivated',
+    color: 'warning',
+    description:
+      'The account is deactivated, which is normally the person’s own doing. Sign-in is refused as if the credentials were wrong, and no trust sanction is implied by it.',
+  },
+};
+
+export function accountStatusNote(
+  status: string,
+): { label: string; color: QTagColor; description: string } | undefined {
+  return ACCOUNT_STATUS[status];
 }
 
 const RESTRICTION_TYPE: Record<string, string> = {

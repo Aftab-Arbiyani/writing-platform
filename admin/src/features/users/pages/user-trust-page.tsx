@@ -50,15 +50,20 @@ export function UserTrustPage(): ReactElement {
             />
           </div>
           {/*
-            The honest limit of a per-account read, in the same terms B8 recorded it (docs/48 §3,
-            B8-1) — and trust states it more loudly, because the standing read does not merely
-            return an empty shape for an unknown id: it MANUFACTURES a default one
-            (`getOrCreateProfile`, `trust.service.ts:104`) and `trust_profiles` has no foreign key
-            to `users`. A mistyped id therefore reads as a brand-new account in good standing.
+            A2's warning here is DELETED rather than reworded, because the limit it described is
+            gone (B9, A2-4). It said a mistyped id read as a brand-new account in good standing —
+            which was true: the standing read called `getOrCreateProfile`, so it manufactured a
+            default profile for any well-formed UUID, and `trust_profiles` has no foreign key to
+            `users` to stop it. The read now writes nothing and 404s an id that belongs to nobody,
+            so an unknown account is a "not found", not a clean record. Nothing needs confirming
+            before acting on what this screen shows.
+
+            Note this diverges from B8-1, which left the monetization per-account reads returning a
+            nullable shape for the same question — see docs/48 §6.17.
           */}
           <p className="text-xs text-ink-muted">
-            A user ID that does not exist reads as a clean account: the standing read creates a
-            default profile for any ID it is given, so confirm the ID before acting on what you see.
+            An ID that belongs to no account is reported as not found, so what you see here is
+            always a real account&rsquo;s record.
           </p>
         </QCard>
 

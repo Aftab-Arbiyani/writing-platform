@@ -13,10 +13,11 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { useAuthStore } from '@/stores/auth.store';
 import { renderWithProviders } from '@/test/render';
 
-import type { AdminRestriction, AdminTrustSummary } from '../types/trust.types';
+import type { AdminRestriction, AdminStrike, AdminTrustSummary } from '../types/trust.types';
 import { TrustLiftButton } from './trust-lift-button';
 import { TrustPanel } from './trust-panel';
 import { TrustRestrictForm } from './trust-restrict-form';
+import { TrustRevokeStrikeButton } from './trust-revoke-strike-button';
 import { TrustStrikeForm } from './trust-strike-form';
 
 vi.mock('../api/trust.api');
@@ -33,9 +34,11 @@ const { trustApi } = await import('../api/trust.api');
 const issueStrike = vi.mocked(trustApi.issueStrike);
 const applyRestriction = vi.mocked(trustApi.applyRestriction);
 const liftRestriction = vi.mocked(trustApi.liftRestriction);
+const revokeStrike = vi.mocked(trustApi.revokeStrike);
 
 const USER_ID = '55555555-5555-4555-8555-555555555555';
 const RESTRICTION_ID = '66666666-6666-4666-8666-666666666666';
+const STRIKE_ID = '77777777-7777-4777-8777-777777777777';
 
 function summary(over: Partial<AdminTrustSummary> = {}): AdminTrustSummary {
   return {
@@ -58,6 +61,22 @@ function restriction(over: Partial<AdminRestriction> = {}): AdminRestriction {
     issuedById: 'mod1',
     expiresAt: null,
     liftedAt: null,
+    createdAt: '2026-08-01T00:00:00.000Z',
+    ...over,
+  };
+}
+
+function strike(over: Partial<AdminStrike> = {}): AdminStrike {
+  return {
+    id: STRIKE_ID,
+    userId: USER_ID,
+    severity: StrikeSeverity.Moderate,
+    reason: 'Harassment in comments',
+    weight: 2,
+    reportId: null,
+    issuedById: 'mod1',
+    expiresAt: null,
+    revokedAt: null,
     createdAt: '2026-08-01T00:00:00.000Z',
     ...over,
   };
@@ -99,8 +118,10 @@ beforeEach(() => {
   });
   applyRestriction.mockResolvedValue(restriction());
   liftRestriction.mockResolvedValue(restriction({ liftedAt: '2026-08-17T00:00:00.000Z' }));
+  revokeStrike.mockResolvedValue(strike({ revokedAt: '2026-08-18T00:00:00.000Z' }));
   vi.mocked(trustApi.summary).mockResolvedValue(summary());
   vi.mocked(trustApi.restrictions).mockResolvedValue([]);
+  vi.mocked(trustApi.strikes).mockResolvedValue([]);
 });
 afterEach(() => useAuthStore.getState().clear());
 
@@ -116,7 +137,7 @@ describe('TrustStrikeForm — the escalation is stated before it happens', () =>
     expect(issueStrike).not.toHaveBeenCalled();
   });
 
-  it('states this strike’s weight and the projected total, below any threshold', () => {
+  it('states this strike’s weight and the resulting total, below any threshold', () => {
     renderWithProviders(
       <TrustStrikeForm userId={USER_ID} activeStrikeWeight={0} activeRestrictions={[]} />,
     );
@@ -125,7 +146,11 @@ describe('TrustStrikeForm — the escalation is stated before it happens', () =>
 
     const dialog = screen.getByRole('dialog');
     expect(dialog).toHaveTextContent('This strike carries weight 1.');
-    expect(dialog).toHaveTextContent('becomes 1 (projected from 0)');
+    // Was "becomes 1 (projected from 0)" until B9. The hedge was A2-2's doing: no route listed
+    // strikes, so the client could not check the standing's weight against the rows the server sums.
+    // `GET users/:id/strikes` closes that, the panel compares the two, and the figure is stated.
+    expect(dialog).toHaveTextContent('becomes 1, from 0');
+    expect(dialog).not.toHaveTextContent('projected from');
     // Both thresholds are named even when neither is crossed.
     expect(dialog).toHaveTextContent(
       'A restriction follows automatically at 3 and a suspension at 6.',
@@ -182,16 +207,20 @@ describe('TrustStrikeForm — the escalation is stated before it happens', () =>
     expect(dialog).not.toHaveTextContent('will ALSO apply');
   });
 
-  it('says a strike cannot be undone, because no route revokes one', () => {
+  it('points at the revoke rather than claiming a strike cannot be undone (B9, A2-2)', () => {
+    // A2's version of this test asserted "A strike cannot be revoked or edited once issued", which
+    // was accurate then — `revokeStrike` had no caller. It is now wired, so the assertion is
+    // UPDATED rather than dropped: the dialog must name the remedy and must no longer deny one.
     renderWithProviders(
       <TrustStrikeForm userId={USER_ID} activeStrikeWeight={0} activeRestrictions={[]} />,
     );
     typeReason(/Reason/, 'Spam');
     fireEvent.click(screen.getByRole('button', { name: 'Issue strike' }));
 
-    expect(screen.getByRole('dialog')).toHaveTextContent(
-      'A strike cannot be revoked or edited once issued',
-    );
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toHaveTextContent('cannot be edited afterwards, but it can be revoked');
+    expect(dialog).toHaveTextContent('the only thing that lowers the weight again');
+    expect(dialog).not.toHaveTextContent('cannot be revoked');
   });
 
   it('posts severity + reason once confirmed, and omits the empty optional fields', async () => {
@@ -320,9 +349,75 @@ describe('TrustLiftButton — keyed by the restriction, not the user', () => {
   });
 });
 
+describe('TrustRevokeStrikeButton — the only thing that lowers the weight (B9, A2-2)', () => {
+  it('confirms before revoking, and states where the weight lands', () => {
+    renderWithProviders(
+      <TrustRevokeStrikeButton
+        strike={strike({ weight: 2 })}
+        activeStrikeWeight={5}
+        restrictionInForce={false}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Revoke/ }));
+
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toHaveTextContent('Revoke this strike?');
+    expect(dialog).toHaveTextContent('goes from 5 to 3');
+    expect(dialog).toHaveTextContent('the only action that lowers the weight');
+    expect(revokeStrike).not.toHaveBeenCalled();
+  });
+
+  it('warns that a restriction in force is NOT lifted by this', () => {
+    // The surprise this copy exists to prevent: an operator revoking strikes to get a user out of a
+    // suspension, and the suspension staying. Dropping below the threshold does not undo a sanction.
+    renderWithProviders(
+      <TrustRevokeStrikeButton
+        strike={strike()}
+        activeStrikeWeight={6}
+        restrictionInForce={true}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Revoke/ }));
+
+    expect(screen.getByRole('dialog')).toHaveTextContent('does not lift it');
+    expect(screen.getByRole('dialog')).toHaveTextContent('Lift it from the restriction list');
+  });
+
+  it('says nothing about restrictions when none is in force', () => {
+    renderWithProviders(
+      <TrustRevokeStrikeButton
+        strike={strike()}
+        activeStrikeWeight={2}
+        restrictionInForce={false}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Revoke/ }));
+
+    expect(screen.getByRole('dialog')).not.toHaveTextContent('does not lift it');
+  });
+
+  it('sends the STRIKE id, not the user id — the same asymmetry as the lift', async () => {
+    renderWithProviders(
+      <TrustRevokeStrikeButton
+        strike={strike()}
+        activeStrikeWeight={2}
+        restrictionInForce={false}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Revoke/ }));
+    fireEvent.click(dialogButton('Revoke strike'));
+
+    await waitFor(() => expect(revokeStrike).toHaveBeenCalledWith(STRIKE_ID));
+    // Either other id would compile and 404 at runtime.
+    expect(revokeStrike).not.toHaveBeenCalledWith(USER_ID);
+    expect(revokeStrike).not.toHaveBeenCalledWith(RESTRICTION_ID);
+  });
+});
+
 describe('TrustPanel — `trust.manage` gates every affordance', () => {
-  it('offers both forms and a lift button to an operator who holds `trust.manage`', async () => {
+  it('offers both forms, a lift and a revoke to an operator who holds `trust.manage`', async () => {
     vi.mocked(trustApi.restrictions).mockResolvedValue([restriction()]);
+    vi.mocked(trustApi.strikes).mockResolvedValue([strike()]);
 
     renderWithProviders(<TrustPanel userId={USER_ID} />);
 
@@ -331,23 +426,28 @@ describe('TrustPanel — `trust.manage` gates every affordance', () => {
     );
     expect(screen.getByRole('button', { name: 'Apply restriction' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Lift/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Revoke/ })).toBeInTheDocument();
   });
 
   it('gives a `trust.view`-only operator the whole panel and NO affordances', async () => {
     vi.mocked(usePermissions).mockReturnValue(grants('trust.view'));
     vi.mocked(trustApi.restrictions).mockResolvedValue([restriction()]);
+    vi.mocked(trustApi.strikes).mockResolvedValue([strike()]);
 
     renderWithProviders(<TrustPanel userId={USER_ID} />);
 
-    // The reads still render in full — the restriction row and the standing are both there.
+    // The reads still render in full — the restriction row, the strike row and the standing.
     await waitFor(() => expect(screen.getByText('In force')).toBeInTheDocument());
-    // "Standing" is both the card's heading and the status field's label, so both are present.
-    expect(screen.getAllByText('Standing').length).toBeGreaterThan(0);
+    expect(screen.getByText('Counting')).toBeInTheDocument();
+    expect(screen.getAllByText(/Standing/).length).toBeGreaterThan(0);
     expect(screen.getByText('Good standing')).toBeInTheDocument();
 
-    // And not one write affordance exists, disabled or otherwise.
+    // And not one write affordance exists, disabled or otherwise. The revoke is the one B9 added,
+    // and it is gated `trust.manage` server-side — a `trust.view`-only caller gets a 403 there, so
+    // offering the button would be an affordance that cannot work.
     expect(screen.queryByRole('button', { name: 'Issue strike' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Apply restriction' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Lift/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Revoke/ })).not.toBeInTheDocument();
   });
 });

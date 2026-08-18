@@ -30,6 +30,7 @@ export const qk = {
     // keyed by user — like `monetization.overrides` above, and for the same reason.
     summary: (userId: string) => ['trust', 'summary', userId] as const, // GET /admin/users/:id/trust
     restrictions: (userId: string) => ['trust', 'restrictions', userId] as const, // GET …/restrictions
+    strikes: (userId: string) => ['trust', 'strikes', userId] as const, // GET …/strikes (B9, A2-2)
   },
   moderation: {
     all: ['moderation'] as const, // invalidate the whole namespace after a mutation

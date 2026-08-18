@@ -3,6 +3,7 @@ import {
   STRIKE_SUSPENSION_THRESHOLD,
   TRUST_SCORE_MAX,
   TRUST_SCORE_MIN,
+  UserStatus,
 } from '@qalam/shared';
 import { QCard, QSectionHeader, QTag, cn } from '@qalam/ui';
 import type { ReactElement } from 'react';
@@ -10,7 +11,7 @@ import type { ReactElement } from 'react';
 import { StatCard } from '@/components/stat-card';
 
 import { bandForScore, bandRange, TRUST_BANDS, type TrustBand } from '../lib/trust-standing';
-import { trustLevelLabel, trustStatusTag } from '../lib/trust-labels';
+import { accountStatusNote, trustLevelLabel, trustStatusTag } from '../lib/trust-labels';
 import type { AdminTrustSummary } from '../types/trust.types';
 
 /**
@@ -80,15 +81,39 @@ function ScoreScale({ score, level }: { score: number; level: string }): ReactEl
 
 /**
  * A user's trust standing (`GET /admin/users/:id/trust`) — score against its scale, the effective
- * status the Policy Engine sees, and the active strike weight against the two thresholds that
- * escalate automatically.
+ * status the Policy Engine sees, the active strike weight against the two thresholds that escalate
+ * automatically, and (since B9) the ACCOUNT's own status beside it.
+ *
+ * **Why the account status is here at all (A2-1).** A suspension writes no trust restriction, so
+ * the trust standing of a suspended account is whatever it was — commonly "Good standing", rendered
+ * in success green, on the same screen as the suspend control. An operator reading a clean trust
+ * record beside a suspended account is being invited to make the wrong call, so the two sanctions
+ * are stated together and named separately. It is only shown when it is NOT active: a normal
+ * account needs no badge, and a row that appears only when something is wrong is read.
  *
  * The active restrictions this DTO carries are deliberately not listed here: the restriction list
  * beside it renders active AND historical rows from the other read, and showing the active subset
  * twice would invite reading one of them as the whole history.
  */
-export function TrustStandingCard({ summary }: { summary: AdminTrustSummary }): ReactElement {
+export function TrustStandingCard({
+  summary,
+  countedWeight,
+}: {
+  summary: AdminTrustSummary;
+  /**
+   * The weight the STRIKE LIST accounts for, re-derived client-side (B9). Shown only when it
+   * disagrees with the standing's own figure — which means a strike expired between the two reads.
+   * The standing's number stays the one displayed; this only explains a discrepancy instead of
+   * leaving an operator to disbelieve both.
+   */
+  countedWeight?: number;
+}): ReactElement {
   const status = trustStatusTag(summary.status);
+  const account = summary.accountStatus;
+  const accountFlag =
+    account === undefined || account === UserStatus.Active ? undefined : accountStatusNote(account);
+  const weightDisagrees =
+    countedWeight !== undefined && countedWeight !== summary.activeStrikeWeight;
 
   return (
     <QCard as="section" padding="md" className="flex flex-col gap-4">
@@ -98,11 +123,25 @@ export function TrustStandingCard({ summary }: { summary: AdminTrustSummary }): 
       />
 
       <div className="flex flex-wrap items-center gap-2 text-sm">
-        <span className="text-ink-secondary">Standing</span>
+        <span className="text-ink-secondary">Trust standing</span>
         <QTag color={status.color} size="sm">
           {status.label}
         </QTag>
+        {accountFlag === undefined ? null : (
+          <>
+            <span className="text-ink-secondary">· Account</span>
+            <QTag color={accountFlag.color} size="sm">
+              {accountFlag.label}
+            </QTag>
+          </>
+        )}
       </div>
+
+      {accountFlag === undefined ? null : (
+        // The sentence, not just the badge: the trust standing above may read perfectly clean and
+        // still be accurate, which is the confusing part and therefore the part that is spelled out.
+        <p className="text-sm text-warning">{accountFlag.description}</p>
+      )}
 
       <ScoreScale score={summary.score} level={summary.level} />
 
@@ -118,6 +157,14 @@ export function TrustStandingCard({ summary }: { summary: AdminTrustSummary }): 
           hint="Counted from the standing, which lists active rows only."
         />
       </div>
+
+      {weightDisagrees ? (
+        <p className="text-xs text-ink-muted">
+          The strikes listed below account for a weight of {countedWeight}. The standing&rsquo;s
+          figure above is the server&rsquo;s and is the one that escalates; a difference means a
+          strike expired between the two reads.
+        </p>
+      ) : null}
     </QCard>
   );
 }

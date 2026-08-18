@@ -4,10 +4,11 @@ import type {
   StrikeSeverity,
   TrustLevel,
   TrustStatus,
+  UserStatus,
 } from '@qalam/shared';
 
 /**
- * Wire types for the admin Trust surface (AF6, row A2) — five routes on
+ * Wire types for the admin Trust surface (AF6, row A2; extended by B9) — seven routes on
  * `trust.admin.controller.ts`, mirrored field for field from `dto/trust-response.dto.ts`
  * and `dto/trust-request.dto.ts`.
  *
@@ -32,9 +33,12 @@ export interface AdminRestriction {
 }
 
 /**
- * `StrikeDto` — returned by `POST users/:id/strikes` and **nowhere else**. There is no
- * route that lists a user's strikes, so this shape is only ever seen once, as the result
- * of issuing one (defect A2-2).
+ * `StrikeDto` — issued by `POST users/:id/strikes`, listed by `GET users/:id/strikes`, and
+ * revoked by `DELETE strikes/:id` (the last two added by B9, closing A2-2).
+ *
+ * `revokedAt` and `expiresAt` are what make a row historical rather than live, and both are
+ * carried: `activeStrikeWeight` counts only the live rows, so a list of live strikes alone
+ * could never explain a total an operator disagrees with.
  */
 export interface AdminStrike {
   id: string;
@@ -62,6 +66,16 @@ export interface AdminTrustSummary {
   status: TrustStatus;
   activeStrikeWeight: number;
   restrictions: AdminRestriction[];
+  /**
+   * The ACCOUNT's own status (`users.status`), added by B9 (A2-1). Present on the admin read
+   * and absent from `me/trust`, hence optional.
+   *
+   * Trust standing and account status are separate sanctions, and the standing alone rendered
+   * "Good standing" for an account an operator had already suspended — a suspension writes no
+   * trust restriction. The status travels beside the standing so the two can be told apart on
+   * the screen where both controls live.
+   */
+  accountStatus?: UserStatus;
 }
 
 /** `IssueStrikeDto` — `severity` + `reason` required; `reportId` and `expiresAt` optional. */

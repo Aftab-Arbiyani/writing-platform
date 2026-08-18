@@ -20,9 +20,12 @@ import type { AdminRestriction, IssueStrikePayload } from '../types/trust.types'
  * or the response says so. So the dialog states this strike's weight, the projected total, and what
  * happens at each threshold, every time, whether or not this strike crosses one.
  *
- * **There is no undo.** No route revokes a strike (`revokeStrike` exists in the repository with no
- * caller — defect A2-2), and none lists them, so the projected total cannot be checked against the
- * server's own count either. Both facts are in the copy rather than left to be discovered.
+ * **There IS an undo now, and it is not on this form.** A2 shipped this saying "a strike cannot be
+ * revoked", which was true — `revokeStrike` sat in the repository with no caller (defect A2-2).
+ * B9 wired it as `DELETE /admin/strikes/:id`, so the copy points at the strike list where the revoke
+ * lives, rather than at an absence. Revoking is a separate audited action, not a button on this
+ * dialog: undoing a strike you have just issued and revoking one from last month are the same
+ * operation and should read the same way.
  *
  * The severity select is built from `StrikeSeverity` itself, so it can only offer values the
  * server's `@IsIn(Object.values(StrikeSeverity))` accepts.
@@ -125,8 +128,8 @@ export function TrustStrikeForm({
             className="h-9 rounded-md border border-line bg-surface px-2 text-sm text-ink"
           />
           <span className="text-xs text-ink-muted">
-            Leave empty for a strike that never expires. An expiry is the only way its weight is
-            ever released — nothing revokes a strike.
+            Leave empty for a strike that never expires. Its weight is released either when the
+            expiry passes or when the strike is revoked from the list below.
           </span>
         </div>
 

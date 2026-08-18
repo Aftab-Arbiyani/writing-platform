@@ -7,12 +7,15 @@ import { LoadingState } from '@/components/loading-state';
 import { usePermissions } from '@/hooks/use-permissions';
 import { getErrorMessage } from '@/lib/errors';
 
-import { useTrustRestrictions, useTrustSummary } from '../hooks/use-trust';
+import { useTrustRestrictions, useTrustStrikes, useTrustSummary } from '../hooks/use-trust';
+import { countedStrikeWeight } from '../lib/trust-standing';
 import { TrustLiftButton } from './trust-lift-button';
 import { TrustRestrictForm } from './trust-restrict-form';
 import { TrustRestrictionList } from './trust-restriction-list';
+import { TrustRevokeStrikeButton } from './trust-revoke-strike-button';
 import { TrustStandingCard } from './trust-standing-card';
 import { TrustStrikeForm } from './trust-strike-form';
+import { TrustStrikeList } from './trust-strike-list';
 
 /**
  * The Trust & Safety surface for one account (AF6, row A2) — **one panel, two entry points**.
@@ -44,11 +47,16 @@ export interface TrustPanelProps {
 /**
  * Why a trust sanction is not the account suspension on the same screen.
  *
- * Both are called "suspend", they are backed by different tables, and neither implies the other:
- * an account suspension blocks SIGN-IN (`auth.service.ts:123`) and revokes sessions but is invisible
- * to the Policy Engine, while a trust `suspended` restriction denies every policy-gated action
- * (`policy.rules.ts` rule 1) and leaves sign-in working. Shipping two controls that both read as
- * "suspend this person" without saying that is worse than shipping neither.
+ * Both are called "suspend", they are backed by different tables, and neither implies the other. A
+ * trust `suspended` restriction denies every policy-gated action and leaves sign-in working; an
+ * account suspension blocks SIGN-IN (`auth.service.ts:123`) and revokes every session.
+ *
+ * **One clause of this note used to be wrong and B9 corrected it.** It said the Policy Engine never
+ * sees an account suspension, which was true and was also the A2-1 defect: a closed account read as
+ * being in good standing for every decision. The engine now reads `users.status`
+ * (`AccountStatusService`), so an account suspension refuses policy-gated actions too — the
+ * remaining difference is the direction that is still deliberately one-way, and that is what the
+ * note now says.
  */
 function SanctionScopeNote(): ReactElement {
   return (
@@ -67,9 +75,14 @@ function SanctionScopeNote(): ReactElement {
           restriction still lets the person sign in and read.
         </p>
         <p className="text-ink-secondary">
-          <strong>Suspend</strong> in the account actions menu is the other thing: it blocks sign-in
-          and revokes every session, and the Policy Engine never sees it. The two are recorded
-          separately and lifted separately — lifting one leaves the other in force.
+          <strong>Suspend</strong> in the account actions menu goes further: it blocks sign-in,
+          revokes every session, <em>and</em> the Policy Engine refuses anything a live token could
+          still reach. It writes no trust restriction, so the standing below can read perfectly
+          clean for an account that is closed — the badge on the standing card says when that is the
+          case.
+        </p>
+        <p className="text-ink-secondary">
+          The two are recorded and lifted separately, and lifting one leaves the other in force.
         </p>
       </div>
     </QCard>
@@ -80,7 +93,15 @@ export function TrustPanel({ userId, active = true }: TrustPanelProps): ReactEle
   const { can } = usePermissions();
   const summary = useTrustSummary(userId, active);
   const restrictions = useTrustRestrictions(userId, active);
+  const strikes = useTrustStrikes(userId, active);
   const canManage = can(PERMISSIONS.TrustManage);
+
+  // A global restriction in force is what a revoke does NOT lift, so the revoke confirmation has to
+  // know. Read from the standing, which carries the ACTIVE rows.
+  const restrictionInForce = (summary.data?.restrictions.length ?? 0) > 0;
+  // Only computed when the list actually arrived: 0 from a failed or pending read would read as a
+  // disagreement with the standing and print a discrepancy note about nothing.
+  const countedWeight = strikes.data === undefined ? undefined : countedStrikeWeight(strikes.data);
 
   return (
     <div className="flex flex-col gap-5" data-testid="trust-panel">
@@ -91,8 +112,37 @@ export function TrustPanel({ userId, active = true }: TrustPanelProps): ReactEle
       ) : summary.isError ? (
         <p className="text-sm text-danger">{getErrorMessage(summary.error)}</p>
       ) : summary.data !== undefined ? (
-        <TrustStandingCard summary={summary.data} />
+        <TrustStandingCard summary={summary.data} countedWeight={countedWeight} />
       ) : null}
+
+      <QCard as="section" padding="md" className="flex flex-col gap-3">
+        <QSectionHeader
+          title="Strikes"
+          description="Every strike ever issued. Only the ones still counting contribute to the weight above; revoking is the only thing that lowers it."
+        />
+        {strikes.isLoading ? (
+          <LoadingState variant="rows" rows={3} />
+        ) : strikes.isError ? (
+          <p className="text-sm text-danger">{getErrorMessage(strikes.error)}</p>
+        ) : (
+          <TrustStrikeList
+            strikes={strikes.data ?? []}
+            // Revoke is offered per row and only on rows still counting — the list decides which.
+            // Without `trust.manage` no `renderActions` is passed at all, exactly as for the lift.
+            renderActions={
+              canManage && summary.data !== undefined
+                ? (strike) => (
+                    <TrustRevokeStrikeButton
+                      strike={strike}
+                      activeStrikeWeight={summary.data.activeStrikeWeight}
+                      restrictionInForce={restrictionInForce}
+                    />
+                  )
+                : undefined
+            }
+          />
+        )}
+      </QCard>
 
       <QCard as="section" padding="md" className="flex flex-col gap-3">
         <QSectionHeader
