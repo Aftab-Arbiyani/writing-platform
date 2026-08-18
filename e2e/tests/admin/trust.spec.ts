@@ -3,13 +3,17 @@ import { test, expect } from '../../fixtures/test';
 import { TrustPage, UNKNOWN_USER_ID } from '../../pages/admin/trust-page';
 
 /**
- * The admin Trust & Safety surface (A2, docs/45 §5) — the two reads and the three mutations.
+ * The admin Trust & Safety surface (A2, extended by B9; docs/45 §5) — three reads and five
+ * mutations.
  *
- * **Every spec that writes arranges its own throwaway account.** A strike cannot be revoked by any
- * route, and an auto-escalated restriction is permanent, so striking a seeded fixture would change
- * what every later run of this suite and the collaboration suite sees. The reads-only specs use a
- * well-formed UUID matching no account, which the standing read answers with a default profile —
- * itself a finding, recorded as A2-4, and asserted below because an operator has to know it.
+ * **Every spec arranges its own throwaway account.** A revoked strike stays on the record as
+ * history and an auto-escalated restriction is permanent until lifted, so striking a seeded fixture
+ * would change what every later run of this suite and the collaboration suite sees.
+ *
+ * **The reads-only specs no longer use `UNKNOWN_USER_ID` for a clean standing.** They could before
+ * B9, because the standing read manufactured a default profile for any well-formed UUID (A2-4) — the
+ * finding this suite used as a fixture. The read writes nothing and 404s an unknown id now, so a
+ * clean standing means a real account, and the unknown id has its own spec asserting the 404.
  *
  * The RBAC half — who reaches this surface at all — lives in `rbac.spec.ts` beside the existing
  * boundary tests, and the a11y scans in `a11y.spec.ts` so the `admin-dark` project re-runs them.
@@ -19,23 +23,50 @@ test.describe('@phase4 admin trust — the reads', () => {
     await freshLogin(page, 'admin');
   });
 
-  test('the route renders at rest, with the unknown-id caveat stated', async ({ page }) => {
+  test('the route renders at rest, and no longer warns that an unknown id looks clean', async ({
+    page,
+  }) => {
     const trust = new TrustPage(page);
     await trust.goto();
 
     await expect(page.getByText('No account selected')).toBeVisible();
-    // The honest limit of a per-account read (B8-1, and worse here): the standing read manufactures
-    // a default profile for any id, so a mistyped id looks like a clean new account.
-    await expect(page.getByText(/reads as a clean account/)).toBeVisible();
+    // A2's caveat is GONE, not reworded: the limit it described was closed by B9 (A2-4).
+    await expect(page.getByText(/reads as a clean account/)).toHaveCount(0);
+    await expect(page.getByText(/belongs to no account is reported as not found/)).toBeVisible();
   });
 
-  test('a clean record renders as a calm empty state, not an error', async ({ page }) => {
+  test('an id that belongs to nobody is a not-found, not a clean record (B9, A2-4)', async ({
+    page,
+  }) => {
     const trust = new TrustPage(page);
-    await trust.open(UNKNOWN_USER_ID);
+    await trust.openExpectingFailure(UNKNOWN_USER_ID);
+
+    // The defect this closes, asserted from the operator's side: a mistyped id used to render a
+    // brand-new account in good standing, and an operator could go on to strike it.
+    await expect(trust.panel.getByText('Good standing')).toHaveCount(0);
+    await expect(trust.panel.getByText(/No such user/i)).toBeVisible({ timeout: 15_000 });
+  });
+
+  test('a clean record renders as a calm empty state, not an error', async ({
+    page,
+    api,
+    data,
+  }) => {
+    const target = await api.createVerifiedUser({
+      email: data.email(),
+      username: data.username(),
+      password: data.password(),
+    });
+
+    const trust = new TrustPage(page);
+    await trust.open(target.id);
 
     await expect(page.getByText('No restrictions on record')).toBeVisible();
     await expect(page.getByText(/Nothing is wrong/)).toBeVisible();
-    // The default standing the server manufactures: score 50 → Member, status normal.
+    // The strike list has the same manners as the restriction list — a clean record, not an error.
+    await expect(page.getByText('No strikes on record')).toBeVisible();
+    await expect(page.getByText(/active strike weight is 0/)).toBeVisible();
+    // The default standing, now DERIVED rather than written: score 50 → Member, status normal.
     await expect(trust.panel.getByText('Good standing')).toBeVisible();
     await expect(trust.panel.getByText(/of 100 · Member \(50–79\)/)).toBeVisible();
     // No error panel, no danger copy anywhere on a clean account.
@@ -44,9 +75,19 @@ test.describe('@phase4 admin trust — the reads', () => {
     ).toHaveCount(0);
   });
 
-  test('the score is rendered against its scale, not as a bare number', async ({ page }) => {
+  test('the score is rendered against its scale, not as a bare number', async ({
+    page,
+    api,
+    data,
+  }) => {
+    const target = await api.createVerifiedUser({
+      email: data.email(),
+      username: data.username(),
+      password: data.password(),
+    });
+
     const trust = new TrustPage(page);
-    await trust.open(UNKNOWN_USER_ID);
+    await trust.open(target.id);
 
     // All four band boundaries are on screen, so a score can be placed without prior knowledge.
     await expect(trust.panel.getByText('Trusted 80–100')).toBeVisible();
@@ -59,16 +100,83 @@ test.describe('@phase4 admin trust — the reads', () => {
 
   test('the panel says how a trust sanction differs from the account suspension', async ({
     page,
+    api,
+    data,
   }) => {
+    const target = await api.createVerifiedUser({
+      email: data.email(),
+      username: data.username(),
+      password: data.password(),
+    });
+
     const trust = new TrustPage(page);
-    await trust.open(UNKNOWN_USER_ID);
+    await trust.open(target.id);
 
     // The whole reason this surface can be shipped beside the account actions menu.
     await expect(
       trust.panel.getByText('Trust sanctions are not account suspension.'),
     ).toBeVisible();
-    await expect(trust.panel.getByText(/blocks sign-in and revokes every session/)).toBeVisible();
     await expect(trust.panel.getByText(/still lets the person sign in and read/)).toBeVisible();
+    // UPDATED for B9 (A2-1): A2's note said the Policy Engine never sees an account suspension. It
+    // was true, and it was the defect — the engine reads `users.status` now.
+    await expect(
+      trust.panel.getByText(/the Policy Engine refuses anything a live token could still reach/),
+    ).toBeVisible();
+    await expect(trust.panel.getByText(/Policy Engine never sees it/)).toHaveCount(0);
+  });
+
+  test('the strikes behind the weight are listed, with their state (B9, A2-2)', async ({
+    page,
+    api,
+    data,
+  }) => {
+    const target = await api.createVerifiedUser({
+      email: data.email(),
+      username: data.username(),
+      password: data.password(),
+    });
+    // Two minor strikes = weight 2, deliberately under the restriction threshold of 3 so this spec
+    // reads a strike history without also arranging an escalation.
+    const first = await api.strikeUser(target.id, { severity: 'minor', reason: 'e2e strike one' });
+    await api.strikeUser(target.id, { severity: 'minor', reason: 'e2e strike two' });
+    await api.revokeStrike(first.id);
+
+    const trust = new TrustPage(page);
+    await trust.open(target.id);
+
+    // One counting, one revoked — the same "active AND historical in one array" problem the
+    // restriction list solves, and it must not be blurred here either.
+    await expect(trust.countingTags).toHaveCount(1);
+    await expect(trust.revokedTags).toHaveCount(1);
+    await expect(trust.panel.getByText('e2e strike two')).toBeVisible();
+    // The revoked row is still SHOWN: the weight counts only the live ones, so hiding history would
+    // make the total unexplainable.
+    await expect(trust.panel.getByText('e2e strike one')).toBeVisible();
+  });
+
+  test('a suspended ACCOUNT is not rendered as being in good standing (B9, A2-1)', async ({
+    page,
+    api,
+    data,
+  }) => {
+    const target = await api.createVerifiedUser({
+      email: data.email(),
+      username: data.username(),
+      password: data.password(),
+    });
+    // An account suspension writes NO trust restriction, so this account's trust standing stays
+    // clean — which is exactly the display defect: "Good standing", in success green, beside the
+    // suspend control.
+    await api.suspendUser(target.id, 'e2e account suspension');
+
+    const trust = new TrustPage(page);
+    await trust.open(target.id);
+
+    await expect(trust.panel.getByText('Trust standing')).toBeVisible();
+    await expect(trust.panel.getByText(/The ACCOUNT is suspended/)).toBeVisible();
+    await expect(
+      trust.panel.getByText(/lift it from the account actions, not from this tab/i),
+    ).toBeVisible();
   });
 
   test('an active restriction reads as live, and a lifted one as history', async ({
@@ -154,12 +262,18 @@ test.describe('@phase4 admin trust — the mutations', () => {
     await trust.open(target.id);
 
     const dialog = await trust.openStrikeConfirmation('e2e minor strike', 'minor');
-    // A clean account: weight 1, projected 1, and BOTH thresholds named even though neither is hit.
+    // A clean account: weight 1, resulting total 1, and BOTH thresholds named even though neither is
+    // hit. The figure is stated rather than hedged as "projected" — B9's strike list closed the gap
+    // that made the hedge honest (A2-2).
     await expect(dialog).toContainText('This strike carries weight 1.');
-    await expect(dialog).toContainText('becomes 1 (projected from 0)');
+    await expect(dialog).toContainText('becomes 1, from 0');
+    await expect(dialog).not.toContainText('projected from');
     await expect(dialog).toContainText('A restriction follows automatically at 3');
     await expect(dialog).toContainText('a suspension at 6');
-    await expect(dialog).toContainText('A strike cannot be revoked or edited once issued');
+    // UPDATED, not dropped: A2 asserted "A strike cannot be revoked or edited once issued", which
+    // was true then. It can be revoked now, so the dialog must name the remedy and not deny one.
+    await expect(dialog).toContainText('cannot be edited afterwards, but it can be revoked');
+    await expect(dialog).not.toContainText('cannot be revoked');
 
     await trust.confirm(dialog, 'Issue strike');
     await expect(page.getByText(/Strike issued \(weight 1\)/)).toBeVisible();
@@ -294,4 +408,107 @@ test.describe('@phase4 admin trust — the mutations', () => {
     await expect(trust.inForceTags).toHaveCount(0, { timeout: 15_000 });
     await expect(trust.panel.getByText('Lifted', { exact: true })).toHaveCount(1);
   });
+
+  test('revoking confirms, lowers the weight, and keeps the row as history (B9, A2-2)', async ({
+    page,
+    api,
+    data,
+  }) => {
+    const target = await api.createVerifiedUser({
+      email: data.email(),
+      username: data.username(),
+      password: data.password(),
+    });
+    // Weight 2, under the restriction threshold, so this spec is about the revoke alone.
+    await api.strikeUser(target.id, { severity: 'moderate', reason: 'e2e strike to revoke' });
+
+    const trust = new TrustPage(page);
+    await trust.open(target.id);
+    await expect(trust.countingTags).toHaveCount(1);
+
+    const dialog = await trust.openRevokeConfirmation();
+    await expect(dialog).toContainText('Revoke this strike?');
+    // The consequence that distinguishes this from lifting: the weight actually moves.
+    await expect(dialog).toContainText('goes from 2 to 0');
+    await expect(dialog).toContainText('the only action that lowers the weight');
+    // No restriction is in force here, so the dialog must NOT warn about one.
+    await expect(dialog).not.toContainText('does not lift it');
+
+    await trust.confirm(dialog, 'Revoke strike');
+    await expect(page.getByText('Strike revoked.')).toBeVisible();
+
+    // The row becomes history rather than disappearing, and the standing refetches: the weight is
+    // back to 0 and the score is recomputed from what is left (50 - 0 * 5 = 50).
+    await expect(trust.countingTags).toHaveCount(0, { timeout: 15_000 });
+    await expect(trust.revokedTags).toHaveCount(1);
+    await expect(trust.panel.getByText('e2e strike to revoke')).toBeVisible();
+    await expect(trust.panel.getByText('50')).toBeVisible({ timeout: 15_000 });
+  });
+
+  test('revoking says it will NOT lift a restriction already in force (A2-3)', async ({
+    page,
+    api,
+    data,
+  }) => {
+    const target = await api.createVerifiedUser({
+      email: data.email(),
+      username: data.username(),
+      password: data.password(),
+    });
+    // Severe = weight 4, which crosses the restriction threshold of 3, so the server applies a
+    // permanent global restriction inside the same request. That is the state the warning is for.
+    await api.strikeUser(target.id, { severity: 'severe', reason: 'e2e escalating strike' });
+
+    const trust = new TrustPage(page);
+    await trust.open(target.id);
+    await expect(trust.inForceTags.first()).toBeVisible({ timeout: 15_000 });
+
+    const dialog = await trust.openRevokeConfirmation();
+    // A2-3 kept as the design, and made visible: dropping the weight under the threshold does not
+    // undo the sanction. An operator revoking strikes to release a restriction is told before, not
+    // after.
+    await expect(dialog).toContainText('does not lift it');
+    await expect(dialog).toContainText('Lift it from the restriction list');
+    await dialog.getByRole('button', { name: 'Cancel' }).click();
+
+    // And the restriction is still there, which is what the sentence promised.
+    await expect(trust.inForceTags.first()).toBeVisible();
+  });
+
+  test('a strike already revoked offers no second revoke', async ({ page, api, data }) => {
+    // The 409 the server returns for a double revoke is unreachable from this UI by construction,
+    // and that is the assertion: the affordance is per row and only on rows still counting, so a
+    // revoked row has no button. Offering one that always 409s would be a lie in an affordance.
+    const target = await api.createVerifiedUser({
+      email: data.email(),
+      username: data.username(),
+      password: data.password(),
+    });
+    const strike = await api.strikeUser(target.id, {
+      severity: 'minor',
+      reason: 'e2e already-revoked strike',
+    });
+    await api.revokeStrike(strike.id);
+
+    const trust = new TrustPage(page);
+    await trust.open(target.id);
+
+    await expect(trust.revokedTags).toHaveCount(1);
+    await expect(trust.countingTags).toHaveCount(0);
+    await expect(trust.panel.getByRole('button', { name: 'Revoke' })).toHaveCount(0);
+  });
 });
+
+/**
+ * **The `trust.view`-without-`trust.manage` operator is NOT covered in this file**, and cannot be:
+ * the admin shell's floor is `Role.Moderator`, and Moderator upward all hold `trust.*` in
+ * `DEFAULT_ROLE_PERMISSIONS`. Arranging that operator means editing `role_permissions` at runtime,
+ * which no fixture does — the same standing gap A2 recorded, unchanged by B9.
+ *
+ * The revoke's grant split is asserted where each half is reachable: server-side as route metadata
+ * (`backend/src/modules/trust/trust.admin.controller.spec.ts` — `DELETE strikes/:id` carries
+ * `trust.manage` and NOT `trust.view`), in the component spec by synthesising the grant set
+ * (`admin/.../trust-mutations.spec.tsx` renders the panel with `trust.view` alone and asserts no
+ * Revoke button exists), and in `rbac.spec.ts` for the reachable half — a moderator holds both
+ * grants and gets both affordances.
+ */

@@ -8,15 +8,23 @@ import { type Locator, type Page, expect } from '@playwright/test';
  * The same panel is a tab on the user detail drawer for viewers who can. Both are driven from here
  * so a spec can assert they show the same thing.
  *
- * **Every mutation here is effectively permanent**, so specs arrange a THROWAWAY user per test and
- * never touch a seeded account: no route revokes a strike (`trust.admin.controller.ts` has only
- * `POST users/:id/strikes`), and a strike issued against `e2e_writer` would sit on its record for
- * the life of the database, changing what every later run of the trust and collaboration specs sees.
+ * **Specs still arrange a THROWAWAY user per test and never touch a seeded account.** A strike can be
+ * revoked as of B9 (`DELETE /admin/strikes/:id`), but a revoked strike stays on the record as history
+ * and an auto-escalated restriction is permanent until lifted, so a strike issued against
+ * `e2e_writer` would still change what every later run of the trust and collaboration specs sees.
  */
 export const TRUST_ROUTE = '/trust' as const;
 export const TRUST_HEADING = 'Trust & safety' as const;
 
-/** A well-formed UUID that matches no account — used where a spec needs a settled, empty standing. */
+/**
+ * A well-formed UUID that matches no account.
+ *
+ * **It is now the NOT-FOUND fixture, not the empty-standing one.** Until B9 the standing read
+ * manufactured a default profile for any id it was given (A2-4), so this id was how a spec got a
+ * settled clean standing without arranging anything. The read writes nothing and 404s an id that
+ * belongs to nobody now, so specs that want a clean standing create a real throwaway user, and this
+ * constant exists to assert the 404.
+ */
 export const UNKNOWN_USER_ID = '00000000-0000-4000-8000-000000000000' as const;
 
 export class TrustPage {
@@ -58,9 +66,43 @@ export class TrustPage {
     });
   }
 
+  /**
+   * Open `/trust` with an id and DO NOT wait for the standing — for the not-found case, where no
+   * standing card ever arrives.
+   */
+  async openExpectingFailure(userId: string): Promise<void> {
+    await this.goto();
+    await this.userIdInput.fill(userId);
+    await expect(this.panel).toBeVisible({ timeout: 15_000 });
+  }
+
   /** The restriction rows still in force carry the clients' own word for it. */
   get inForceTags(): Locator {
     return this.panel.getByText('In force', { exact: true });
+  }
+
+  /**
+   * The strike rows still contributing weight (B9, A2-2). "Counting" rather than "In force": what an
+   * active strike does is contribute its weight, which is a different fact from a live restriction.
+   */
+  get countingTags(): Locator {
+    return this.panel.getByText('Counting', { exact: true });
+  }
+
+  get revokedTags(): Locator {
+    return this.panel.getByText('Revoked', { exact: true });
+  }
+
+  private get strikeListSection(): Locator {
+    return this.panel.locator('section').filter({ hasText: 'Every strike ever issued' });
+  }
+
+  /** Revoke the first strike still counting, and hand back its confirmation (B9, A2-2). */
+  async openRevokeConfirmation(): Promise<Locator> {
+    await this.strikeListSection.getByRole('button', { name: 'Revoke' }).first().click();
+    const dialog = this.page.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+    return dialog;
   }
 
   /** Issue a strike: fill the reason, open the confirmation, and hand it back for assertions. */

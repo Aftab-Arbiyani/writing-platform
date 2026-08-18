@@ -4,7 +4,7 @@ import { test, expect } from '../../fixtures/test';
 import { ADMIN_DASHBOARDS, DashboardsPage } from '../../pages/admin/dashboards-page';
 import { ModerationPage } from '../../pages/admin/moderation-page';
 import { MONETIZATION_ROUTES, MonetizationPage } from '../../pages/admin/monetization-page';
-import { TrustPage, UNKNOWN_USER_ID } from '../../pages/admin/trust-page';
+import { TrustPage } from '../../pages/admin/trust-page';
 import { UsersPage } from '../../pages/admin/users-page';
 import { LoginPage } from '../../pages/shared/login-page';
 
@@ -91,14 +91,30 @@ test.describe('@phase5 @a11y admin accessibility (authenticated)', () => {
    *     list whose current band must be conveyed by text, not colour), the restriction list, and both
    *     write FORMS with their labelled selects, date inputs and textareas. Scanned with a result on
    *     screen rather than at rest, for the same reason B8 gave for the subscription lookup — an
-   *     empty search box would scan none of it. A well-formed UUID matching no account resolves to a
-   *     default standing on any database.
+   *     empty search box would scan none of it. It arranges a throwaway account: until B9 a
+   *     well-formed UUID matching no account resolved to a manufactured default standing (A2-4), and
+   *     that is what this scan used to rely on — an unknown id renders a not-found now, which would
+   *     scan almost nothing.
    *   • The **drawer tab** is a different a11y question, not a repeat: the same panel inside an AntD
    *     Drawer with a Tabs roving-tabindex and a focus trap, which is where a composition like this
    *     usually breaks.
    */
-  test('the trust standing has no critical/serious a11y violations', async ({ page }) => {
-    await new TrustPage(page).open(UNKNOWN_USER_ID);
+  test('the trust standing has no critical/serious a11y violations', async ({
+    page,
+    api,
+    data,
+  }) => {
+    const target = await api.createVerifiedUser({
+      email: data.email(),
+      username: data.username(),
+      password: data.password(),
+    });
+    // One strike, weight 2 — under the restriction threshold, so no escalation is arranged, and the
+    // strike list B9 added scans with a populated row and its Revoke button rather than an empty
+    // state. That list is new interactive surface on this page and belongs in the scan.
+    await api.strikeUser(target.id, { severity: 'moderate', reason: 'a11y strike row' });
+
+    await new TrustPage(page).open(target.id);
     await expectNoSeriousA11yViolations(page, { label: 'admin /trust' });
   });
 

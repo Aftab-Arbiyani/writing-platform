@@ -1,7 +1,7 @@
 import { freshLoginAs } from '../../fixtures/auth';
 import { test, expect } from '../../fixtures/test';
 import { MONETIZATION_ROUTES, MonetizationPage } from '../../pages/admin/monetization-page';
-import { TrustPage, UNKNOWN_USER_ID } from '../../pages/admin/trust-page';
+import { TrustPage } from '../../pages/admin/trust-page';
 
 /**
  * Admin RBAC boundary (docs/e2e/06 Phase 3). Mints a moderator, signs into the admin
@@ -123,9 +123,27 @@ test.describe('@phase3 admin RBAC', () => {
     await expect(page.getByText('No account selected')).toBeVisible();
 
     // And they hold `trust.manage` too, so the write affordances are theirs.
-    await trust.open(UNKNOWN_USER_ID);
+    //
+    // A REAL account, not `UNKNOWN_USER_ID`: the standing read used to manufacture a default profile
+    // for any well-formed UUID, which this assertion relied on, and B9 closed that (A2-4). The forms
+    // render only once the standing resolves — they read the active weight to state the escalation —
+    // so a 404 now leaves nothing to assert about.
+    const inspected = await api.createVerifiedUser({
+      email: data.email(),
+      username: data.username(),
+      password: data.password(),
+    });
+    await trust.open(inspected.id);
     await expect(trust.panel.getByRole('button', { name: 'Issue strike' })).toBeVisible();
     await expect(trust.panel.getByRole('button', { name: 'Apply restriction' })).toBeVisible();
+    // The revoke B9 added is gated `trust.manage` as well, so it belongs to this role too — asserted
+    // with a strike on the record, since the affordance is per-row.
+    await api.strikeUser(inspected.id, { severity: 'minor', reason: 'e2e rbac strike' });
+    await page.reload();
+    await trust.open(inspected.id);
+    await expect(trust.panel.getByRole('button', { name: 'Revoke' }).first()).toBeVisible({
+      timeout: 15_000,
+    });
   });
 
   /**

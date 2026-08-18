@@ -1,7 +1,7 @@
 import { freshLogin } from '../../fixtures/auth';
 import { test, expect } from '../../fixtures/test';
 import { MONETIZATION_ROUTES, MonetizationPage } from '../../pages/admin/monetization-page';
-import { TrustPage, UNKNOWN_USER_ID } from '../../pages/admin/trust-page';
+import { TrustPage } from '../../pages/admin/trust-page';
 import { UsersPage } from '../../pages/admin/users-page';
 import { LoginPage } from '../../pages/shared/login-page';
 
@@ -119,20 +119,21 @@ test.describe('@phase5 @visual admin (authenticated)', () => {
    *
    * **One candidate out of four, because determinism was checked first:**
    *
-   *   • **`/trust` with the unknown-id standing** is deterministic, and it is the only shot here worth
-   *     minting. `00000000-0000-4000-8000-000000000000` matches no account, and the standing read
-   *     answers for ANY id with a freshly created default profile (score 50 → Member, status normal,
-   *     weight 0, no restrictions — `getOrCreateProfile`, and `trust_profiles` has no FK to `users`).
-   *     Nothing on the page renders a date or a live count in that state: the band strip, the two
-   *     empty forms and the empty restriction list are all fixed. No spec in this suite writes trust
-   *     rows for that id — the functional and a11y specs each mint a throwaway account precisely
-   *     because a strike is permanent — so nothing can race it. It does leave one
-   *     `trust_profiles` row behind for the zero UUID, which the read creates whether or not this
-   *     shot exists.
-   *   • **`/trust` for a REAL restricted account is excluded.** Every restriction row renders
-   *     "applied <timestamp>", the score and weight move with whatever the account has been through,
-   *     and the account itself is minted per run — three independent sources of drift, none of which
-   *     masking fixes, since the row count changes the page's height.
+   *   • **`/trust` for a FRESH throwaway account** is deterministic, and it is the only shot here
+   *     worth minting. Nothing on the page renders a date or a live count in that state: the standing
+   *     is the derived default (score 50 → Member, status normal, weight 0), and the restriction list,
+   *     the strike list and both write forms are all in fixed empty states. The account is minted for
+   *     this shot alone, so no other spec can write to it and nothing can race it.
+   *
+   *     B9 changed HOW this shot gets that state, not whether it is deterministic. It used to pass
+   *     `UNKNOWN_USER_ID`, relying on the standing read creating a default `trust_profiles` row for
+   *     any well-formed UUID (A2-4) — which also meant this screenshot left a row behind for the zero
+   *     UUID on every run. The read writes nothing and 404s an unknown id now, so an account is
+   *     arranged instead and the side effect is gone.
+   *   • **`/trust` for a RESTRICTED or STRUCK account is excluded.** Every restriction row renders
+   *     "applied <timestamp>" and every strike row "issued <timestamp>", and the score and weight move
+   *     with whatever the account has been through — sources of drift that masking cannot fix, since
+   *     the row count changes the page's height.
    *   • **The drawer tab is excluded**: it is the same panel inside an animated AntD Drawer, so the
    *     shot would race the open transition on top of the timestamp problem above. The a11y scan
    *     already covers that composition, more cheaply and more usefully.
@@ -140,8 +141,17 @@ test.describe('@phase5 @visual admin (authenticated)', () => {
    *     card and an empty state. It would guard console chrome the users and analytics baselines
    *     already guard, so it earns nothing.
    */
-  test('the trust standing matches its visual baseline', async ({ page }) => {
-    await new TrustPage(page).open(UNKNOWN_USER_ID);
+  test('the trust standing matches its visual baseline', async ({ page, api, data }) => {
+    // A throwaway account with NO strikes and NO restrictions, which keeps the shot deterministic:
+    // both lists render their empty states, and nothing on the panel carries a timestamp. It used to
+    // use `UNKNOWN_USER_ID`, relying on the standing read manufacturing a default profile for any id
+    // (A2-4) — closed by B9, so an unknown id would now shoot a not-found.
+    const target = await api.createVerifiedUser({
+      email: data.email(),
+      username: data.username(),
+      password: data.password(),
+    });
+    await new TrustPage(page).open(target.id);
     await expect(page).toHaveScreenshot('admin-trust.png', { fullPage: true });
   });
 });

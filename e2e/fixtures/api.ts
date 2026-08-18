@@ -369,6 +369,39 @@ export class ApiHelper {
     await this.data(res);
   }
 
+  /**
+   * Issue a strike (POST /admin/users/:id/strikes) — arranges a strike HISTORY, which B9's list and
+   * revoke need and which no fixture could arrange before them (A2-2).
+   *
+   * Weights are the shared constants: minor 1, moderate 2, severe 4. Anything summing to 3 applies a
+   * permanent global `restricted` restriction automatically and 6 a `suspended` one, so a spec that
+   * does not want an escalation keeps its total under 3.
+   */
+  async strikeUser(
+    userId: string,
+    input: { severity: 'minor' | 'moderate' | 'severe'; reason?: string; expiresAt?: string },
+  ): Promise<{ id: string; weight: number; severity: string; revokedAt: string | null }> {
+    const res = await this.request.post(this.url(`/admin/users/${userId}/strikes`), {
+      headers: await this.adminHeaders(),
+      data: {
+        severity: input.severity,
+        reason: input.reason ?? 'e2e strike',
+        ...(input.expiresAt === undefined ? {} : { expiresAt: input.expiresAt }),
+      },
+    });
+    return this.data<{ id: string; weight: number; severity: string; revokedAt: string | null }>(
+      res,
+    );
+  }
+
+  /** Revoke a strike (DELETE /admin/strikes/:id, B9/A2-2) — the only thing that lowers the weight. */
+  async revokeStrike(id: string): Promise<void> {
+    const res = await this.request.delete(this.url(`/admin/strikes/${id}`), {
+      headers: await this.adminHeaders(),
+    });
+    await this.data(res);
+  }
+
   /** Block a user as the bearer of `token` (POST /users/:id/block) — arranges the blocks list. */
   async blockUser(targetUserId: string, token: string): Promise<{ id: string; kind: string }> {
     const res = await this.request.post(this.url(`/users/${targetUserId}/block`), {
