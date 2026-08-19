@@ -2907,6 +2907,117 @@ smuggling this row was told not to do. The spec now asserts the fallback the app
 
 ---
 
+## 3.20 A3 pre-flight + build — the confidence figure that could only be 0 or 1 (2026-08-19)
+
+A3's audit found the retrieval admin **contract sound** — `RetrievalAdminConfig`,
+`UpdateRetrievalAdminConfig` and `SearchAnalytics` in `packages/api-types` already mirrored their DTOs
+field for field, the settings row is guaranteed by `syncDefinitions`, and the write path is the audited
+one with cache invalidation. What it found broken was the **aggregation and the validation** behind that
+contract, in the module A3 owns.
+
+**All four were fixed in this row rather than recorded as open.** Retrieval is AF4, added after the
+102-path `v1` baseline (docs/25:155), so these routes were always additive — the standing B8 established
+for `admin/monetization` and B9 for trust. **A2's mistake was accepting "frozen" without checking**; this
+row checked first. Report: [55](./55_WebAiRetrievalAdminReadinessReport.md). Sweep: [§6.20](#620-a3s-sweep-2026-08-19).
+
+### A3-1 · **medium** · ✅ **FIXED (2026-08-19)** · `avgConfidence` was rounded to a whole number, so the figure could only ever be 0 or 1
+
+`retrieval_query_logs.confidence` is a `real` holding a 0..1 score
+(`entities/retrieval-query-log.entity.ts:77`, written as `Number(t.confidence.toFixed(2))` and clamped to
+0..1 by the ranker). `getAnalytics` passed it through the same helper used for latency and token counts:
+
+```ts
+avgConfidence: mean(rows.map((r) => r.confidence)),   // mean() = Math.round(sum / n)
+```
+
+So a true average of 0.72 was reported as `1`, and 0.4 as `0`. Not a rounding imprecision — a **two-value
+output** standing in for a continuous quality signal, and the one figure a search-quality dashboard exists
+to show.
+
+**Why nobody had noticed:** `GET /admin/ai/search-analytics` had **no consumer on any client** until A3,
+and no spec covered the service (A3-4 below). The endpoint has been wrong since AF4 shipped and it cost
+nothing, because nothing read it. A3's dashboard is its first reader, which is exactly when this had to be
+found — a page rendering `1.00` to two decimals is more convincing than one rendering nothing.
+
+**FIXED** with a separate `meanRatio()` at the same 3 decimals `ratio()` already uses for
+`zeroResultRate` / `cacheHitRatio`. `avgLatencyMs` and `avgContextTokens` keep the integer `mean()`,
+where a fraction genuinely says nothing. Regression test: "keeps avgConfidence on its real 0..1 scale"
+plus "does not round a low average confidence away to zero" — the second one matters, because a fix that
+only checked 0.72 would pass with `Math.ceil`.
+
+### A3-2 · **medium** · ✅ **FIXED (2026-08-19, contract extended)** · the analytics window was truncated at 5,000 rows and nothing said so
+
+`RetrievalLogRepository.since` reads `take: ANALYTICS_ROW_CAP` (5,000), newest first. The cap itself is
+**good** — it is what keeps a 90-day window from pulling an unbounded table into Node. The defect is that
+`totalQueries` is `rows.length`, so on a busy install:
+
+- the dashboard reports exactly **5,000 requests** for a 7- or 90-day window, a suspiciously round number
+  presented as a measurement;
+- `zeroResultRate`, `p95LatencyMs`, `avgConfidence`, `cacheHitRatio` and `avgContextTokens` describe only
+  the **newest 5,000 requests**, not the window in the heading;
+- and **no client could detect any of it** — nothing in `SearchAnalyticsDto` distinguished a truncated
+  read from a complete one.
+
+That is the "no silent caps" rule broken at the contract level: a surface cannot label a sample it cannot
+see. **FIXED** by adding `truncated: boolean` to `SearchAnalyticsData`, `SearchAnalyticsDto` and
+`@qalam/api-types` (`total >= ANALYTICS_ROW_CAP`), exporting the cap so the service can compare against
+it, and rendering a banner that names the sample size. **This is the one contract extension in A3**, and
+the justification is that an honest UI was otherwise impossible — not that it was convenient.
+
+### A3-3 · **medium** · ✅ **FIXED (2026-08-19, both ends)** · the config write accepted any key and any value, and a bad weight turned a ranking signal off in silence
+
+`UpdateRetrievalConfigDto` carried `@IsObject()` on `sources` and `rankingWeights` and nothing else, and
+the settings layer validates a `json` value only as "a non-array object"
+(`settings.validation.ts:119`). Since `RetrievalConfigService.update` merges per key and **never prunes**,
+this persisted permanently:
+
+```
+PUT /admin/ai/search-config  {"rankingWeights": {"popularity": "abc", "vibes": 5}}  → 200
+```
+
+**The failure mode is the quiet one.** `retrieval-planner.service.ts:81` selects the signals to rank by
+with `weight > 0`, and `"abc" > 0` evaluates to `false` — so the signal **drops out of ranking and out of
+the explanations users see**, with no throw, no log and no 400. An unknown key persists in the effective
+config and would have rendered in A3's own editor as a phantom control. A weight of `999` was likewise
+accepted, dominating every other signal, against a DTO that _documented_ "0..1" and enforced nothing.
+
+**FIXED at both ends, deliberately:**
+
+- **Write path:** `IsSourceToggleTable` and `IsRankingWeightTable` allowlist the enum keys (both sets are
+  closed) and check each member — boolean, or a finite number in 0..1. Same shape as `IsRateTable` in the
+  monetization DTO (B8, A1-2). Mutation-checked: removing the two `@Validate` decorators fails exactly the
+  5 new tests and no others.
+- **Read path:** `mergeConfig`'s `mergeRecord` now drops unknown keys and falls back to a key's default
+  when a stored member is unusable, which is what protects a row written **before** the validators
+  existed. The file already claimed a "defensive" merge; it defended against a non-object value, not
+  against a bad member inside one.
+
+A related pair, handled in the UI rather than the API and recorded so they are not mistaken for bugs: the
+`vector` source is **enabled in the default config and inert by design** (its retriever reports itself
+unavailable until an embedding backend lands), so the editor says so under the toggle; and a weight of
+**0 disables** a signal rather than weighting it neutrally, which the section header states.
+
+### A3-4 · **low** · **OPEN (recorded, not fixed)** · `AsyncSection` now exists five times, and the refactor keeps being "not this row's"
+
+`features/ai` needed the per-section loading/error wrapper every admin dashboard uses, and the
+deletability rule (`admin/src/features/README.md`) forbids a feature importing another feature — so it
+got a **fifth** local copy, after Operations, Security, System and monetization. The monetization copy
+already recorded the alternative and declined it: lifting it to `src/components/` is a refactor across
+every one of those features, "not this row's to make". That reasoning was right four times and is getting
+weaker each time.
+
+Recorded rather than repeated silently, with the number named: at five copies, ~40 duplicated lines in
+five places is now the larger cost, and the lift is a mechanical change with a single behavioural
+contract. It is still not A3's to make — but the next feature row that needs one should do it instead of
+adding a sixth.
+
+**Also worth naming, and not a finding:** before A3 there was **no spec anywhere** for
+`AdminRetrievalController`, `RetrievalConfigService` or `getAnalytics` — `retrieval-contract.spec.ts` does
+not mention either route. That is why A3-1 and A3-3 survived AF4's own review: both are the kind of defect
+only an executed assertion finds, and this surface had none. A3 adds 33 backend tests across three files.
+
+---
+
 ## 4. Divergences that are NOT gaps (platform-inherent)
 
 These are accepted permanently and need no epic. They exist because the platforms genuinely differ.
@@ -4954,3 +5065,63 @@ from 2026-08-03 and was corrected once by §6.18; it now says it is closed.
 **Visual baselines: none minted, none compared.** `@visual` was excluded from every run in this row.
 Three admin baselines remain deliberately unminted and CI's visual job still owns minting ([10 §8.3],
 T-8). Nothing here changes rendering — the app-source diff is zero.
+
+---
+
+### 6.20 A3's sweep (2026-08-19)
+
+**Rows §2 / §3 checked; nothing owed to mobile, and that is permanent rather than deferred.** Admin is
+the one standing "not applicable" for the parity rule (§4): there is no mobile admin app, `ai.manage` is
+an operator permission, and the frontend is the customer side of the same platform. A1 established this
+and A2 re-confirmed it; A3 adds nothing new to the question.
+
+**What A3 built, against what its row named.** The row named "A3 retrieval — admin". The backend surface
+is exactly three routes (`GET`/`PUT admin/ai/search-config`, `GET admin/ai/search-analytics`), and two
+pages now consume all three. Nothing else was built: no new feature directory (both pages live in
+`features/ai`, because `ai.api.ts` declares itself the only place `/admin/ai/*` is named), no AF3 admin
+surface, no retrieval **evaluation** UI (`evaluation/search-evaluation.service.ts` exposes no admin route
+and is not this row's), and no fix for §3.19's missing catalogue entry.
+
+**One scope decision that reads like scope creep and is not.** `RETRIEVAL_CONFIG_BOUNDS` and
+`SEARCH_ANALYTICS_DEFAULT_WINDOW_DAYS` were added to `@qalam/shared` and the DTO was repointed at them.
+The DTO previously hardcoded four ranges and documented a fifth it did not enforce; the admin form needs
+those same numbers, and a form offering a value the route rejects is a defect waiting to happen. One
+constant, two readers, no behavioural change — the AF1 `AI_PARAM_BOUNDS` idiom.
+
+**The suite was RUN, and this is the first admin row where that is true at hand-off.** A1 and B8 both
+recorded "the specs typecheck, lint and collect" honestly, and §6.18 was the row that finally executed
+five rows' worth of backlog. A3's evidence: `ai-retrieval.spec.ts` **7/7**, the two new a11y scans **2/2
+light and 2/2 dark**, the RBAC boundary **1/1**, and the whole admin-chromium suite **77 passed / 1
+failed** — that one being `moderation.spec.ts`'s takedown journey, which passes in 10.7s at
+`--workers=1` and which §6.18 already recorded as this suite's parallel-load contention failure. Checked
+in isolation rather than assumed, because "not mine" is the claim most worth a second run.
+
+**One spec defect, found only by running it, and it is §6.18's lesson verbatim.** The window `Select` was
+driven with `getByRole('combobox').click()`; AntD renders the current value as a
+`<span class="ant-select-selection-item">` **over** that input, so the click is intercepted by the
+Select's own display span. The suite already had `selectAntdOption` for exactly this (docs/e2e/05 §5).
+`tsc`, `eslint` and `--list` all passed on the broken version — a locator's interactability, like its
+ambiguity, is invisible until it runs.
+
+**Visual baselines: one pending, and the two that looked invalidated are not.**
+`admin-ai-search-config.png` is deliberately unminted across chromium / firefox / webkit / dark — only
+CI's visual job may mint ([10 §8.3]). Search analytics is excluded on determinism (its figures come from
+telemetry the frontend AF4 specs generate in parallel, and empty-vs-populated changes the page's
+structure, not just its numbers — A1's dashboard reasoning).
+
+The interesting half: **adding two nav entries did NOT invalidate `admin-users.png` or
+`admin-analytics.png`**, which are viewport shots that include the nav rail. The obvious inference is that
+it must have. It did not — the new entries land at **y ≈ 879 and 933 in a 720 px viewport**, below the
+fold, and inserting into a vertical scroll container cannot move what sits above the insertion point.
+Measured with a throwaway spec that printed their bounding boxes, rather than reasoned about: a local
+`toHaveScreenshot` run could not have answered it either way, because CI-minted baselines differ from this
+machine's fonts regardless.
+
+**Gate deltas.** Backend 155 suites / 1321 tests (was 152 / 1288). Admin vitest 70 files / 400 tests (was
+67 / 363), typecheck / lint / build clean. E2E collect: admin-chromium **84** (was 75), admin-dark **20**
+(was 18).
+
+**What A3 leaves open:** §3.20 A3-4 (the fifth `AsyncSection`), §3.19 (the admin error catalogue), B8-1,
+B9-1. And **A4 stays parked**: `story-intelligence` has no admin controller at all, so it is a backend
+expansion entangled with the held AF3 analysis lifecycle ([45 §4.8](./45_WebClientRoadmap.md)) — the
+same conclusion the 2026-08-17 sizing note reached, re-confirmed here rather than assumed to still hold.

@@ -17,13 +17,13 @@ additive read endpoint, justified in §3.
 
 Measured, not assumed (routes read from `frontend/src/lib/routes.ts` and `admin/src/lib/routes.ts`).
 
-| Surface       | State                                                                                                                                                                                                                                                                      |
-| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Backend**   | ✅ Complete through P7.4 + AF1–AF6.                                                                                                                                                                                                                                        |
-| **Mobile**    | ✅ Complete: M1–M10, AF1–AF6, P7.1–P7.4. The most feature-complete surface, and the **reference implementation** for every W-track epic.                                                                                                                                   |
-| **Frontend**  | Features: `auth, feed, writing, profile, search, settings, notifications, analytics, ai, reading`. `reading` ✅ shipped (W1); `ai` ✅ has its first surface (W2 — in-editor assistant + Craft Coach); `collaboration` ✅ (W3); `monetization` ✅ (W4 — all five surfaces). |
-| **Admin**     | 31 route modules — users, moderation, analytics, audit, security, privacy, system, ten operations consoles, AI settings. **Nothing for AF3, AF4, AF5, or AF6.**                                                                                                            |
-| **Marketing** | Built (`qalam-web`); blocked only on config — Firebase values, domain, socials.                                                                                                                                                                                            |
+| Surface       | State                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Backend**   | ✅ Complete through P7.4 + AF1–AF6.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| **Mobile**    | ✅ Complete: M1–M10, AF1–AF6, P7.1–P7.4. The most feature-complete surface, and the **reference implementation** for every W-track epic.                                                                                                                                                                                                                                                                                                                                                                                               |
+| **Frontend**  | Features: `auth, feed, writing, profile, search, settings, notifications, analytics, ai, reading`. `reading` ✅ shipped (W1); `ai` ✅ has its first surface (W2 — in-editor assistant + Craft Coach); `collaboration` ✅ (W3); `monetization` ✅ (W4 — all five surfaces).                                                                                                                                                                                                                                                             |
+| **Admin**     | 31 route modules — users, moderation, analytics, audit, security, privacy, system, ten operations consoles, AI settings. ~~**Nothing for AF3, AF4, AF5, or AF6.**~~ **Corrected 2026-08-19:** AF5 shipped with A1 + B8 (seven billing routes), AF6's admin half is trust and shipped with A2 + B9, and AF4's shipped with A3 (retrieval config + search analytics). **AF3 remains the only one with no admin surface** — `story-intelligence` has no admin controller, which is why A4 is a backend expansion rather than a client row |     |
+| **Marketing** | Built (`qalam-web`); blocked only on config — Firebase values, domain, socials.                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 
 ---
 
@@ -1047,7 +1047,8 @@ that would have minted an unstable baseline. Those two users now get fixed pen n
 
 ## 5. Track A — admin (parallel with W, independent)
 
-`A1` monetization · `A2` ~~collaboration/trust~~ **trust** · `A3` retrieval · `A4` story graph. All **M**,
+`A1` monetization ✅ · `A2` ~~collaboration/trust~~ **trust** ✅ · `A3` retrieval ✅ · `A4` story graph ⏸.
+All **M**,
 all consuming shipped backends. Deliberately lower priority: admin already covers the operational surface
 (31 route modules), so these add reach, not readiness.
 
@@ -1181,6 +1182,52 @@ then `logoutAll` runs un-transacted, and a retry throws `UserStatusConflictExcep
 revocation — so a failed suspend leaves the account closed with live sessions and no path that completes.
 Same shape in five places. Not fixed: frozen v1 paths, and the fix is a design choice. A2-1's port shrinks
 its blast radius, which is why it is medium.
+
+### A3 — retrieval ✅ **DONE 2026-08-19** (sweep [48 §6.20](./48_PlatformParityRegister.md))
+
+**The last unheld row on either track.** Two admin surfaces over AF4's three admin routes —
+`GET`/`PUT /admin/ai/search-config` and `GET /admin/ai/search-analytics` — at
+`/ai-settings/search-config` and `/ai-settings/search-analytics`, both behind `ai.manage`.
+Report: [55](./55_WebAiRetrievalAdminReadinessReport.md).
+
+**Folded into the existing `features/ai` slice rather than given its own feature**, and that was forced
+rather than chosen: `admin/src/features/ai/api/ai.api.ts` declares itself "the only place `/admin/ai/*`
+endpoints are named", and `AdminRetrievalController` is mounted on `admin/ai`. The 2026-08-17 sizing note
+said A3 "folds in; very small" — the folding held; "very small" did not, because the audit found three
+defects in the surface itself. It also said **2** routes; there are **3** (the config has a read and a
+write).
+
+**Three fixed, one recorded** (48 §3.20, all in AF4 and therefore additive — checked before accepting
+"frozen", which is what A2 failed to do):
+
+- **A3-1 (medium)** `avgConfidence` shared the integer `mean()` used for milliseconds, so the endpoint's
+  central quality figure could only ever return **0 or 1**. It had never had a consumer, and A3's
+  dashboard is the first — a page rendering `1.00` is more convincing than one rendering nothing.
+- **A3-2 (medium)** the aggregation is capped at 5,000 rows newest-first (correctly), but `totalQueries`
+  was that count and nothing in the response revealed the truncation, so a busy install's figures
+  described the newest slice while the heading claimed the window. `truncated` was added to the contract —
+  **A3's only contract extension**, made because an honest surface was otherwise impossible.
+- **A3-3 (medium)** the two config tables accepted any key and any value; a non-numeric weight then fails
+  the planner's `weight > 0` test and **silently removes the signal from ranking**. Closed at the write
+  path (enum-key allowlists + member checks, the B8 `IsRateTable` shape) and at the read path (the
+  "defensive" merge defended against a non-object, not a bad member inside one).
+- **A3-4 (low, open)** `AsyncSection` is now duplicated **five** times. Still not a feature row's refactor
+  to make, but the count is named so the sixth is not added silently.
+
+**Bounds moved to `@qalam/shared` once** (`RETRIEVAL_CONFIG_BOUNDS`, `SEARCH_ANALYTICS_DEFAULT_WINDOW_DAYS`),
+read by the DTO, the controller default and the admin form — the AF1 `AI_PARAM_BOUNDS` idiom. The DTO had
+hardcoded four ranges and documented a fifth it did not enforce.
+
+**The E2E write saves the form unchanged, deliberately:** `ai.retrieval.config` is global and the frontend
+AF4 specs run in parallel asserting ranked results and a grounded answer, so a mutated topK or a disabled
+source would change their subject matter mid-run. Same conclusion B8 reached for `monetization.config`.
+
+**And the suite was RUN** — 7/7 functional, 2/2 a11y in **both** themes, 1/1 RBAC, plus the whole
+admin-chromium suite at 77 passed / 1 known contention failure (verified in isolation). A1 and B8 shipped
+with specs that had never executed; A3 is the first admin row where the browser evidence exists at
+hand-off.
+
+---
 
 ## 6. Track M — marketing site
 
