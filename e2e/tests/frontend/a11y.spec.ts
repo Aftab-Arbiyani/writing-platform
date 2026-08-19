@@ -472,6 +472,16 @@ test.describe('@phase5 @a11y frontend accessibility (authenticated)', () => {
     await conversations.expectResolved();
     await expect(conversations.rows).toHaveCount(1);
     await expectNoSeriousA11yViolations(page, { label: 'frontend /settings/ai/conversations' });
+
+    // The ARCHIVED shelf is a second composition, not the same one twice (docs/48 §3.21): a selected
+    // tab, a panel labelled by it, and a row whose action is Restore. Scanned with a row on it for the
+    // same reason the active shelf is — an empty archive would scan the tabs and nothing they control.
+    await conversations.archive('A11y conversation row');
+    await conversations.openShelf('Archived');
+    await expect(conversations.rows).toHaveCount(1);
+    await expectNoSeriousA11yViolations(page, {
+      label: 'frontend /settings/ai/conversations (archived)',
+    });
   });
 
   test('the prompt library has no critical/serious a11y violations', async ({ page }) => {

@@ -123,6 +123,57 @@ test.describe('@phase4 frontend AI surfaces (W8)', () => {
       await expect(page.getByText('No conversations yet')).toBeVisible();
     });
 
+    /**
+     * Archive → the archived shelf → restore, through the real endpoints (docs/48 §3.21).
+     *
+     * W8 shipped this surface with **no** archive control, and correctly: `status:'archived'`
+     * persisted while the list query had no status predicate (W8-2), so the row came straight back
+     * and the control would have reported a success that changed nothing. `b45ac03` added the filter,
+     * which turned the same control into the opposite hazard on mobile — the row left the only list
+     * that could show it, with no shelf and no restore, i.e. a delete with a gentler label.
+     *
+     * So the assertion that matters here is the ROUND TRIP, not the archive. Each half alone is a
+     * defect; only together are they a feature.
+     */
+    test('archive → archived shelf → restore, through the real endpoints', async ({
+      page,
+      api,
+      data,
+    }) => {
+      const user = await api.createVerifiedUser({
+        email: `ai-archive-${data.username()}@qalam.local`,
+        username: data.username(),
+        password: PASSWORD,
+      });
+      await freshLoginAs(page, user.email, PASSWORD);
+
+      const conversations = new AiConversationsPage(page);
+      await conversations.goto();
+      await conversations.expectResolved();
+      await conversations.createConversation();
+      await conversations.rename('Untitled conversation', 'An archivable conversation');
+
+      // The archive starts empty, and says so in its own words rather than borrowing the active
+      // shelf's "No conversations yet" — which would be false, since one exists.
+      await conversations.openShelf('Archived');
+      await expect(page.getByText('Nothing archived')).toBeVisible();
+
+      await conversations.openShelf('Active');
+      await conversations.archive('An archivable conversation');
+      // Gone from active for real: this is the server's status filter, not a client-side hide.
+      await expect(page.getByText('No conversations yet')).toBeVisible();
+
+      await conversations.openShelf('Archived');
+      await expect(conversations.row('An archivable conversation')).toHaveCount(1);
+
+      await conversations.restore('An archivable conversation');
+      await expect(page.getByText('Nothing archived')).toBeVisible();
+
+      // And it is back where it started — the claim that distinguishes archive from delete.
+      await conversations.openShelf('Active');
+      await expect(conversations.row('An archivable conversation')).toHaveCount(1);
+    });
+
     test('a conversation opens its own detail view, read-only', async ({ page, api, data }) => {
       const user = await api.createVerifiedUser({
         email: `ai-detail-${data.username()}@qalam.local`,
@@ -147,12 +198,27 @@ test.describe('@phase4 frontend AI surfaces (W8)', () => {
       await expect(page).toHaveURL(/\/settings\/ai\/conversations$/);
     });
 
-    test('offers no archive control, because archiving would hide nothing', async ({ page }) => {
+    /**
+     * Replaces a test that asserted the OPPOSITE — "offers no archive control, because archiving
+     * would hide nothing" — and which **could not fail** (docs/48 §3.21).
+     *
+     * It ran as the shared writer, whose list is empty because every conversation spec here uses a
+     * throwaway account, and it asserted `getByRole('button', {name: /archive/i})` had count 0. With
+     * no rows there is no per-row control either way, so it passed for a reason unrelated to its
+     * claim — and it still passed after archive shipped, which is how it was noticed. A test that
+     * cannot fail is worse than no test: it reads as coverage.
+     *
+     * This one asserts something an empty list can actually settle: the shelves are offered, and
+     * Active is the one you land on — which is the client agreeing with the route's own default.
+     */
+    test('offers both shelves and lands on Active', async ({ page }) => {
       // Read-only, so the shared writer is fine here.
       const conversations = new AiConversationsPage(page);
       await conversations.goto();
       await conversations.expectResolved();
-      await conversations.expectNoArchiveControl();
+
+      await expect(conversations.shelfTab('Active')).toHaveAttribute('aria-selected', 'true');
+      await expect(conversations.shelfTab('Archived')).toHaveAttribute('aria-selected', 'false');
     });
 
     /**

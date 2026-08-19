@@ -76,6 +76,11 @@ export class AiConversationsPage {
     return this.page.getByRole('searchbox', { name: /Filter conversations/ });
   }
 
+  /** The Active / Archived shelf tabs (docs/48 §3.21). */
+  shelfTab(name: 'Active' | 'Archived'): Locator {
+    return this.page.getByRole('tab', { name });
+  }
+
   async goto(): Promise<void> {
     await this.page.goto('/settings/ai/conversations');
     await expect(this.heading).toBeVisible({ timeout: 30_000 });
@@ -105,6 +110,39 @@ export class AiConversationsPage {
   /** A row by its rendered title (the untitled placeholder counts). */
   row(title: string): Locator {
     return this.rows.filter({ hasText: title });
+  }
+
+  /**
+   * Switch shelves and wait for the new one to settle.
+   *
+   * The wait is on the destination content, not on the tab's own state: the status is a QUERY
+   * PARAMETER, so switching issues a fresh request, and asserting the tab looks selected would pass
+   * before the rows it controls have arrived.
+   */
+  async openShelf(name: 'Active' | 'Archived'): Promise<void> {
+    await this.shelfTab(name).click();
+    await expect(this.shelfTab(name)).toHaveAttribute('aria-selected', 'true');
+    await expect(
+      this.page
+        .getByRole('list', { name: 'Conversations' })
+        .or(this.page.getByText(name === 'Archived' ? 'Nothing archived' : 'No conversations yet')),
+    ).toBeVisible({ timeout: 30_000 });
+  }
+
+  /** Archive from the active shelf; the row leaves it for real, because the route filters by status. */
+  async archive(title: string): Promise<void> {
+    await this.row(title)
+      .getByRole('button', { name: /^Archive / })
+      .click();
+    await expect(this.row(title)).toHaveCount(0, { timeout: 30_000 });
+  }
+
+  /** Restore from the archived shelf — the half that makes archiving something other than a delete. */
+  async restore(title: string): Promise<void> {
+    await this.row(title)
+      .getByRole('button', { name: /^Restore / })
+      .click();
+    await expect(this.row(title)).toHaveCount(0, { timeout: 30_000 });
   }
 
   async rename(currentTitle: string, nextTitle: string): Promise<void> {
@@ -147,17 +185,6 @@ export class AiConversationsPage {
     // The AntD confirm dialog's own OK button — the confirmation is part of the flow, not stubbed.
     await this.page.getByRole('button', { name: 'Delete', exact: true }).click();
     await expect(this.row(title)).toHaveCount(0, { timeout: 30_000 });
-  }
-
-  /**
-   * No archive control is offered.
-   *
-   * `PATCH status:'archived'` persists and hides nothing — the list query has no status predicate
-   * (docs/48 §3.12, W8-2) — so this asserts the deliberate omission. If the backend gains a status
-   * filter, this is the assertion that should change.
-   */
-  async expectNoArchiveControl(): Promise<void> {
-    await expect(this.page.getByRole('button', { name: /archive/i })).toHaveCount(0);
   }
 
   async openFirstRow(): Promise<void> {
