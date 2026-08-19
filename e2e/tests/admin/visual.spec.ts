@@ -1,6 +1,7 @@
 import { freshLogin } from '../../fixtures/auth';
 import { test, expect } from '../../fixtures/test';
 import { MONETIZATION_ROUTES, MonetizationPage } from '../../pages/admin/monetization-page';
+import { AiRetrievalPage } from '../../pages/admin/ai-retrieval-page';
 import { TrustPage } from '../../pages/admin/trust-page';
 import { UsersPage } from '../../pages/admin/users-page';
 import { LoginPage } from '../../pages/shared/login-page';
@@ -141,6 +142,35 @@ test.describe('@phase5 @visual admin (authenticated)', () => {
    *     card and an empty state. It would guard console chrome the users and analytics baselines
    *     already guard, so it earns nothing.
    */
+  /**
+   * A3's retrieval config editor. **Also DELIBERATELY UNMINTED**, on the same terms as the four
+   * above — only the web-e2e workflow's visual job may mint a baseline, in the pinned Playwright
+   * image ([10 §5]).
+   *
+   * Pending, across all four admin projects (chromium / firefox / webkit / dark):
+   *   • `admin-ai-search-config.png`
+   *
+   * **One candidate out of two, because determinism was checked first:**
+   *
+   *   • **The config editor is deterministic**, and it is the densest form on the admin surface —
+   *     four switches and nine weight inputs in a fixed grid, no date, no count, no row whose number
+   *     can vary. The values come from `ai.retrieval.config` resolved over compiled defaults, and the
+   *     only spec in this suite that writes that row is A3's own round-trip, which saves the form
+   *     UNCHANGED precisely so nothing here (and nothing in the frontend AF4 specs) moves under it.
+   *   • **Search analytics is excluded.** Every figure is aggregated from retrieval telemetry that
+   *     the frontend AF4 specs generate while this runs, so the numbers move with the suite. Masking
+   *     would not rescue it: whether the window is empty decides between a stat grid and an empty
+   *     state — a different page STRUCTURE and height, which is the same reason A1's three dashboards
+   *     are excluded. The a11y scan covers that composition in both themes instead.
+   */
+  test('the retrieval config editor matches its visual baseline', async ({ page }) => {
+    await new AiRetrievalPage(page).goto(AiRetrievalPage.config);
+    // Wait for the values, not just the heading: the form renders its labels before the read lands,
+    // and photographing that intermediate state would bake an empty form into the baseline.
+    await expect(new AiRetrievalPage(page).weight('Semantic similarity')).not.toHaveValue('');
+    await expect(page).toHaveScreenshot('admin-ai-search-config.png', { fullPage: true });
+  });
+
   test('the trust standing matches its visual baseline', async ({ page, api, data }) => {
     // A throwaway account with NO strikes and NO restrictions, which keeps the shot deterministic:
     // both lists render their empty states, and nothing on the panel carries a timestamp. It used to

@@ -1,6 +1,7 @@
 import { expectNoSeriousA11yViolations } from '../../fixtures/a11y';
 import { freshLogin } from '../../fixtures/auth';
 import { test, expect } from '../../fixtures/test';
+import { AiRetrievalPage } from '../../pages/admin/ai-retrieval-page';
 import { ADMIN_DASHBOARDS, DashboardsPage } from '../../pages/admin/dashboards-page';
 import { ModerationPage } from '../../pages/admin/moderation-page';
 import { MONETIZATION_ROUTES, MonetizationPage } from '../../pages/admin/monetization-page';
@@ -138,6 +139,40 @@ test.describe('@phase5 @a11y admin accessibility (authenticated)', () => {
 
     await new TrustPage(page).openDrawerTab(target.username);
     await expectNoSeriousA11yViolations(page, { label: 'admin /users → Trust tab' });
+  });
+
+  /**
+   * A3's retrieval surface, scanned in BOTH themes for free — the `admin-dark` project re-runs this
+   * file, so registering the scans here is what makes the dark pass happen. Two scans, one per page,
+   * because they are different a11y questions rather than the same components twice:
+   *
+   *   • The **config editor** is the densest FORM on the admin surface: four switches and nine
+   *     numeric inputs whose accessible names are generated from enum labels, each wrapped in its own
+   *     `<label>` with a hint paragraph. Generated names are exactly where a form like this loses its
+   *     labelling, so it is scanned with the config loaded rather than at rest.
+   *   • The **analytics dashboard** carries the one composition on this surface that axe can fail on
+   *     its own terms: proportional bars beside their figures. The bars are decorative
+   *     (`aria-hidden`) because the count and percentage next to them are the accessible content —
+   *     the alternative, labelling every bar, would double every row for a screen reader.
+   */
+  test('the retrieval config editor has no critical/serious a11y violations', async ({ page }) => {
+    const retrieval = new AiRetrievalPage(page);
+    await retrieval.goto(AiRetrievalPage.config);
+    // Scanned with values loaded: an empty form would scan the labels but not the inputs' state.
+    await expect(retrieval.weight('Semantic similarity')).not.toHaveValue('');
+
+    await expectNoSeriousA11yViolations(page, { label: 'admin /ai-settings/search-config' });
+  });
+
+  test('the search analytics dashboard has no critical/serious a11y violations', async ({
+    page,
+  }) => {
+    // `expectRenders` accepts either branch, which matters here: whether this stack has AF4
+    // telemetry depends on what else in the suite has run, and both the stat grid and the empty
+    // state are compositions worth scanning.
+    await new AiRetrievalPage(page).expectRenders(AiRetrievalPage.analytics);
+
+    await expectNoSeriousA11yViolations(page, { label: 'admin /ai-settings/search-analytics' });
   });
 
   test('the subscription lookup has no critical/serious a11y violations', async ({ page }) => {

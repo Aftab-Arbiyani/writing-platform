@@ -1,5 +1,6 @@
 import { freshLoginAs } from '../../fixtures/auth';
 import { test, expect } from '../../fixtures/test';
+import { AiRetrievalPage, RETRIEVAL_ROUTES } from '../../pages/admin/ai-retrieval-page';
 import { MONETIZATION_ROUTES, MonetizationPage } from '../../pages/admin/monetization-page';
 import { TrustPage } from '../../pages/admin/trust-page';
 
@@ -177,5 +178,41 @@ test.describe('@phase3 admin RBAC', () => {
     await expect(page.getByText(/access to this/i)).toBeVisible();
     await expect(page.getByRole('heading', { level: 1, name: 'Trust & safety' })).toHaveCount(0);
     await expect(page.getByRole('menuitem', { name: TrustPage.NAV_LABEL })).toHaveCount(0);
+  });
+  /**
+   * A3's retrieval boundary. Both `admin/ai/search-config` and `admin/ai/search-analytics` carry
+   * `@Permissions(ai.manage)`, and `ai.*` is granted to Admin and SuperAdmin only
+   * (`DEFAULT_ROLE_PERMISSIONS`) — so a moderator, the highest role that reaches the admin shell
+   * without it, must be refused both routes and offered neither nav entry.
+   *
+   * The client-side gate is the page's own `can(ai.manage)` check rather than a `RequirePermission`
+   * wrapper, matching the sibling AI Defaults route (the Admin floor IS that grant). Asserting the
+   * heading is absent is what distinguishes the two: an in-place refusal renders instead of the page,
+   * not above a page that already mounted.
+   */
+  test('a moderator cannot reach either retrieval route, and sees no retrieval nav', async ({
+    page,
+    api,
+    data,
+  }) => {
+    const moderator = await api.createModerator({
+      email: data.email(),
+      username: data.username(),
+      password: data.password(),
+    });
+    await freshLoginAs(page, moderator.email, moderator.password);
+
+    await page.goto('/dashboard');
+    await expect(page.getByTestId('admin-header')).toBeVisible({ timeout: 30_000 });
+
+    for (const label of AiRetrievalPage.NAV_LABELS) {
+      await expect(page.getByRole('menuitem', { name: label })).toHaveCount(0);
+    }
+
+    for (const route of RETRIEVAL_ROUTES) {
+      await page.goto(route.path);
+      await expect(page.getByText(/access to this/i)).toBeVisible();
+      await expect(page.getByRole('heading', { level: 1, name: route.heading })).toHaveCount(0);
+    }
   });
 });
