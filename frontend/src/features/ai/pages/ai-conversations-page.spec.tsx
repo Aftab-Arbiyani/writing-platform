@@ -162,20 +162,77 @@ describe('AiConversationsPage', () => {
     });
   });
 
+  /**
+   * Archive, added once it meant something (docs/48 §3.21).
+   *
+   * This block used to assert the OPPOSITE — that no archive control exists — because
+   * `status:'archived'` persisted and hid nothing (W8-2), so the control would have reported success
+   * and changed nothing visible. The backend gained the status filter in `b45ac03`, which is exactly
+   * the condition the old test named as the thing that should change it.
+   *
+   * The load-bearing assertion is the pair: archiving is offered only alongside the shelf that makes
+   * it reversible. Without that shelf this is a delete with a gentler label, which is how it behaved
+   * on mobile between `b45ac03` and this change.
+   */
   describe('archive', () => {
-    it('offers no archive control, because archiving hides nothing (W8-2)', async () => {
+    it('archives a row from the active shelf', async () => {
       renderWithProviders(<AiConversationsPage />);
       await screen.findByText('Rain over the city');
-      // `PATCH status:'archived'` persists and the row returns on the next refetch — the list query
-      // has no status predicate. A control reporting success while changing nothing visible is worse
-      // than its absence. If the backend gains a filter, this expectation is what should change.
-      expect(screen.queryByRole('button', { name: /archive/i })).toBeNull();
+
+      fireEvent.click(screen.getByRole('button', { name: /^Archive Rain over the city$/ }));
+
+      await waitFor(() =>
+        expect(updateConversation).toHaveBeenCalledWith('c1', { status: 'archived' }),
+      );
     });
 
-    it('still labels an archived row the server returns', async () => {
+    it('reads the archived shelf from the server, not by filtering the active one', async () => {
+      renderWithProviders(<AiConversationsPage />);
+      await screen.findByText('Rain over the city');
+
+      fireEvent.click(screen.getByRole('tab', { name: 'Archived' }));
+
+      // The status is a query parameter: archived rows are not in the active page to filter down to.
+      await waitFor(() =>
+        expect(listConversations).toHaveBeenCalledWith(
+          expect.objectContaining({ status: 'archived' }),
+        ),
+      );
+    });
+
+    it('offers restore rather than archive on the archived shelf', async () => {
+      renderWithProviders(<AiConversationsPage />);
+      await screen.findByText('Rain over the city');
+      listConversations.mockResolvedValue(page([row({ status: 'archived' })]) as never);
+
+      fireEvent.click(screen.getByRole('tab', { name: 'Archived' }));
+
+      const restore = await screen.findByRole('button', {
+        name: /^Restore Rain over the city$/,
+      });
+      fireEvent.click(restore);
+
+      await waitFor(() =>
+        expect(updateConversation).toHaveBeenCalledWith('c1', { status: 'active' }),
+      );
+      expect(screen.queryByRole('button', { name: /^Archive Rain over the city$/ })).toBeNull();
+    });
+
+    it('labels an archived row, for a shelf reached without the tabs', async () => {
       listConversations.mockResolvedValue(page([row({ status: 'archived' })]) as never);
       renderWithProviders(<AiConversationsPage />);
       expect(await screen.findByText('Archived')).toBeInTheDocument();
+    });
+
+    it('says the archive is empty rather than that there are no conversations', async () => {
+      renderWithProviders(<AiConversationsPage />);
+      await screen.findByText('Rain over the city');
+      listConversations.mockResolvedValue(page([]) as never);
+
+      fireEvent.click(screen.getByRole('tab', { name: 'Archived' }));
+
+      // "No conversations yet" would be false here — the active shelf has one.
+      expect(await screen.findByText('Nothing archived')).toBeInTheDocument();
     });
   });
 

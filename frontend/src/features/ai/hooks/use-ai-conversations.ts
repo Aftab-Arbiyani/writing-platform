@@ -1,3 +1,4 @@
+import { AiConversationStatus } from '@qalam/shared';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   AiConversationExport,
@@ -10,11 +11,18 @@ import { qk } from '@/lib/query-keys';
 import { aiApi } from '../api/ai.api';
 import { downloadConversationExport } from '../lib/conversation-export';
 
-/** The caller's conversations, newest first (cursor-paginated). */
-export function useAiConversations() {
+/**
+ * The caller's conversations on one shelf, newest first (cursor-paginated).
+ *
+ * The status is part of the query key, not a client-side filter: the route filters server-side and
+ * defaults to `active`, so active and archived are two different reads with their own cursors —
+ * paging one must not consume the other's pages.
+ */
+export function useAiConversations(status: AiConversationStatus = AiConversationStatus.Active) {
   return useInfiniteQuery({
-    queryKey: qk.ai.conversations(),
-    queryFn: ({ pageParam, signal }) => aiApi.listConversations({ cursor: pageParam, signal }),
+    queryKey: qk.ai.conversations(status),
+    queryFn: ({ pageParam, signal }) =>
+      aiApi.listConversations({ cursor: pageParam, status, signal }),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (last) => last.meta.nextCursor ?? undefined,
   });
@@ -34,7 +42,7 @@ export function useCreateConversation() {
   return useMutation({
     mutationFn: (payload: CreateAiConversationRequest) => aiApi.createConversation(payload),
     onSuccess: () => {
-      void client.invalidateQueries({ queryKey: qk.ai.conversations() });
+      void client.invalidateQueries({ queryKey: qk.ai.conversationsAll });
     },
   });
 }
@@ -46,10 +54,9 @@ export function useCreateConversation() {
  * the detail is not derived from the list page, so refreshing only the list leaves an open detail
  * view showing the old title.
  *
- * Deliberately `title`-only rather than the full `UpdateAiConversationRequest`. The DTO also accepts
- * `status`, but `status: 'archived'` persists **without hiding anything** — the list query has no
- * status predicate (docs/48 §3.12, W8-2) — so an archive affordance would tell the user something
- * untrue. Not W8's to fix; W8's job is not to ship it.
+ * Deliberately `title`-only rather than the full `UpdateAiConversationRequest`, so a rename can never
+ * carry a status change it did not intend. Status has its own mutation below — it did not, while
+ * archiving hid nothing (W8-2); the list query now filters by status, so it does.
  */
 export function useRenameConversation() {
   const client = useQueryClient();
@@ -59,7 +66,29 @@ export function useRenameConversation() {
       return aiApi.updateConversation(id, payload);
     },
     onSuccess: (_updated, { id }) => {
-      void client.invalidateQueries({ queryKey: qk.ai.conversations() });
+      void client.invalidateQueries({ queryKey: qk.ai.conversationsAll });
+      void client.invalidateQueries({ queryKey: qk.ai.conversation(id) });
+    },
+  });
+}
+
+/**
+ * Archive or restore a conversation (W8-2's client half).
+ *
+ * **Both shelves are invalidated, and that is the whole point of the mutation.** A status change moves
+ * a row from one list to the other, so refreshing only the shelf it left would leave the shelf it
+ * joined stale — and on the archived shelf that is the difference between "restored" and "vanished".
+ * The detail is invalidated too: it renders the status.
+ */
+export function useSetConversationStatus() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string; status: AiConversationStatus }) => {
+      const payload: UpdateAiConversationRequest = { status };
+      return aiApi.updateConversation(id, payload);
+    },
+    onSuccess: (_updated, { id }) => {
+      void client.invalidateQueries({ queryKey: qk.ai.conversationsAll });
       void client.invalidateQueries({ queryKey: qk.ai.conversation(id) });
     },
   });
@@ -78,7 +107,7 @@ export function useDeleteConversation() {
     mutationFn: (id: string) => aiApi.deleteConversation(id),
     onSuccess: (_void, id) => {
       client.removeQueries({ queryKey: qk.ai.conversation(id) });
-      void client.invalidateQueries({ queryKey: qk.ai.conversations() });
+      void client.invalidateQueries({ queryKey: qk.ai.conversationsAll });
     },
   });
 }

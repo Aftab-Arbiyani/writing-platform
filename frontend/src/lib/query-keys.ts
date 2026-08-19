@@ -154,7 +154,11 @@ export const qk = {
     models: () => ['ai', 'models'] as const, // GET /ai/models
     config: () => ['ai', 'config'] as const, // GET /ai/config
     usage: () => ['ai', 'usage'] as const, // GET /ai/usage/me
-    conversations: () => ['ai', 'conversations'] as const, // GET /ai/conversations (infinite)
+    // GET /ai/conversations (infinite). Keyed by status: the route filters server-side and defaults
+    // to `active`, so the two shelves are separate reads with separate cursors. `conversationsAll`
+    // is the prefix a status change invalidates — a moved row leaves one shelf and joins the other.
+    conversationsAll: ['ai', 'conversations'] as const,
+    conversations: (status: string) => ['ai', 'conversations', status] as const,
     conversation: (id: string) => ['ai', 'conversation', id] as const, // GET /ai/conversations/:id
   },
 

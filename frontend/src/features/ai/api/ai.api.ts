@@ -14,6 +14,8 @@ import type {
   UpdateAiUserOverridesRequest,
 } from '@qalam/api-types';
 
+import type { AiConversationStatus } from '@qalam/shared';
+
 import { del, get, getPage, patch, post, stream } from '@/lib/api-client';
 import type { CursorPage } from '@/lib/api-client';
 import { buildQueryString } from '@/lib/http';
@@ -39,13 +41,22 @@ export const aiApi = {
   usage: (signal?: AbortSignal): Promise<AiUsageResponse> =>
     get<AiUsageResponse>('/ai/usage/me', { signal }),
 
+  /**
+   * The caller's conversations. `status` selects which shelf: the route defaults to `active`
+   * (`conversation.service.ts:53`), so archived rows are reachable only by asking for them.
+   */
   listConversations: (args: {
     cursor?: string;
     limit?: number;
+    status?: AiConversationStatus;
     signal?: AbortSignal;
   }): Promise<CursorPage<AiConversationSummary>> =>
     getPage<AiConversationSummary>(
-      `/ai/conversations${buildQueryString({ cursor: args.cursor, limit: args.limit })}`,
+      `/ai/conversations${buildQueryString({
+        cursor: args.cursor,
+        limit: args.limit,
+        status: args.status,
+      })}`,
       { signal: args.signal },
     ),
 
