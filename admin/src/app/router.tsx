@@ -87,6 +87,22 @@ export const router = createBrowserRouter([
                       { path: ROUTES.auditLogs, lazy: () => import('@/app/routes/audit-logs') },
                       { path: ROUTES.settings, lazy: () => import('@/app/routes/settings') },
                       { path: ROUTES.aiSettings, lazy: () => import('@/app/routes/ai-settings') },
+                      /**
+                       * AI retrieval admin (A3). Both routes carry `@Permissions(ai.manage)`
+                       * server-side, and `ai.*` is granted to Admin and SuperAdmin only
+                       * (`DEFAULT_ROLE_PERMISSIONS`) — so this Admin floor IS that grant, exactly as
+                       * the sibling `ai-settings` route above is. Each page also asserts
+                       * `can(ai.manage)` itself, so a narrowed grant renders AccessDenied rather
+                       * than an empty form.
+                       */
+                      {
+                        path: ROUTES.aiSearchConfig,
+                        lazy: () => import('@/app/routes/ai-search-config'),
+                      },
+                      {
+                        path: ROUTES.aiSearchAnalytics,
+                        lazy: () => import('@/app/routes/ai-search-analytics'),
+                      },
                       { path: ROUTES.moderators, lazy: () => import('@/app/routes/moderators') },
                       { path: ROUTES.systemInfo, lazy: () => import('@/app/routes/system-info') },
                       {

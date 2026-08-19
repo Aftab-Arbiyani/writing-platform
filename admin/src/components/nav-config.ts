@@ -19,9 +19,11 @@ import {
   LayoutTemplate,
   Lock,
   Repeat,
+  Radar,
   Rocket,
   Scale,
   ScrollText,
+  Search,
   Server,
   ShieldAlert,
   ShieldCheck,
@@ -173,6 +175,26 @@ export const NAV_GROUPS: NavGroup[] = [
         label: 'AI Defaults',
         path: ROUTES.aiSettings,
         icon: Sparkles,
+        minRole: Role.Admin,
+      },
+      /**
+       * AI retrieval admin (A3). `minRole: Role.Admin` is the `ai.manage` gate in the shape this map
+       * has — nav items carry a role FLOOR, not a permission code, and `ai.*` is granted to Admin and
+       * SuperAdmin only, so a moderator never sees these. Same equivalence the billing rows below
+       * state for `billing.manage`.
+       */
+      {
+        key: 'ai-search-config',
+        label: 'Retrieval config',
+        path: ROUTES.aiSearchConfig,
+        icon: Radar,
+        minRole: Role.Admin,
+      },
+      {
+        key: 'ai-search-analytics',
+        label: 'Search analytics',
+        path: ROUTES.aiSearchAnalytics,
+        icon: Search,
         minRole: Role.Admin,
       },
       /**

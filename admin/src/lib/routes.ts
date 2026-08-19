@@ -22,6 +22,10 @@ export const ROUTES = {
   auditLogs: '/audit-logs',
   settings: '/settings',
   aiSettings: '/ai-settings',
+  // AI retrieval admin (AF4 / A3). Nested under `/ai-settings` because both pages carry the same
+  // `ai.manage` grant as the defaults page above and are read as part of the same surface.
+  aiSearchConfig: '/ai-settings/search-config',
+  aiSearchAnalytics: '/ai-settings/search-analytics',
   // System / Ops (P7.1)
   systemInfo: '/system',
   configHealth: '/system/config',

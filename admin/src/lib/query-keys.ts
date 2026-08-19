@@ -57,10 +57,14 @@ export const qk = {
     maintenance: () => ['settings', 'maintenance'] as const, // GET /admin/maintenance
   },
   ai: {
-    all: ['ai'] as const, // AI platform admin (AF1)
+    all: ['ai'] as const, // AI platform admin (AF1) + retrieval admin (AF4, A3)
     config: () => ['ai', 'config'] as const, // GET /admin/ai/config (org defaults)
     providers: () => ['ai', 'providers'] as const, // GET /admin/ai/providers
     models: () => ['ai', 'models'] as const, // GET /admin/ai/models
+    searchConfig: () => ['ai', 'search-config'] as const, // GET /admin/ai/search-config
+    // The window is part of the key: each trailing window is a different aggregation, and
+    // switching back to one already fetched should not refetch it.
+    searchAnalytics: (windowDays: number) => ['ai', 'search-analytics', windowDays] as const,
   },
   analytics: {
     all: ['analytics'] as const, // platform analytics dashboard (A8 / E12.9)
