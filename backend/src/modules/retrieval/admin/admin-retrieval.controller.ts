@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Put, Query, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { PERMISSIONS } from '@qalam/shared';
+import { PERMISSIONS, SEARCH_ANALYTICS_DEFAULT_WINDOW_DAYS } from '@qalam/shared';
 import type { Request } from 'express';
 
 import { RateLimit } from '../../../common/decorators/rate-limit.decorator';
@@ -62,6 +62,6 @@ export class AdminRetrievalController {
   @ApiOperation({ summary: 'Internal search-quality analytics over a trailing window.' })
   @ApiOkResponse({ type: SearchAnalyticsDto })
   analytics(@Query() query: SearchAnalyticsQueryDto): Promise<SearchAnalyticsDto> {
-    return this.telemetry.getAnalytics(query.windowDays ?? 7);
+    return this.telemetry.getAnalytics(query.windowDays ?? SEARCH_ANALYTICS_DEFAULT_WINDOW_DAYS);
   }
 }

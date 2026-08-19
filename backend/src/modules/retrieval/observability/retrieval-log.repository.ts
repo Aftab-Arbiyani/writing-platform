@@ -4,7 +4,12 @@ import { MoreThanOrEqual, Repository } from 'typeorm';
 
 import { RetrievalQueryLog } from '../entities/retrieval-query-log.entity';
 
-const ANALYTICS_ROW_CAP = 5_000;
+/**
+ * Aggregation is bounded, so a busy install cannot pull an unbounded window into memory.
+ * Exported because a capped read is a truncated SAMPLE, and the surface reporting those
+ * figures has to be able to say so (`SearchAnalyticsData.truncated`).
+ */
+export const ANALYTICS_ROW_CAP = 5_000;
 
 /** Persistence for retrieval telemetry (AF4). Append-only; the service records best-effort. */
 @Injectable()

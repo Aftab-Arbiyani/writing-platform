@@ -224,3 +224,22 @@ export const RETRIEVAL_DEFAULT_CONTEXT_TOKENS = 2_000;
 export const RETRIEVAL_DEFAULT_TIMEOUT_MS = 8_000;
 /** Max saved searches a user may keep. */
 export const SAVED_SEARCH_MAX_PER_USER = 50;
+
+/**
+ * Inclusive bounds the admin retrieval config is validated against — the shared contract behind
+ * `PUT /admin/ai/search-config` (A3). The `UpdateRetrievalConfigDto` decorators and the admin
+ * editor's form schema both read these, so a form control cannot offer a value the route rejects.
+ * `rankingWeight` is per signal; `0` is legal and disables the signal.
+ */
+export const RETRIEVAL_CONFIG_BOUNDS = {
+  topK: { min: 1, max: RETRIEVAL_MAX_TOP_K },
+  candidatesPerSource: { min: 1, max: 200 },
+  contextTokens: { min: 200, max: 16_000 },
+  timeoutMs: { min: 500, max: 60_000 },
+  rankingWeight: { min: 0, max: 1 },
+  /** Trailing window `GET /admin/ai/search-analytics` will aggregate over, in days. */
+  analyticsWindowDays: { min: 1, max: 90 },
+} as const;
+
+/** Default trailing window for search analytics when the caller names none. */
+export const SEARCH_ANALYTICS_DEFAULT_WINDOW_DAYS = 7;

@@ -191,6 +191,12 @@ export interface RetrievalResult {
 export interface SearchAnalyticsData {
   window: string;
   totalQueries: number;
+  /**
+   * `true` when the window held more rows than the aggregation cap, so every figure here
+   * describes the NEWEST `totalQueries` requests rather than the whole window. Without this
+   * an admin surface cannot tell a quiet week from a truncated sample.
+   */
+  truncated: boolean;
   byIntent: Array<{ intent: RetrievalIntent; count: number }>;
   byQueryType: Array<{ queryType: RetrievalQueryType; count: number }>;
   zeroResultRate: number;

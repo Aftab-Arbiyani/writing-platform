@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import type { RetrievalFailureReason, RetrievalIntent, RetrievalQueryType } from '@qalam/shared';
 
 import type { RetrievalTelemetry, SearchAnalyticsData } from '../retrieval.types';
-import { RetrievalLogRepository } from './retrieval-log.repository';
+import { ANALYTICS_ROW_CAP, RetrievalLogRepository } from './retrieval-log.repository';
 
 /** What a consumer records after a full request (retrieval telemetry + LLM cost + status). */
 export interface RecordInput {
@@ -112,12 +112,17 @@ export class RetrievalTelemetryService {
     return {
       window: `${windowDays}d`,
       totalQueries: total,
+      // A full page means the window had at least this many rows; the figures below then
+      // describe the newest `total`, not the window. Reported, never silently absorbed.
+      truncated: total >= ANALYTICS_ROW_CAP,
       byIntent,
       byQueryType,
       zeroResultRate: ratio(zeroResults, total),
       avgLatencyMs: mean(latencies),
       p95LatencyMs: percentile(latencies, 0.95),
-      avgConfidence: mean(rows.map((r) => r.confidence)),
+      // `confidence` is a 0..1 real — the integer `mean` used for milliseconds and token
+      // counts would report every possible average as 0 or 1.
+      avgConfidence: meanRatio(rows.map((r) => r.confidence)),
       cacheHitRatio: ratio(cacheHits, total),
       avgContextTokens: mean(rows.map((r) => r.contextTokens)),
       failureBreakdown,
@@ -138,9 +143,16 @@ function ratio(part: number, total: number): number {
   return total > 0 ? Number((part / total).toFixed(3)) : 0;
 }
 
+/** Whole-unit mean — for milliseconds and token counts, where a fraction says nothing. */
 function mean(values: number[]): number {
   if (values.length === 0) return 0;
   return Math.round(values.reduce((s, v) => s + v, 0) / values.length);
+}
+
+/** Mean of 0..1 values, kept to the same 3 decimals as {@link ratio}. */
+function meanRatio(values: number[]): number {
+  if (values.length === 0) return 0;
+  return Number((values.reduce((s, v) => s + v, 0) / values.length).toFixed(3));
 }
 
 function percentile(sorted: number[], p: number): number {

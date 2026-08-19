@@ -125,6 +125,11 @@ export class RetrievalConfigDto {
 export class SearchAnalyticsDto {
   @ApiProperty() window!: string;
   @ApiProperty() totalQueries!: number;
+  @ApiProperty({
+    description:
+      'The window held more requests than the aggregation cap, so every figure below describes the newest `totalQueries` requests rather than the full window.',
+  })
+  truncated!: boolean;
   @ApiProperty({ type: [Object] }) byIntent!: Array<{ intent: RetrievalIntent; count: number }>;
   @ApiProperty({ type: [Object] }) byQueryType!: Array<{
     queryType: RetrievalQueryType;

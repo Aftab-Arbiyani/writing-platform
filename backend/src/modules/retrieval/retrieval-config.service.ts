@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { RankingSignal, RetrievalSource } from '@qalam/shared';
 
 import { SettingsService } from '../settings';
 import type { SettingsActor } from '../settings/settings.util';
@@ -63,11 +62,10 @@ function mergeConfig(raw: unknown): ResolvedRetrievalConfig {
     candidatesPerSource: num(r.candidatesPerSource, d.candidatesPerSource),
     contextTokens: num(r.contextTokens, d.contextTokens),
     timeoutMs: num(r.timeoutMs, d.timeoutMs),
-    sources: mergeRecord(r.sources, d.sources) as Record<RetrievalSource, boolean>,
-    rankingWeights: mergeRecord(r.rankingWeights, d.rankingWeights) as Record<
-      RankingSignal,
-      number
-    >,
+    sources: mergeRecord(r.sources, d.sources, (v) => (typeof v === 'boolean' ? v : undefined)),
+    rankingWeights: mergeRecord(r.rankingWeights, d.rankingWeights, (v) =>
+      typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 1 ? v : undefined,
+    ),
     synthesisEnabled:
       typeof r.synthesisEnabled === 'boolean' ? r.synthesisEnabled : d.synthesisEnabled,
   };
@@ -77,7 +75,27 @@ function num(value: unknown, fallback: number): number {
   return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
 }
 
-function mergeRecord<T>(value: unknown, defaults: Record<string, T>): Record<string, T> {
-  if (value === null || typeof value !== 'object') return { ...defaults };
-  return { ...defaults, ...(value as Record<string, T>) };
+/**
+ * Merge a stored table over its defaults, keeping only KNOWN keys whose value `accept`s.
+ *
+ * The key set comes from `defaults`, which covers every `RetrievalSource` / `RankingSignal`, so
+ * an unknown key is a stale or hand-edited settings row and is dropped rather than handed to the
+ * planner. A member that fails `accept` falls back to that key's default: the planner treats a
+ * weight as a number without checking, and a non-numeric one fails `weight > 0`, which turns the
+ * signal off silently. `UpdateRetrievalConfigDto` blocks both cases at the write path; this is
+ * what protects a row written before it did.
+ */
+function mergeRecord<K extends string, T>(
+  value: unknown,
+  defaults: Record<K, T>,
+  accept: (member: unknown) => T | undefined,
+): Record<K, T> {
+  const merged = { ...defaults };
+  if (value === null || typeof value !== 'object') return merged;
+  for (const [key, member] of Object.entries(value)) {
+    if (!(key in defaults)) continue;
+    const usable = accept(member);
+    if (usable !== undefined) merged[key as K] = usable;
+  }
+  return merged;
 }

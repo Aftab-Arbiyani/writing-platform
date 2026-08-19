@@ -322,6 +322,12 @@ export type UpdateRetrievalAdminConfig = Partial<RetrievalAdminConfig>;
 export interface SearchAnalytics {
   window: string;
   totalQueries: number;
+  /**
+   * The window held more requests than the server's aggregation cap, so every figure here
+   * describes the newest `totalQueries` requests rather than the whole window. A surface
+   * showing these numbers must say so — otherwise a truncated sample reads as the truth.
+   */
+  truncated: boolean;
   byIntent: Array<{ intent: RetrievalIntent; count: number }>;
   byQueryType: Array<{ queryType: RetrievalQueryType; count: number }>;
   zeroResultRate: number;
