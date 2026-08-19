@@ -1814,7 +1814,7 @@ the four top-level keys. `api_client.dart:387` unwraps `data`, `:392-395` reads 
 mismatch exists on either resource.** The defects below are of a different kind: the client is right about
 the shapes and wrong about the _behaviour_.
 
-### W8-1 · **medium** · mobile can never create an AI conversation, so all six routes are unreachable in the product
+### W8-1 · ~~**medium**~~ · **CLOSED 2026-08-05 (`qalam-mobile 5d055a5`), recorded 2026-08-19** · mobile can never create an AI conversation, so all six routes are unreachable in the product
 
 `createConversation` exists in all three mobile layers — `ai_remote_data_source.dart:92-101`,
 `ai_repository.dart:44`, `ai_repository_impl.dart:51-56` — and `grep -rn createConversation lib/` returns
@@ -1869,7 +1869,7 @@ the platform has been used, and nothing has ever created the row that would have
 > the mobile row now has two things to port, not one: the create entry point _and_ passing
 > `conversationId` from `ai_stream_controller`, which already accepts the parameter and is never given it.
 
-### W8-2 · **medium** · `PATCH status:"archived"` returns 200 and the row comes back on the next refresh
+### W8-2 · ~~**medium**~~ · **CLOSED — backend 2026-08-05 (`b45ac03`), CLIENTS 2026-08-19** · `PATCH status:"archived"` returns 200 and the row comes back on the next refresh
 
 Three places state that archiving hides a conversation:
 
@@ -3015,6 +3015,75 @@ adding a sixth.
 `AdminRetrievalController`, `RetrievalConfigService` or `getAnalytics` — `retrieval-contract.spec.ts` does
 not mention either route. That is why A3-1 and A3-3 survived AF4's own review: both are the kind of defect
 only an executed assertion finds, and this surface had none. A3 adds 33 backend tests across three files.
+
+---
+
+## 3.21 The archive that became a one-way trip (2026-08-19)
+
+**This row was opened to fix W8-1 and W8-2 and found both already fixed** — on 2026-08-05, by two
+commits neither of which updated this register: `qalam-mobile 5d055a5` gave mobile the create entry
+point and passed `conversationId` from the assistant, and `b45ac03` gave the list query its status
+predicate with an `active` default. Their diagnoses above are struck and dated rather than deleted.
+
+**What the audit actually found is a defect the second fix created.** Both halves were right on their
+own; nobody owned the pair.
+
+### W8-6 · **medium** · ✅ **FIXED (2026-08-19, both clients)** · once the list filtered by status, archiving became a delete with a gentler label
+
+`b45ac03` made `GET /ai/conversations` answer `active` by default — correct, and exactly what W8-2
+asked for. But **no client was given the other half**:
+
+- Mobile's row menu offered **Archive** and nothing else. `listConversations` took no `status`
+  parameter at any layer, so the archived shelf could not be requested; `setConversationStatus`
+  accepted both values and only `archived` was ever passed. So the row left the only list that could
+  show it, permanently, with no restore and no way to look at it — from the user's side, indistinguishable
+  from Delete except that Delete asks first.
+- Web offered **no archive control at all**, correctly under W8-2's premise, and carried that premise
+  in a page docblock, a hook docblock, two unit specs and an E2E spec. The premise had been false for
+  two weeks.
+
+**Before `b45ac03` the same UI was harmless** — archiving hid nothing, so the row came back and the
+user lost only the illusion. The filter is what turned a no-op into data loss, and it landed alone.
+
+**FIXED as a pair on both clients, because each half alone is a defect:** `status` threaded through
+mobile's datasource → repository → controller with an Active/Archived `SegmentedButton`, a
+shelf-aware row action (Archive on active, Restore on archived) and a shelf-aware empty state; the
+same two shelves on web as a `tablist`, with archive and restore actions and both shelves keyed
+separately in React Query (`qk.ai.conversationsAll` is what a status change invalidates — a moved row
+leaves one shelf and joins the other, and refreshing only the one it left leaves "restored" looking
+like "vanished").
+
+One behaviour worth naming because it was silently wrong: mobile's `archive` called `_remove`, which
+**drops the on-device pin**. That is right for a deleted conversation and wrong for a moved one — pins
+live only on the device, so nothing would have brought it back on restore. Archive now uses a
+pin-preserving `_drop`.
+
+### W8-7 · **low** (harness) · ✅ **FIXED (2026-08-19)** · an E2E test asserted the absence of the archive control and could not fail
+
+`ai-surfaces.spec.ts` carried "offers no archive control, because archiving would hide nothing",
+asserting `getByRole('button', { name: /archive/i })` had count **0**. It ran as the **shared writer**,
+whose conversation list is empty — every conversation spec in that file uses a throwaway account — so
+there were no rows to carry a per-row control either way.
+
+It therefore passed for a reason unrelated to its claim, and **it still passed after archive shipped**,
+which is how it was noticed. Replaced with an assertion an empty list can actually settle: both
+shelves are offered and Active is the one you land on, which is the client agreeing with the route's
+own default. A test that cannot fail is worse than no test, because it reads as coverage.
+
+### W8-8 · **low** (a11y, self-inflicted) · ✅ **FIXED before landing** · two defects in this row's own first attempt, both caught by gates rather than review
+
+Recorded because both were invisible to `tsc`, `eslint` and unit tests, and both were found by
+something that runs the app:
+
+1. **`role="tabpanel"` was put on the `<ul>` itself**, which overrides its implicit `list` role — a
+   screen reader loses the item count and each row's set position. Caught by the E2E page object,
+   whose `getByRole('list', { name: 'Conversations' })` stopped matching. The panel is a wrapper now.
+2. **The selected tab was a `QButton variant="primary"`**, and the axe scan refused it: AntD's derived
+   hover background on a primary button is `#ab6846` — 4.37:1 under white, the pre-existing token debt
+   recorded as **W8-5** — which a selected tab would have put under the pointer on every shelf switch.
+   Restyled with the underline tab treatment `billing-history-page.tsx:74` already established. A
+   selected tab is not a primary action, so the fix reads better than the first attempt anyway. **W8-5
+   itself remains open** and is still owned by whoever fixes the shared token.
 
 ---
 
@@ -5125,3 +5194,44 @@ machine's fonts regardless.
 B9-1. And **A4 stays parked**: `story-intelligence` has no admin controller at all, so it is a backend
 expansion entangled with the held AF3 analysis lifecycle ([45 §4.8](./45_WebClientRoadmap.md)) — the
 same conclusion the 2026-08-17 sizing note reached, re-confirmed here rather than assumed to still hold.
+
+---
+
+### 6.21 The archive shelf's sweep (2026-08-19)
+
+**Parity: both clients ship the same feature, and this row is the first time that has been true of
+archive.** Web had no control, mobile had a one-way one. Both now have: two shelves, an archive action
+on the active one, a restore action on the archived one, and an empty state that says which shelf is
+empty rather than claiming there are no conversations. Register §2 gains nothing — this closes rows
+rather than opening them.
+
+**Three accepted arrangement differences**, on the §4.1 pattern:
+
+|               | Web                                                                    | Mobile                          |
+| ------------- | ---------------------------------------------------------------------- | ------------------------------- |
+| Shelf control | `tablist` with the underline treatment (`billing-history-page.tsx:74`) | Material `SegmentedButton`      |
+| Row actions   | Icon buttons on the row (Archive/Restore, Rename, Export, Delete)      | `PopupMenuButton` overflow menu |
+| Feedback      | Toast per action                                                       | `QSnackbar` per action          |
+
+Each is the platform's own idiom for the same affordance and neither changes what a user can do. The
+mobile control is a `SegmentedButton` rather than tabs because Material announces its selection to
+TalkBack; the web control is tabs because that is what the app already had a tested pattern for.
+
+**Gates.** Mobile `dart analyze` clean, **822 tests** pass (+13). Frontend `tsc` + `eslint` clean,
+**136 files / 909 tests** (+5), `vite build` clean. E2E `tsc` + `eslint` clean.
+
+**And it was run.** `ai-surfaces.spec.ts` **11/11** on `frontend-chromium`, including the new
+`archive → archived shelf → restore` round trip against the real endpoints; the AI-conversations a11y
+scan passes in **light and dark** with the archived shelf now scanned as its own composition (a
+selected tab, a panel labelled by it, a row whose action is Restore). Two of this row's own defects
+(W8-8) were caught by those runs and by nothing else.
+
+**Visual baselines: none affected, and that was checked rather than assumed.** No frontend baseline
+covers `/settings/ai/conversations` — `frontend-ai-panel` is the in-editor drawer and
+`frontend-conversation` is the piece's comment thread. The four unminted admin baselines are untouched
+by this row.
+
+**What stays open in W8's family:** **W8-3** and **W8-4** (the same conversation publishes its messages
+in two shapes; two shapes outside the §3.11 guard) — both low, both untouched here. **W8-5** is still
+open and is now cited by W8-8: this row hit its colour, routed around it, and did not fix the shared
+token.
