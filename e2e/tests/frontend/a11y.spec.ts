@@ -57,6 +57,151 @@ test.describe('@phase5 @a11y frontend accessibility (unauthenticated)', () => {
     await page.getByLabel('Email').waitFor();
     await expectNoSeriousA11yViolations(page, { label: 'frontend /auth/register' });
   });
+
+  /**
+   * **The two states an axe scan cannot reach** (docs/48 §3.22a, **W8-5** / **T-4**).
+   *
+   * A primary button's hover and press backgrounds come from AntD's `colorPrimaryHover` /
+   * `colorPrimaryActive`, which derive from the seed by LIGHTENING — walking the fill toward its own
+   * white label. That put a hovered primary at 4.37:1 and a pressed one (dark mode, ink label) at
+   * 3.72:1, both under AA, and **every scan in this suite passed the whole time**: axe inspects a
+   * resting page, hover needs a pointer parked on the control and press needs it held down. The
+   * defects were found by a scan whose arrangement happened to leave the cursor on a button, which is
+   * luck, not coverage.
+   *
+   * So this measures the rendered pixels directly — real stylesheet, real cascade, real compositing,
+   * which is what [45 §2](../../../docs/45_WebClientRoadmap.md) step 5 means by "only a rendered scan
+   * is evidence". `antd-theme.spec.ts` asserts the same rule against AntD's resolved tokens; that one
+   * runs without a browser and cannot see a stylesheet. Both halves are deliberate.
+   *
+   * Uses the login form's real "Sign in" button rather than injected markup: AntD's hover and active
+   * rules live in its generated stylesheet, keyed to its own class names, so a hand-built element
+   * would measure CSS that never ships. Runs in both themes via `frontend-dark`.
+   */
+  test('a hovered and a PRESSED primary button both clear AA (W8-5, T-4)', async ({ page }) => {
+    await new LoginPage(page, { loginPath: '/auth/login', rememberLabel: 'Remember me' }).goto();
+    const submit = page.getByRole('button', { name: 'Sign in' });
+    await submit.waitFor();
+
+    /** `rgb(r, g, b)` / `rgba(...)` → WCAG relative luminance. */
+    const luminance = (css: string): number => {
+      const parts = /rgba?\(([^)]+)\)/.exec(css);
+      expect(parts, `could not parse a colour from ${css}`).not.toBeNull();
+      const [r = 0, g = 0, b = 0] = (parts?.[1] ?? '')
+        .split(',')
+        .slice(0, 3)
+        .map((n) => Number.parseFloat(n.trim()));
+      const channel = (v: number): number => {
+        const s = v / 255;
+        return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+      };
+      return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+    };
+    const contrast = (a: string, b: string): number => {
+      const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+      return Math.round((((hi ?? 0) + 0.05) / ((lo ?? 0) + 0.05)) * 100) / 100;
+    };
+    // An **immediately-invoked** string expression. The e2e tsconfig omits the `dom` lib on purpose
+    // (see pages/shared/viewport.ts), so the body must be a string — and a string handed to
+    // `evaluate` is evaluated as an EXPRESSION, not called as a function, with or without an
+    // argument. `(el) => {…}` therefore evaluated to the function object, which is unserialisable and
+    // arrives as `undefined`; two attempts died on `undefined.bg` before that was clear. Wrapping it
+    // in `(() => {…})()` makes the expression's value the object itself. The button is found by its
+    // accessible label rather than a class, so AntD's internals can move.
+    const paint = async (): Promise<{ bg: string; fg: string } | null> =>
+      (await page.evaluate(
+        `(() => {
+           const el = Array.from(document.querySelectorAll('button')).find(
+             (b) => (b.textContent || '').trim() === 'Sign in',
+           );
+           if (!el) return null;
+           const s = getComputedStyle(el);
+           return { bg: s.backgroundColor, fg: s.color };
+         })()`,
+      )) as { bg: string; fg: string } | null;
+
+    const rest = await paint();
+    expect(
+      rest,
+      'no <button> labelled "Sign in" was found — did the login form change?',
+    ).toBeTruthy();
+
+    /*
+     * AntD buttons carry `transition: all 0.2s`, so `getComputedStyle` immediately after a pointer
+     * event returns the fill MID-TRANSITION — in practice still the resting colour. Read that way,
+     * light mode reported rest === hover === press === #9e4b28 and the measurement was of nothing.
+     *
+     * Polled rather than slept: a fixed wait would be a guess that rots, and if the fill genuinely
+     * never leaves `previous` this fails with that stated — which is the honest outcome, because it
+     * would mean the state has no rule at all.
+     */
+    const settledAwayFrom = async (previous: string): Promise<{ bg: string; fg: string }> => {
+      /*
+       * STABLE, not merely "changed". Polling until the value differs from `previous` returns a
+       * mid-transition frame: measured that way, the unpinned hover read **4.58:1** — above the 4.5
+       * bar — while its settled colour (#ab6846) is the 4.37:1 the register recorded. A guard that
+       * samples an animation is a guard that reports a different number every run, so this waits for
+       * two consecutive identical reads AND for the value to have left `previous`.
+       */
+      let last = '';
+      await expect
+        .poll(
+          async () => {
+            const current = (await paint())?.bg ?? '';
+            const stable = current !== previous && current === last;
+            last = current;
+            return stable;
+          },
+          {
+            message: `the fill never settled off ${previous} — no hover/active rule, or it never stops moving`,
+            timeout: 5_000,
+            intervals: [100, 100, 150, 200, 250, 300, 400, 500],
+          },
+        )
+        .toBe(true);
+      const now = await paint();
+      expect(now).toBeTruthy();
+      return now as { bg: string; fg: string };
+    };
+
+    await submit.hover();
+    const hover = await settledAwayFrom(rest?.bg ?? '');
+
+    // Held, not clicked — releasing would submit the form and navigate away from the thing being
+    // measured. `mouse.down()` leaves `:active` applied while the style settles and is read.
+    await page.mouse.down();
+    let press: { bg: string; fg: string } | null;
+    try {
+      press = await settledAwayFrom(hover.bg);
+    } finally {
+      await page.mouse.up();
+    }
+
+    const measured = {
+      rest: contrast(rest?.bg ?? '', rest?.fg ?? ''),
+      hover: contrast(hover?.bg ?? '', hover?.fg ?? ''),
+      press: contrast(press?.bg ?? '', press?.fg ?? ''),
+    };
+
+    // The states must actually differ, or this test would pass by measuring `rest` three times and
+    // prove nothing about hover or press at all.
+    expect(
+      new Set([rest?.bg, hover?.bg, press?.bg]).size,
+      `hover/press did not repaint the fill — measured ${JSON.stringify({ rest, hover, press })}`,
+    ).toBeGreaterThan(1);
+
+    for (const [state, ratio] of Object.entries(measured)) {
+      expect(
+        ratio,
+        `${state} fill vs its label — measured ${JSON.stringify(measured)}`,
+      ).toBeGreaterThanOrEqual(4.5);
+    }
+
+    // And the rule the pins encode: each state moves the fill AWAY from its label, never toward it.
+    // This is what both original defects violated, in opposite directions per theme.
+    expect(measured.hover, JSON.stringify(measured)).toBeGreaterThanOrEqual(measured.rest);
+    expect(measured.press, JSON.stringify(measured)).toBeGreaterThanOrEqual(measured.hover);
+  });
 });
 
 test.describe('@phase5 @a11y frontend accessibility (authenticated)', () => {

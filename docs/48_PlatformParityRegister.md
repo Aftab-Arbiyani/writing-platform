@@ -2153,11 +2153,44 @@ toward the ink instead of away from it.
 > stylesheet, cascade or alpha compositing. Carried in [§3.22c](#322c-harness--the-suites-own-honesty)
 > as owed verification, not quietly assumed.
 >
-> **Baseline re-mint: expected to be ZERO, and that is a prediction rather than a result.** Nothing
+> **RENDERED AND CONFIRMED, 2026-08-20 — the static spec was right, and a second guard now holds the
+> two states no page scan can reach.** The stack came up (see the correction below), and:
+>
+> - **94/94 axe checks pass** across `frontend-chromium`, `frontend-dark`, `admin-chromium`,
+>   `admin-dark`. That proves the pins broke nothing on a RESTING page, which mattered because they
+>   are global alias tokens with many consumers — it proves nothing about hover or press, which is
+>   exactly why these defects survived every scan in the suite.
+> - **A new rendered guard measures those two states directly** — `a11y.spec.ts`, "a hovered and a
+>   PRESSED primary button both clear AA". It hovers the real login submit, then HOLDS the pointer
+>   down, and reads `getComputedStyle` off the live element: real stylesheet, real cascade, real
+>   compositing, which is what [45 §2](./45_WebClientRoadmap.md) step 5 means by evidence.
+>
+> **Removing the pins makes it reproduce the register's figures exactly, from pixels:** light
+> `rest 6.02 → hover 4.37 → press 9.26`, dark `rest 5.45 → hover 8.20 → press 3.72`. Those are W8-5's
+> recorded 4.37 and the third instance's 3.72, arrived at independently of the probe that found them.
+>
+> **Two things the test itself taught, both kept as comments where the next author will read them:**
+>
+> 1. **A string handed to `evaluate` is an EXPRESSION, not a function call** — with or without an
+>    argument. `(el) => {…}` evaluated to the function object, unserialisable, arriving as `undefined`;
+>    two attempts died on `undefined.bg`. An immediately-invoked `(() => {…})()` is the form that works.
+> 2. **"Changed" is not "settled".** AntD buttons transition over 0.2s, so reading straight after a
+>    pointer event samples an animation frame. Polled that way the unpinned hover measured **4.58:1** —
+>    _above_ the 4.5 bar, so the AA assertion passed and only the monotonicity assertion failed. Waiting
+>    for two consecutive identical reads is what turns 4.58 into the true 4.37. A guard that samples an
+>    animation reports a different number every run.
+>
+> **Baseline re-mint: still a prediction, not a result.** Nothing
 > pinned here paints on a resting page — the rest fill (`colorPrimary`) is unchanged, and hover and
 > press need a pointer. Only two of the four state/mode pairs changed value at all (light hover
 > `#ab6846`→`#8e4424`, dark press `#996145`→`#eaa47d`); the other two pin what AntD already derived.
-> The visual projects are the authority and have not run.
+>
+> **A local visual run cannot settle it, and that is by design.** Baselines are produced and verified
+> **only** in `mcr.microsoft.com/playwright:v1.61.1-noble` ([e2e/10 §8.3](./e2e/10_UIQuality.md):
+> "never regenerate baselines on a dev machine's native browsers"). Run on the bare host they fail
+> broadly — 39 of 64 here — for font rasterisation, not for anything in this change. That number is
+> recorded so nobody mistakes it for a finding later; the authority is `web-e2e-visual`, which is the
+> **CI** row in [§3.22c](#322c-harness--the-suites-own-honesty).
 >
 > **Three places carried workarounds built on this defect**, and all three are updated rather than left
 > to rot: `api.createAiConversationAs`'s docblock, the frontend a11y scan's arrangement comment, and
@@ -3516,18 +3549,26 @@ them (baseline re-mint, five call sites, a measurement loop) is the actual cost.
 
 ### 3.22c Harness — the suite's own honesty
 
+> **The "needs the stack" qualifier on these rows was wrong, and it was mine — corrected 2026-08-20.**
+> Four batches were reported as blocked on ports 5432 / 6379 / 8025. The root `.env` has always remapped
+> every port this stack uses — `POSTGRES_PORT=5434`, `REDIS_PORT=6380`, `MAILPIT_SMTP_PORT=1026`,
+> `MAILPIT_UI_PORT=8026` — so nothing was ever in conflict; 5432/6379 are host services the stack does
+> not want. `pnpm e2e:up` worked first try. The blocker was an unverified assertion repeated four times,
+> which is rule 2 of this ledger broken by the pass that wrote it. **Before calling a row blocked, run
+> the thing.**
+
 **Fix size is unknown until measured**, so each estimate is a measurement loop plus an unbounded fix.
 Naming that is the point: §3.4's rule is that a failure is not a flake until it has been counted.
 
-| ID            | Sev          | What                                                                                                                                                                                                                     | Anchor (verified 2026-08-20)                                                                                                                                                  | Size                          |
-| ------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
-| **T-7**       | **medium**   | `assistant.spec.ts` "writes and autosaves" is flaky under parallel load                                                                                                                                                  | `e2e/tests/frontend/assistant.spec.ts:220`                                                                                                                                    | **0.5 d+**                    |
-| **M-5**       | **medium**   | mobile's suite fails ~2 runs in 10 with **no assertion output at all**                                                                                                                                                   | `qalam-mobile/test/features/ai/retrieval_controllers_test.dart:227`                                                                                                           | **0.5–1 d+**                  |
-| **W5-12**     | harness      | three visual baselines do not reproduce outside CI (~21 px page offset)                                                                                                                                                  | `frontend-comments`, `frontend-suggestions`, `frontend-collaborators`                                                                                                         | **0.5 d+**                    |
-| **T-9 res.**  | **low**      | `reuseExistingServer` still lets a hand-started `vite preview` reproduce T-9                                                                                                                                             | `e2e/playwright.config.ts:249`                                                                                                                                                | **1 h**                       |
-| **AA-render** | verification | the W8-5 / T-4 pins are guarded by a spec that measures AntD's resolved tokens — **no browser has rendered them**, and [45 §2](./45_WebClientRoadmap.md) step 5 does not accept computed ratios as evidence on their own | `packages/ui/src/theme/antd-theme.spec.ts` is the static half. Owed: the four a11y projects light + dark, and a visual run to confirm the predicted **zero** baseline changes | **0.5 d** (needs the stack)   |
-| **WK**        | verification | the **frontend** webkit shards have not been re-run since the 2026-08-03 deferral — which is where that deferral actually lived                                                                                          | [docs/e2e/README](./e2e/README.md) "WebKit, measured (2026-08-18)" covers **admin only**                                                                                      | **0.5 d** (mostly wall-clock) |
-| **CI**        | verification | `web-e2e.yml` needs three green runs, then the flip to `pull_request`                                                                                                                                                    | [e2e/07 §6.1](./e2e/07_CI.md)                                                                                                                                                 | **0.5 d**                     |
+| ID            | Sev          | What                                                                                                                                                                                                                                                                                                                                                                                                 | Anchor (verified 2026-08-20)                                                                                                                                          | Size                          |
+| ------------- | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
+| **T-7**       | **medium**   | `assistant.spec.ts` "writes and autosaves" is flaky under parallel load                                                                                                                                                                                                                                                                                                                              | `e2e/tests/frontend/assistant.spec.ts:220`                                                                                                                            | **0.5 d+**                    |
+| **M-5**       | **medium**   | mobile's suite fails ~2 runs in 10 with **no assertion output at all**                                                                                                                                                                                                                                                                                                                               | `qalam-mobile/test/features/ai/retrieval_controllers_test.dart:227`                                                                                                   | **0.5–1 d+**                  |
+| **W5-12**     | harness      | three visual baselines do not reproduce outside CI (~21 px page offset)                                                                                                                                                                                                                                                                                                                              | `frontend-comments`, `frontend-suggestions`, `frontend-collaborators`                                                                                                 | **0.5 d+**                    |
+| **T-9 res.**  | **low**      | `reuseExistingServer` still lets a hand-started `vite preview` reproduce T-9                                                                                                                                                                                                                                                                                                                         | `e2e/playwright.config.ts:249`                                                                                                                                        | **1 h**                       |
+| **AA-render** | verification | ~~the W8-5 / T-4 pins have never been rendered~~ **DISCHARGED 2026-08-20** for the a11y half: 94/94 axe checks green across frontend+admin × light+dark, and a NEW rendered guard measures the hover and press fills directly. **Still owed: the visual half** — baselines are verified only in `mcr.microsoft.com/playwright:v1.61.1-noble` (10 §8.3), and a bare-host run is meaningless by design | `e2e/tests/frontend/a11y.spec.ts` — "a hovered and a PRESSED primary button both clear AA". Owed: `web-e2e-visual` in the pinned image, which is the **CI** row below | **0.2 d** (it is the CI row)  |
+| **WK**        | verification | the **frontend** webkit shards have not been re-run since the 2026-08-03 deferral — which is where that deferral actually lived                                                                                                                                                                                                                                                                      | [docs/e2e/README](./e2e/README.md) "WebKit, measured (2026-08-18)" covers **admin only**                                                                              | **0.5 d** (mostly wall-clock) |
+| **CI**        | verification | `web-e2e.yml` needs three green runs, then the flip to `pull_request`                                                                                                                                                                                                                                                                                                                                | [e2e/07 §6.1](./e2e/07_CI.md)                                                                                                                                         | **0.5 d**                     |
 
 ### 3.22d Not defects — recorded so a future row does not size them as work
 
