@@ -1,6 +1,16 @@
 # 48 — Platform Parity Register (web ↔ mobile)
 
-**Status:** 🔒 Binding · **Owner:** every client epic · **Last swept:** 2026-08-18 (after **B9** — A2's six findings all closed: the admin build gate is green again and **§6.15's false "typecheck clean" is struck in place and dated**, the Policy Engine reads `users.status`, strikes have a list and a revoke, the trust GET stops writing, and A2-3/A2-5 close as documented decisions. One new gap, **B9-1**; sweep **§6.17**. Earlier the same day, **A2** — the admin Trust surface, three slices; sweep **§6.16**, and six gaps recorded as **A2-1 … A2-6** in §3, all since closed by B9. Before that, 2026-08-17 after **B8** — the A1 enablers: all seven of A1's recorded gaps closed and their compensating copy deleted; one new gap, B8-1; sweep **§6.15**. Earlier the same day, **A1** — the admin monetization surface, three slices; sweep **§6.14**, and seven backend gaps recorded as **A1-1 … A1-7** in §3. Earlier the same day, **D3** — AI writing is now an enforced paid capability on the server and gated on both clients; the free-tier regression is LIVE, and §5.2 item 4 is rewritten. Sweep **§6.13**. Earlier the same day, **M7-3** — mobile's clap, sweep **§6.12**. Before those, 2026-08-10 after **W7c** —
+**Status:** 🔒 Binding · **Owner:** every client epic · **Last swept:** 2026-08-20 (**a verification
+sweep — no code**. Every §3 entry still carrying an open label was re-read against the code that owns
+it, because the last two passes each found entries they were scheduling that had already been fixed.
+**Eight were already closed:** M-2 + M-3 (§3.2), W3c-3 (§3.4), T-9 (§3.5), W8-4 (§3.12), B4-2 (§3.14),
+**§2 row 4**'s "collections still missing on web", and **§5**'s "AI conversations + prompt library +
+usage are in no W-track row". Each is struck in place with the anchor that disproves it. What is
+genuinely open now lives in **ONE** place — **[§3.22, the open ledger](#322-the-open-ledger-verified-2026-08-20)**
+— and every entry there carries a `file:line` anchor and the date it was last verified. **A §3 heading
+is no longer admissible evidence that something is open**; the ledger is, and even the ledger asks you
+to re-verify the anchor before you schedule or report the row. Previously swept 2026-08-18 (after
+**B9** — A2's six findings all closed: the admin build gate is green again and **§6.15's false "typecheck clean" is struck in place and dated**, the Policy Engine reads `users.status`, strikes have a list and a revoke, the trust GET stops writing, and A2-3/A2-5 close as documented decisions. One new gap, **B9-1**; sweep **§6.17**. Earlier the same day, **A2** — the admin Trust surface, three slices; sweep **§6.16**, and six gaps recorded as **A2-1 … A2-6** in §3, all since closed by B9. Before that, 2026-08-17 after **B8** — the A1 enablers: all seven of A1's recorded gaps closed and their compensating copy deleted; one new gap, B8-1; sweep **§6.15**. Earlier the same day, **A1** — the admin monetization surface, three slices; sweep **§6.14**, and seven backend gaps recorded as **A1-1 … A1-7** in §3. Earlier the same day, **D3** — AI writing is now an enforced paid capability on the server and gated on both clients; the free-tier regression is LIVE, and §5.2 item 4 is rewritten. Sweep **§6.13**. Earlier the same day, **M7-3** — mobile's clap, sweep **§6.12**. Before those, 2026-08-10 after **W7c** —
 reader analytics + the privacy-prefs row, closing §2 rows **6 and 8** and leaving **onboarding as the
 only unowned §2 row**. Its sweep is **§6.10**, and it is the slice that shrank on contact with the code
 — twice, both reductions recorded in §4 rather than in a commit message. Row 4's premise was **wrong**:
@@ -132,7 +142,7 @@ tables, not assumed.
 | 1   | **Collaboration**         | 6 screens: collaborators, comments, invitations inbox, publishing workflow, restricted state, suggestions                                                                                                                                                                                                                                                                                                                                                                     | nothing                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | **W3**                                                                                                                                                                                                                                                                                           |
 | 2   | ~~**Monetization**~~      | 5 screens: plans, subscription, billing history, credit dashboard, usage dashboard                                                                                                                                                                                                                                                                                                                                                                                            | ✅ **all five** (W4) — **fully at parity since 2026-08-03**: the coupon field (M5-2) and the two missing history tabs (M5-6) are now on both                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | **W4 ✅ closed 2026-07-29** — [report](./50_WebMonetizationReadinessReport.md)                                                                                                                                                                                                                   |
 | 3   | ~~**AI breadth**~~        | 8 screens: conversation, conversations list, discovery, usage, ask-book, prompt library, semantic search, story explorer                                                                                                                                                                                                                                                                                                                                                      | ✅ **8 of 8 — CLOSED 2026-08-08.** Assistant + Craft Coach (W2), semantic search + AI discovery (W5), conversations + prompt library + AI usage (W8), **story explorer + ask-book (W9 ✅ 2026-08-08)** — the last two as tabs on the in-editor AI drawer, not routes (§4.1)                                                                                                                                                                                                                                                                                                                                                                                                                           | **W5 closed discovery + search; W8 the next three; W9 the last two ✅.** Note the direction reversed on conversations: mobile ships the screen and cannot populate it (§3.12 **W8-1**), so **web is the reference** and mobile needs the follow-up                                               |
-| 4   | **Social depth**          | collections, collection detail, comments, responses (+ followers, follow requests)                                                                                                                                                                                                                                                                                                                                                                                            | ✅ **comments + responses — CLOSED 2026-08-10 by W7a** (the conversation layer, inline on the reader — [§4.1](#41-accepted-layout-differences--same-feature-different-arrangement)). Still missing: **collections** + collection detail. Plus follow requests; followers via a dialog                                                                                                                                                                                                                                                                                                                                                                                                                 | **W7** — [45 §4.4](./45_WebClientRoadmap.md). **W7a ✅ closed** rows 1–2 (conversation); collections is W7b, together with clap/report                                                                                                                                                           |
+| 4   | **Social depth**          | collections, collection detail, comments, responses (+ followers, follow requests)                                                                                                                                                                                                                                                                                                                                                                                            | ✅ **comments + responses — CLOSED 2026-08-10 by W7a** (the conversation layer, inline on the reader — [§4.1](#41-accepted-layout-differences--same-feature-different-arrangement)). ✅ **collections + collection detail — CLOSED 2026-08-10 by W7b**, and this cell claimed otherwise until the 2026-08-20 verification sweep: `ROUTES.collections = '/me/collections'` plus the detail route (`frontend/src/lib/routes.ts:21,123`, `app/router.tsx:44`) over `collections-page.tsx` / `collection-detail-page.tsx`, both with specs, on the SAME paths mobile uses. Still missing: follow requests; followers via a dialog                                                                         | **W7** — [45 §4.4](./45_WebClientRoadmap.md). **W7a ✅ closed** rows 1–2 (conversation); **W7b ✅ closed** collections, together with clap/report. Only the follow-request surface is left, and no W row names it                                                                                |
 | 5   | ~~**Reader actions**~~    | **CORRECTED 2026-08-10 — this row was wrong**, and **TRUE since 2026-08-17.** The correction stands as written: on 2026-08-10 mobile had **report** on its action bar (behind "More") and **no clap control at all** — no gesture, no accumulator, no `POST /pieces/:id/claps` caller anywhere. **M7-3 closed 2026-08-17** (`a5f27c8`, `85d34c9`, `0c4b1e8`): mobile now has the clap the cell originally claimed, ported from web. See **§3.15** and the sweep in **§6.12**. | ✅ **clap (1..50, accumulating, batched, capped) + report + save-to-collection — W7b, 2026-08-10.** Report is a port; **clap is web-first**, so the direction on it reversed                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | **BOTH ✅.** Web W7b (2026-08-10); mobile **M7-3** (2026-08-17). The correction note above is kept deliberately — this was the second row in the track where the register credited mobile with a surface it did not have (cf. **W8-1**), and the audit trail is the point, not the current state |
 | 6   | ~~**Reading analytics**~~ | `reading_analytics_screen` — the _reader's_ own stats. **HALF of it is local:** the backend aggregate (7 fields) PLUS Continue Reading / Recently Read / Weekly Activity, which come from a device Hive store, not the API                                                                                                                                                                                                                                                    | ✅ **the portable half — CLOSED 2026-08-10 by W7c.** `/me/reading` ships all seven `ReaderAnalyticsDto` fields (pieces read, reading time, completed reads, both streaks, favourite genres + languages) plus a **bounded** bookmarks count, reached from the account menu. **PARTIAL BY DESIGN:** the three local-history cards are **platform-inherent (§4)** — web has no reading-history store and the frozen `v1` has no endpoint for one. Note the figures were not absent before W7c so much as **misplaced**: they rendered inside the WRITER dashboard at `/me/stats`, so the only way to see what you had READ was a page headed "Your writing's reach"                                      | **W7c ✅ closed 2026-08-10** — [45 §4.4](./45_WebClientRoadmap.md) row 4; sweep **§6.10**                                                                                                                                                                                                        |
 | 7   | **Onboarding**            | `onboarding_screen` — first-run flow                                                                                                                                                                                                                                                                                                                                                                                                                                          | nothing                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | **unassigned — see §5**                                                                                                                                                                                                                                                                          |
@@ -151,10 +161,10 @@ example of why §6 step 2 exists.
 **Two new rows opened the same day**, found by the pre-W3b reference audit that M-1 taught us to run
 (§3.2). Both are mobile defects of the same kind — a client written against an imagined contract:
 
-| #   | Area                                     | Contract reality                                                                                                        | Mobile does                                                                                                                                                                                     | Resolution                                                       |
-| --- | ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| M-2 | **Create a suggestion (AF6)**            | `CreateSuggestionDto` = `{anchor:{from,to}, originalText, suggestedText}`; `anchor` **required**                        | Sends `{originalText, suggestedText, blockId?, rationale?}` — **no anchor**, plus two unknown properties                                                                                        | ⏳ **Open, unowned.** W3b must build from the contract, not port |
-| M-3 | **Comment threads + suggestion display** | `CommentDto` has ids only, no `replies`; threads come from `GET /comments/:id/thread`. `SuggestionDto` carries `anchor` | Entities parse `authorName`, `authorAvatarKey`, `replies`, `blockId`, `rationale`, `resolvedBy` — **none of which the wire sends**; the thread endpoint is never called; `anchor` is not parsed | ⏳ **Open, unowned.** Same fix shape as M-1's entity cleanup     |
+| #   | Area                                     | Contract reality                                                                                                        | Mobile does                                                                                                                                                                                     | Resolution                                                                                                                                                                                                                                                                                                                                                                    |
+| --- | ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| M-2 | **Create a suggestion (AF6)**            | `CreateSuggestionDto` = `{anchor:{from,to}, originalText, suggestedText}`; `anchor` **required**                        | Sends `{originalText, suggestedText, blockId?, rationale?}` — **no anchor**, plus two unknown properties                                                                                        | ✅ **CLOSED — verified in code 2026-08-20** (fixed as **C-3**, `qalam-mobile/docs/56`). `createSuggestion` takes a **required** `TextAnchor` and sends `anchor.toSuggestionJson()`, with no `blockId`/`rationale`: `collaboration_remote_data_source.dart:270-284`, `collaboration_repository_impl.dart:175-181`. This row stayed labelled open for 23 days after its own fix |
+| M-3 | **Comment threads + suggestion display** | `CommentDto` has ids only, no `replies`; threads come from `GET /comments/:id/thread`. `SuggestionDto` carries `anchor` | Entities parse `authorName`, `authorAvatarKey`, `replies`, `blockId`, `rationale`, `resolvedBy` — **none of which the wire sends**; the thread endpoint is never called; `anchor` is not parsed | ✅ **CLOSED — verified in code 2026-08-20** (fixed as **C-4 / C-5 / C-6**, `qalam-mobile/docs/56`). `GET /comments/:id/thread` is a real read behind its own provider (`collaboration_providers.dart:203-204`, data source `:193-194`) and the anchor is parsed in both directions; the invented keys are gone. Same 23-day lag as M-2                                        |
 
 ### 3.1 M-1 — mobile's story invite could not work against the frozen contract (fixed)
 
@@ -442,7 +452,7 @@ Because the token is shared, this also re-tints `notification-item`'s success gl
 recipe), every `text-success` indicator, and AntD's `colorSuccess`. That breadth is why it was bundled
 with the baseline mint rather than fixed in isolation.
 
-### W3c-3 · **low** · AntD's derived hover colour on a default button fails AA
+### W3c-3 · ~~**low**~~ · **CLOSED 2026-07-29** (heading corrected 2026-08-20 — the resolution below shipped the same day and the heading never said so; `antd-theme.ts:113` pins `defaultHoverColor: c.accent`) · AntD's derived hover colour on a default button fails AA
 
 A `QButton variant="secondary"` under the pointer renders its label in AntD's derived
 `defaultHoverColor` — `#ab6846` on white = **4.37:1**. Any a11y scan that leaves the cursor resting on
@@ -625,7 +635,7 @@ tuned against `surface` and never re-checked against `raised`. **Fixed with T-2*
 `--q-danger-on-tint: #dd8075` (4.64 on raised), which settles it without re-tinting the fill a second
 time.
 
-### T-4 · **low** · AntD's derived _active_ colour on a default button is 3.46:1 in dark mode
+### T-4 · **low** · **OPEN — ledger §3.22a** · AntD's derived _active_ colour on a default button is 3.46:1 in dark mode
 
 The sibling of W3c-3 that pinning hover does not cover: `colorPrimaryActive` derives to `#996145`,
 which measures **3.46 / 3.72 / 3.12** on dark surface / canvas / raised. Light mode is fine (`#783218`,
@@ -634,7 +644,7 @@ scan catches it — the same blind spot that let the hover defect live until a s
 cursor parked. The fix is one more line beside the hover pin (`defaultActiveColor: c.accent`), left
 undone deliberately under this pass's scope lock.
 
-### T-5 · **low** · two token mirrors nobody is tracking
+### T-5 · **low** · **OPEN — ledger §3.22a** · two token mirrors nobody is tracking
 
 `tokens.css` names its mirrors — "styles/tailwind.css and src/theme/antd-theme.ts" — and both were
 updated. But `frontend/src/features/analytics/lib/chart-options.ts` carries the palette hexes **twice
@@ -732,7 +742,19 @@ Playwright's strict mode throws on two matches rather than silently picking one,
 failure T-6 did not get. Left alone (scope-locked); noted so the next person does not have to
 re-derive it. No other button label in `pages/` is a prefix of a sibling.
 
-### T-9 · **medium** (harness) · `npm run build` silently disarms a running local E2E stack
+### T-9 · ~~**medium**~~ (harness) · **CLOSED for the mechanism it describes — verified 2026-08-20** · `npm run build` silently disarms a running local E2E stack
+
+> **Verified 2026-08-20.** The second of the three candidate fixes below — "have the local stack run
+> `dev` (which reads `webServer.env`) instead of `preview`" — **is in place**:
+> `e2e/playwright.config.ts:245-247` is `CI ? 'pnpm --filter frontend preview …' : 'pnpm --filter frontend dev'`.
+> A local run no longer serves `frontend/dist` at all, so a root `npm run build` cannot overwrite what
+> the suite is testing, and the `FULL TURBO` recurrence is gone with it.
+>
+> **Residual, and it is why this keeps its diagnosis rather than being deleted:** `reuseExistingServer`
+> is still true locally (`:249`), so the suite attaches to whatever is already on :5173. A developer who
+> starts `vite preview` by hand reproduces the original trap exactly, with the same misleading
+> "Collaboration is off" symptom. That residual is carried in [§3.22](#322-the-open-ledger-verified-2026-08-20)
+> as a low harness item — the fix is a page-object assertion that names the cause, not another note.
 
 Opened 2026-08-05 while verifying T-6; **not fixed** (out of that pass's scope), and recorded because it
 cost an hour of chasing a defect that did not exist.
@@ -801,7 +823,7 @@ The static half matters more than the pixel half: it fails on the _rule_, so a w
 reach a browser at all. The pixel half catches a plausible-but-insufficient value, which no static rule
 could.
 
-### T-7 · **medium** · `assistant.spec.ts` "writes and autosaves" is flaky under parallel load
+### T-7 · **medium** · **OPEN — ledger §3.22c** · `assistant.spec.ts` "writes and autosaves" is flaky under parallel load
 
 **Already recorded by W3c** ([49 §6g](./49_WebCollaborationEpicDesign.md), "One pre-existing E2E failure"),
 which established it by stashing every W3c change. Repeated here only because this pass re-measured it
@@ -1245,7 +1267,7 @@ columns, docs/37), so an unrecognised value is a forward-compatible server, not 
 `SubscriptionEvent.type` is deliberately **not** mapped: the wire types it as a plain `string`, so the
 set the server emits is not something the contract pins down and a switch would be inventing one.
 
-### M-5 · **medium** · mobile's suite fails ~2 runs in 10, with no assertion output (opened 2026-08-03, during the parity batch)
+### M-5 · **medium** · **OPEN — ledger §3.22c** · mobile's suite fails ~2 runs in 10, with no assertion output (opened 2026-08-03, during the parity batch)
 
 **Recorded, not fixed.** Found because the parity batch's own verification kept coming back red on a
 test it had not touched, and the register's rule about calling something a flake without evidence
@@ -1292,7 +1314,7 @@ each is outside that row, and two of them are about keeping the AI and payments 
 is a decision rather than a repair. Two E2E-harness traps found the same day are recorded where they will
 be read — [e2e/06 §6 live-run notes 4 and 5](./e2e/06_PhasePlan.md).
 
-### AI-1 · **low** · `PAYMENTS_MANUAL_ENABLED` is undeclared in `env.schema.ts`, so its typo mode is silent
+### AI-1 · **low** · **OPEN — ledger §3.22b** · `PAYMENTS_MANUAL_ENABLED` is undeclared in `env.schema.ts`, so its typo mode is silent
 
 `backend/src/config/env.schema.ts` declares every other provider knob — all three Stripe values, Apple's,
 Google Play's, and each AI credential + base URL — but **not** `PAYMENTS_MANUAL_ENABLED`, which W4 added
@@ -1306,7 +1328,7 @@ the two intentionally-inert providers described differently in the schema, which
 is one line plus a note in `19_DeploymentGuide.md`'s env table; not taken here because the payments module
 is not this row's scope.
 
-### AI-2 · **low** · a stack running an inert AI provider reports its AI as `inert`, which understates it
+### AI-2 · **low** · **OPEN — ledger §3.22b** · a stack running an inert AI provider reports its AI as `inert`, which understates it
 
 `AiHealthIndicator` computes `configured` from `config.providers[defaultProvider].apiKey`, so with
 `AI_DEFAULT_PROVIDER=stub` + `AI_STUB_ENABLED=true` — an AI subsystem that answers completions and streams
@@ -1319,7 +1341,7 @@ as configured — with `mode` distinguishing a _test_ provider from a live one, 
 says "live" because a stub is on would be worse than the current understatement. That is a P7.1/P7.4
 observability decision, not an E2E one.
 
-### AI-3 · **low** · `IMPLEMENTED_AI_PROVIDERS` and `IMPLEMENTED_PAYMENT_PROVIDERS` are dead exports
+### AI-3 · **low** · **OPEN — ledger §3.22b** · `IMPLEMENTED_AI_PROVIDERS` and `IMPLEMENTED_PAYMENT_PROVIDERS` are dead exports
 
 Both are declared in `@qalam/shared` and have **zero consumers** anywhere — backend, frontend, admin, e2e
 (grepped). They read like a gate ("which providers have a working implementation") and gate nothing; the
@@ -1635,7 +1657,7 @@ over.
 what that engine accepts. Two unit specs (`search-filter-bar.spec.tsx`) and one E2E assertion
 (`expectAiFiltersOffered`) pin both halves.
 
-### W5-12 · harness (pre-existing) · three visual baselines do not reproduce outside CI
+### W5-12 · harness (pre-existing) · **OPEN — ledger §3.22c** · three visual baselines do not reproduce outside CI
 
 Recorded because [§6](#6-parity-check--run-at-the-end-of-every-client-epic) step 5 admits no unrecorded
 known difference, and because the next epic to run the visual suite locally will meet it.
@@ -1907,7 +1929,7 @@ The archived row comes straight back out of the **default** list.
 > deliberately does not offer it — a client cannot implement it correctly against this query anyway.
 > Fixing it needs a status filter on the list, which is a backend change and a different row.
 
-### W8-3 · **low** · the same conversation publishes its messages in two different shapes
+### W8-3 · **low** · **OPEN — ledger §3.22b** · the same conversation publishes its messages in two different shapes
 
 `GET /ai/conversations/:id` sends each message via `toMessageDto` (`ai.mappers.ts:11-24`) as
 `{id, role, content, usage: {inputTokens, outputTokens, totalTokens} | null, createdAt}`. `GET
@@ -1926,7 +1948,15 @@ No `id`, and token usage flattened to one nullable number. Mobile never notices 
 export as opaque `Json` (`ai_remote_data_source.dart:131-135`). Recorded so no client reuses `AiMessageDto`
 for the export payload — W8's web layer types the two separately.
 
-### W8-4 · **low** · two conversation shapes sit outside the §3.11 guard
+### W8-4 · ~~**low**~~ · **CLOSED — verified in code 2026-08-20** · two conversation shapes sit outside the §3.11 guard
+
+> **Both holes are filled, and the entry never said so.** `packages/api-types/src/ai.ts:192` declares
+> `UpdateAiConversationRequest`, and `:202,215` declare `AiConversationExportMessage` +
+> `AiConversationExport` — the payload this entry said had "no DTO to pin". All three are inside the
+> §3.11 guard: `api-types.contract.spec.ts:269` pins the `PATCH` body to `UpdateAiConversationDto`, and
+> `:346-348` pin both export shapes. So the two places "where a fourth instance would appear" are now
+> the two places a fourth instance cannot appear. Closed by the archive row (§3.21) without a register
+> edit — the same omission that left W8-1 and W8-2 standing after their own fixes.
 
 The guard added on 2026-08-05 pins `AiConversationSummary`, `AiConversationDetail`, `AiMessageDto`,
 `CreateAiConversationRequest`, `AiUsageWindowSummary` and `AiUsageResponse` to their DTOs
@@ -1940,7 +1970,7 @@ The guard added on 2026-08-05 pins `AiConversationSummary`, `AiConversationDetai
 
 Not a drift today. Recorded because both are exactly where a fourth instance would appear.
 
-### W8-5 · **medium** · a hovered `variant="primary"` button is 4.37:1 — W3c-3's colour, on the half nobody pinned
+### W8-5 · **medium** · **OPEN — ledger §3.22a** · a hovered `variant="primary"` button is 4.37:1 — W3c-3's colour, on the half nobody pinned
 
 **Found by W8's own a11y scan**, which failed the first time it ran because arranging the page clicked
 "New conversation" and left the cursor on it:
@@ -2116,7 +2146,7 @@ per-author limit anyway, and is now the standing note for whoever writes it.
 **Also verified as part of the fix:** `reader.spec.ts` + `writing.spec.ts` go from 8 failures to
 **13/13 green**, and W7a's own 11 tests from 0 to 11.
 
-### B4-2 · **low** (documentation, not behaviour) · a response is exempt from the piece cap, and only the service says so
+### B4-2 · ~~**low**~~ (documentation, not behaviour) · **CLOSED — verified 2026-08-20 (`45:449`)** · a response is exempt from the piece cap, and only the service says so
 
 **What.** `POST /pieces/:id/responses` reaches `PiecesService.createDraft` **beneath**
 `assertPieceAllowance`, so writing a response is never refused for the plan piece cap. That is
@@ -2131,8 +2161,14 @@ commit, from the service rather than from the roadmap. Counting-but-not-gating i
 surprising combination, and neither [45 §4.9](./45_WebClientRoadmap.md) nor B4's own row mentions
 responses at all.
 
-**Open**, deliberately: the behaviour is right, so there is nothing to fix in code. It belongs in
-[45 §4.9](./45_WebClientRoadmap.md)'s description of the cap, which is a roadmap edit and not W7a's.
+~~**Open**, deliberately: the behaviour is right, so there is nothing to fix in code. It belongs in
+[45 §4.9](./45_WebClientRoadmap.md)'s description of the cap, which is a roadmap edit and not W7a's.~~
+
+> **CLOSED — verified 2026-08-20.** The roadmap edit this entry asked for **has been made**:
+> [45](./45_WebClientRoadmap.md) line 449 now states the exemption where the cap is described —
+> "`createOwnDraft` — a new entry point, because `createDraft` is also the shared construction path for
+> **responses**, and capping a reply is not what B4 asks for". Nothing is outstanding; the row existed
+> only to move that sentence, and the sentence moved.
 
 ---
 
@@ -2217,7 +2253,7 @@ with a surface it does not have (W8-1 was the first). Both were caught by [§6 s
 — "do not trust a roadmap paraphrase" — which is now also "do not trust §2's own cells". A cell in
 this document is a claim like any other, and §6.4's re-sweep is what keeps it honest.
 
-### W7b-1 · **low** (contract, undocumented) · `POST /reports` refuses a self-report, and nothing said so
+### W7b-1 · **low** (contract, undocumented) · **OPEN — ledger §3.22b** · `POST /reports` refuses a self-report, and nothing said so
 
 **What.** Reporting your own content or account is `422 REPORT_SELF` ("You cannot report your own
 content or account"). It is correct behaviour. It is also absent from `CreateReportDto`, from the
@@ -2383,7 +2419,7 @@ dashboard's emptiness check, because an operator can need to confirm an account 
 not anyone on the install has ever subscribed. The limitation this shape carries is recorded as **B8-1**
 below rather than left to be discovered.
 
-### B8-1 · **low** · an admin per-account read cannot tell an unknown user from one with no data (opened 2026-08-17, during B8)
+### B8-1 · **low** · **OPEN — ledger §3.22a** · an admin per-account read cannot tell an unknown user from one with no data (opened 2026-08-17, during B8)
 
 `GET admin/monetization/users/:userId/subscription` answers `{ subscription: null }` for an account on
 free AND for a user id that does not exist. `…/credits` answers `{ credits: null }` for both.
@@ -2432,7 +2468,7 @@ frozen (§7 of the roadmap), and the two client-side ones are other rows' code. 
 > A2-3 dissolved once A2-2 shipped a revoke, and A2-5 is marked reserved rather than wired.
 > B9's own sweep, including whether it opened a seventh, is [§6.17](#617-b9s-sweep-2026-08-18).
 
-### A2-1 · **medium** · two sanctions are both called "suspend", enforced in different places, and neither implies the other (opened 2026-08-18)
+### A2-1 · ~~**medium**~~ · **CLOSED — B9, 2026-08-18** · two sanctions are both called "suspend", enforced in different places, and neither implies the other (opened 2026-08-18)
 
 The row's DECISION 0.2, answered from the code. `POST /admin/users/:id/suspend` writes
 `users.status = 'suspended'` (`users.service.ts:154`) and revokes every session
@@ -2489,7 +2525,7 @@ panel states which sanction is which and that lifting one leaves the other in fo
 > a structural test (`users/account-status.service.spec.ts`) asserting `modules/auth` still imports
 > nothing from trust, so the next reader who notices the asymmetry finds this record first.
 
-### A2-2 · **medium** · a strike can be issued and then never listed, revoked, or verified (opened 2026-08-18)
+### A2-2 · ~~**medium**~~ · **CLOSED — B9, 2026-08-18** · a strike can be issued and then never listed, revoked, or verified (opened 2026-08-18)
 
 `POST /admin/users/:id/strikes` is the ONLY strike route in the backend (`grep` on
 `--include=*.controller.ts` returns exactly that one). Yet:
@@ -2532,7 +2568,7 @@ that a strike cannot be revoked.
 > two reads. The three tests that pinned the old sentences assert the new ones AND the absence of the
 > old.
 
-### A2-3 · **low** · a lifted auto-escalation comes straight back with the next strike (opened 2026-08-18)
+### A2-3 · ~~**low**~~ · **CLOSED — B9, 2026-08-18 (dissolved once A2-2 shipped a revoke)** · a lifted auto-escalation comes straight back with the next strike (opened 2026-08-18)
 
 `maybeEscalate` runs on every `issueStrike` against the CURRENT total, and `ensureGlobalRestriction`
 skips only when a matching restriction is already **active** (`trust.service.ts:344`). Lifting the
@@ -2559,7 +2595,7 @@ but it is invisible from either endpoint. Recorded rather than changed; the lift
 > already applied, which is the surprise in the other direction. Two tests assert each remedy does only
 > its own job: a lift touches neither the weight nor the profile, a revoke recomputes both.
 
-### A2-4 · **low** · `GET /admin/users/:id/trust` WRITES, and manufactures a clean standing for an unknown id (opened 2026-08-18)
+### A2-4 · ~~**low**~~ · **CLOSED — B9, 2026-08-18** · `GET /admin/users/:id/trust` WRITES, and manufactures a clean standing for an unknown id (opened 2026-08-18)
 
 `getSummary` calls `getOrCreateProfile`, which inserts a `trust_profiles` row on first touch
 (`trust.service.ts:104-115`), and the entity carries **no SQL FK to `users`** — deliberately, so the
@@ -2605,7 +2641,7 @@ confined to the admin/account summary path.
 > inserting a `trust_profiles` row for the zero UUID on every run. All four now arrange a real throwaway
 > account (`fae7ee5`).
 
-### A2-5 · **low** · `TrustStatus.Banned` is unreachable, and `user_banned` is the same status as `user_suspended` (opened 2026-08-18)
+### A2-5 · ~~**low**~~ · **CLOSED — B9, 2026-08-18 (documented as RESERVED)** · `TrustStatus.Banned` is unreachable, and `user_banned` is the same status as `user_suspended` (opened 2026-08-18)
 
 `TrustStatus.Banned` is ranked most severe in `STATUS_SEVERITY` (`trust.service.ts:59`) and denied
 first by rule 1, but no `RestrictionType` maps to it (`trustStatusForRestriction` has no `Banned`
@@ -2633,7 +2669,7 @@ offer it, because `ApplyRestrictionDto` cannot express it.
 > where ban actually lives, and that it must not be deleted either — removing an enum member is breaking
 > (docs/25 §8). No behaviour changed and no test was needed; the comment IS the deliverable.
 
-### A2-6 · **high** · the admin `typecheck` and `build` gates have been RED since B8 landed (opened 2026-08-18)
+### A2-6 · ~~**high**~~ · **CLOSED — B9, `6a7a102`, 2026-08-18** · the admin `typecheck` and `build` gates have been RED since B8 landed (opened 2026-08-18)
 
 `pnpm typecheck` in `admin/` reports **18 errors**, all in `features/monetization`, and `pnpm build`
 (`tsc -b && vite build`) fails on the same set. Verified as pre-existing by stashing A2's diff: the
@@ -2690,7 +2726,7 @@ errors, 0 in any file this row touches, with `vite build` clean on its own.
 Found while establishing B9's DECISION 1. Not in the trust module, and not fixed — see
 [§6.17](#617-b9s-sweep-2026-08-18).
 
-### B9-1 · **medium** · suspending an account is not retryable, and a failed attempt leaves live sessions (opened 2026-08-18)
+### B9-1 · **medium** · **OPEN — ledger §3.22a** · suspending an account is not retryable, and a failed attempt leaves live sessions (opened 2026-08-18)
 
 `POST /admin/users/:id/suspend` does two things that are not in one transaction, and cannot be:
 
@@ -2892,7 +2928,7 @@ as "fails on **WebKit only**, reproducibly at `--workers=1` — the Edit-user mo
 row menu's 'Edit user'". Same symptom, same component; both qualifiers are wrong. That note is corrected
 again, now to say it is closed.
 
-### 3.19 · **low** · **OPEN** · the admin error catalogue has no `USER_NOT_FOUND`, so B9's 404 reads as "something went wrong"
+### 3.19 · **low** · **OPEN — ledger §3.22a** · the admin error catalogue has no `USER_NOT_FOUND`, so B9's 404 reads as "something went wrong"
 
 Found while fixing a spec that asserted invented copy. B9 made the three admin trust reads answer
 404 `USER_NOT_FOUND` for an id belonging to nobody (§3.16, A2-4), and **that works**. But `TrustPanel`
@@ -2997,7 +3033,7 @@ A related pair, handled in the UI rather than the API and recorded so they are n
 unavailable until an embedding backend lands), so the editor says so under the toggle; and a weight of
 **0 disables** a signal rather than weighting it neutrally, which the section header states.
 
-### A3-4 · **low** · **OPEN (recorded, not fixed)** · `AsyncSection` now exists five times, and the refactor keeps being "not this row's"
+### A3-4 · **low** · **OPEN — ledger §3.22b (recorded, not fixed)** · `AsyncSection` now exists five times, and the refactor keeps being "not this row's"
 
 `features/ai` needed the per-section loading/error wrapper every admin dashboard uses, and the
 deletability rule (`admin/src/features/README.md`) forbids a feature importing another feature — so it
@@ -3084,6 +3120,94 @@ something that runs the app:
    Restyled with the underline tab treatment `billing-history-page.tsx:74` already established. A
    selected tab is not a primary action, so the fix reads better than the first attempt anyway. **W8-5
    itself remains open** and is still owned by whoever fixes the shared token.
+
+---
+
+## 3.22 The open ledger (verified 2026-08-20)
+
+**This is the only admissible answer to "what is still open?".** Everything above it is a _diagnosis_
+— kept for its reasoning, and unreliable as a status, because a §3 heading is written once and the code
+moves afterwards. Twice now a pass has scheduled findings that were already fixed (the 2026-08-19
+archive row opened to fix W8-1/W8-2 and found both closed on 2026-08-05; this sweep found **eight**
+more), so the labels in §3 have been demoted and the ledger promoted.
+
+**The three rules that keep it locked:**
+
+1. **An entry may not appear here without a `file:line` anchor and the date it was last verified.**
+   "It was open in the report" is not an entry. If you cannot point at the code, you have a suspicion,
+   not a finding.
+2. **Re-verify the anchor before you schedule, size, or report a row.** The anchor is evidence with a
+   shelf life; someone else's row may have closed yours in passing, which is exactly how the eight
+   above happened. Verification is cheap — one `grep` — and skipping it is what produced this section.
+3. **Closing a row means two edits, in the same commit as the fix: strike the §3 diagnosis in place
+   (dated, with the anchor that disproves it) and delete the ledger line.** A fix that leaves the
+   register unchanged is how W8-1, W8-2 and W8-4 stayed "open" for a fortnight after they were fixed.
+
+Severity is this register's usual four-level rubric (critical / high / medium / low). **Size is the
+work, not the diagnosis** — several one-line fixes are half-day rows because the verification around
+them (baseline re-mint, five call sites, a measurement loop) is the actual cost.
+
+### 3.22a Product defects — a user or an operator can hit these
+
+| ID         | Sev            | What                                                                                              | Anchor (verified 2026-08-20)                                                                                                                                  | Size                                                                  |
+| ---------- | -------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| **W8-5**   | **medium**     | every hovered `variant="primary"` button is white-on-`#ab6846` = **4.37:1**, under AA             | `packages/ui/src/theme/antd-theme.ts:113` pins `defaultHoverColor` only; `colorPrimaryHover` is still AntD's derived                                          | **1 d**                                                               |
+| **C-15**   | **medium**     | the web suggestion composer's hand-typed offset now **409s** against the offset-exact check       | `frontend/src/features/collaboration/components/suggestion-composer.tsx:35,69,93` ("Starts at character")                                                     | **1.5–2 d**                                                           |
+| **B9-1**   | **medium**     | a failed suspend is unrecoverable — the retry throws before revocation, leaving sessions live     | `backend/src/modules/users/users.service.ts:150-152` (`before === to` throws); 5 call sites, §3.17                                                            | **1 d**                                                               |
+| **B8-1**   | **low→medium** | four admin monetization reads answer a nullable shape for an id that belongs to nobody            | `backend/src/modules/monetization/admin-monetization.controller.ts:269,303`. **Decision already recorded: adopt trust's 404**                                 | **0.5 d**                                                             |
+| **§3.19**  | **low**        | that 404 renders as "Something went wrong" — the catalogue has no `USER_NOT_FOUND`                | `admin/src/lib/error-messages.ts` (absent). **Do this in the same row as B8-1**                                                                               | _(in B8-1)_                                                           |
+| **AF5-cs** | **medium**     | mobile drops `clientSecret`, so a provider path returning a secret and no URL stalls on "success" | `CheckoutDto` has it (`monetization-response.dto.ts:24-28`); `qalam-mobile/lib/features/monetization/domain/entities/billing.dart:115,126` reads two of three | **1 h** (read + honest refusal; the payment sheet is its own project) |
+| **T-4**    | **low**        | `defaultActiveColor` derives to **3.46:1** in dark mode while the pointer is held                 | `packages/ui/src/theme/antd-theme.ts:113` — one line beside W8-5's fix                                                                                        | _(in W8-5)_                                                           |
+| **T-5**    | **low**        | two stale copies of the chart palette outside the declared mirror list                            | `frontend/src/features/analytics/lib/chart-options.ts:32,69`                                                                                                  | **30 m**                                                              |
+| **T-10**   | **low**        | every `QButton` is 44 px, so Android's 48 px tap-target guideline fails app-wide                  | `qalam-mobile/lib/shared/widgets/buttons/q_button.dart:58` — `math.max(_visualHeight, 44)`                                                                    | **0.5–1 d** (height change on every screen)                           |
+
+### 3.22b Contract + operability honesty — no user-visible break, real cost to the next reader
+
+| ID        | Sev     | What                                                                                                                           | Anchor (verified 2026-08-20)                                                                                                                 | Size                                                                              |
+| --------- | ------- | ------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| **AI-1**  | **low** | `PAYMENTS_MANUAL_ENABLED` is undeclared, so its typo mode is silent                                                            | `backend/src/config/env.schema.ts` declares `AI_STUB_ENABLED:167` and not this                                                               | **30 m**                                                                          |
+| **AI-2**  | **low** | both health indicators call a flag-gated provider `inert`, understating a working subsystem                                    | `backend/src/health/indicators/ai.health-indicator.ts:26-30`; `payment.health-indicator.ts:29` ignores `manual`                              | **1 d** (needs the `live`/`test`/`inert` vocabulary, both indicators, or neither) |
+| **AI-3**  | **low** | `IMPLEMENTED_AI_PROVIDERS` / `IMPLEMENTED_PAYMENT_PROVIDERS` gate nothing, and the admin picker offers 6 adapterless providers | `packages/shared/src/ai.ts:46`, `monetization.ts:246` (zero consumers); `admin/src/features/ai/pages/ai-config-page.tsx`                     | _(with AI-2)_                                                                     |
+| **W7b-1** | **low** | `POST /reports` refuses a self-report with `422 REPORT_SELF` and the contract never says so                                    | `backend/src/modules/moderation/reports.controller.ts:32` — summary names no error                                                           | **15 m**                                                                          |
+| **W8-3**  | **low** | the export publishes a second message shape (no `id`, flat `totalTokens`)                                                      | `backend/src/modules/ai/conversations/conversation.service.ts:141-146`. Now typed + pinned separately (W8-4), so this is a wart, not a break | **15 m** to close as deliberate, **1 h** to align                                 |
+| **A3-4**  | **low** | `AsyncSection` is at **five** copies, ~40 duplicated lines each                                                                | `admin/src/features/{ai,monetization,operations,security,system}/components/async-section.tsx`                                               | **0.5 d**                                                                         |
+
+### 3.22c Harness — the suite's own honesty
+
+**Fix size is unknown until measured**, so each estimate is a measurement loop plus an unbounded fix.
+Naming that is the point: §3.4's rule is that a failure is not a flake until it has been counted.
+
+| ID           | Sev          | What                                                                                                                            | Anchor (verified 2026-08-20)                                                             | Size                          |
+| ------------ | ------------ | ------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ----------------------------- |
+| **T-7**      | **medium**   | `assistant.spec.ts` "writes and autosaves" is flaky under parallel load                                                         | `e2e/tests/frontend/assistant.spec.ts:220`                                               | **0.5 d+**                    |
+| **M-5**      | **medium**   | mobile's suite fails ~2 runs in 10 with **no assertion output at all**                                                          | `qalam-mobile/test/features/ai/retrieval_controllers_test.dart:227`                      | **0.5–1 d+**                  |
+| **W5-12**    | harness      | three visual baselines do not reproduce outside CI (~21 px page offset)                                                         | `frontend-comments`, `frontend-suggestions`, `frontend-collaborators`                    | **0.5 d+**                    |
+| **T-9 res.** | **low**      | `reuseExistingServer` still lets a hand-started `vite preview` reproduce T-9                                                    | `e2e/playwright.config.ts:249`                                                           | **1 h**                       |
+| **WK**       | verification | the **frontend** webkit shards have not been re-run since the 2026-08-03 deferral — which is where that deferral actually lived | [docs/e2e/README](./e2e/README.md) "WebKit, measured (2026-08-18)" covers **admin only** | **0.5 d** (mostly wall-clock) |
+| **CI**       | verification | `web-e2e.yml` needs three green runs, then the flip to `pull_request`                                                           | [e2e/07 §6.1](./e2e/07_CI.md)                                                            | **0.5 d**                     |
+
+### 3.22d Not defects — recorded so a future row does not size them as work
+
+- **Mobile store billing is an inert seam by design.** `NoopStoreBillingGateway` is the bound default
+  (`qalam-mobile/lib/features/monetization/presentation/providers/monetization_providers.dart:47-48`)
+  and there is **no IAP plugin in `pubspec.yaml`** — verified 2026-08-20. Credit purchase and restore
+  therefore throw before any HTTP call, and the server agrees a receipt is mandatory. Real integration
+  is 3–5 days **and gated on store accounts**, not on this register.
+- **W8-3's asymmetry is now safe** — see 3.22b. The hazard it was recorded for (a client reusing
+  `AiMessageDto` for the export) is closed by the pinned `AiConversationExport`.
+
+### 3.22e Owner decisions and held rows — not estimable, and not defects
+
+Listed here so the ledger is exhaustive; **none of these is engineering-ready.**
+
+| Row                     | Waiting on                                                                                                                                                                                                                                                     |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **D4**                  | your scope choice on the seven unenforced `PremiumFeature` codes ([§5.2](#52-the-monetization-catalogue-sells-eight-features-and-the-backend-enforces-one-opened-2026-07-29-during-w4)). Until answered, **no client may gate on the six beyond `ai_writing`** |
+| **B2**                  | held 2026-07-29; shares D4's enforcement path and writes the first real `isEntitled` caller                                                                                                                                                                    |
+| **W6** + **A4**         | the AF3 analysis lifecycle and its admin half — both held                                                                                                                                                                                                      |
+| **Onboarding**          | a product shape for web (§2 row 7, §5). Confirmed absent: no `frontend/src/features/onboarding`                                                                                                                                                                |
+| **Offline write queue** | a deliberate decision on §2 row 9 rather than closure by omission (§4)                                                                                                                                                                                         |
+| **Follow requests**     | the last cell of §2 row 4, and no W row names it                                                                                                                                                                                                               |
 
 ---
 
@@ -3184,9 +3308,13 @@ list** — it was closed by the 2026-07-28 port, §3.1.)
   row 5). Its one server-backed control already shipped (`edit-profile-page.tsx:253`) and its other two
   are local display gates with nothing cross-user to enforce (§4). Listing it as a gap was the error;
   the row is closed by evidence rather than by code.
-- **Onboarding, AI conversations + prompt library + usage** — mobile-shipped, none in the W-track.
-  (The last three are named by `W8`, which is unclaimed.) **Onboarding still needs a product shape for
-  web before it is an engineering task** — W7c deliberately did not touch it.
+- ~~**Onboarding, AI conversations + prompt library + usage** — mobile-shipped, none in the W-track.
+  (The last three are named by `W8`, which is unclaimed.)~~ **CORRECTED 2026-08-20 by the verification
+  sweep.** `W8` was not unclaimed — it **shipped 2026-08-05** ([52](./52_WebAiSurfacesReadinessReport.md)),
+  and §2 row 3 above has recorded conversations + prompt library + AI usage as closed since. This bullet
+  outlived its own contradiction inside the same document, which is the failure mode §3.22 exists to end.
+  **Only onboarding is left, and it still needs a product shape for web before it is an engineering
+  task** — W7c deliberately did not touch it.
 - ~~**Ask My Book**~~ — **CLOSED 2026-08-08 by W9, together with the story explorer.** Found unowned by
   W5's sweep (2026-08-04); decided 2026-08-07 to be its own row rather than W6's. The reasoning below
   stands as the record of why, and both surfaces now ship on web ([45 §4.12](./45_WebClientRoadmap.md)).
@@ -3334,6 +3462,13 @@ Added to the per-epic flow as step 7 ([45 §2](./45_WebClientRoadmap.md)):
 4. **Re-sweep §2** for the area touched, and update the "Last swept" date at the top.
 5. **Nothing is left unrecorded.** A known difference that is in neither §2, §3 nor §4 is a bug in
    this document.
+6. **Reconcile [§3.22](#322-the-open-ledger-verified-2026-08-20), the open ledger** — added 2026-08-20,
+   and the step the previous five did not cover. For every row your epic touched: if you fixed a ledger
+   entry, **delete the line and strike its §3 diagnosis in the same commit**; if you opened one, add it
+   **with a `file:line` anchor and today's date**; if you neither fixed nor opened it but read the code
+   it points at, **re-date the anchor**. Steps 1–5 keep §2/§3/§4 honest about the _product_; this step
+   is the only one that keeps the document honest about **itself**, which is what eight stale entries
+   cost before it existed.
 
 ### 6.1 W8's sweep (2026-08-05)
 
@@ -3514,7 +3649,7 @@ load-bearing one.
    are not gated by it) is stated in 45 §4.9 and in the counting method's own comment; the api-types
    guard was checked and found not applicable, which is also written down there.
 
-### T-10 · **low** · every `QButton` is 44 px tall, so the Android 48 px tap-target guideline fails app-wide
+### T-10 · **low** · **OPEN — ledger §3.22a** · every `QButton` is 44 px tall, so the Android 48 px tap-target guideline fails app-wide
 
 **What.** `q_button.dart` sets `tapHeight = max(visualHeight, 44)`. 44 is the iOS HIG minimum;
 Android's is 48, and `meetsGuideline(androidTapTargetGuideline)` fails for any screen containing a
