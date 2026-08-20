@@ -44,21 +44,20 @@ test.describe('@phase4 admin trust — the reads', () => {
     // The defect this closes, asserted from the operator's side: a mistyped id used to render a
     // brand-new account in good standing, and an operator could go on to strike it.
     await expect(trust.panel.getByText('Good standing')).toHaveCount(0);
-    // What the panel ACTUALLY renders. The original assertion here expected /No such user/i — the
-    // server's own message — and that copy exists nowhere in the client: `TrustPanel` renders
-    // `getErrorMessage(error)`, which maps an `ApiError.code` through the admin's catalogue
-    // (`lib/error-messages.ts`), and that catalogue has no `USER_NOT_FOUND` entry, so it falls back.
-    // The spec was guessing; B9's 404 itself works. That the operator is told nothing specific about
-    // a mistyped id is a real but SEPARATE copy defect — recorded in docs/48 §3.20, not smuggled in
-    // here as a product change.
+    // What the panel renders. History, because it is the point: this assertion first expected
+    // /No such user/i (the server's message, which exists nowhere in the client), was corrected to
+    // the generic fallback — `TrustPanel` renders `getErrorMessage(error)`, which maps `ApiError.code`
+    // through `lib/error-messages.ts` — and now expects the real copy, because the catalogue has a
+    // `USER_NOT_FOUND` entry as of 2026-08-20 (docs/48 §3.19, closed with B8-1). An operator who drops
+    // one character of a UUID is told what went wrong instead of that the screen is broken.
     //
     // Asserted as a COUNT, not with `.first()`: all three per-account reads 404 for an unknown id —
     // the standing, the strike list and the restriction list — so the message renders exactly three
     // times. `.first()` would have hidden that and proved only that *something* failed; the count is
     // the sharper claim, and it fails if a fourth read is added without anyone thinking about it.
-    await expect(trust.panel.getByText('Something went wrong. Please try again.')).toHaveCount(3, {
-      timeout: 15_000,
-    });
+    await expect(
+      trust.panel.getByText('No account has that ID. Check it on the Users screen.'),
+    ).toHaveCount(3, { timeout: 15_000 });
   });
 
   test('a clean record renders as a calm empty state, not an error', async ({

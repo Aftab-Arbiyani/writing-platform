@@ -1,8 +1,9 @@
 import 'reflect-metadata';
-import { PERMISSIONS } from '@qalam/shared';
+import { ERROR_CODES, PERMISSIONS } from '@qalam/shared';
 
 import { PERMISSIONS_KEY } from '../../common/constants/metadata.constants';
 import type { AuditService } from '../audit/audit.service';
+import type { UsersService } from '../users/users.service';
 import { AdminMonetizationController } from './admin-monetization.controller';
 import type { BillingService } from './billing.service';
 import type { CreditService } from './credit.service';
@@ -30,7 +31,14 @@ function permsOf(handler: (...args: never[]) => unknown): unknown {
   return Reflect.getMetadata(PERMISSIONS_KEY, handler);
 }
 
-function build(overrides?: { subscription?: unknown; wallet?: unknown; payments?: unknown[] }) {
+function build(overrides?: {
+  subscription?: unknown;
+  wallet?: unknown;
+  payments?: unknown[];
+  /** Defaults to an account that EXISTS — the B8-1 404 is the exception, not the baseline. */
+  user?: unknown;
+  entitlementOverrides?: unknown[];
+}) {
   const credits = {
     findWallet: jest.fn().mockResolvedValue(overrides?.wallet ?? null),
     getOrCreateWallet: jest.fn(),
@@ -45,17 +53,27 @@ function build(overrides?: { subscription?: unknown; wallet?: unknown; payments?
     getConfig: jest.fn().mockResolvedValue({ creditsPerUsd: 1000 }),
   } as unknown as MonetizationConfigService;
 
+  const users = {
+    findById: jest
+      .fn()
+      .mockResolvedValue(overrides?.user === undefined ? { id: USER } : overrides.user),
+  } as unknown as UsersService;
+  const entitlements = {
+    listOverrides: jest.fn().mockResolvedValue(overrides?.entitlementOverrides ?? []),
+  } as unknown as EntitlementService;
+
   const controller = new AdminMonetizationController(
     {} as PromotionService,
-    {} as EntitlementService,
+    entitlements,
     credits,
     billing,
     subscriptions,
     config,
     {} as MonetizationAnalyticsService,
     { record: jest.fn().mockResolvedValue(undefined) } as unknown as AuditService,
+    users,
   );
-  return { controller, credits, billing, subscriptions };
+  return { controller, credits, billing, subscriptions, users, entitlements };
 }
 
 const USER = '11111111-1111-4111-8111-111111111111';
@@ -234,5 +252,73 @@ describe('AdminMonetizationController — one user’s credits (A1-3)', () => {
 
     expect(credits.findWallet).toHaveBeenCalledWith(USER);
     expect(credits.getOrCreateWallet).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * **B8-1** (docs/48 §3.22a) — every per-account read used to answer a nullable shape for an id that
+ * belongs to nobody, so an operator who mistyped one character of a UUID was told the account was on
+ * free with an empty wallet. This converges on the answer B9 gave the three admin TRUST reads
+ * (§3.16, A2-4): `404 USER_NOT_FOUND`.
+ *
+ * The distinction that must survive: `null` still means "this account has no billing", which is a
+ * normal state and asserted by the three "answers null / empty" tests above. Only a **nonexistent
+ * account** 404s. Both halves are load-bearing, so both are tested.
+ */
+describe('AdminMonetizationController — an id that belongs to nobody (B8-1)', () => {
+  const reads: Array<[string, (c: AdminMonetizationController) => Promise<unknown>]> = [
+    ['users/:userId/subscription', (c) => c.userSubscription(USER)],
+    ['users/:userId/payments', (c) => c.userPayments(USER, query())],
+    ['users/:userId/credits', (c) => c.userCredits(USER)],
+    ['overrides/:userId', (c) => c.listOverrides(USER)],
+  ];
+
+  it.each(reads)('GET %s 404s USER_NOT_FOUND', async (_name, call) => {
+    const { controller } = build({ user: null });
+
+    await expect(call(controller)).rejects.toMatchObject({
+      code: ERROR_CODES.USER_NOT_FOUND,
+    });
+  });
+
+  it.each(reads)('GET %s reads no billing data at all for an unknown id', async (_name, call) => {
+    // The existence check comes FIRST, so a mistyped id cannot touch the monetization tables. Not a
+    // performance point: it is what keeps the 404 honest — a read that ran and then threw would have
+    // the operator's typo appear in whatever the services log.
+    const { controller, credits, billing, subscriptions, entitlements } = build({ user: null });
+
+    await expect(call(controller)).rejects.toBeDefined();
+
+    expect(credits.findWallet).not.toHaveBeenCalled();
+    expect(billing.listPayments).not.toHaveBeenCalled();
+    expect(subscriptions.findByUser).not.toHaveBeenCalled();
+    expect(entitlements.listOverrides).not.toHaveBeenCalled();
+  });
+
+  it('still answers null — not 404 — when the account exists and simply has no billing', async () => {
+    // The regression this fix could plausibly introduce, asserted directly rather than trusted.
+    const { controller } = build({ user: { id: USER }, subscription: null, wallet: null });
+
+    await expect(controller.userSubscription(USER)).resolves.toEqual({
+      userId: USER,
+      subscription: null,
+    });
+    await expect(controller.userCredits(USER)).resolves.toEqual({ userId: USER, credits: null });
+  });
+
+  it('checks existence through the exported UsersService, by id', async () => {
+    const { controller, users } = build();
+
+    await controller.userSubscription(USER);
+
+    expect(users.findById).toHaveBeenCalledWith(USER);
+  });
+
+  it('requires billing.manage on the overrides read, like its three siblings', () => {
+    // `overrides/:userId` predates B8 and was the fourth read with this defect; it had no coverage
+    // here at all, which is why its permission is pinned in the same pass that gave it the 404.
+    expect(permsOf(AdminMonetizationController.prototype.listOverrides)).toEqual([
+      PERMISSIONS.BillingManage,
+    ]);
   });
 });

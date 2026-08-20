@@ -25,6 +25,8 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { Permissions } from '../permissions/permissions.decorator';
 import { buildActor } from '../settings/settings.util';
+import { UserNotFoundException } from '../users/exceptions/users.exceptions';
+import { UsersService } from '../users/users.service';
 import { BillingService } from './billing.service';
 import { CreditService } from './credit.service';
 import {
@@ -76,7 +78,29 @@ export class AdminMonetizationController {
     private readonly config: MonetizationConfigService,
     private readonly analytics: MonetizationAnalyticsService,
     private readonly audit: AuditService,
+    private readonly users: UsersService,
   ) {}
+
+  /**
+   * Refuses an id that belongs to nobody, so a per-account read can answer "no billing" and
+   * "no such account" differently (docs/48 §3.22a, **B8-1**). Four reads need it, across four
+   * services, so it lives here as one injection rather than four — the same reason the audit
+   * `record()` helper below is a controller concern.
+   *
+   * **Reads only, and that bound is deliberate rather than sufficient.** `POST overrides` does NOT
+   * check existence and `entitlement_override` has no FK to `users` (entity `:16-20` declares an
+   * index on `[userId, feature]` and no relation), so granting against a mistyped id inserts a row
+   * that can never apply and that no screen can list — there is no cross-account override read.
+   * Recorded as **B8-2** in docs/48 §3.22a rather than fixed here: the three writes on this surface
+   * (`overrides`, `credits/adjust`, `payments/:id/refund`) each need their own answer — a wallet
+   * adjustment MATERIALISES a wallet and a refund resolves a payment, so "assert the user exists"
+   * is not one decision applied three times.
+   */
+  private async assertUserExists(userId: string): Promise<void> {
+    if ((await this.users.findById(userId)) === null) {
+      throw new UserNotFoundException();
+    }
+  }
 
   // ── Coupons ─────────────────────────────────────────────────────────────────
 
@@ -140,8 +164,11 @@ export class AdminMonetizationController {
   @Get('overrides/:userId')
   @Permissions(PERMISSIONS.BillingManage)
   @RateLimit('read')
-  @ApiOperation({ summary: "A user's active entitlement overrides." })
+  @ApiOperation({
+    summary: "A user's active entitlement overrides. Errors: USER_NOT_FOUND.",
+  })
   async listOverrides(@Param('userId', ParseUUIDPipe) userId: string) {
+    await this.assertUserExists(userId);
     return (await this.entitlements.listOverrides(userId)).map(toEntitlementOverrideDto);
   }
 
@@ -259,12 +286,14 @@ export class AdminMonetizationController {
   @ApiOperation({
     summary:
       "One user's subscription, or null when they are on free. " +
-      'No error code: a free account is a normal state, not a 404.',
+      'A free account is a normal state, not a 404 — but an id that belongs to nobody is: ' +
+      'Errors: USER_NOT_FOUND.',
   })
   @ApiOkResponse({ type: AdminUserSubscriptionDto })
   async userSubscription(
     @Param('userId', ParseUUIDPipe) userId: string,
   ): Promise<AdminUserSubscriptionDto> {
+    await this.assertUserExists(userId);
     const subscription = await this.subscriptionService.findByUser(userId);
     return { userId, subscription: subscription === null ? null : toSubscriptionDto(subscription) };
   }
@@ -273,12 +302,15 @@ export class AdminMonetizationController {
   @Permissions(PERMISSIONS.BillingManage)
   @RateLimit('read')
   @ApiOperation({
-    summary: "One user's payment history (cursor-paginated) — the ids a refund needs.",
+    summary:
+      "One user's payment history (cursor-paginated) — the ids a refund needs. " +
+      'Errors: USER_NOT_FOUND.',
   })
   async userPayments(
     @Param('userId', ParseUUIDPipe) userId: string,
     @Query() query: CursorQueryDto,
   ) {
+    await this.assertUserExists(userId);
     const limit = query.limit ?? DEFAULT_PAGE_LIMIT;
     const rows = await this.billing.listPayments(userId, decodeCursor(query.cursor), limit);
     return page(rows, limit, toPaymentDto);
@@ -290,10 +322,11 @@ export class AdminMonetizationController {
   @ApiOperation({
     summary:
       "One user's AI credit wallet, or null when they have never had one (effective balance 0). " +
-      'A pure read — it does not create a wallet.',
+      'A pure read — it does not create a wallet. Errors: USER_NOT_FOUND.',
   })
   @ApiOkResponse({ type: AdminUserCreditsDto })
   async userCredits(@Param('userId', ParseUUIDPipe) userId: string): Promise<AdminUserCreditsDto> {
+    await this.assertUserExists(userId);
     const [wallet, config] = await Promise.all([
       this.credits.findWallet(userId),
       this.config.getConfig(),

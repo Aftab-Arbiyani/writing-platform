@@ -9,7 +9,11 @@ usage are in no W-track row". Each is struck in place with the anchor that dispr
 genuinely open now lives in **ONE** place — **[§3.22, the open ledger](#322-the-open-ledger-verified-2026-08-20)**
 — and every entry there carries a `file:line` anchor and the date it was last verified. **A §3 heading
 is no longer admissible evidence that something is open**; the ledger is, and even the ledger asks you
-to re-verify the anchor before you schedule or report the row. Previously swept 2026-08-18 (after
+to re-verify the anchor before you schedule or report the row. **The ledger was reconciled the same
+day it was written:** **B8-1** and **§3.19** closed together (the four admin per-account reads now 404
+an id that belongs to nobody, and the catalogue entry makes that 404 legible), which opened **B8-2** —
+and which broke three browser specs plus one a11y scan that had been arranging their fixtures on the
+defect. Previously swept 2026-08-18 (after
 **B9** — A2's six findings all closed: the admin build gate is green again and **§6.15's false "typecheck clean" is struck in place and dated**, the Policy Engine reads `users.status`, strikes have a list and a revoke, the trust GET stops writing, and A2-3/A2-5 close as documented decisions. One new gap, **B9-1**; sweep **§6.17**. Earlier the same day, **A2** — the admin Trust surface, three slices; sweep **§6.16**, and six gaps recorded as **A2-1 … A2-6** in §3, all since closed by B9. Before that, 2026-08-17 after **B8** — the A1 enablers: all seven of A1's recorded gaps closed and their compensating copy deleted; one new gap, B8-1; sweep **§6.15**. Earlier the same day, **A1** — the admin monetization surface, three slices; sweep **§6.14**, and seven backend gaps recorded as **A1-1 … A1-7** in §3. Earlier the same day, **D3** — AI writing is now an enforced paid capability on the server and gated on both clients; the free-tier regression is LIVE, and §5.2 item 4 is rewritten. Sweep **§6.13**. Earlier the same day, **M7-3** — mobile's clap, sweep **§6.12**. Before those, 2026-08-10 after **W7c** —
 reader analytics + the privacy-prefs row, closing §2 rows **6 and 8** and leaving **onboarding as the
 only unowned §2 row**. Its sweep is **§6.10**, and it is the slice that shrank on contact with the code
@@ -2419,7 +2423,7 @@ dashboard's emptiness check, because an operator can need to confirm an account 
 not anyone on the install has ever subscribed. The limitation this shape carries is recorded as **B8-1**
 below rather than left to be discovered.
 
-### B8-1 · **low** · **OPEN — ledger §3.22a** · an admin per-account read cannot tell an unknown user from one with no data (opened 2026-08-17, during B8)
+### B8-1 · ~~**low**~~ · **CLOSED 2026-08-20** · an admin per-account read cannot tell an unknown user from one with no data (opened 2026-08-17, during B8)
 
 `GET admin/monetization/users/:userId/subscription` answers `{ subscription: null }` for an account on
 free AND for a user id that does not exist. `…/credits` answers `{ credits: null }` for both.
@@ -2454,6 +2458,63 @@ a non-existent id reads the same way and to confirm it on the Users screen.
 > (`UsersModule` imports only `TaxonomyModule`), which is smaller than this entry assumed — the reason
 > to defer is now the four response contracts and the copy that depends on them, not the dependency.
 > See [§6.17](#617-b9s-sweep-2026-08-18).
+
+> **CLOSED 2026-08-20 — it adopted the 404, exactly as the note above said it should.** All four reads
+> now refuse an id that belongs to nobody with `404 USER_NOT_FOUND`:
+> `users/:userId/subscription`, `users/:userId/payments`, `users/:userId/credits`, and
+> `overrides/:userId` — the fourth, which predates B8 and had no coverage on this surface at all.
+>
+> **The dependency cost what the note predicted.** One `UsersModule` import in
+> `monetization.module.ts`, no cycle, through the exported `UsersService` so the
+> no-cross-module-repository rule holds. The check is one private `assertUserExists` on the controller
+> rather than four service-level copies, because four reads across four services need one injection,
+> not four.
+>
+> **What did NOT change, and is now pinned in both directions:** `null` still means "this account has
+> no billing", which is the platform's commonest state. A free account is not a 404; only a nonexistent
+> one is. The two halves are separate tests, because the plausible regression here is turning every
+> free account into an error.
+>
+> **The response contracts the note called the real reason to defer turned out not to be one.** No DTO
+> shape changed: the nullable stays for "exists, no billing", and the 404 is an added error code, so
+> `AdminUserSubscriptionDto`/`AdminUserCreditsDto` and their `api-types` mirrors are untouched. It was
+> the **copy** that carried the cost, and it went the other way — the compensating sentence on the
+> free-plan card was **deleted** rather than written (`account-subscription.tsx`), and its spec now
+> asserts the sentence's ABSENCE.
+>
+> **Three browser specs were arranging their fixtures on this defect** and are fixed with it: the
+> subscription lookup, the credit-balance read and the refund payment picker each typed a hardcoded
+> all-zeros UUID and asserted the calm empty state. They were passing _because_ a nonexistent id
+> answered like a real account — proving the defect, not the behaviour. Each now creates a real
+> verified user, and the a11y scan of that card does too. The unknown id gets its own spec asserting
+> the refusal, mirroring `trust.spec.ts`.
+>
+> Closed together with **§3.19** (the catalogue entry that makes the 404 legible) — a 404 an operator
+> reads as "something went wrong" is not closed. **Opened by this fix: [B8-2](#b8-2--low--open--ledger-322a--granting-an-override-to-a-nonexistent-id-inserts-a-row-that-can-never-apply-opened-2026-08-20).**
+> Backend + admin + e2e; 9 new backend assertions, verified by removing the guard and watching all
+> nine fail.
+
+### B8-2 · **low** · **OPEN — ledger §3.22a** · granting an override to a nonexistent id inserts a row that can never apply (opened 2026-08-20)
+
+Found while closing B8-1, by asking the question that entry's fix does not answer: the READS now refuse
+an id that belongs to nobody, and `POST overrides` still does not.
+
+`entitlement-override.entity.ts:16-20` declares `@Index(['userId', 'feature'])` and **no relation to
+`users`** — no FK, no cascade. So a grant against a mistyped id inserts a row that (a) can never be
+consulted, because entitlement resolution starts from a real authenticated user, and (b) **no screen
+can list**, because `GET overrides/:userId` is the only read and there is no cross-account override
+route (`entitlements-page.tsx:20` says so in its own docblock). The operator sees a success toast.
+
+**Not fixed with B8-1, deliberately.** The helper is right there and the one-line temptation is real,
+but the three writes on this surface do not share an answer: `credits/adjust` **materialises** a wallet
+(so "does this user exist" is a different question from "should this write create state"), and
+`payments/:id/refund` resolves a payment that already carries its own user. Applying one rule to three
+writes without deciding each is how a fix becomes a second defect — and it would also want the FK
+question answered, which is a migration and therefore not a passing edit.
+
+**Severity is low and stays low:** the row is inert, not dangerous. Nothing reads it, nothing bills on
+it, and it cannot grant access to an account that does not exist. The cost is an operator who believes
+a grant landed.
 
 ## 3.16 A2 pre-flight + build — the sanction map, and five paths to one word (2026-08-18)
 
@@ -2928,7 +2989,7 @@ as "fails on **WebKit only**, reproducibly at `--workers=1` — the Edit-user mo
 row menu's 'Edit user'". Same symptom, same component; both qualifiers are wrong. That note is corrected
 again, now to say it is closed.
 
-### 3.19 · **low** · **OPEN — ledger §3.22a** · the admin error catalogue has no `USER_NOT_FOUND`, so B9's 404 reads as "something went wrong"
+### 3.19 · ~~**low**~~ · **CLOSED 2026-08-20 (with B8-1)** · the admin error catalogue has no `USER_NOT_FOUND`, so B9's 404 reads as "something went wrong"
 
 Found while fixing a spec that asserted invented copy. B9 made the three admin trust reads answer
 404 `USER_NOT_FOUND` for an id belonging to nobody (§3.16, A2-4), and **that works**. But `TrustPanel`
@@ -2940,6 +3001,19 @@ So the operator who mistypes one character of a UUID is told the screen is broke
 account does not exist, which is most of the value A2-4 was closed for. The fix is one catalogue entry;
 it is **not** made here because changing product copy inside a test-fixing commit is exactly the
 smuggling this row was told not to do. The spec now asserts the fallback the app really renders.
+
+> **CLOSED 2026-08-20, in a row of its own — with B8-1, which is the row that earned it.** One entry,
+> as predicted: `USER_NOT_FOUND: 'No account has that ID. Check it on the Users screen.'` in
+> `admin/src/lib/error-messages.ts`, beside the generic `NOT_FOUND` rather than folded into it — the
+> code is almost always a mistyped UUID, so the message can name the cause AND the next action, which
+> a generic not-found cannot.
+>
+> It closes here rather than earlier because B8-1 made it **four surfaces' worth of value instead of
+> one**: the three admin trust reads (B9) and now the four monetization per-account reads all answer
+> this code. `trust.spec.ts`'s assertion moves with it, and its comment keeps all three versions of
+> what it has expected — `/No such user/i` (invented copy, wrong), the generic fallback (real, but the
+> defect), and now the catalogue line — because that progression is the record of why guessing at copy
+> in a spec is a defect and not a detail.
 
 ---
 
@@ -3125,6 +3199,17 @@ something that runs the app:
 
 ## 3.22 The open ledger (verified 2026-08-20)
 
+> **First reconciliation, 2026-08-20, same day it was written.** **B8-1** and **§3.19** are closed —
+> the four admin per-account reads 404 an id that belongs to nobody, and the catalogue entry makes that
+> 404 legible — so their lines are gone from 3.22a and their §3 diagnoses are struck in place, which is
+> rule 3 exercised rather than described. The fix opened **B8-2** (a grant against a nonexistent id
+> still inserts an inert row), and it is here with an anchor instead of in a commit message.
+>
+> Worth naming, because it is the argument for the ledger: closing B8-1 broke **three browser specs
+> and one a11y scan** that were arranging their fixtures on the defect — they typed a nonexistent UUID
+> and asserted the calm empty state, so they passed _because_ the read could not tell nobody from a
+> real account. Fixing the code without them would have read as a regression in the suite.
+
 **This is the only admissible answer to "what is still open?".** Everything above it is a _diagnosis_
 — kept for its reasoning, and unreliable as a status, because a §3 heading is written once and the code
 moves afterwards. Twice now a pass has scheduled findings that were already fixed (the 2026-08-19
@@ -3149,17 +3234,16 @@ them (baseline re-mint, five call sites, a measurement loop) is the actual cost.
 
 ### 3.22a Product defects — a user or an operator can hit these
 
-| ID         | Sev            | What                                                                                              | Anchor (verified 2026-08-20)                                                                                                                                  | Size                                                                  |
-| ---------- | -------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| **W8-5**   | **medium**     | every hovered `variant="primary"` button is white-on-`#ab6846` = **4.37:1**, under AA             | `packages/ui/src/theme/antd-theme.ts:113` pins `defaultHoverColor` only; `colorPrimaryHover` is still AntD's derived                                          | **1 d**                                                               |
-| **C-15**   | **medium**     | the web suggestion composer's hand-typed offset now **409s** against the offset-exact check       | `frontend/src/features/collaboration/components/suggestion-composer.tsx:35,69,93` ("Starts at character")                                                     | **1.5–2 d**                                                           |
-| **B9-1**   | **medium**     | a failed suspend is unrecoverable — the retry throws before revocation, leaving sessions live     | `backend/src/modules/users/users.service.ts:150-152` (`before === to` throws); 5 call sites, §3.17                                                            | **1 d**                                                               |
-| **B8-1**   | **low→medium** | four admin monetization reads answer a nullable shape for an id that belongs to nobody            | `backend/src/modules/monetization/admin-monetization.controller.ts:269,303`. **Decision already recorded: adopt trust's 404**                                 | **0.5 d**                                                             |
-| **§3.19**  | **low**        | that 404 renders as "Something went wrong" — the catalogue has no `USER_NOT_FOUND`                | `admin/src/lib/error-messages.ts` (absent). **Do this in the same row as B8-1**                                                                               | _(in B8-1)_                                                           |
-| **AF5-cs** | **medium**     | mobile drops `clientSecret`, so a provider path returning a secret and no URL stalls on "success" | `CheckoutDto` has it (`monetization-response.dto.ts:24-28`); `qalam-mobile/lib/features/monetization/domain/entities/billing.dart:115,126` reads two of three | **1 h** (read + honest refusal; the payment sheet is its own project) |
-| **T-4**    | **low**        | `defaultActiveColor` derives to **3.46:1** in dark mode while the pointer is held                 | `packages/ui/src/theme/antd-theme.ts:113` — one line beside W8-5's fix                                                                                        | _(in W8-5)_                                                           |
-| **T-5**    | **low**        | two stale copies of the chart palette outside the declared mirror list                            | `frontend/src/features/analytics/lib/chart-options.ts:32,69`                                                                                                  | **30 m**                                                              |
-| **T-10**   | **low**        | every `QButton` is 44 px, so Android's 48 px tap-target guideline fails app-wide                  | `qalam-mobile/lib/shared/widgets/buttons/q_button.dart:58` — `math.max(_visualHeight, 44)`                                                                    | **0.5–1 d** (height change on every screen)                           |
+| ID         | Sev        | What                                                                                              | Anchor (verified 2026-08-20)                                                                                                                                  | Size                                                                  |
+| ---------- | ---------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| **W8-5**   | **medium** | every hovered `variant="primary"` button is white-on-`#ab6846` = **4.37:1**, under AA             | `packages/ui/src/theme/antd-theme.ts:113` pins `defaultHoverColor` only; `colorPrimaryHover` is still AntD's derived                                          | **1 d**                                                               |
+| **C-15**   | **medium** | the web suggestion composer's hand-typed offset now **409s** against the offset-exact check       | `frontend/src/features/collaboration/components/suggestion-composer.tsx:35,69,93` ("Starts at character")                                                     | **1.5–2 d**                                                           |
+| **B9-1**   | **medium** | a failed suspend is unrecoverable — the retry throws before revocation, leaving sessions live     | `backend/src/modules/users/users.service.ts:150-152` (`before === to` throws); 5 call sites, §3.17                                                            | **1 d**                                                               |
+| **B8-2**   | **low**    | granting an override to a nonexistent id inserts a row nothing can read and no screen can list    | `backend/src/modules/monetization/entities/entitlement-override.entity.ts:16-20` — index, no FK, no relation. Opened by B8-1's fix                            | **0.5 d** (three writes, one FK question — not one rule three times)  |
+| **AF5-cs** | **medium** | mobile drops `clientSecret`, so a provider path returning a secret and no URL stalls on "success" | `CheckoutDto` has it (`monetization-response.dto.ts:24-28`); `qalam-mobile/lib/features/monetization/domain/entities/billing.dart:115,126` reads two of three | **1 h** (read + honest refusal; the payment sheet is its own project) |
+| **T-4**    | **low**    | `defaultActiveColor` derives to **3.46:1** in dark mode while the pointer is held                 | `packages/ui/src/theme/antd-theme.ts:113` — one line beside W8-5's fix                                                                                        | _(in W8-5)_                                                           |
+| **T-5**    | **low**    | two stale copies of the chart palette outside the declared mirror list                            | `frontend/src/features/analytics/lib/chart-options.ts:32,69`                                                                                                  | **30 m**                                                              |
+| **T-10**   | **low**    | every `QButton` is 44 px, so Android's 48 px tap-target guideline fails app-wide                  | `qalam-mobile/lib/shared/widgets/buttons/q_button.dart:58` — `math.max(_visualHeight, 44)`                                                                    | **0.5–1 d** (height change on every screen)                           |
 
 ### 3.22b Contract + operability honesty — no user-visible break, real cost to the next reader
 

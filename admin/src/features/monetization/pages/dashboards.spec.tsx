@@ -291,8 +291,11 @@ describe('SubscriptionsDashboardPage', () => {
 
     expect(await screen.findByText('Free plan')).toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-    // And it says what a null cannot distinguish, rather than letting a typo read as a free account.
-    expect(screen.getByText(/does not exist reads the same way/i)).toBeInTheDocument();
+    // The compensating sentence is GONE, and its absence is asserted rather than merely deleted
+    // (B8-1 closed, docs/48 §3.22a): the read now 404s an id that belongs to nobody, so a null means
+    // "this account is on free" and nothing else. Copy about an ambiguity that no longer exists would
+    // send an operator to re-check an ID the server already rejected.
+    expect(screen.queryByText(/does not exist reads the same way/i)).not.toBeInTheDocument();
   });
 
   it('offers the lookup even on an install with no subscriptions at all', async () => {

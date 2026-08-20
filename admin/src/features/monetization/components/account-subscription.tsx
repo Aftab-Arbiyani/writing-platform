@@ -13,9 +13,11 @@ import type { AdminUserSubscription } from '../types/monetization.types';
  * same weight, as a paying account's detail — no warning colour, no alert role, nothing that would
  * send an operator looking for a problem that is not there.
  *
- * It also says what a null CANNOT distinguish: a mistyped id looks exactly like a free account,
- * because the monetization surface has no user table to check the id against (docs/48 §3, B8-1).
- * That sentence describes a live limit of the contract, not a gap this row left open.
+ * **The compensating sentence is gone (B8-1 closed).** This card used to add "a user ID that does not
+ * exist reads the same way… confirm the ID on the Users screen", because the four admin per-account
+ * reads answered a nullable shape for an id belonging to nobody. They now `404 USER_NOT_FOUND`, so a
+ * null here means exactly one thing — this account is on free — and copy explaining an ambiguity that
+ * no longer exists would send an operator to check something the server already checked.
  */
 export interface AccountSubscriptionProps {
   result: AdminUserSubscription;
@@ -31,10 +33,6 @@ export function AccountSubscription({ result }: AccountSubscriptionProps): React
         <p className="text-sm text-ink-secondary">
           This account has no subscription record, which is what the free plan looks like &mdash;
           most accounts are here. Its premium access, if any, comes from an entitlement override.
-        </p>
-        <p className="text-xs text-ink-muted">
-          A user ID that does not exist reads the same way: billing has no user directory to check
-          it against, so confirm the ID on the Users screen if you expected a subscription.
         </p>
       </QCard>
     );

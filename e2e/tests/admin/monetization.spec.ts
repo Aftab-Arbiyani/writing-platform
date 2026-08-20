@@ -126,27 +126,52 @@ test.describe('@phase4 admin monetization — A1b, the money actions', () => {
 
   test('the credit form reads the account’s balance before anything is changed', async ({
     page,
+    api,
+    data,
   }) => {
-    // B8's A1-3. A well-formed UUID matching no account answers `credits: null`, which is a real
+    // B8's A1-3. An account that has never had a wallet answers `credits: null`, which is a real
     // balance of zero rather than an error — the screen has to say so calmly, and the read must not
-    // create a wallet for an id that was typed by mistake.
+    // create a wallet for it.
+    //
+    // **Arranges a real account (B8-1).** This used to type a hardcoded all-zeros UUID, which named
+    // nobody; the read answered the same nullable shape either way, so the spec could not tell the
+    // two apart and neither could an operator. The read 404s an unknown id now, so "no wallet yet"
+    // is arranged the only way it means anything: a real user who has never been granted credits.
+    const target = await api.createVerifiedUser({
+      email: data.email(),
+      username: data.username(),
+      password: data.password(),
+    });
+
     const monetization = new MonetizationPage(page);
     await monetization.goto(MONETIZATION_ROUTES[3]!);
 
-    await page.getByLabel('User ID').first().fill('00000000-0000-4000-8000-000000000000');
+    await page.getByLabel('User ID').first().fill(target.id);
 
     await expect(page.getByText(/has no wallet yet/i)).toBeVisible({ timeout: 15_000 });
     await monetization.expectNoErrorPanel();
   });
 
-  test('a credit DEDUCTION confirms with the balance it actually read', async ({ page }) => {
+  test('a credit DEDUCTION confirms with the balance it actually read', async ({
+    page,
+    api,
+    data,
+  }) => {
+    // A real account, for the same reason as the balance test above (B8-1): the projected copy is
+    // read off a successful balance read, and an unknown id no longer produces one.
+    const target = await api.createVerifiedUser({
+      email: data.email(),
+      username: data.username(),
+      password: data.password(),
+    });
+
     const monetization = new MonetizationPage(page);
     await monetization.goto(MONETIZATION_ROUTES[3]!);
 
     // Scoped to the credit card rather than `.first()`: the refund card beside it has its own
     // "User ID" and an "Amount (optional)", so both labels are ambiguous page-wide.
     const creditForm = monetization.creditForm;
-    await creditForm.getByLabel('User ID').fill('00000000-0000-4000-8000-000000000000');
+    await creditForm.getByLabel('User ID').fill(target.id);
     // Wait for the balance: until it lands the form cannot project, and asserting the projected
     // copy before the read settles would be asserting the fallback.
     await expect(creditForm.getByText(/has no wallet yet/i)).toBeVisible({ timeout: 15_000 });
@@ -163,13 +188,26 @@ test.describe('@phase4 admin monetization — A1b, the money actions', () => {
 
   test('the refund form lists the account’s payments instead of demanding an ID', async ({
     page,
+    api,
+    data,
   }) => {
     // B8's A1-5. An account with no charges answers an empty page, not an error — and the picker
-    // says so, which is the state a mistyped id lands in.
+    // says so.
+    //
+    // The sentence "which is the state a mistyped id lands in" used to end that comment and was the
+    // defect talking (B8-1): a mistyped id answered an empty page too, so the picker told an operator
+    // the same thing about a real account and about nobody. It 404s now, and this arranges a real
+    // account with no charges — which is what the test was always trying to describe.
+    const target = await api.createVerifiedUser({
+      email: data.email(),
+      username: data.username(),
+      password: data.password(),
+    });
+
     const monetization = new MonetizationPage(page);
     await monetization.goto(MONETIZATION_ROUTES[3]!);
 
-    await page.getByLabel('User ID').last().fill('00000000-0000-4000-8000-000000000000');
+    await page.getByLabel('User ID').last().fill(target.id);
 
     await expect(page.getByText('No payments on this account')).toBeVisible({ timeout: 15_000 });
     await monetization.expectNoErrorPanel();
@@ -257,15 +295,26 @@ test.describe('@phase4 admin monetization — A1c, the dashboards', () => {
     }
   });
 
-  test('the subscriptions dashboard looks up ONE account', async ({ page }) => {
+  test('the subscriptions dashboard looks up ONE account', async ({ page, api, data }) => {
     // A1's premise, closed by B8 (A1-7). Unconditional, unlike the sentence it replaces: the lookup
     // sits outside the emptiness check, because an operator can need to confirm an account is on
     // free whether or not anyone on the install has ever subscribed.
+    //
+    // **Arranges a REAL account** (it used to fill a hardcoded all-zeros UUID). That id belongs to
+    // nobody, and until B8-1 closed the read answered it with the free-plan card — so this spec was
+    // passing on the defect: it proved "a nonexistent id renders as free", which is the thing that
+    // was wrong. A free account is now the only thing that renders this card.
+    const target = await api.createVerifiedUser({
+      email: data.email(),
+      username: data.username(),
+      password: data.password(),
+    });
+
     const monetization = new MonetizationPage(page);
     await monetization.goto(MONETIZATION_ROUTES[5]!);
 
     await expect(page.getByText('Look up one account')).toBeVisible();
-    await page.getByLabel('User ID').fill('00000000-0000-4000-8000-000000000000');
+    await page.getByLabel('User ID').fill(target.id);
 
     // No subscription row → the free-plan card, which is a statement and not an error. This is the
     // platform's commonest account state and it must never render as a failure.
@@ -275,6 +324,29 @@ test.describe('@phase4 admin monetization — A1c, the dashboards', () => {
     await expect(page.getByRole('heading', { name: 'Free plan' })).toBeVisible({ timeout: 15_000 });
     await expect(page.getByRole('alert')).toHaveCount(0);
     await monetization.expectNoErrorPanel();
+  });
+
+  test('an id that belongs to nobody is a not-found, not a free account (B8-1)', async ({
+    page,
+  }) => {
+    // The other half of the row, and the reason the spec above had to change. All four admin
+    // per-account reads now 404 `USER_NOT_FOUND`, converging on what the trust reads already did
+    // (§3.16 A2-4) — two admin surfaces answering "does this id exist?" two different ways was worse
+    // than either answer alone.
+    const monetization = new MonetizationPage(page);
+    await monetization.goto(MONETIZATION_ROUTES[5]!);
+
+    await page.getByLabel('User ID').fill('00000000-0000-4000-8000-000000000000');
+
+    // The operator is told what is actually wrong — the catalogue entry added with this row
+    // (§3.19). Before it, this rendered "Something went wrong. Please try again.", which reads as a
+    // broken screen rather than a mistyped id.
+    await expect(
+      page.getByText('No account has that ID. Check it on the Users screen.'),
+    ).toBeVisible({ timeout: 15_000 });
+    // And it does NOT render as an account on free — the compensating copy is gone with the ambiguity.
+    await expect(page.getByRole('heading', { name: 'Free plan' })).toHaveCount(0);
+    await expect(page.getByText(/does not exist reads the same way/i)).toHaveCount(0);
   });
 });
 

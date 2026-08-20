@@ -175,13 +175,27 @@ test.describe('@phase5 @a11y admin accessibility (authenticated)', () => {
     await expectNoSeriousA11yViolations(page, { label: 'admin /ai-settings/search-analytics' });
   });
 
-  test('the subscription lookup has no critical/serious a11y violations', async ({ page }) => {
+  test('the subscription lookup has no critical/serious a11y violations', async ({
+    page,
+    api,
+    data,
+  }) => {
     // Scanned WITH a result on screen, not at rest: the lookup's whole point is the card it renders,
-    // and an empty search box would scan none of it. A well-formed UUID matching no account resolves
-    // to the free-plan card, which is deterministic on any database.
+    // and an empty search box would scan none of it.
+    //
+    // The arrangement changed with **B8-1**: a well-formed UUID matching no account used to resolve
+    // to the free-plan card, and this scan relied on that. It now 404s, so the card is arranged the
+    // only way it can be honestly — a real account with no subscription, which every freshly created
+    // user is. Still deterministic on any database, and now for the right reason.
+    const target = await api.createVerifiedUser({
+      email: data.email(),
+      username: data.username(),
+      password: data.password(),
+    });
+
     const monetization = new MonetizationPage(page);
     await monetization.goto(MONETIZATION_ROUTES[5]!);
-    await page.getByLabel('User ID').fill('00000000-0000-4000-8000-000000000000');
+    await page.getByLabel('User ID').fill(target.id);
     // The card's HEADING. `getByText('Free plan')` also matched the card's own explanation ("This
     // account has no subscription record, which is the free plan…"), so the scan's readiness wait was
     // ambiguous and threw before axe ever ran.

@@ -19,6 +19,14 @@ const MESSAGES: Record<string, string> = {
   AUTH_PERMISSION_DENIED: 'You don’t have permission to do that.',
   // Requests
   NOT_FOUND: 'We couldn’t find what you were looking for.',
+  /*
+   * Its own entry, not the generic NOT_FOUND (docs/48 §3.22a, §3.19). The admin trust reads and the
+   * four admin monetization per-account reads answer this for an id that belongs to nobody, and it is
+   * almost always a mistyped UUID — so the message names the cause and the next action. Without it an
+   * operator who dropped one character was told the screen was broken, three times over, which is
+   * most of the value those 404s were added for.
+   */
+  USER_NOT_FOUND: 'No account has that ID. Check it on the Users screen.',
   VALIDATION_FAILED: 'Some fields need attention.',
   CONFLICT: 'That change conflicts with the current state. Refresh and try again.',
   RATE_LIMITED: 'Too many attempts. Please wait a moment and try again.',

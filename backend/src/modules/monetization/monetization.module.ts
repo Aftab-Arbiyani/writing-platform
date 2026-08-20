@@ -6,6 +6,7 @@ import { AuditModule } from '../audit/audit.module';
 import { AuthModule } from '../auth/auth.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { SettingsModule } from '../settings/settings.module';
+import { UsersModule } from '../users/users.module';
 import { AdminMonetizationController } from './admin-monetization.controller';
 import { AiUsageMeterService } from './ai-usage-meter.service';
 import { BillingWebhookController } from './billing-webhook.controller';
@@ -82,6 +83,20 @@ import { UsageService } from './usage.service';
     SettingsModule,
     AuditModule,
     NotificationsModule,
+    /*
+     * The user directory, for one purpose only: the four admin per-account reads must be able to
+     * tell "this account has no billing" from "this id belongs to nobody" (docs/48 §3.22a, B8-1).
+     * Before this, both answered a nullable shape, so an operator who mistyped one character of a
+     * UUID was told the account was on free with an empty wallet — a plausible answer to a question
+     * nobody asked. The three admin TRUST reads already 404 `USER_NOT_FOUND` for the same case
+     * (§3.16, A2-4), and two admin surfaces answering "does this id exist?" two different ways is
+     * worse than either answer alone, so this converges on the 404.
+     *
+     * Through the exported `UsersService`, never `UsersRepository` — the no-cross-module-repository
+     * rule (docs/16 §3.1) holds. No cycle: `UsersModule` imports only TypeORM + `TaxonomyModule`,
+     * which is what made the same import cheap for trust.
+     */
+    UsersModule,
   ],
   controllers: [MonetizationController, BillingWebhookController, AdminMonetizationController],
   providers: [
