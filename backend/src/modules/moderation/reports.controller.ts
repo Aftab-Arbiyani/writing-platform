@@ -29,7 +29,23 @@ export class ReportsController {
 
   @Post()
   @RateLimit('write')
-  @ApiOperation({ summary: 'Report a piece, comment, response, or user.' })
+  /*
+   * The refusals are named because a client written from the contract alone could not discover them
+   * (**W7b-1**, docs/48 §3.15). W7b's first browser run filed two of five report cases against the
+   * shared seeded writer's own piece, got the 422, and failed — and the dialog sat on a spinner,
+   * which is exactly how a real reader would meet it if the refusal were not surfaced. The tests were
+   * wrong, not the code; what was missing was any statement that the rule exists.
+   *
+   * All three `createReport` can raise, not just the one that bit: 422 `REPORT_SELF` (your own content
+   * or account), 404 `REPORT_TARGET_NOT_FOUND`, 409 `REPORT_DUPLICATE` (you already have an open
+   * report for this).
+   */
+  @ApiOperation({
+    summary:
+      'Report a piece, comment, response, or user. ' +
+      'Errors: REPORT_SELF (422 — you cannot report your own content or account), ' +
+      'REPORT_TARGET_NOT_FOUND (404), REPORT_DUPLICATE (409 — an open report already exists).',
+  })
   @ApiCreatedResponse({ type: ReportDto })
   create(
     @Body() body: CreateReportDto,

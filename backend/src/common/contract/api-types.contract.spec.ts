@@ -16,6 +16,8 @@ import {
   AiCompletionResponseDto,
   AiConfigResponseDto,
   AiConversationDetailDto,
+  AiConversationExportDto,
+  AiConversationExportMessageDto,
   AiConversationSummaryDto,
   AiFeatureFlagInfoDto,
   AiFeaturesResponseDto,
@@ -267,6 +269,14 @@ const MIRRORS: readonly Mirror[] = [
   { type: 'AiConversationDetail', dto: AiConversationDetailDto, direction: 'response' },
   { type: 'CreateAiConversationRequest', dto: CreateAiConversationDto, direction: 'request' },
   { type: 'UpdateAiConversationRequest', dto: UpdateAiConversationDto, direction: 'request' },
+  // The export payload's own shapes (W8-3 / W8-4). They were UNMIRRORED until the route was given a
+  // real response DTO on 2026-08-20 — the fix that entry's own excuse named.
+  { type: 'AiConversationExport', dto: AiConversationExportDto, direction: 'response' },
+  {
+    type: 'AiConversationExportMessage',
+    dto: AiConversationExportMessageDto,
+    direction: 'response',
+  },
   { type: 'AiCompletionMessage', dto: AiCompletionMessageDto, direction: 'request' },
   { type: 'AiCompletionRequest', dto: AiCompletionRequestDto, direction: 'request' },
   { type: 'AiCompletionResponse', dto: AiCompletionResponseDto, direction: 'response' },
@@ -338,15 +348,6 @@ const UNMIRRORED: Readonly<Record<string, string>> = {
     'Alias of `AiModelMetadata` from @qalam/shared, which `AiModelDto implements` — pinned by tsc, not here.',
   AiStreamEvent:
     'The SSE `data:` payload, not a body: it never passes a ValidationPipe and no DTO documents it.',
-
-  // `GET /ai/conversations/:id/export` returns `Promise<Record<string, unknown>>`
-  // (ai-conversations.controller.ts:131) and builds its payload inline in the service, so Swagger
-  // records nothing and there is no DTO to pin against. Recorded as docs/48 §3.12 W8-4; giving the
-  // route a real response DTO is the fix, and it is a backend row, not a guard change.
-  AiConversationExport:
-    'Export payload; the handler returns Record<string, unknown>, so no DTO documents it (docs/48 §3.12).',
-  AiConversationExportMessage:
-    'Nested in the export payload, which no DTO types field-by-field (docs/48 §3.12).',
 
   // AF4 grounding blocks: carried inside response DTOs as `@ApiProperty({ type: Object })`, so Swagger
   // records the containing property and not these fields. The backend counterpart is the interface set

@@ -9,6 +9,7 @@ import type { AiFeature, AiTokenUsage } from '@qalam/shared';
 
 import { decodeCursor, encodeCursor } from '../../../common/pagination/cursor.util';
 import { AiConversationNotFoundException } from '../ai.exceptions';
+import type { AiConversationExportDto } from '../dto/ai-response.dto';
 import type { ProviderMessage } from '../providers/provider.types';
 import { ConversationRepository } from './conversation.repository';
 import type { AiConversation } from './entities/ai-conversation.entity';
@@ -128,8 +129,15 @@ export class ConversationService {
     await this.repo.deleteWithMessages(id);
   }
 
-  /** A portable JSON export of a conversation (owner-scoped). */
-  async export(userId: string, id: string): Promise<Record<string, unknown>> {
+  /**
+   * A portable JSON export of a conversation (owner-scoped).
+   *
+   * Typed as `AiConversationExportDto` rather than `Record<string, unknown>` (W8-3 / W8-4): the shape
+   * used to live only in this method body, so Swagger recorded nothing and the §3.11 contract guard
+   * had to excuse the `@qalam/api-types` mirror as unpinnable. The message shape here is
+   * deliberately NOT `AiMessageDto` — see `AiConversationExportMessageDto` for why it stays that way.
+   */
+  async export(userId: string, id: string): Promise<AiConversationExportDto> {
     const { conversation, messages } = await this.getDetail(userId, id);
     return {
       id: conversation.id,

@@ -195,9 +195,12 @@ export interface UpdateAiConversationRequest {
 }
 
 /**
- * One message inside an export document. NOT `AiMessageDto`: the export route builds its own shape
- * (`conversation.service.ts:134-139`) with no `id` and token usage flattened to one nullable number
- * (docs/48 §3.12, W8-3).
+ * One message inside an export document. NOT `AiMessageDto`: the export publishes no `id` and
+ * flattens token usage to one nullable number (docs/48 §3.12, W8-3).
+ *
+ * That asymmetry is deliberate and now DECLARED — `AiConversationExportMessageDto` (2026-08-20) says
+ * why it is kept rather than repaired, and the §3.11 guard pins this interface against it. Until then
+ * the shape existed only inside a service method body and this mirror was excused as unpinnable.
  */
 export interface AiConversationExportMessage {
   role: AiMessageRole;
@@ -209,8 +212,9 @@ export interface AiConversationExportMessage {
 /**
  * `GET /ai/conversations/:id/export` — the portable JSON document.
  *
- * Hand-written from `conversation.service.ts:127-140` because the handler returns
- * `Promise<Record<string, unknown>>`, so there is no DTO for the §3.11 guard to pin this against.
+ * Was hand-written from the service body because the handler returned
+ * `Promise<Record<string, unknown>>`. It now mirrors `AiConversationExportDto` and is **pinned by the
+ * §3.11 guard** like every other response type here (W8-4, closed 2026-08-20).
  */
 export interface AiConversationExport {
   id: string;

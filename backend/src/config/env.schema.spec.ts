@@ -29,6 +29,34 @@ describe('validateEnv', () => {
     expect(validateEnv(baseEnv({ NODE_ENV: 'preview' })).NODE_ENV).toBe('preview');
   });
 
+  /*
+   * **AI-1** (docs/48 §3.8). Every other provider knob was declared — all three Stripe values,
+   * Apple's, Google Play's, each AI credential and base URL, and `AI_STUB_ENABLED` — and
+   * `PAYMENTS_MANUAL_ENABLED` was not, because W4 added it as a bare `process.env` read. This file is
+   * the project's fail-fast contract, so an undeclared var is a var this schema never sees.
+   */
+  it('declares the manual-payments gate, so a typo is a value it has seen (AI-1)', () => {
+    expect(validateEnv(baseEnv()).PAYMENTS_MANUAL_ENABLED).toBe('false');
+    expect(validateEnv(baseEnv({ PAYMENTS_MANUAL_ENABLED: 'true' })).PAYMENTS_MANUAL_ENABLED).toBe(
+      'true',
+    );
+    // The typo mode the entry was about: it lands as a value the schema returns, and the adapter's
+    // `=== 'true'` gate leaves payments refusing. Silent either way in behaviour — the difference is
+    // that a reader auditing what a deployment can switch on now finds it in the file whose job that
+    // is, and the validated env carries it.
+    expect(validateEnv(baseEnv({ PAYMENTS_MANUAL_ENABLED: 'ture' })).PAYMENTS_MANUAL_ENABLED).toBe(
+      'ture',
+    );
+  });
+
+  it('declares both intentionally-inert provider gates the same way', () => {
+    // The asymmetry AI-1 named: `AI_STUB_ENABLED` was declared "because declaring one's own new var
+    // is part of writing it" and its payments counterpart was not. Compared against each other rather
+    // than against literals, so the pair cannot drift apart again.
+    const env = validateEnv(baseEnv());
+    expect(env.PAYMENTS_MANUAL_ENABLED).toBe(env.AI_STUB_ENABLED);
+  });
+
   it('fails fast when DATABASE_URL is missing', () => {
     expect(() => validateEnv({})).toThrow(/DATABASE_URL/);
   });

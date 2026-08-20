@@ -15,7 +15,9 @@ an id that belongs to nobody, and the catalogue entry makes that 404 legible), w
 broke three browser specs plus one a11y scan that had been arranging their fixtures on the defect; then
 **W8-5 + T-4 + T-5**, the a11y/token row, which found a third unrecorded instance of the same
 derivation defect and left one line of owed verification (`AA-render`) rather than claiming a rendered
-scan it could not run. Previously swept 2026-08-18 (after
+scan it could not run; then **AI-1 + W7b-1 + W8-3**, the honesty cluster, which found that this
+sweep's own W8-4 note had been half wrong — it read the guard's _excused_ list as its _pinned_ list —
+and closed the real remaining half with a response DTO, opening **AI-4**. Previously swept 2026-08-18 (after
 **B9** — A2's six findings all closed: the admin build gate is green again and **§6.15's false "typecheck clean" is struck in place and dated**, the Policy Engine reads `users.status`, strikes have a list and a revoke, the trust GET stops writing, and A2-3/A2-5 close as documented decisions. One new gap, **B9-1**; sweep **§6.17**. Earlier the same day, **A2** — the admin Trust surface, three slices; sweep **§6.16**, and six gaps recorded as **A2-1 … A2-6** in §3, all since closed by B9. Before that, 2026-08-17 after **B8** — the A1 enablers: all seven of A1's recorded gaps closed and their compensating copy deleted; one new gap, B8-1; sweep **§6.15**. Earlier the same day, **A1** — the admin monetization surface, three slices; sweep **§6.14**, and seven backend gaps recorded as **A1-1 … A1-7** in §3. Earlier the same day, **D3** — AI writing is now an enforced paid capability on the server and gated on both clients; the free-tier regression is LIVE, and §5.2 item 4 is rewritten. Sweep **§6.13**. Earlier the same day, **M7-3** — mobile's clap, sweep **§6.12**. Before those, 2026-08-10 after **W7c** —
 reader analytics + the privacy-prefs row, closing §2 rows **6 and 8** and leaving **onboarding as the
 only unowned §2 row**. Its sweep is **§6.10**, and it is the slice that shrank on contact with the code
@@ -1347,7 +1349,7 @@ each is outside that row, and two of them are about keeping the AI and payments 
 is a decision rather than a repair. Two E2E-harness traps found the same day are recorded where they will
 be read — [e2e/06 §6 live-run notes 4 and 5](./e2e/06_PhasePlan.md).
 
-### AI-1 · **low** · **OPEN — ledger §3.22b** · `PAYMENTS_MANUAL_ENABLED` is undeclared in `env.schema.ts`, so its typo mode is silent
+### AI-1 · ~~**low**~~ · **CLOSED 2026-08-20** · `PAYMENTS_MANUAL_ENABLED` is undeclared in `env.schema.ts`, so its typo mode is silent
 
 `backend/src/config/env.schema.ts` declares every other provider knob — all three Stripe values, Apple's,
 Google Play's, and each AI credential + base URL — but **not** `PAYMENTS_MANUAL_ENABLED`, which W4 added
@@ -1360,6 +1362,47 @@ supposed to list exactly that.
 the two intentionally-inert providers described differently in the schema, which is the smaller wrong. Fix
 is one line plus a note in `19_DeploymentGuide.md`'s env table; not taken here because the payments module
 is not this row's scope.
+
+> **CLOSED 2026-08-20 — one line, and the second half of the prescription was stale.** The var is
+> declared beside the Stripe/Apple/Google block, defaulting to `'false'` and gated on exactly `'true'`
+> like `AI_STUB_ENABLED`, so the two intentionally-inert providers are now described the same way.
+> Two tests hold it: one for the default / `'true'` / typo path, one comparing the pair against **each
+> other** rather than against literals, so they cannot drift apart again. Verified by removing the
+> declaration — both fail.
+>
+> **The `19_DeploymentGuide.md` note was not made, because that table does not exist as described.**
+> 19 §3's table is "production-relevant knobs (Epic 12)" and lists no provider credential at all;
+> it points at `backend/.env.example` as "the full annotated list". Adding this one var to a table its
+> six siblings are absent from would have made the file read as though `manual` were the only payments
+> knob.
+>
+> **And that pointer is wrong, which is a finding of its own — [AI-4](#ai-4--low--open--ledger-322b--the-annotated-env-list-19-3-points-at-carries-no-ai-or-payments-knob-at-all-opened-2026-08-20).**
+
+### AI-4 · **low** · **OPEN — ledger §3.22b** · the annotated env list `19 §3` points at carries no AI or payments knob at all (opened 2026-08-20)
+
+Found while closing **AI-1**, by going to make the note that entry prescribed.
+
+[19 §3](./19_DeploymentGuide.md) says: "Every variable is Zod-validated at boot
+(`src/config/env.schema.ts`) — see `backend/.env.example` for the full annotated list." That file is 223
+lines and annotates a great deal — mail, queues, cron, the whole `PERF_*` and `OPS_*` surfaces. It
+contains **no AI provider credential and no payment provider credential**: `grep -E
+'STRIPE|APPLE|GOOGLE_PLAY|OPENAI|ANTHROPIC|AI_|PAYMENTS_'` finds only `PERF_CAP_AI_TOKENS_DAILY` and
+`OPS_COST_AI_PER_MTOK_USD`. Two Phase-2 subsystems, ~20 declared vars between them, absent from the
+file the deployment guide calls complete.
+
+**Why it is low and not medium:** `env.schema.ts` does declare them all (that is what made AI-1
+closable), and a blank credential is a designed state — the provider reports unconfigured and the
+subsystem stays inert. Nothing is broken. What is wrong is that the one artefact an operator is pointed
+to for "what can this deployment turn on" answers the question incompletely, and confidently.
+
+**Not fixed with AI-1 deliberately.** AI-1 was one line in the schema; this is a ~20-line documentation
+block spanning two subsystems, and it wants a decision about whether `.env.example` carries secret
+NAMES for provider credentials at all (it carries a blank `S3_SECRET_KEY` today, so the precedent says
+yes) — plus a check of whether 19 §3's table should grow a payments row rather than lean on the example
+file. Both are documentation decisions, and pretending they were part of a one-line schema fix is how a
+small row stops being reviewable.
+
+---
 
 ### AI-2 · **low** · **OPEN — ledger §3.22b** · a stack running an inert AI provider reports its AI as `inert`, which understates it
 
@@ -1962,7 +2005,7 @@ The archived row comes straight back out of the **default** list.
 > deliberately does not offer it — a client cannot implement it correctly against this query anyway.
 > Fixing it needs a status filter on the list, which is a backend change and a different row.
 
-### W8-3 · **low** · **OPEN — ledger §3.22b** · the same conversation publishes its messages in two different shapes
+### W8-3 · ~~**low**~~ · **CLOSED 2026-08-20 (declared, not aligned)** · the same conversation publishes its messages in two different shapes
 
 `GET /ai/conversations/:id` sends each message via `toMessageDto` (`ai.mappers.ts:11-24`) as
 `{id, role, content, usage: {inputTokens, outputTokens, totalTokens} | null, createdAt}`. `GET
@@ -1981,15 +2024,49 @@ No `id`, and token usage flattened to one nullable number. Mobile never notices 
 export as opaque `Json` (`ai_remote_data_source.dart:131-135`). Recorded so no client reuses `AiMessageDto`
 for the export payload — W8's web layer types the two separately.
 
+> **CLOSED 2026-08-20 — the asymmetry is KEPT and the accident is not.**
+>
+> The shape stays as it is. The export is a portable document a reader saves: a server-side message id
+> is noise in it, and `{inputTokens, outputTokens, totalTokens}` is more structure than the document
+> needs. `GET :id/export` has also shipped on both clients, so aligning it would break a payload in the
+> field to satisfy a symmetry nobody asked for.
+>
+> **What was actually wrong is that the second shape existed only inside a service method body.** The
+> route returned `Record<string, unknown>`, so Swagger recorded nothing, `@qalam/api-types` carried a
+> hand-written mirror of a method's internals, and the §3.11 guard had to excuse both types as
+> UNMIRRORED. It is now `AiConversationExportDto` + `AiConversationExportMessageDto`, whose class notes
+> say why the shape differs, and both are **pinned** by the guard — closing the other half of
+> **W8-4** with it.
+>
+> Three service tests pin the DTO against what the service actually builds, which a type cannot check:
+> the flattening and the absent `id`/`usage`, a **null** `totalTokens` carried through rather than
+> coerced to `0` (a user turn has no usage; a `0` would read as "measured, and free"), and ISO dates
+> on the envelope. "No client should reuse `AiMessageDto` here" is now a thing the code refuses rather
+> than a thing this register asked for.
+
 ### W8-4 · ~~**low**~~ · **CLOSED — verified in code 2026-08-20** · two conversation shapes sit outside the §3.11 guard
 
-> **Both holes are filled, and the entry never said so.** `packages/api-types/src/ai.ts:192` declares
-> `UpdateAiConversationRequest`, and `:202,215` declare `AiConversationExportMessage` +
-> `AiConversationExport` — the payload this entry said had "no DTO to pin". All three are inside the
-> §3.11 guard: `api-types.contract.spec.ts:269` pins the `PATCH` body to `UpdateAiConversationDto`, and
-> `:346-348` pin both export shapes. So the two places "where a fourth instance would appear" are now
-> the two places a fourth instance cannot appear. Closed by the archive row (§3.21) without a register
-> edit — the same omission that left W8-1 and W8-2 standing after their own fixes.
+> ~~**Both holes are filled, and the entry never said so.**~~ **HALF RIGHT, and corrected the same day
+> by the row that acted on it.** The `PATCH` hole was genuinely closed and unrecorded:
+> `packages/api-types/src/ai.ts` declares `UpdateAiConversationRequest`, and
+> `api-types.contract.spec.ts:269` pins it to `UpdateAiConversationDto`.
+>
+> **The export hole was NOT.** The claim that the guard "pins both export shapes" read the wrong list:
+> `AiConversationExport` and `AiConversationExportMessage` were in the guard's **UNMIRRORED** table —
+> _excused_ from comparison with a documented reason, which is the opposite of pinned. The guard's own
+> comment there said so: "giving the route a real response DTO is the fix, and it is a backend row, not
+> a guard change."
+>
+> **That is the mistake this ledger exists to prevent, made by the pass that built the ledger** — an
+> anchor read at a glance instead of followed. It is struck rather than deleted for the same reason
+> every other diagnosis here is.
+>
+> **NOW CLOSED, both halves (2026-08-20, with W8-3).** The export route has a real response DTO
+> (`AiConversationExportDto` + `AiConversationExportMessageDto`), the handler returns it instead of
+> `Record<string, unknown>`, Swagger records it, and both types moved out of UNMIRRORED into the pinned
+> pairs. The guard's own two meta-tests are what make that trustworthy: "accounts for every export in
+> the package" and "lists nothing it no longer needs to" both pass, so the DTOs match the api-types
+> mirrors field-for-field and no excuse was left behind. 74 assertions, up from 71.
 
 The guard added on 2026-08-05 pins `AiConversationSummary`, `AiConversationDetail`, `AiMessageDto`,
 `CreateAiConversationRequest`, `AiUsageWindowSummary` and `AiUsageResponse` to their DTOs
@@ -2338,7 +2415,7 @@ with a surface it does not have (W8-1 was the first). Both were caught by [§6 s
 — "do not trust a roadmap paraphrase" — which is now also "do not trust §2's own cells". A cell in
 this document is a claim like any other, and §6.4's re-sweep is what keeps it honest.
 
-### W7b-1 · **low** (contract, undocumented) · **OPEN — ledger §3.22b** · `POST /reports` refuses a self-report, and nothing said so
+### W7b-1 · ~~**low**~~ (contract, undocumented) · **CLOSED 2026-08-20** · `POST /reports` refuses a self-report, and nothing said so
 
 **What.** Reporting your own content or account is `422 REPORT_SELF` ("You cannot report your own
 content or account"). It is correct behaviour. It is also absent from `CreateReportDto`, from the
@@ -2354,6 +2431,14 @@ a real user would meet it if the refusal were not surfaced.
 with the reader's text intact, and a dedicated spec asserts that (`engagement.spec.ts`, "a
 self-report is refused, and the refusal is shown"). **Open** only as documentation — the
 `@ApiOperation` on `POST /reports` should name the 422, which is a backend edit and not W7b's.
+
+> **CLOSED 2026-08-20 — and it names all three, not just the one that bit.** `POST /reports` can raise
+> `REPORT_SELF` (422), `REPORT_TARGET_NOT_FOUND` (404) and `REPORT_DUPLICATE` (409, "you already have
+> an open report for this"), all from `createReport`. The entry asked for the 422 because that is the
+> one a browser run tripped over; a client written from the contract could not discover any of them, so
+> the summary now carries the set, in the `Errors: CODE.` form the monetization controllers already use.
+> The reasoning — a spinner is how a real reader meets an unsurfaced refusal — is kept in a comment
+> above the decorator, where the next person to add an error case will read it.
 
 ---
 
@@ -3304,6 +3389,23 @@ something that runs the app:
 > And the same fixture lesson as B8-1: **three places carried workarounds built on W8-5** — an E2E
 > fixture docblock, an a11y scan's arrangement, and a product decision about a tab style. Each stands on
 > a second reason, so each keeps its behaviour and loses only the justification now discharged.
+>
+> **Third reconciliation, same day — the 3.22b honesty cluster.** **AI-1**, **W7b-1** and **W8-3** are
+> closed and their lines are gone. Three things came out of it:
+>
+> - **W8-4 was only HALF closed, and the pass that wrote this ledger is what got it wrong.** Its
+>   closure note claimed the guard "pins both export shapes"; the line it cited was the guard's
+>   **UNMIRRORED** table — types _excused_ from comparison, which is the opposite of pinned, and whose
+>   own comment said the response DTO was still owed. Struck and corrected in place. An anchor read at
+>   a glance rather than followed is precisely the failure rule 2 is written against, so it is worth
+>   more here as a worked example than as a quiet fix.
+> - **W8-3 and W8-4's remaining half closed together**, because they were one defect: a payload shape
+>   that lived only inside a service method. It now has a real DTO, Swagger records it, and both types
+>   moved from UNMIRRORED into the pinned pairs (74 assertions, up from 71). The shape asymmetry is
+>   KEPT — it is right for a portable document, and it has shipped — but it is declared now.
+> - **AI-4 opened.** AI-1's prescription included "a note in `19_DeploymentGuide.md`'s env table"; that
+>   table lists no provider credential at all and points at `backend/.env.example`, which carries no AI
+>   or payments knob either. Filed with its anchor rather than absorbed into a one-line schema fix.
 
 **This is the only admissible answer to "what is still open?".** Everything above it is a _diagnosis_
 — kept for its reasoning, and unreliable as a status, because a §3 heading is written once and the code
@@ -3339,14 +3441,12 @@ them (baseline re-mint, five call sites, a measurement loop) is the actual cost.
 
 ### 3.22b Contract + operability honesty — no user-visible break, real cost to the next reader
 
-| ID        | Sev     | What                                                                                                                           | Anchor (verified 2026-08-20)                                                                                                                 | Size                                                                              |
-| --------- | ------- | ------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| **AI-1**  | **low** | `PAYMENTS_MANUAL_ENABLED` is undeclared, so its typo mode is silent                                                            | `backend/src/config/env.schema.ts` declares `AI_STUB_ENABLED:167` and not this                                                               | **30 m**                                                                          |
-| **AI-2**  | **low** | both health indicators call a flag-gated provider `inert`, understating a working subsystem                                    | `backend/src/health/indicators/ai.health-indicator.ts:26-30`; `payment.health-indicator.ts:29` ignores `manual`                              | **1 d** (needs the `live`/`test`/`inert` vocabulary, both indicators, or neither) |
-| **AI-3**  | **low** | `IMPLEMENTED_AI_PROVIDERS` / `IMPLEMENTED_PAYMENT_PROVIDERS` gate nothing, and the admin picker offers 6 adapterless providers | `packages/shared/src/ai.ts:46`, `monetization.ts:246` (zero consumers); `admin/src/features/ai/pages/ai-config-page.tsx`                     | _(with AI-2)_                                                                     |
-| **W7b-1** | **low** | `POST /reports` refuses a self-report with `422 REPORT_SELF` and the contract never says so                                    | `backend/src/modules/moderation/reports.controller.ts:32` — summary names no error                                                           | **15 m**                                                                          |
-| **W8-3**  | **low** | the export publishes a second message shape (no `id`, flat `totalTokens`)                                                      | `backend/src/modules/ai/conversations/conversation.service.ts:141-146`. Now typed + pinned separately (W8-4), so this is a wart, not a break | **15 m** to close as deliberate, **1 h** to align                                 |
-| **A3-4**  | **low** | `AsyncSection` is at **five** copies, ~40 duplicated lines each                                                                | `admin/src/features/{ai,monetization,operations,security,system}/components/async-section.tsx`                                               | **0.5 d**                                                                         |
+| ID       | Sev     | What                                                                                                                           | Anchor (verified 2026-08-20)                                                                                             | Size                                                                              |
+| -------- | ------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------- |
+| **AI-4** | **low** | the annotated env list `19 §3` points at (`backend/.env.example`) carries no AI or payments knob at all                        | `backend/.env.example` — 223 lines, zero of `STRIPE                                                                      | APPLE                                                                             | GOOGLE_PLAY | OPENAI | ANTHROPIC | AI_ | PAYMENTS_`. Opened by AI-1's fix | **1 h** (a doc block, plus one decision about carrying credential names) |
+| **AI-2** | **low** | both health indicators call a flag-gated provider `inert`, understating a working subsystem                                    | `backend/src/health/indicators/ai.health-indicator.ts:26-30`; `payment.health-indicator.ts:29` ignores `manual`          | **1 d** (needs the `live`/`test`/`inert` vocabulary, both indicators, or neither) |
+| **AI-3** | **low** | `IMPLEMENTED_AI_PROVIDERS` / `IMPLEMENTED_PAYMENT_PROVIDERS` gate nothing, and the admin picker offers 6 adapterless providers | `packages/shared/src/ai.ts:46`, `monetization.ts:246` (zero consumers); `admin/src/features/ai/pages/ai-config-page.tsx` | _(with AI-2)_                                                                     |
+| **A3-4** | **low** | `AsyncSection` is at **five** copies, ~40 duplicated lines each                                                                | `admin/src/features/{ai,monetization,operations,security,system}/components/async-section.tsx`                           | **0.5 d**                                                                         |
 
 ### 3.22c Harness — the suite's own honesty
 

@@ -32,7 +32,11 @@ import {
   CreateAiConversationDto,
   UpdateAiConversationDto,
 } from '../dto/ai-request.dto';
-import { AiConversationDetailDto, AiConversationSummaryDto } from '../dto/ai-response.dto';
+import {
+  AiConversationDetailDto,
+  AiConversationExportDto,
+  AiConversationSummaryDto,
+} from '../dto/ai-response.dto';
 import { toConversationDetail, toConversationSummary } from '../ai.mappers';
 
 /**
@@ -124,11 +128,11 @@ export class AiConversationsController {
   @Permissions(PERMISSIONS.AiUse)
   @RateLimit('read')
   @ApiOperation({ summary: 'Export a conversation as a portable JSON document.' })
-  @ApiOkResponse()
+  @ApiOkResponse({ type: AiConversationExportDto })
   export(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id', ParseUUIDPipe) id: string,
-  ): Promise<Record<string, unknown>> {
+  ): Promise<AiConversationExportDto> {
     return this.conversations.export(user.id, id);
   }
 }

@@ -170,6 +170,20 @@ export const envSchema = z.object({
   //    default (blank = provider not configured → the billing subsystem stays
   //    inert, matching the disabled feature.payments.enabled flag). Never a real
   //    default value; the payment provider is replaceable via these keys alone. ─
+  /**
+   * The `manual` provider's gate — the payments counterpart of `AI_STUB_ENABLED`, and the one knob
+   * on this surface that W4 added as a bare `process.env` read (`payments.config.ts:48`) without
+   * declaring it here (**AI-1**, docs/48 §3.8).
+   *
+   * Two things that cost: this file is the project's fail-fast contract, so an undeclared var means
+   * `PAYMENTS_MANUAL_ENABLED=ture` boots happily with payments quietly refusing every call; and a
+   * reader auditing what a deployment can switch on cannot find it in the one file whose job is to
+   * list exactly that. Declared now, so a typo is a value this schema has seen and defaulted rather
+   * than a var nothing knows about.
+   *
+   * Off unless exactly `'true'`, matching `AI_STUB_ENABLED` — `'1'` leaves it refusing.
+   */
+  PAYMENTS_MANUAL_ENABLED: z.string().default('false'),
   STRIPE_SECRET_KEY: z.string().default(''),
   STRIPE_WEBHOOK_SECRET: z.string().default(''),
   STRIPE_API_BASE_URL: z.string().url().default('https://api.stripe.com/v1'),
