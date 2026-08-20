@@ -74,10 +74,20 @@ of those tests hold the AI feature-flag lock so the state they encode is guarant
 (`frontend-ai-conversations`, `frontend-ai-prompts`, `frontend-ai-usage`) and its a11y scan all arrange a
 populated conversation list through `api.createAiConversationAs` rather than by clicking "New
 conversation". Clicking leaves the pointer on a `variant="primary"` button, and AntD's derived
-primary-hover background is `#ab6846` — 4.37:1 under white, a **real** AA failure ([48 §3.12
+primary-hover background **was** `#ab6846` — 4.37:1 under white, a **real** AA failure ([48 §3.12
 W8-5](../48_PlatformParityRegister.md), the same figure as W3c-3 on the half that was never pinned). A
 baseline captured that way would encode a hovered button forever, and the a11y scan would fail on
 pre-existing token debt it cannot fix.
+
+> **W8-5 is FIXED (2026-08-20)** — the hover and press fills are pinned in
+> `packages/ui/src/theme/antd-theme.ts` (7.00:1 light hover, 9.06:1 dark press) and guarded by
+> `antd-theme.spec.ts`, which asserts the rule rather than the hexes. So the a11y half of this
+> guidance is discharged: a scan that ends on a hovered primary button now passes honestly.
+>
+> **The guidance itself stands, on its first reason only.** A baseline that encodes a hovered button
+> is still a baseline that will drift the day the hover treatment changes, and a scan whose subject is
+> a populated row should arrange the row, not the create flow. Keep arranging over the API — just no
+> longer to dodge a contrast failure.
 
 This is **not** the pointer-parking workaround the suite deliberately removed (`a11y.spec.ts:176-179`):
 nothing is moved or hidden, the arrangement simply does not click a button. Where the click itself is the

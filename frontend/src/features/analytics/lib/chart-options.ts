@@ -20,27 +20,60 @@ export interface ChartTheme {
   palette: string[];
 }
 
-/** Per-theme hex fallbacks (used when CSS vars can't be read, e.g. jsdom) — mirror `tokens.css`. */
-const FALLBACKS: Record<'light' | 'dark', ChartTheme> = {
+/**
+ * Every token this module falls back to, keyed by the `--q-*` variable it mirrors, with **one copy
+ * of each hex** (T-5, docs/48 §3.5).
+ *
+ * It used to hold a `palette` array as well, which re-listed five of these by index — and those
+ * copies went stale the moment `--q-success` was darkened for W3c-2, leaving `#3e7c4f` in two places
+ * here plus an inline `?? '#3e7c4f'` below. Harmless in effect (chart series are non-text graphics at
+ * a 3:1 threshold, and the fallbacks only paint when the CSS variables cannot be read at all) but
+ * they were undeclared copies of a single source of truth, which is the condition that produced
+ * W3c-4. The palette is now DERIVED from this map, so a colour cannot be updated in one of two
+ * places, and `chart-options.spec.ts` pins every entry against `tokens.css` itself.
+ */
+const FALLBACK_TOKENS = {
   light: {
-    text: '#24211b',
-    textSecondary: '#6b655a',
-    textMuted: '#726c61',
-    line: '#e7e1d6',
-    accent: '#9e4b28',
-    surface: '#ffffff',
-    palette: ['#9e4b28', '#3b6ea8', '#3e7c4f', '#8d651a', '#b3382e', '#726c61'],
+    '--q-text-primary': '#24211b',
+    '--q-text-secondary': '#6b655a',
+    '--q-text-muted': '#726c61',
+    '--q-border': '#e7e1d6',
+    '--q-accent': '#9e4b28',
+    '--q-bg-surface': '#ffffff',
+    '--q-info': '#3b6ea8',
+    '--q-success': '#356b44',
+    '--q-warning': '#8d651a',
+    '--q-danger': '#b3382e',
   },
   dark: {
-    text: '#ece6da',
-    textSecondary: '#a69f90',
-    textMuted: '#8f897f',
-    line: '#2e2a24',
-    accent: '#e08a5f',
-    surface: '#1c1917',
-    palette: ['#e08a5f', '#7ca6d6', '#6baa7c', '#c99a4c', '#dc7b70', '#8f897f'],
+    '--q-text-primary': '#ece6da',
+    '--q-text-secondary': '#a69f90',
+    '--q-text-muted': '#8f897f',
+    '--q-border': '#2e2a24',
+    '--q-accent': '#e08a5f',
+    '--q-bg-surface': '#1c1917',
+    '--q-info': '#7ca6d6',
+    '--q-success': '#6baa7c',
+    '--q-warning': '#c99a4c',
+    '--q-danger': '#dc7b70',
   },
-};
+} as const satisfies Record<'light' | 'dark', Record<string, string>>;
+
+/** Exported for the mirror guard only — not part of the module's API. */
+export const CHART_FALLBACK_TOKENS = FALLBACK_TOKENS;
+
+/**
+ * Categorical series order for pie/donut slices: brand first, then the four status hues, then muted
+ * for the tail. Named as variables rather than hexes so the palette has no copies of its own.
+ */
+const SERIES_VARS = [
+  '--q-accent',
+  '--q-info',
+  '--q-success',
+  '--q-warning',
+  '--q-danger',
+  '--q-text-muted',
+] as const satisfies readonly (keyof (typeof FALLBACK_TOKENS)['light'])[];
 
 function cssVar(name: string, fallback: string): string {
   if (typeof document === 'undefined') return fallback;
@@ -54,23 +87,18 @@ function cssVar(name: string, fallback: string): string {
  * memo's theme dependency genuine.
  */
 export function resolveChartTheme(resolved: 'light' | 'dark'): ChartTheme {
-  const fb = FALLBACKS[resolved];
-  const accent = cssVar('--q-accent', fb.accent);
+  const fb = FALLBACK_TOKENS[resolved];
+  /** Every read goes through the map, so no call site can name a hex of its own. */
+  const read = (name: keyof typeof fb): string => cssVar(name, fb[name]);
+
   return {
-    text: cssVar('--q-text-primary', fb.text),
-    textSecondary: cssVar('--q-text-secondary', fb.textSecondary),
-    textMuted: cssVar('--q-text-muted', fb.textMuted),
-    line: cssVar('--q-border', fb.line),
-    accent,
-    surface: cssVar('--q-bg-surface', fb.surface),
-    palette: [
-      accent,
-      cssVar('--q-info', fb.palette[1] ?? '#3b6ea8'),
-      cssVar('--q-success', fb.palette[2] ?? '#3e7c4f'),
-      cssVar('--q-warning', fb.palette[3] ?? '#8d651a'),
-      cssVar('--q-danger', fb.palette[4] ?? '#b3382e'),
-      cssVar('--q-text-muted', fb.textMuted),
-    ],
+    text: read('--q-text-primary'),
+    textSecondary: read('--q-text-secondary'),
+    textMuted: read('--q-text-muted'),
+    line: read('--q-border'),
+    accent: read('--q-accent'),
+    surface: read('--q-bg-surface'),
+    palette: SERIES_VARS.map(read),
   };
 }
 

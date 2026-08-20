@@ -21,6 +21,19 @@
   --q-border: #e7e1d6;
   --q-accent: #9e4b28; /* terracotta ink */
   --q-accent-hover: #b45a32;
+  /* The accent as a SOLID FILL under the pointer and under the press — not the same job as
+     --q-accent-hover, which is a link/label colour on a page background. AntD derived these by
+     lightening the seed, which walks the fill TOWARD its own white label: #ab6846 measured 4.37:1
+     with white (W8-5, docs/48 §3.12), and dark mode's press measured 3.72:1 with its ink label.
+     Neither is reachable by an axe scan of a resting page — hover needs a parked pointer, press a
+     held one — so both outlived every scan the suite runs.
+     The rule both modes follow now: hover and press move the fill AWAY from its own label, so
+     contrast only rises. Light darkens (7.00 hover / 9.26 press on white); dark brightens
+     (8.20 / 9.06 on the ink). Guarded by antd-theme.spec.ts, which asserts the RULE, not the hexes.
+     No Tailwind utility mirrors these two: nothing outside the AntD Button paints a solid accent
+     interaction state, and an unused utility is the undeclared-copy problem this file warns about. */
+  --q-accent-solid-hover: #8e4424;
+  --q-accent-solid-active: #783218;
   /* Darkened from #3e7c4f. `QTag color="success"` paints the label in this token over a 12% tint of
      the SAME token, so the colour is measured against itself: #3e7c4f on the tint rendered 4.28:1 on
      surface, 4.02:1 on canvas and 3.74:1 on raised — under AA for what is 12px text (W3c-2,
@@ -151,6 +164,13 @@
      direction for a dark theme. */
   --q-accent: #e08a5f;
   --q-accent-hover: #eaa47d;
+  /* Dark mode brightens where light mode darkens, because its solid label is the dark ink — see the
+     light-mode note for the shared rule. `solid-hover` is AntD's own derived hover, pinned rather
+     than changed (it was already correct at 8.20:1 and only needed to stop being derived);
+     `solid-active` carries the same value as --q-accent-hover today, and is deliberately its own
+     token so changing the link-hover colour later cannot silently move a button's pressed fill. */
+  --q-accent-solid-hover: #d79f7e;
+  --q-accent-solid-active: #eaa47d;
   --q-success: #6baa7c;
   --q-warning: #c99a4c;
   /* Lightened from #d06a5f: as 12px badge text on the danger/12 tint (#322320) it was 4.23:1. */

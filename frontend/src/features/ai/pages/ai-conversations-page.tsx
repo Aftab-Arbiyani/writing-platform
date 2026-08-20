@@ -181,10 +181,13 @@ export function AiConversationsPage(): ReactElement {
        *
        * Styled with the underline treatment `billing-history-page.tsx:74` established, NOT with
        * `QButton variant="primary"` for the selected tab. That was the first attempt and the a11y
-       * scan refused it: AntD's derived hover background on a primary button is #ab6846, which is
-       * 4.37:1 under white — the pre-existing token debt recorded as W8-5, which a selected tab would
-       * have put under the pointer every time someone switched shelves. A selected tab is not a
-       * primary action anyway.
+       * scan refused it: AntD's derived hover background on a primary button was #ab6846, 4.37:1
+       * under white — the token debt recorded as W8-5, which a selected tab would have put under the
+       * pointer every time someone switched shelves.
+       *
+       * **W8-5 is fixed** (2026-08-20: the hover and press fills are pinned in `antd-theme.ts` and
+       * guarded by `antd-theme.spec.ts`), so that objection no longer applies. The choice stands on
+       * the reason that was always the stronger one: a selected tab is not a primary action.
        */}
       <div
         role="tablist"

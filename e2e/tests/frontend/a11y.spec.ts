@@ -458,11 +458,16 @@ test.describe('@phase5 @a11y frontend accessibility (authenticated)', () => {
       username: data.username(),
       password,
     });
-    // Arranged over the API, not by clicking "New conversation": that click leaves the cursor on a
-    // `variant="primary"` button whose AntD-derived hover background is #ab6846 (4.37:1 under white) —
-    // real, pre-existing token debt this scan surfaced, recorded in docs/48 §3.12 as W8-5 and NOT
-    // fixed here (a shared token is outside W8's scope). The create flow is asserted through the real
-    // button in `ai-surfaces.spec.ts`; this scan's subject is the row.
+    // Arranged over the API, not by clicking "New conversation". The original reason was W8-5: that
+    // click leaves the cursor on a `variant="primary"` button whose AntD-derived hover background was
+    // #ab6846, 4.37:1 under white. **W8-5 is fixed** (2026-08-20 — the hover and press fills are
+    // pinned in `packages/ui/src/theme/antd-theme.ts`), so this scan would now pass either way.
+    //
+    // The arrangement stays, for the reason that outlives the defect: this scan's subject is the ROW,
+    // and arranging it over the API measures the row rather than the create flow, which
+    // `ai-surfaces.spec.ts` drives through the real button. Keeping the click out is not
+    // pointer-parking — nothing is hidden, and a hovered primary is now scanned honestly wherever one
+    // is genuinely under the cursor.
     const token = await api.loginToken(user.email, password);
     await api.createAiConversationAs(token, { title: 'A11y conversation row' });
     await freshLoginAs(page, user.email, password);

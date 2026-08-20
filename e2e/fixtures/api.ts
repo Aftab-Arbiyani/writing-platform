@@ -540,13 +540,18 @@ export class ApiHelper {
    * Create an AI conversation as `token`'s owner (W8).
    *
    * Exists so a spec can arrange a POPULATED conversation list **without clicking the UI's "New
-   * conversation" button**. That matters for the a11y scan: clicking leaves the cursor resting on a
-   * `variant="primary"` button, and AntD's derived primary-hover background is #ab6846 — 4.37:1 under
-   * white, the same colour W3c-3 pinned for the *default* variant's label and never addressed for the
-   * primary variant's background (docs/48 §3.12). The scan's subject is the row, not the create flow
-   * (`ai-surfaces.spec.ts` drives that through the real button), so arranging over the API measures
-   * what the scan is actually for. This is NOT pointer-parking — nothing is hidden; the button simply
-   * is not clicked.
+   * conversation" button**. Two reasons, and only one of them still stands:
+   *
+   * - **The a11y failure it dodged is FIXED** (W8-5, 2026-08-20). Clicking leaves the cursor resting
+   *   on a `variant="primary"` button, and AntD's derived primary-hover background was #ab6846 —
+   *   4.37:1 under white, the same colour W3c-3 pinned for the *default* variant's label and never
+   *   addressed for the primary variant's background (docs/48 §3.12). Both fills are now pinned in
+   *   `packages/ui/src/theme/antd-theme.ts` and guarded by its spec.
+   * - **The scan's subject is the ROW, not the create flow** — `ai-surfaces.spec.ts` drives creation
+   *   through the real button — so arranging over the API measures what the scan is for. That reason
+   *   is independent of the defect, which is why this fixture stays.
+   *
+   * Never was pointer-parking: nothing is hidden, and the button is simply not clicked.
    *
    * `feature` defaults to `writing_assistant`, the one user-facing assistant feature and what the UI
    * sends. Requires the `ai.use` permission, so a 403 here means the PBAC seed-grant defect regressed.

@@ -10,10 +10,12 @@ genuinely open now lives in **ONE** place — **[§3.22, the open ledger](#322-t
 — and every entry there carries a `file:line` anchor and the date it was last verified. **A §3 heading
 is no longer admissible evidence that something is open**; the ledger is, and even the ledger asks you
 to re-verify the anchor before you schedule or report the row. **The ledger was reconciled the same
-day it was written:** **B8-1** and **§3.19** closed together (the four admin per-account reads now 404
-an id that belongs to nobody, and the catalogue entry makes that 404 legible), which opened **B8-2** —
-and which broke three browser specs plus one a11y scan that had been arranging their fixtures on the
-defect. Previously swept 2026-08-18 (after
+day it was written, twice:** **B8-1 + §3.19** closed together (the four admin per-account reads now 404
+an id that belongs to nobody, and the catalogue entry makes that 404 legible), which opened **B8-2** and
+broke three browser specs plus one a11y scan that had been arranging their fixtures on the defect; then
+**W8-5 + T-4 + T-5**, the a11y/token row, which found a third unrecorded instance of the same
+derivation defect and left one line of owed verification (`AA-render`) rather than claiming a rendered
+scan it could not run. Previously swept 2026-08-18 (after
 **B9** — A2's six findings all closed: the admin build gate is green again and **§6.15's false "typecheck clean" is struck in place and dated**, the Policy Engine reads `users.status`, strikes have a list and a revoke, the trust GET stops writing, and A2-3/A2-5 close as documented decisions. One new gap, **B9-1**; sweep **§6.17**. Earlier the same day, **A2** — the admin Trust surface, three slices; sweep **§6.16**, and six gaps recorded as **A2-1 … A2-6** in §3, all since closed by B9. Before that, 2026-08-17 after **B8** — the A1 enablers: all seven of A1's recorded gaps closed and their compensating copy deleted; one new gap, B8-1; sweep **§6.15**. Earlier the same day, **A1** — the admin monetization surface, three slices; sweep **§6.14**, and seven backend gaps recorded as **A1-1 … A1-7** in §3. Earlier the same day, **D3** — AI writing is now an enforced paid capability on the server and gated on both clients; the free-tier regression is LIVE, and §5.2 item 4 is rewritten. Sweep **§6.13**. Earlier the same day, **M7-3** — mobile's clap, sweep **§6.12**. Before those, 2026-08-10 after **W7c** —
 reader analytics + the privacy-prefs row, closing §2 rows **6 and 8** and leaving **onboarding as the
 only unowned §2 row**. Its sweep is **§6.10**, and it is the slice that shrank on contact with the code
@@ -639,7 +641,7 @@ tuned against `surface` and never re-checked against `raised`. **Fixed with T-2*
 `--q-danger-on-tint: #dd8075` (4.64 on raised), which settles it without re-tinting the fill a second
 time.
 
-### T-4 · **low** · **OPEN — ledger §3.22a** · AntD's derived _active_ colour on a default button is 3.46:1 in dark mode
+### T-4 · ~~**low**~~ · **CLOSED 2026-08-20 (with W8-5)** · AntD's derived _active_ colour on a default button is 3.46:1 in dark mode
 
 The sibling of W3c-3 that pinning hover does not cover: `colorPrimaryActive` derives to `#996145`,
 which measures **3.46 / 3.72 / 3.12** on dark surface / canvas / raised. Light mode is fine (`#783218`,
@@ -648,7 +650,16 @@ scan catches it — the same blind spot that let the hover defect live until a s
 cursor parked. The fix is one more line beside the hover pin (`defaultActiveColor: c.accent`), left
 undone deliberately under this pass's scope lock.
 
-### T-5 · **low** · **OPEN — ledger §3.22a** · two token mirrors nobody is tracking
+> **CLOSED 2026-08-20 — it was exactly that one line.** `Button: { …, defaultActiveColor: c.accent }`,
+> giving 5.63 / 6.02 / 5.21 light and 7.15 / 6.64 / 5.99 dark on canvas / surface / raised. The press
+> stays legible as a press through the border and background AntD moves with it, not through the label.
+>
+> This entry's real contribution was the **diagnosis of the blind spot**, and it earned its keep: the
+> W8-5 row went looking for other states no scan can reach and found a third instance (a pressed
+> primary in dark mode, ink on `#996145` = 3.72:1). All three are now guarded by a spec that measures
+> AntD's derivation directly, because "no axe scan catches it" means the browser suite never can.
+
+### T-5 · ~~**low**~~ · **CLOSED 2026-08-20** · two token mirrors nobody is tracking
 
 `tokens.css` names its mirrors — "styles/tailwind.css and src/theme/antd-theme.ts" — and both were
 updated. But `frontend/src/features/analytics/lib/chart-options.ts` carries the palette hexes **twice
@@ -657,6 +668,24 @@ today: they are chart-series colours for non-text graphics (3:1 bar, not 4.5) an
 variable cannot be read. But they are two undeclared copies of a "single source of truth", which is the
 condition that produced W3c-4 one section above. Either delete them in favour of the CSS variable or add
 them to the mirror list in `tokens.css`.
+
+> **CLOSED 2026-08-20 — neither of the two options offered, because both leave the next author to keep
+> a promise by hand.** The `palette` array is **derived** now: `chart-options.ts` holds one map keyed by
+> the `--q-*` variable each entry mirrors, with exactly one copy of each hex, and the categorical
+> palette is `SERIES_VARS.map(read)`. The index-keyed duplicates and the inline `?? '#3e7c4f'` are
+> gone, and the stale value (`#3e7c4f`, from before W3c-2 darkened `--q-success` to `#356b44`) with them.
+>
+> **The mirror is now asserted, not declared.** `chart-options.spec.ts` reads
+> `@qalam/ui/styles/tokens.css` **as a file**, parses the `:root` and `[data-theme='dark']` blocks with
+> comments stripped (they quote historical hexes — "Darkened from #3e7c4f" — and a value in prose must
+> not be able to satisfy an assertion about a live token), and compares every fallback against what the
+> token file actually declares. A spec listing the expected hexes would have been a FOURTH copy that
+> passed while the token moved underneath it. Verified by putting the stale `#3e7c4f` back: the guard
+> names the variable, the mode and both values.
+>
+> The register's own framing was the thing to fix. "Add them to the mirror list" would have made this
+> defect legal rather than impossible — and `tokens.css` still names only two mirrors, which is now
+> true because this file is no longer one.
 
 ### T-6 · ~~**medium**~~ · **CLOSED 2026-08-05** · `resolveFirst()` asserts on the wrong element, so resolving a comment is untested
 
@@ -1974,7 +2003,7 @@ The guard added on 2026-08-05 pins `AiConversationSummary`, `AiConversationDetai
 
 Not a drift today. Recorded because both are exactly where a fourth instance would appear.
 
-### W8-5 · **medium** · **OPEN — ledger §3.22a** · a hovered `variant="primary"` button is 4.37:1 — W3c-3's colour, on the half nobody pinned
+### W8-5 · ~~**medium**~~ · **CLOSED 2026-08-20 (with T-4, and a third instance found with them)** · a hovered `variant="primary"` button is 4.37:1 — W3c-3's colour, on the half nobody pinned
 
 **Found by W8's own a11y scan**, which failed the first time it ran because arranging the page clicked
 "New conversation" and left the cursor on it:
@@ -2006,6 +2035,58 @@ still driven through the real button in `ai-surfaces.spec.ts`.
 The likely fix, when it gets a row: pin the primary hover to a _darkened_ accent rather than AntD's
 lightened derivation — the same direction, and for the same reason, as W3c-3's note about hovering
 toward the ink instead of away from it.
+
+> **CLOSED 2026-08-20 — that is the fix, and the row it got closed two more with it.**
+>
+> `colorPrimaryHover` and `colorPrimaryActive` are pinned per mode in `antd-theme.ts`, backed by two
+> new tokens in `tokens.css` (`--q-accent-solid-hover`, `--q-accent-solid-active`) named for the job
+> they do — a solid fill under the pointer, which is not the job `--q-accent-hover` does on a page.
+>
+> **A third instance was found by measuring instead of reading.** A probe through AntD's own algorithm
+> reproduced both recorded figures exactly (4.37:1 light hover; T-4's 3.72 / 3.46 / 3.12 dark) and
+> turned up one nobody had recorded: a **pressed primary in dark mode** renders the ink label on
+> `#996145` = **3.72:1**. Same token, same derivation, same blind spot — it only paints while the
+> pointer is held down.
+>
+> **One rule now covers all three, which is why they closed together:** every state moves the fill
+> AWAY from its own label, so contrast can only rise. Light darkens toward the ink (6.02 rest → 7.00
+> hover → 9.26 press, white label); dark brightens away from it (5.45 → 8.20 → 9.06, ink label).
+> Stating it as a rule is what made the third instance findable at all.
+>
+> **Pinned in `token`, not scoped to `components.Button`** — deliberately wider than the defect
+> report. These are alias tokens with many consumers (Switch, Slider, Radio, Pagination) inheriting
+> the same lightening; a Button-scoped override would have fixed the one component the audit happened
+> to look at. Every other consumer paints them as non-text, where the threshold is 3:1 and a
+> higher-contrast fill is strictly better. **Verified that the override actually lands** before writing
+> anything on top of it — an inert pin would have been a silent no-op, which is this register's
+> commonest defect shape.
+>
+> **The guard is `packages/ui/src/theme/antd-theme.spec.ts`** (12 assertions, and the ui package's
+> first test). Two properties make it a guard rather than a snapshot: it resolves the theme through
+> **AntD's own algorithm**, so an upgrade that changes the derivation fails it; and it asserts the
+> **rule** (monotonic non-decreasing contrast, rest → hover → press) plus a distinctness check, so a
+> pin that satisfied AA by flattening every state into one colour would fail. It also keeps the
+> unpinned derivation executable, so the pins cannot be deleted as "probably unnecessary" in silence.
+> Verified by removing the pins: **8 of 12 fail**, and the 4 that pass are W3c-3's untouched hover
+> pin and the distinctness pair.
+>
+> **What this is NOT: a rendered scan.** [45 §2](./45_WebClientRoadmap.md) step 5 is explicit that
+> computed ratios are not evidence on their own, and this file measures resolved token values with no
+> stylesheet, cascade or alpha compositing. Carried in [§3.22c](#322c-harness--the-suites-own-honesty)
+> as owed verification, not quietly assumed.
+>
+> **Baseline re-mint: expected to be ZERO, and that is a prediction rather than a result.** Nothing
+> pinned here paints on a resting page — the rest fill (`colorPrimary`) is unchanged, and hover and
+> press need a pointer. Only two of the four state/mode pairs changed value at all (light hover
+> `#ab6846`→`#8e4424`, dark press `#996145`→`#eaa47d`); the other two pin what AntD already derived.
+> The visual projects are the authority and have not run.
+>
+> **Three places carried workarounds built on this defect**, and all three are updated rather than left
+> to rot: `api.createAiConversationAs`'s docblock, the frontend a11y scan's arrangement comment, and
+> the conversations page's note on why its selected tab is not a primary button. In each case the
+> arrangement or the choice **stands on its other reason** — the scan's subject is the row; a selected
+> tab is not a primary action — and only the discharged justification is struck. Same lesson as B8-1's
+> fixtures, one day earlier.
 
 ### The prompt library has no wire at all — verified, not assumed
 
@@ -3209,6 +3290,20 @@ something that runs the app:
 > and one a11y scan** that were arranging their fixtures on the defect — they typed a nonexistent UUID
 > and asserted the calm empty state, so they passed _because_ the read could not tell nobody from a
 > real account. Fixing the code without them would have read as a regression in the suite.
+>
+> **Second reconciliation, same day — the a11y/token row.** **W8-5**, **T-4** and **T-5** are closed and
+> their lines are gone from 3.22a. Two things came out of it that the ledger did not contain:
+>
+> - **A third instance of W8-5's defect**, found by measuring through AntD's own algorithm rather than
+>   reading the palette: a _pressed_ primary in dark mode rendered ink-on-`#996145` = 3.72:1. Fixed with
+>   the other two rather than filed, because it is the same line of code.
+> - **`AA-render` in [3.22c](#322c-harness--the-suites-own-honesty)** — the pins are guarded by a static
+>   spec and **no browser has rendered them**. Recorded as owed verification rather than counted as
+>   done, because step 5 of the per-epic flow says a computed ratio is not evidence on its own.
+>
+> And the same fixture lesson as B8-1: **three places carried workarounds built on W8-5** — an E2E
+> fixture docblock, an a11y scan's arrangement, and a product decision about a tab style. Each stands on
+> a second reason, so each keeps its behaviour and loses only the justification now discharged.
 
 **This is the only admissible answer to "what is still open?".** Everything above it is a _diagnosis_
 — kept for its reasoning, and unreliable as a status, because a §3 heading is written once and the code
@@ -3236,13 +3331,10 @@ them (baseline re-mint, five call sites, a measurement loop) is the actual cost.
 
 | ID         | Sev        | What                                                                                              | Anchor (verified 2026-08-20)                                                                                                                                  | Size                                                                  |
 | ---------- | ---------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| **W8-5**   | **medium** | every hovered `variant="primary"` button is white-on-`#ab6846` = **4.37:1**, under AA             | `packages/ui/src/theme/antd-theme.ts:113` pins `defaultHoverColor` only; `colorPrimaryHover` is still AntD's derived                                          | **1 d**                                                               |
 | **C-15**   | **medium** | the web suggestion composer's hand-typed offset now **409s** against the offset-exact check       | `frontend/src/features/collaboration/components/suggestion-composer.tsx:35,69,93` ("Starts at character")                                                     | **1.5–2 d**                                                           |
 | **B9-1**   | **medium** | a failed suspend is unrecoverable — the retry throws before revocation, leaving sessions live     | `backend/src/modules/users/users.service.ts:150-152` (`before === to` throws); 5 call sites, §3.17                                                            | **1 d**                                                               |
 | **B8-2**   | **low**    | granting an override to a nonexistent id inserts a row nothing can read and no screen can list    | `backend/src/modules/monetization/entities/entitlement-override.entity.ts:16-20` — index, no FK, no relation. Opened by B8-1's fix                            | **0.5 d** (three writes, one FK question — not one rule three times)  |
 | **AF5-cs** | **medium** | mobile drops `clientSecret`, so a provider path returning a secret and no URL stalls on "success" | `CheckoutDto` has it (`monetization-response.dto.ts:24-28`); `qalam-mobile/lib/features/monetization/domain/entities/billing.dart:115,126` reads two of three | **1 h** (read + honest refusal; the payment sheet is its own project) |
-| **T-4**    | **low**    | `defaultActiveColor` derives to **3.46:1** in dark mode while the pointer is held                 | `packages/ui/src/theme/antd-theme.ts:113` — one line beside W8-5's fix                                                                                        | _(in W8-5)_                                                           |
-| **T-5**    | **low**    | two stale copies of the chart palette outside the declared mirror list                            | `frontend/src/features/analytics/lib/chart-options.ts:32,69`                                                                                                  | **30 m**                                                              |
 | **T-10**   | **low**    | every `QButton` is 44 px, so Android's 48 px tap-target guideline fails app-wide                  | `qalam-mobile/lib/shared/widgets/buttons/q_button.dart:58` — `math.max(_visualHeight, 44)`                                                                    | **0.5–1 d** (height change on every screen)                           |
 
 ### 3.22b Contract + operability honesty — no user-visible break, real cost to the next reader
@@ -3261,14 +3353,15 @@ them (baseline re-mint, five call sites, a measurement loop) is the actual cost.
 **Fix size is unknown until measured**, so each estimate is a measurement loop plus an unbounded fix.
 Naming that is the point: §3.4's rule is that a failure is not a flake until it has been counted.
 
-| ID           | Sev          | What                                                                                                                            | Anchor (verified 2026-08-20)                                                             | Size                          |
-| ------------ | ------------ | ------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ----------------------------- |
-| **T-7**      | **medium**   | `assistant.spec.ts` "writes and autosaves" is flaky under parallel load                                                         | `e2e/tests/frontend/assistant.spec.ts:220`                                               | **0.5 d+**                    |
-| **M-5**      | **medium**   | mobile's suite fails ~2 runs in 10 with **no assertion output at all**                                                          | `qalam-mobile/test/features/ai/retrieval_controllers_test.dart:227`                      | **0.5–1 d+**                  |
-| **W5-12**    | harness      | three visual baselines do not reproduce outside CI (~21 px page offset)                                                         | `frontend-comments`, `frontend-suggestions`, `frontend-collaborators`                    | **0.5 d+**                    |
-| **T-9 res.** | **low**      | `reuseExistingServer` still lets a hand-started `vite preview` reproduce T-9                                                    | `e2e/playwright.config.ts:249`                                                           | **1 h**                       |
-| **WK**       | verification | the **frontend** webkit shards have not been re-run since the 2026-08-03 deferral — which is where that deferral actually lived | [docs/e2e/README](./e2e/README.md) "WebKit, measured (2026-08-18)" covers **admin only** | **0.5 d** (mostly wall-clock) |
-| **CI**       | verification | `web-e2e.yml` needs three green runs, then the flip to `pull_request`                                                           | [e2e/07 §6.1](./e2e/07_CI.md)                                                            | **0.5 d**                     |
+| ID            | Sev          | What                                                                                                                                                                                                                     | Anchor (verified 2026-08-20)                                                                                                                                                  | Size                          |
+| ------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
+| **T-7**       | **medium**   | `assistant.spec.ts` "writes and autosaves" is flaky under parallel load                                                                                                                                                  | `e2e/tests/frontend/assistant.spec.ts:220`                                                                                                                                    | **0.5 d+**                    |
+| **M-5**       | **medium**   | mobile's suite fails ~2 runs in 10 with **no assertion output at all**                                                                                                                                                   | `qalam-mobile/test/features/ai/retrieval_controllers_test.dart:227`                                                                                                           | **0.5–1 d+**                  |
+| **W5-12**     | harness      | three visual baselines do not reproduce outside CI (~21 px page offset)                                                                                                                                                  | `frontend-comments`, `frontend-suggestions`, `frontend-collaborators`                                                                                                         | **0.5 d+**                    |
+| **T-9 res.**  | **low**      | `reuseExistingServer` still lets a hand-started `vite preview` reproduce T-9                                                                                                                                             | `e2e/playwright.config.ts:249`                                                                                                                                                | **1 h**                       |
+| **AA-render** | verification | the W8-5 / T-4 pins are guarded by a spec that measures AntD's resolved tokens — **no browser has rendered them**, and [45 §2](./45_WebClientRoadmap.md) step 5 does not accept computed ratios as evidence on their own | `packages/ui/src/theme/antd-theme.spec.ts` is the static half. Owed: the four a11y projects light + dark, and a visual run to confirm the predicted **zero** baseline changes | **0.5 d** (needs the stack)   |
+| **WK**        | verification | the **frontend** webkit shards have not been re-run since the 2026-08-03 deferral — which is where that deferral actually lived                                                                                          | [docs/e2e/README](./e2e/README.md) "WebKit, measured (2026-08-18)" covers **admin only**                                                                                      | **0.5 d** (mostly wall-clock) |
+| **CI**        | verification | `web-e2e.yml` needs three green runs, then the flip to `pull_request`                                                                                                                                                    | [e2e/07 §6.1](./e2e/07_CI.md)                                                                                                                                                 | **0.5 d**                     |
 
 ### 3.22d Not defects — recorded so a future row does not size them as work
 

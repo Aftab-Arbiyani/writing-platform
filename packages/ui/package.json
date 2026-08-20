@@ -27,7 +27,8 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test": "vitest run"
   },
   "peerDependencies": {
     "antd": "^5.21.0",
@@ -40,7 +41,8 @@
     "eslint": "^9.0.0",
     "react": "^19.0.0",
     "tsup": "^8.0.0",
-    "typescript": "^5.6.0"
+    "typescript": "^5.6.0",
+    "vitest": "^3.0.0"
   },
   "dependencies": {
     "clsx": "^2",
