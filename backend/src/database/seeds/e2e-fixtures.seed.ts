@@ -3,7 +3,7 @@ import 'reflect-metadata';
 
 import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import { Role } from '@qalam/shared';
+import { Role, UNLIMITED_SEATS } from '@qalam/shared';
 
 import { AppModule } from '../../app.module';
 import { TransactionRunner } from '../../common/database/transaction-runner';
@@ -69,8 +69,8 @@ const SEED_ACTOR = {
 } as const;
 
 /**
- * Lift the free plan's piece cap for THIS STACK ONLY (`monetization.plans` → `free.limits.maxPieces
- * = 0`, the "0 = unlimited" convention B4 defines).
+ * Lift the free plan's **piece cap and collaborator seat cap** for THIS STACK ONLY
+ * (`monetization.plans` → `free.limits`).
  *
  * **Why the suite cannot run without it.** B4 caps the free plan at 25 pieces, and almost every
  * browser spec arranges its own content as the ONE shared seeded writer (`api.createPublishedPiece`
@@ -85,11 +85,24 @@ const SEED_ACTOR = {
  * login per test must not be judged by, and so is this. No spec asserts the cap, so nothing loses
  * coverage; if one is ever written, it should arrange its own author rather than the shared writer.
  *
+ * **The seat cap is the same defect, found the same way, twenty days later.** B6 caps free-plan
+ * collaborators — and it is the ONE limit key with an INVERTED sentinel: `-1` ({@link UNLIMITED_SEATS})
+ * means unlimited and `0` means NONE, the opposite of every other key including `maxPieces` two lines
+ * below. Free ships `0`, so `POST /stories/:id/invitations` answers
+ * `402 COLLABORATOR_LIMIT_REACHED` ("Your plan allows 0 collaborators per story") for the shared
+ * seeded writer, and all three membership specs fail in *arrange*. Measured 2026-08-20 by running the
+ * frontend suite in the pinned image: **the same three failed on chromium AND webkit**, which is what
+ * ruled out the engine and pointed here (docs/48 §3.22c).
+ *
+ * Nobody had noticed because B6 landed 2026-08-08 and the frontend functional suite had not been run
+ * since. That is B4-1's lesson repeating: a plan limit added later silently disarms the fixtures of
+ * specs written before it, and the failure surfaces in arrange, where it reads as a broken selector.
+ *
  * Written UNCONDITIONALLY, outside the writer's insert-if-missing guard, so an already-seeded stack
  * (the common case — `stack-up` is re-run constantly) picks the fix up without a `--reset`. It is
  * an idempotent settings write.
  */
-async function liftPieceCapForE2e(
+async function liftPlanCapsForE2e(
   app: Awaited<ReturnType<typeof NestFactory.createApplicationContext>>,
   logger: Logger,
 ): Promise<void> {
@@ -102,8 +115,12 @@ async function liftPieceCapForE2e(
     logger.warn('monetization.plans has no `free` tier; leaving the piece cap alone.');
     return;
   }
-  if (current.free.limits?.maxPieces === 0) {
-    logger.log('E2E piece cap already unlimited (monetization.plans free.maxPieces = 0).');
+  // BOTH caps, or the second one would never be lifted on a stack that already had the first.
+  if (
+    current.free.limits?.maxPieces === 0 &&
+    current.free.limits?.maxCollaborators === UNLIMITED_SEATS
+  ) {
+    logger.log('E2E plan caps already lifted (free.maxPieces = 0, maxCollaborators = -1).');
     return;
   }
 
@@ -111,14 +128,26 @@ async function liftPieceCapForE2e(
   // seed has no business rewriting any of them.
   const patched = {
     ...current,
-    free: { ...current.free, limits: { ...current.free.limits, maxPieces: 0 } },
+    free: {
+      ...current.free,
+      limits: {
+        ...current.free.limits,
+        // `0` = unlimited here (B4's convention) …
+        maxPieces: 0,
+        // … and `-1` = unlimited HERE, because B6 inverts it for this key alone. Writing `0` would
+        // mean "no collaborators at all", i.e. exactly the state being fixed.
+        maxCollaborators: UNLIMITED_SEATS,
+      },
+    },
   };
   await settings.updateSettings(
     [{ key: 'monetization.plans', value: patched }],
     { ...SEED_ACTOR },
-    'seed:e2e — lift the free-plan piece cap so the browser suite can arrange content (48 §3.14 B4-1)',
+    'seed:e2e — lift the free-plan piece and collaborator caps so the browser suite can arrange content (48 §3.14 B4-1, §3.22c)',
   );
-  logger.log('E2E piece cap lifted: monetization.plans free.limits.maxPieces = 0 (unlimited).');
+  logger.log(
+    'E2E plan caps lifted: free.limits.maxPieces = 0, maxCollaborators = -1 (both unlimited).',
+  );
 }
 
 async function seedE2eFixtures(): Promise<void> {
@@ -143,7 +172,7 @@ async function seedE2eFixtures(): Promise<void> {
 
     // Stack-level, and so outside the insert-if-missing guard below: an existing stack must pick
     // this up without a `--reset`, because without it the browser suite cannot arrange content.
-    await liftPieceCapForE2e(app, logger);
+    await liftPlanCapsForE2e(app, logger);
 
     // Idempotent by email: an existing writer means the fixtures already ran, so
     // leave both the account and its pieces untouched (no re-hash, no duplicates).
