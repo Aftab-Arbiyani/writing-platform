@@ -133,11 +133,24 @@ export class UsersService {
    * (used by unsuspend/reactivate) asserts the precondition; a no-op transition
    * is rejected as a state conflict (409) so bulk callers can report per-user.
    * Returns the before/after for the audit trail.
+   *
+   * `allowNoop` makes a no-op transition succeed instead — `{before: X, after: X}`
+   * with no write — for the callers that must be RETRYABLE (**B9-1**, docs/48
+   * §3.17). Those endpoints commit this status change to Postgres and then revoke
+   * sessions in Redis, which cannot be one transaction: if the revocation throws,
+   * the status is already committed and the retry used to be refused here, leaving
+   * the account suspended with every session live and no obvious remedy. With the
+   * no-op tolerated, the retry reaches revocation and completes the sanction.
+   *
+   * Opt-in rather than the default, deliberately: for a direct `PATCH status` the
+   * 409 is the useful answer ("nothing to do"), and `appeals.service` relies on it
+   * too. Only a caller with a second, non-transactional step needs this, and the
+   * flag is what makes that caller declare itself.
    */
   async setStatus(
     id: string,
     to: UserStatus,
-    options: { requireFrom?: UserStatus } = {},
+    options: { requireFrom?: UserStatus; allowNoop?: boolean } = {},
   ): Promise<{ before: UserStatus; after: UserStatus }> {
     const user = await this.adminGetAccount(id);
     const before = user.status;
@@ -148,7 +161,12 @@ export class UsersService {
       );
     }
     if (before === to) {
-      throw new UserStatusConflictException(`Account is already "${to}".`);
+      if (options.allowNoop !== true) {
+        throw new UserStatusConflictException(`Account is already "${to}".`);
+      }
+      // No write: the row already says this. The caller's NEXT step is the reason
+      // it asked to get here, so returning is the whole point.
+      return { before, after: to };
     }
 
     await this.usersRepository.update(id, { status: to });

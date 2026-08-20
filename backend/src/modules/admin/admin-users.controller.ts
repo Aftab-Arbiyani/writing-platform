@@ -410,7 +410,11 @@ export class AdminUsersController {
   @RateLimit('write')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Suspend the account and revoke all its sessions. Errors: CONFLICT (409).',
+    summary:
+      'Suspend the account and revoke all its sessions. IDEMPOTENT: suspending an already-suspended ' +
+      'account revokes its sessions again and answers 200, because the two stores cannot be one ' +
+      'transaction and the retry is the remedy (B9-1). Errors: USER_NOT_FOUND (404), ' +
+      'FORBIDDEN (403 — you cannot suspend your own account).',
   })
   @ApiOkResponse({ type: AdminActionResultDto })
   async suspend(
@@ -420,13 +424,28 @@ export class AdminUsersController {
     @Body() body: AdminActionReasonDto,
   ): Promise<AdminActionResultDto> {
     this.assertNotSelf(admin, id, 'suspend your own account');
-    const result = await this.users.setStatus(id, UserStatus.Suspended);
+    // `allowNoop` makes this endpoint RETRYABLE (B9-1, docs/48 §3.17). The status write commits to
+    // Postgres and the revocation is a separate Redis call, which cannot join that transaction: a
+    // connection blip after the commit used to leave the account suspended with every session live,
+    // and the retry was refused with "Account is already suspended" BEFORE reaching `logoutAll`.
+    // Now the retry falls through to the revocation and finishes the sanction.
+    const result = await this.users.setStatus(id, UserStatus.Suspended, { allowNoop: true });
     await this.auth.logoutAll(id, this.tokenContext(req));
     await this.writeAudit(req, admin, AUDIT_ACTIONS.UserSuspend, id, {
       ...result,
       reason: body.reason,
     });
-    return this.actionResult(id, AUDIT_ACTIONS.UserSuspend, result, 'User suspended.');
+    return this.actionResult(
+      id,
+      AUDIT_ACTIONS.UserSuspend,
+      result,
+      // The `verify` endpoint's precedent (`:404`): say which of the two things happened. On a retry
+      // after a failed revocation the status was already right and the SESSIONS are what this call
+      // fixed, so claiming "User suspended." would describe work it did not do.
+      result.before === result.after
+        ? 'User was already suspended; sessions revoked.'
+        : 'User suspended.',
+    );
   }
 
   @Post(':id/unsuspend')
@@ -458,7 +477,9 @@ export class AdminUsersController {
   @RateLimit('write')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Deactivate the account and revoke its sessions. Errors: CONFLICT (409).',
+    summary:
+      'Deactivate the account and revoke its sessions. IDEMPOTENT, for the same reason as suspend ' +
+      '(B9-1). Errors: USER_NOT_FOUND (404), FORBIDDEN (403 — not your own account).',
   })
   @ApiOkResponse({ type: AdminActionResultDto })
   async deactivate(
@@ -468,13 +489,21 @@ export class AdminUsersController {
     @Body() body: AdminActionReasonDto,
   ): Promise<AdminActionResultDto> {
     this.assertNotSelf(admin, id, 'deactivate your own account');
-    const result = await this.users.setStatus(id, UserStatus.Deactivated);
+    // Retryable for the same reason as `suspend` — same two stores, same window (B9-1).
+    const result = await this.users.setStatus(id, UserStatus.Deactivated, { allowNoop: true });
     await this.auth.logoutAll(id, this.tokenContext(req));
     await this.writeAudit(req, admin, AUDIT_ACTIONS.UserDeactivate, id, {
       ...result,
       reason: body.reason,
     });
-    return this.actionResult(id, AUDIT_ACTIONS.UserDeactivate, result, 'User deactivated.');
+    return this.actionResult(
+      id,
+      AUDIT_ACTIONS.UserDeactivate,
+      result,
+      result.before === result.after
+        ? 'User was already deactivated; sessions revoked.'
+        : 'User deactivated.',
+    );
   }
 
   @Post(':id/reactivate')
@@ -607,7 +636,15 @@ export class AdminUsersController {
     };
   }
 
-  /** Runs a single bulk sub-action (throws on failure so the caller records it). */
+  /**
+   * Runs a single bulk sub-action (throws on failure so the caller records it).
+   *
+   * The `suspend` and `deactivate` arms pass `allowNoop` for the same reason their single-account
+   * endpoints do (**B9-1**): each commits a status to Postgres and then revokes sessions in Redis, and
+   * a bulk run makes the window likelier rather than rarer — one blip mid-list used to leave that
+   * account unfixable by re-running the same bulk action over the same selection, which is exactly
+   * what an operator does next.
+   */
   private async applyBulkAction(
     action: Exclude<BulkUserActionDto['action'], 'export'>,
     id: string,
@@ -621,7 +658,7 @@ export class AdminUsersController {
         return;
       case 'suspend':
         this.assertNotSelf(admin, id, 'suspend your own account');
-        await this.users.setStatus(id, UserStatus.Suspended);
+        await this.users.setStatus(id, UserStatus.Suspended, { allowNoop: true });
         await this.auth.logoutAll(id, this.tokenContext(req));
         await this.writeAudit(req, admin, AUDIT_ACTIONS.UserSuspend, id, { via: 'bulk' });
         return;
@@ -631,7 +668,7 @@ export class AdminUsersController {
         return;
       case 'deactivate':
         this.assertNotSelf(admin, id, 'deactivate your own account');
-        await this.users.setStatus(id, UserStatus.Deactivated);
+        await this.users.setStatus(id, UserStatus.Deactivated, { allowNoop: true });
         await this.auth.logoutAll(id, this.tokenContext(req));
         await this.writeAudit(req, admin, AUDIT_ACTIONS.UserDeactivate, id, { via: 'bulk' });
         return;

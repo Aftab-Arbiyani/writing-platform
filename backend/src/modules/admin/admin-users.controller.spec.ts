@@ -10,7 +10,8 @@ import type { PiecesService } from '../pieces/pieces.service';
 import type { ProfileService } from '../users/profile.service';
 import type { RolesService } from '../users/roles.service';
 import type { AdminUserRow } from '../users/users.repository';
-import type { UsersService } from '../users/users.service';
+import type { UsersRepository } from '../users/users.repository';
+import { UsersService } from '../users/users.service';
 import { AdminUsersController } from './admin-users.controller';
 import { AdminSelfActionException } from './admin.exceptions';
 import { EXPORT_COLUMNS } from './admin-user.mapper';
@@ -298,12 +299,76 @@ describe('AdminUsersController account actions', () => {
       after: UserStatus.Suspended,
     });
     const result = await controller.suspend(TARGET, ADMIN, req(), { reason: 'spam' });
-    expect(mocks.users.setStatus).toHaveBeenCalledWith(TARGET, UserStatus.Suspended);
+    // `allowNoop` is asserted, not incidental: it is what makes the endpoint retryable (B9-1), and a
+    // future refactor dropping it would restore an unrecoverable failure with every test still green.
+    expect(mocks.users.setStatus).toHaveBeenCalledWith(TARGET, UserStatus.Suspended, {
+      allowNoop: true,
+    });
     expect(mocks.auth.logoutAll).toHaveBeenCalledWith(
       TARGET,
       expect.objectContaining({ ip: '127.0.0.1' }),
     );
     expect(result.after).toBe(UserStatus.Suspended);
+  });
+
+  /*
+   * **B9-1** (docs/48 §3.17) — the retry, which is the whole point of the fix.
+   *
+   * The first attempt commits `suspended` to Postgres and then throws in Redis. On the retry the
+   * status is ALREADY right, and what the operator still needs is the revocation. Before this, the
+   * retry threw `Account is already "suspended"` before `logoutAll` was reached, so the account stayed
+   * suspended with every session live and the only remedy was unsuspend-then-suspend — undocumented,
+   * and not something an operator would guess.
+   */
+  it('suspend → a retry after a failed revocation still revokes, and says so', async () => {
+    const { controller, mocks } = build();
+    // What the service now answers on the second call: nothing to write, nothing to conflict over.
+    mocks.users.setStatus.mockResolvedValue({
+      before: UserStatus.Suspended,
+      after: UserStatus.Suspended,
+    });
+
+    const result = await controller.suspend(TARGET, ADMIN, req(), { reason: 'spam' });
+
+    // The step the first attempt failed at runs on the retry — this is the recovery.
+    expect(mocks.auth.logoutAll).toHaveBeenCalledWith(TARGET, expect.anything());
+    // And the message does not claim work it did not do (the `verify` endpoint's precedent).
+    expect(result.message).toBe('User was already suspended; sessions revoked.');
+    expect(result.before).toBe(UserStatus.Suspended);
+    expect(result.after).toBe(UserStatus.Suspended);
+    // Still audited: a retry that fixes live sessions is an action, not a no-op.
+    expect(mocks.audit.record).toHaveBeenCalledWith(
+      expect.objectContaining({ action: AUDIT_ACTIONS.UserSuspend }),
+    );
+  });
+
+  it('deactivate → same retry path, same honest message', async () => {
+    const { controller, mocks } = build();
+    mocks.users.setStatus.mockResolvedValue({
+      before: UserStatus.Deactivated,
+      after: UserStatus.Deactivated,
+    });
+
+    const result = await controller.deactivate(TARGET, ADMIN, req(), {});
+
+    expect(mocks.users.setStatus).toHaveBeenCalledWith(TARGET, UserStatus.Deactivated, {
+      allowNoop: true,
+    });
+    expect(mocks.auth.logoutAll).toHaveBeenCalledWith(TARGET, expect.anything());
+    expect(result.message).toBe('User was already deactivated; sessions revoked.');
+  });
+
+  it('suspend → a genuine first-time suspension still reports what it did', async () => {
+    // The other half of the message branch: the fix must not make every suspension read as a retry.
+    const { controller, mocks } = build();
+    mocks.users.setStatus.mockResolvedValue({
+      before: UserStatus.Active,
+      after: UserStatus.Suspended,
+    });
+
+    const result = await controller.suspend(TARGET, ADMIN, req(), {});
+
+    expect(result.message).toBe('User suspended.');
   });
 
   it('unsuspend → requires the account to be suspended', async () => {
@@ -335,6 +400,61 @@ describe('AdminUsersController account actions', () => {
     expect(mocks.audit.record).toHaveBeenCalledWith(
       expect.objectContaining({ action: AUDIT_ACTIONS.UserForceLogout }),
     );
+  });
+});
+
+/**
+ * **B9-1, wired end to end.** The tests above prove two halves separately: that the controller passes
+ * `allowNoop` and handles a no-op result, and (in `users.admin.service.spec.ts`) that the service
+ * honours the flag without writing. Neither can fail if the OTHER half regresses — the controller
+ * tests mock `setStatus`, so deleting the service's tolerance leaves them green.
+ *
+ * This one runs the real `UsersService` over a mocked repository, so the retry is proven as a path
+ * rather than as two assumptions that happen to agree. It follows B7's precedent (48 §6.5), where the
+ * accept-path cap was held by a test that wired the real service in for exactly this reason.
+ */
+describe('AdminUsersController.suspend — the retry, with the real UsersService (B9-1)', () => {
+  function wired(status: UserStatus) {
+    const repo = {
+      findById: jest.fn().mockResolvedValue({ id: TARGET, status, email: 'm@x.com' }),
+      update: jest.fn().mockResolvedValue(undefined),
+    } as unknown as jest.Mocked<UsersRepository>;
+    const users = new UsersService(repo);
+    const { mocks } = build();
+    const controller = new AdminUsersController(
+      users,
+      mocks.profiles,
+      mocks.roles,
+      mocks.pieces,
+      mocks.auth,
+      mocks.analytics,
+      mocks.audit,
+    );
+    return { controller, repo, mocks };
+  }
+
+  it('first attempt: writes the status and revokes', async () => {
+    const { controller, repo, mocks } = wired(UserStatus.Active);
+
+    const result = await controller.suspend(TARGET, ADMIN, req(), {});
+
+    expect(repo.update).toHaveBeenCalledWith(TARGET, { status: UserStatus.Suspended });
+    expect(mocks.auth.logoutAll).toHaveBeenCalledWith(TARGET, expect.anything());
+    expect(result.message).toBe('User suspended.');
+  });
+
+  it('retry after the revocation failed: no second write, and the sessions ARE revoked', async () => {
+    // The account is already `suspended` — the state the failed first attempt left behind.
+    const { controller, repo, mocks } = wired(UserStatus.Suspended);
+
+    const result = await controller.suspend(TARGET, ADMIN, req(), {});
+
+    // Nothing to write, so nothing is written — no `updatedAt` bump misdating the suspension.
+    expect(repo.update).not.toHaveBeenCalled();
+    // And the step that failed the first time completes. This is the assertion that would have caught
+    // the defect: before the fix, the service threw here and `logoutAll` was never reached.
+    expect(mocks.auth.logoutAll).toHaveBeenCalledWith(TARGET, expect.anything());
+    expect(result.message).toBe('User was already suspended; sessions revoked.');
   });
 });
 

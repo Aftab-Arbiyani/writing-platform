@@ -15,7 +15,8 @@ an id that belongs to nobody, and the catalogue entry makes that 404 legible), w
 broke three browser specs plus one a11y scan that had been arranging their fixtures on the defect; then
 **W8-5 + T-4 + T-5**, the a11y/token row, which found a third unrecorded instance of the same
 derivation defect and left one line of owed verification (`AA-render`) rather than claiming a rendered
-scan it could not run; then **AI-1 + W7b-1 + W8-3**, the honesty cluster, which found that this
+scan it could not run; then **B9-1**, whose own stated blocker — a freeze that does not cover the
+route — turned out not to exist; and **AI-1 + W7b-1 + W8-3**, the honesty cluster, which found that this
 sweep's own W8-4 note had been half wrong — it read the guard's _excused_ list as its _pinned_ list —
 and closed the real remaining half with a response DTO, opening **AI-4**. Previously swept 2026-08-18 (after
 **B9** — A2's six findings all closed: the admin build gate is green again and **§6.15's false "typecheck clean" is struck in place and dated**, the Policy Engine reads `users.status`, strikes have a list and a revoke, the trust GET stops writing, and A2-3/A2-5 close as documented decisions. One new gap, **B9-1**; sweep **§6.17**. Earlier the same day, **A2** — the admin Trust surface, three slices; sweep **§6.16**, and six gaps recorded as **A2-1 … A2-6** in §3, all since closed by B9. Before that, 2026-08-17 after **B8** — the A1 enablers: all seven of A1's recorded gaps closed and their compensating copy deleted; one new gap, B8-1; sweep **§6.15**. Earlier the same day, **A1** — the admin monetization surface, three slices; sweep **§6.14**, and seven backend gaps recorded as **A1-1 … A1-7** in §3. Earlier the same day, **D3** — AI writing is now an enforced paid capability on the server and gated on both clients; the free-tier regression is LIVE, and §5.2 item 4 is rewritten. Sweep **§6.13**. Earlier the same day, **M7-3** — mobile's clap, sweep **§6.12**. Before those, 2026-08-10 after **W7c** —
@@ -2953,7 +2954,7 @@ errors, 0 in any file this row touches, with `vite build` clean on its own.
 Found while establishing B9's DECISION 1. Not in the trust module, and not fixed — see
 [§6.17](#617-b9s-sweep-2026-08-18).
 
-### B9-1 · **medium** · **OPEN — ledger §3.22a** · suspending an account is not retryable, and a failed attempt leaves live sessions (opened 2026-08-18)
+### B9-1 · ~~**medium**~~ · **CLOSED 2026-08-20** · suspending an account is not retryable, and a failed attempt leaves live sessions (opened 2026-08-18)
 
 `POST /admin/users/:id/suspend` does two things that are not in one transaction, and cannot be:
 
@@ -2983,6 +2984,43 @@ larger than a finding closed in passing.
 **Its blast radius shrank in this row, which is why it is medium and not high.** A2-1's fix means the
 Policy Engine refuses a closed account regardless of what its sessions are doing, so the residual exposure
 is reads and any write not routed through the engine — no longer everything.
+
+> **CLOSED 2026-08-20 — with the smaller of the two options, and one of this entry's own reasons for
+> deferring turned out to be wrong.**
+>
+> **The freeze claim was wrong.** This entry deferred partly because the endpoints "live in
+> `modules/admin` and `modules/auth`, both inside the frozen v1 baseline". `modules/auth` is (E1,
+> pre-freeze) — but `admin-users.controller.ts` was created **2026-07-11, two days after** the 102-path
+> baseline was frozen, so it was never in it, and the fix needed nothing from auth beyond the
+> `logoutAll` call already there. Every caller of `UsersService.setStatus` is post-freeze too: the four
+> admin actions and `appeals.service`, both 2026-07-11. Checked before building — the standing A2 failed
+> to check and B8/B9 established. Recorded in the freeze log at `docs/25` for discoverability, no ADR.
+>
+> **The fix is the one this entry recommended**, made opt-in: `setStatus` gained `allowNoop`, passed by
+> the **four** two-step call sites (suspend, deactivate, and both bulk arms). A no-op returns
+> `{before: X, after: X}` with **no write** — so no `updatedAt` bump misdates the suspension — and the
+> endpoint carries on to the revocation, which is what the retry needs. Opt-in rather than default
+> because `PATCH status` and `appeals.service` want the 409: for them "nothing to do" is the useful
+> answer, and only a caller with a second non-transactional step needs the tolerance. The flag is what
+> makes such a caller declare itself.
+>
+> **The observable change**, recorded because it is a contract behaviour and not an internal one: these
+> two routes no longer answer 409 for an already-suspended account. They answer 200, revoke again, and
+> the `message` distinguishes the cases ("User suspended." vs "User was already suspended; sessions
+> revoked.") — the `verify` endpoint's precedent at `:404`, rather than a new shape. Claiming "User
+> suspended." on a retry would describe work the call did not do.
+>
+> **Verified in both directions, and the first attempt was not good enough.** Dropping `allowNoop` from
+> the call sites fails 2 controller tests; deleting the service's tolerance failed only **1** — because
+> the controller tests mock `setStatus`, so each half was proving the other's assumption. A test wiring
+> the **real `UsersService`** over a mocked repository into the controller now holds the retry as a
+> path (B7's precedent, §6.5), and with it the service regression fails 2. That gap is the finding worth
+> keeping: two green half-tests can agree with each other and with nothing else.
+>
+> **What is NOT fixed, and was never this entry's claim:** the window still exists. A revocation that
+> throws still leaves a committed status and live sessions until someone retries — the sanction is now
+> _recoverable by the obvious action_, not atomic. Closing the window needs the out-of-band worker this
+> entry named as the larger option, and nothing here pretends otherwise.
 
 ---
 
@@ -3406,6 +3444,19 @@ something that runs the app:
 > - **AI-4 opened.** AI-1's prescription included "a note in `19_DeploymentGuide.md`'s env table"; that
 >   table lists no provider credential at all and points at `backend/.env.example`, which carries no AI
 >   or payments knob either. Filed with its anchor rather than absorbed into a one-line schema fix.
+>
+> **Fourth reconciliation, 2026-08-20 — B9-1.** Closed with the idempotent `setStatus` it recommended,
+> and its line is gone. Two things the row itself got wrong or left implicit:
+>
+> - **Its freeze blocker did not exist.** "`modules/admin` … inside the frozen v1 baseline" —
+>   `admin-users.controller.ts` was created two days _after_ the 102-path freeze. Checked before
+>   building, recorded in `docs/25`.
+> - **Two green half-tests can agree with each other and with nothing else.** Deleting the service's
+>   tolerance failed only 1 test, because the controller specs mock `setStatus`. A test wiring the real
+>   service in now holds the retry as a path.
+>
+> The window is narrowed, not closed: a failed revocation still leaves a committed status and live
+> sessions until someone retries. What changed is that the retry now works, which it did not.
 
 **This is the only admissible answer to "what is still open?".** Everything above it is a _diagnosis_
 — kept for its reasoning, and unreliable as a status, because a §3 heading is written once and the code
@@ -3434,7 +3485,6 @@ them (baseline re-mint, five call sites, a measurement loop) is the actual cost.
 | ID         | Sev        | What                                                                                                                                                                                    | Anchor (verified 2026-08-20)                                                                                                                                                                                                                                                                       | Size                                                                                                                              |
 | ---------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
 | **C-15**   | **medium** | the web suggestion composer's hand-typed offset now **409s** against the offset-exact check — and **mobile cannot propose an edit at all**, so the capability works on neither platform | `frontend/src/features/collaboration/components/suggestion-composer.tsx:35,69,93` ("Starts at character"). Mobile: `createSuggestion` has **zero callers** in `lib/` (re-verified 2026-08-20) and `suggestions_screen.dart` only accepts/rejects/withdraws — the §3.2 note at line 217, still true | **NEEDS SCOPING** before it is scheduled: web fix ≈1.5–2 d; the mobile half is a build nobody has sized. See the note under 3.22a |
-| **B9-1**   | **medium** | a failed suspend is unrecoverable — the retry throws before revocation, leaving sessions live                                                                                           | `backend/src/modules/users/users.service.ts:150-152` (`before === to` throws); 5 call sites, §3.17                                                                                                                                                                                                 | **1 d**                                                                                                                           |
 | **B8-2**   | **low**    | granting an override to a nonexistent id inserts a row nothing can read and no screen can list                                                                                          | `backend/src/modules/monetization/entities/entitlement-override.entity.ts:16-20` — index, no FK, no relation. Opened by B8-1's fix                                                                                                                                                                 | **0.5 d** (three writes, one FK question — not one rule three times)                                                              |
 | **AF5-cs** | **medium** | mobile drops `clientSecret`, so a provider path returning a secret and no URL stalls on "success"                                                                                       | `CheckoutDto` has it (`monetization-response.dto.ts:24-28`); `qalam-mobile/lib/features/monetization/domain/entities/billing.dart:115,126` reads two of three                                                                                                                                      | **1 h** (read + honest refusal; the payment sheet is its own project)                                                             |
 | **T-10**   | **low**    | every `QButton` is 44 px, so Android's 48 px tap-target guideline fails app-wide                                                                                                        | `qalam-mobile/lib/shared/widgets/buttons/q_button.dart:58` — `math.max(_visualHeight, 44)`                                                                                                                                                                                                         | **0.5–1 d** (height change on every screen)                                                                                       |

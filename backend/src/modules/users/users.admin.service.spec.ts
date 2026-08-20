@@ -59,6 +59,54 @@ describe('UsersService.setStatus', () => {
     expect(repo.update).not.toHaveBeenCalled();
   });
 
+  /*
+   * **B9-1** (docs/48 §3.17). `POST :id/suspend` commits the status to Postgres and then revokes
+   * sessions in Redis — two stores, one request, no shared transaction. When the revocation threw, the
+   * status was already committed and the RETRY was refused right here, so the account sat suspended
+   * with every session live and `TokenService.rotate` happily refreshing them for the full 30-day TTL.
+   * `allowNoop` is what lets the retry reach the revocation.
+   */
+  it('tolerates a no-op transition when the caller asks, WITHOUT writing', async () => {
+    const { service, repo } = serviceWith({
+      findById: jest.fn().mockResolvedValue(fakeUser({ status: UserStatus.Suspended })),
+    });
+
+    await expect(
+      service.setStatus('u1', UserStatus.Suspended, { allowNoop: true }),
+    ).resolves.toEqual({ before: UserStatus.Suspended, after: UserStatus.Suspended });
+    // The row already says this, so touching it would be a write with no change to make — and an
+    // `updatedAt` bump that misrepresents when the suspension happened.
+    expect(repo.update).not.toHaveBeenCalled();
+  });
+
+  it('still conflicts on a no-op by DEFAULT — the flag is opt-in, not a relaxation', async () => {
+    // For a direct `PATCH status` the 409 is the useful answer, and `appeals.service` relies on it.
+    // Only a caller with a second, non-transactional step needs the tolerance.
+    const { service } = serviceWith({
+      findById: jest.fn().mockResolvedValue(fakeUser({ status: UserStatus.Suspended })),
+    });
+
+    await expect(service.setStatus('u1', UserStatus.Suspended)).rejects.toBeInstanceOf(
+      UserStatusConflictException,
+    );
+  });
+
+  it('does not let allowNoop override requireFrom', async () => {
+    // Two different questions: "is this already done?" (retry-safe) and "is this transition legal
+    // from here?" (never). Unsuspending an active account is still a conflict.
+    const { service, repo } = serviceWith({
+      findById: jest.fn().mockResolvedValue(fakeUser({ status: UserStatus.Active })),
+    });
+
+    await expect(
+      service.setStatus('u1', UserStatus.Active, {
+        requireFrom: UserStatus.Suspended,
+        allowNoop: true,
+      }),
+    ).rejects.toBeInstanceOf(UserStatusConflictException);
+    expect(repo.update).not.toHaveBeenCalled();
+  });
+
   it('enforces requireFrom (unsuspend only from suspended)', async () => {
     const { service } = serviceWith({
       findById: jest.fn().mockResolvedValue(fakeUser({ status: UserStatus.Active })),

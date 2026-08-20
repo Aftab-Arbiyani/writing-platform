@@ -167,13 +167,14 @@ Changing anything in §1–§3 (the contract) requires: (a) an ADR entry in `doc
 a new API version per §8. Additive changes update the relevant doc + `openapi.json`
 and are noted here.
 
-| Date       | Change                                                                                                                                                      | By  |
-| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | --- |
-| 2026-07-09 | Initial freeze at `v1` (post Epic 12)                                                                                                                       | —   |
-| 2026-07-27 | **Additive:** `GET /pieces/by-slug/:slug` (B1, [45 §3](./45_WebClientRoadmap.md))                                                                           | —   |
-| 2026-08-08 | **Post-freeze surface, shape change:** `GET /stories/:id/snapshots` (B7, [45 §4.12](./45_WebClientRoadmap.md))                                              | —   |
-| 2026-08-17 | **Post-freeze surface, additive + one error code split:** `admin/monetization` (B8, [45 §5](./45_WebClientRoadmap.md))                                      | —   |
-| 2026-08-18 | **Post-freeze surface, additive + one status change + one enforcement change:** `admin/trust` and the Policy Engine (B9, [45 §5](./45_WebClientRoadmap.md)) | —   |
+| Date       | Change                                                                                                                                                                   | By  |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --- |
+| 2026-07-09 | Initial freeze at `v1` (post Epic 12)                                                                                                                                    | —   |
+| 2026-07-27 | **Additive:** `GET /pieces/by-slug/:slug` (B1, [45 §3](./45_WebClientRoadmap.md))                                                                                        | —   |
+| 2026-08-08 | **Post-freeze surface, shape change:** `GET /stories/:id/snapshots` (B7, [45 §4.12](./45_WebClientRoadmap.md))                                                           | —   |
+| 2026-08-17 | **Post-freeze surface, additive + one error code split:** `admin/monetization` (B8, [45 §5](./45_WebClientRoadmap.md))                                                   | —   |
+| 2026-08-18 | **Post-freeze surface, additive + one status change + one enforcement change:** `admin/trust` and the Policy Engine (B9, [45 §5](./45_WebClientRoadmap.md))              | —   |
+| 2026-08-20 | **Post-freeze surface, one behaviour change:** `POST admin/users/:id/suspend` and `:id/deactivate` are now idempotent (B9-1, [48 §3.17](./48_PlatformParityRegister.md)) | —   |
 
 **2026-07-27 — `GET /pieces/by-slug/:slug`.** Additive per §8; no existing endpoint, DTO, or
 behaviour changed. **Why:** the web reader addresses pieces by slug (`/p/:slug` — already emitted by
@@ -246,6 +247,38 @@ B8 style and **not** as a freeze amendment: the Trust module is AF6, added 2026-
 outside the `v1` baseline of 102 paths frozen on 2026-07-09 — §8 names admin explicitly as a future
 concern that "enters additively". Its only consumer is the admin app, updated in the same commits. No ADR
 and no version bump. Closes findings A2-1 … A2-5 in [48 §3.16](./48_PlatformParityRegister.md).
+
+**2026-08-20 — `POST admin/users/:id/suspend` and `:id/deactivate` become idempotent.** Recorded here
+for discoverability, in the B8/B9 style and **not** as a freeze amendment: `admin-users.controller.ts`
+was created on **2026-07-11**, two days after the `v1` baseline of 102 paths was frozen on 2026-07-09,
+so these routes were never in it — §8 names admin explicitly as a future concern that "enters
+additively". Their only consumer is the admin app. No ADR and no version bump.
+
+**This corrects a stated blocker.** [48 §3.17](./48_PlatformParityRegister.md)'s **B9-1** deferred the
+fix partly because the endpoints "live in `modules/admin` and `modules/auth`, both inside the frozen v1
+baseline". `modules/auth` is (E1, pre-freeze), but `modules/admin` is not, and the fix needed nothing
+from auth beyond the `logoutAll` call that was already there. Every caller of the method it changes —
+`UsersService.setStatus` — is post-freeze too: the four admin action endpoints (2026-07-11) and
+`appeals.service` (2026-07-11). Checked before building, which is the standing A2 failed to check and
+B8/B9 established.
+
+**What changed.** Both endpoints commit a status to Postgres and then revoke sessions in Redis, which
+cannot be one transaction. If the revocation threw, the status was already committed and the retry was
+refused with `409 CONFLICT` ("Account is already suspended") _before_ reaching the revocation — so the
+account sat suspended with every session live, and `TokenService.rotate` kept refreshing them for the
+full 30-day TTL. The only remedy was unsuspend-then-suspend, which is neither obvious nor documented.
+
+`UsersService.setStatus` gained an opt-in `allowNoop`, passed by the four two-step call sites (suspend,
+deactivate, and both bulk arms). A no-op transition now returns `{before: X, after: X}` **without a
+write** — no `updatedAt` bump misdating the suspension — and the endpoint carries on to the revocation,
+so the retry completes the sanction.
+
+**The observable contract change:** these two routes no longer answer `409` for an already-suspended or
+already-deactivated account; they answer `200` and revoke again. The response `message` distinguishes
+the two cases ("User suspended." vs "User was already suspended; sessions revoked."), following the
+`verify` endpoint's precedent rather than inventing a shape. `PATCH admin/users/:id` (status) and
+`appeals.service` are **unchanged** and still conflict on a no-op — the flag is opt-in precisely so
+that a direct status write keeps the answer that is useful to an operator.
 
 **The two new routes**, both on the existing `TrustAdminController`, both thin plumbing over the service,
 both audited through the shared trail and both invalidating the Policy Engine cache in the service rather
