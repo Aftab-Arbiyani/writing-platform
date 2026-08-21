@@ -3557,10 +3557,10 @@ them (baseline re-mint, five call sites, a measurement loop) is the actual cost.
 
 ### 3.22a Product defects — a user or an operator can hit these
 
-| ID       | Sev        | What                                                                                                                                                                                    | Anchor (verified 2026-08-20)                                                                                                                                                                                                                                                                       | Size                                                                                                                              |
-| -------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| **C-15** | **medium** | the web suggestion composer's hand-typed offset now **409s** against the offset-exact check — and **mobile cannot propose an edit at all**, so the capability works on neither platform | `frontend/src/features/collaboration/components/suggestion-composer.tsx:35,69,93` ("Starts at character"). Mobile: `createSuggestion` has **zero callers** in `lib/` (re-verified 2026-08-20) and `suggestions_screen.dart` only accepts/rejects/withdraws — the §3.2 note at line 217, still true | **NEEDS SCOPING** before it is scheduled: web fix ≈1.5–2 d; the mobile half is a build nobody has sized. See the note under 3.22a |
-| **B8-2** | **low**    | granting an override to a nonexistent id inserts a row nothing can read and no screen can list                                                                                          | `backend/src/modules/monetization/entities/entitlement-override.entity.ts:16-20` — index, no FK, no relation. Opened by B8-1's fix                                                                                                                                                                 | **0.5 d** (three writes, one FK question — not one rule three times)                                                              |
+| ID       | Sev        | What                                                                                                                                                                                                                                        | Anchor (verified 2026-08-20)                                                                                                                                                                                                                                                                                                                                                                           | Size                                                                                                                                                                            |
+| -------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **C-15** | **medium** | **mobile half CLOSED 2026-08-21** — mobile now has a whole-paragraph "propose an edit" composer. **Web half still open**: its hand-typed offset still **409s** against the offset-exact check, so the capability still does not work on web | Mobile: `qalam-mobile/lib/features/reading/domain/content_parser.dart` (`parseContentWithAnchors`), `presentation/widgets/content_renderer.dart`, `presentation/screens/reading_screen.dart`, `features/collaboration/presentation/widgets/suggestion_composer_sheet.dart`. Web (unchanged): `frontend/src/features/collaboration/components/suggestion-composer.tsx:35,69,93` ("Starts at character") | Web fix re-scoped 2026-08-21 to **≈3–4 d** (a ProseMirror-position→`anchorText` converter + tests, an extended editor seam, a composer/route rework) — see the note under 3.22a |
+| **B8-2** | **low**    | granting an override to a nonexistent id inserts a row nothing can read and no screen can list                                                                                                                                              | `backend/src/modules/monetization/entities/entitlement-override.entity.ts:16-20` — index, no FK, no relation. Opened by B8-1's fix                                                                                                                                                                                                                                                                     | **0.5 d** (three writes, one FK question — not one rule three times)                                                                                                            |
 
 > **C-15 is not the web-only row it is filed as — re-verified 2026-08-20.** Its "mobile is unaffected"
 > premise rested on **R-1** (nothing in the app navigated to any AF6 screen), and R-1 has been closed
@@ -3571,12 +3571,28 @@ them (baseline re-mint, five call sites, a measurement loop) is the actual cost.
 > produce. §3.2 recorded exactly this in 2026-07-28 ("mobile can act on suggestions it has no way to
 > produce") and it is still true.
 >
-> Which means **proposing an edit does not really work on either platform**: web offers a composer whose
-> hand-typed offset now 409s, mobile offers none. That makes this a **§5.1-shaped both-platform gap**
-> (the P-1 shape), not a client fix — and under the parity rule in §1 the row cannot be closed by fixing
-> web alone. The web half needs the editor-integrated selection seam `platfrom/docs/49` §4 already
-> names; the mobile half needs a decision about whether an in-editor selection composer is in scope at
-> all, which is an owner call and is why this is marked NEEDS SCOPING rather than given a number.
+> Which meant **proposing an edit did not really work on either platform**: web offers a composer whose
+> hand-typed offset 409s, mobile offered none. That made this a **§5.1-shaped both-platform gap** (the
+> P-1 shape), not a client fix — and under the parity rule in §1 the row cannot close by fixing one
+> platform alone.
+>
+> **Owner call, made 2026-08-21: mobile ships whole-paragraph granularity, not free-range selection.**
+> A reader taps a whole paragraph/heading to propose an edit to it — no drag-select gesture, which this
+> app had built zero infrastructure for anywhere (comments have the identical gap, per §3.2). The build
+> turned out to have a real correctness trap of its own: mobile's renderer injects synthetic characters
+> for mentions/hashtags/footnotes/hard breaks (`'@label'`, `'#tag'`, `' *'`, `'\n'`) that do not exist in
+> the backend's `anchorText` coordinate space, and a forward-compatible unknown block type still has to
+> be walked (not skipped) to advance the running offset or every later block's anchor undercounts. A
+> design-validation pass caught the latter before it shipped; `content_parser_test.dart` pins it as a
+> direct regression case. **Mobile's half is done and tested** (`flutter test`, 842 tests green;
+> `flutter analyze` clean) but **not live-verified against a running backend** — the next person to
+> touch this should do that check before trusting it fully.
+>
+> **The web half is unchanged and still open.** It needs the editor-integrated selection seam this
+> document already named — re-scoped 2026-08-21 after reading the actual code (not just the DTOs): the
+> route the composer renders on has no editor mounted to select from, the 409 fires at _accept_, not
+> create, and there is no ProseMirror-position → `anchorText`-offset converter anywhere in the frontend
+> yet. ≈3–4 d, revised up from the original ≈1.5–2 d estimate once that was actually traced through.
 
 ### 3.22b Contract + operability honesty — no user-visible break, real cost to the next reader
 
