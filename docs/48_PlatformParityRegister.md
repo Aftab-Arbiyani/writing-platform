@@ -3931,17 +3931,46 @@ subscriber's plan is computed correctly and then ignored on every route but the 
      codes beyond `ai_writing`** — nothing else was gated, and both clients carry a test proving a free
      user can still ask their book a question.
 
-   **D4's scope is deferred** (owner, same day: "will decide this later what enforcement we will
+   **D4's scope was deferred** (owner, 2026-08-08: "will decide this later what enforcement we will
    do"). D3 turned D4 from _blocked_ into _floored_: enforcing `ai_writing` is now mandatory, and the
-   open question is only how far past it to go. **The "a client must not gate on the seven" rule in
-   consequence 1 still stands** for the six codes beyond `ai_writing`.
+   open question was only how far past it to go.
+
+   **D4 answered, 2026-08-21 — checked against the live product first, not decided in the abstract.**
+   All six codes beyond `ai_writing` turned out to be **already live and free on both clients today**
+   (confirmed by reading the actual screens, not the catalogue): `ai_discovery` (the Discovery hub +
+   `/discover`), `premium_search` (semantic search, mobile + `/search?mode=ai`), `premium_recommendations`
+   (the recommendation shelves, reachable even signed-out on web), `advanced_analytics` (the ONLY
+   analytics dashboard that exists on either client — there is no separate "basic" tier to fall back
+   to), and `publishing_pro` (the full review/publish/version workflow, gated only by collaboration
+   role, confirmed reachable on mobile; web's route exists but an in-app entry point to it was not
+   found). Gating any of those five now would be the exact `ai_writing`-style regression D3 already
+   took once — pulling away something free users can already do, this time without D3's explicit
+   sign-off.
+
+   **`story_intelligence` is the one exception, and the decision treats it differently.** Its screen
+   (Story Explorer on both clients) is also live and unrestricted, but the knowledge graph it displays
+   is never populated — `POST /story-intelligence/:storyId/analyze` (`story-intelligence.controller.ts:59`)
+   has **zero callers on either client**, so every user sees the same empty state today. Gating it now
+   costs nothing observable; gating it after either client ships an "analyze" trigger would cost the
+   same as the other five. **Decision: gate `story_intelligence`, formally declare the other five
+   included in every tier (including free) rather than continuing to nominally sell them unenforced.**
+
+   **Not yet built — this is the decision, not the implementation.** Gating `story_intelligence`
+   needs a real `isEntitled` call at the right boundary (the analyze trigger, the graph reads, or
+   both — unscoped) plus `PremiumGate`/its web equivalent wrapped around the Story Explorer entry
+   point on both clients. Web's own code (`writing-assistant-panel.tsx:25-27`) currently documents
+   _both_ "Explorer and Ask My Book" as D4-blocked from gating together — confirm whether "Ask My
+   Book" shares `story_intelligence`'s feature code or `ai_discovery`'s before touching that gate, or
+   the wrong surface gets walled off. Declaring the other five "included in every tier" is a
+   catalogue/copy change (`DEFAULT_PLAN_FEATURES`, `settings.catalog.ts`, pricing copy) — also not yet
+   made. Follow-up work, sized separately from this decision.
 
 **Ownership.** `premium_content` (a ninth code that does not exist yet) is owned by **B2**, held —
 [45 §4.5](./45_WebClientRoadmap.md#45-b2--premium-content-held-detail). B2 will write the **first real
-`isEntitled` caller** and establish the enforcement pattern. **The other seven are unowned**, and
-closing them is a backend row plus the free-tier product decision above — not a client port. **W5**
-inherits three of them (`ai_discovery`, `premium_search`, `premium_recommendations`), which is why B2
-should precede it.
+`isEntitled` caller** and establish the enforcement pattern — `story_intelligence` is now the natural
+candidate for that first caller, being the only one of the six actually meant to gate. The other five
+are no longer "unowned work to close" — they're a **closed decision** (formally free), so B2 does not
+need to precede **W5** on their account; it still owns `premium_content` itself.
 
 ---
 
