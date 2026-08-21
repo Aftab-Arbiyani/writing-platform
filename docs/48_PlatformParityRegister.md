@@ -1358,6 +1358,26 @@ all. **Not** by deleting or `skip`-ing the test.
 > not a confirmed fix for M-5** — with 0 reproductions before _or_ after, there is no measurement able
 > to tell the two apart. Left **OPEN**; whoever next hits this red should check first whether it still
 > reproduces post-hardening before spending time on the timeout hypothesis.
+>
+> **2026-08-21, second pass — the timeout hypothesis's own mechanism doesn't hold up.** It requires
+> resource contention _across_ the concurrently-running test files in a full-suite run. Checked
+> directly against `flutter_tools`' test runner (`packages/flutter_tools/lib/src/test/runner.dart`,
+> which shells out to `package:test` with `--concurrency` passed through): each test **file** runs in
+> its own isolate, and isolates do not share memory — so a race on Dart-level global/static state (the
+> `Hive` box registry included) **cannot** cross files in this model, full stop. That doesn't kill the
+> hypothesis outright (OS-level contention — disk I/O, CPU scheduling — is still structurally possible
+> under real load), but it removes the mechanism this session's own reasoning had leaned on, and
+> nothing in 23 combined runs (15 file-alone + 8 full-suite, including one at 3× this machine's core
+> count) got anywhere near a 30-second per-test timeout. There is also no raw failure output to inspect
+> anywhere — no CI artifact, no preserved log, nothing in git history — so both the original ~2-in-10
+> count and "no assertion output at all" description rest entirely on unverifiable prose (rule 1: an
+> entry needs an anchor someone can point at, and this one no longer has one that survives a check).
+>
+> **Recorded and left OPEN rather than chased further.** Continuing to force full-suite reruns without
+> a real failure to inspect is unlikely to pay off — the next productive move, if this comes up red
+> again, is to catch the actual failure text in the act (e.g. temporary logging around
+> `buildTestContainer`'s setup, or CI's own log if it reproduces there first), not another blind rerun
+> loop.
 
 Audited and clear elsewhere: the frontend has no other money formatter, and `admin/src/lib/format.ts`'s
 `formatUsd` takes major units by contract and has **zero callers** (admin has no monetization surface yet).
