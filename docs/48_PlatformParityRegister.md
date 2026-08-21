@@ -1336,6 +1336,29 @@ whoever picks this up should confirm before changing anything, and the obvious f
 the suite with `--reporter expanded` and a raised timeout to see whether the abort is a timeout at
 all. **Not** by deleting or `skip`-ing the test.
 
+> **2026-08-21 — another measurement pass, still not a finding.** Followed the prescribed first step:
+> `flutter test --reporter expanded`, both at the default concurrency and forced to `--concurrency=48`
+> (3× this machine's 16 cores, to push toward the "loaded machine" the timeout hypothesis needs). The
+> file alone ran 15/15 clean; full-suite runs (7 at default concurrency, 1 oversubscribed) were 8/8
+> clean — **0 failures in 23 combined runs**, where the recorded rate would predict roughly 4–5. Either
+> the ~2-in-10 rate does not hold on this machine, or reproducing it needs conditions this sandbox does
+> not have (the original count's environment is not recorded — rule 1 territory). **The timeout
+> hypothesis is still unconfirmed, not refuted** — 23 clean runs cannot rule out a rare race, only bound
+> its rate lower than assumed.
+>
+> **One real bug found by reading the code, independent of the timeout question.** `submit()`
+> (`lib/features/ai/presentation/controllers/semantic_search_controller.dart:83`) fires
+> `unawaited(record(...))` — a real Hive box write with no handle the caller can join on. This exact
+> test calls `submit()` and returns without ever waiting for that write, so `addTearDown`'s
+> `container.dispose()` can run while it is still in flight. That shape — a fire-and-forget Future
+> racing disposal in a plain `test()` with no pump loop to flush it — is a textbook source of
+> `package:test`'s "failed after it had already completed, no assertion output" class, so it was
+> closed regardless: the test now `await pumpEventQueue()`s after the triggering `submit('aria')`
+> call, before the second `submit`. **This is a hardening fix for a real defect the reading turned up,
+> not a confirmed fix for M-5** — with 0 reproductions before _or_ after, there is no measurement able
+> to tell the two apart. Left **OPEN**; whoever next hits this red should check first whether it still
+> reproduces post-hardening before spending time on the timeout hypothesis.
+
 Audited and clear elsewhere: the frontend has no other money formatter, and `admin/src/lib/format.ts`'s
 `formatUsd` takes major units by contract and has **zero callers** (admin has no monetization surface yet).
 So this bug was monetization-only, on both platforms.
