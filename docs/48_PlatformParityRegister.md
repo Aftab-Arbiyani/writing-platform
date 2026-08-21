@@ -3499,6 +3499,16 @@ something that runs the app:
 > "read + honest refusal" the row was sized for, not the on-device confirmation UI itself: a provider
 > that actually needs the secret still cannot complete a purchase on mobile, it just no longer lies
 > about having done so. Regression guard: `test/features/monetization/checkout_client_secret_test.dart`.
+>
+> **Sixth reconciliation, 2026-08-21 — T-10.** Closed and its line is gone from 3.22a. The tap-height
+> floor in `qalam-mobile/lib/shared/widgets/buttons/q_button.dart:58` is now
+> `math.max(_visualHeight, 48)`, so every `QButton` — `sm`, `md`, and `lg` — clears Android's
+> `androidTapTargetGuideline` as well as iOS's, app-wide, in one place. No screen-level change was
+> needed because the guideline gap was never a per-surface defect (§6.3 said so at the time: "not for
+> anything a particular surface did"). The visible control height is unchanged; only the invisible tap
+> area around `sm`/`md` buttons grew, which shifted the `q_button_light` golden's pixel bounds —
+> regenerated with `--update-goldens`, and a full local `flutter test` run (826 tests) is green with no
+> other golden affected.
 
 **This is the only admissible answer to "what is still open?".** Everything above it is a _diagnosis_
 — kept for its reasoning, and unreliable as a status, because a §3 heading is written once and the code
@@ -3528,7 +3538,6 @@ them (baseline re-mint, five call sites, a measurement loop) is the actual cost.
 | -------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
 | **C-15** | **medium** | the web suggestion composer's hand-typed offset now **409s** against the offset-exact check — and **mobile cannot propose an edit at all**, so the capability works on neither platform | `frontend/src/features/collaboration/components/suggestion-composer.tsx:35,69,93` ("Starts at character"). Mobile: `createSuggestion` has **zero callers** in `lib/` (re-verified 2026-08-20) and `suggestions_screen.dart` only accepts/rejects/withdraws — the §3.2 note at line 217, still true | **NEEDS SCOPING** before it is scheduled: web fix ≈1.5–2 d; the mobile half is a build nobody has sized. See the note under 3.22a |
 | **B8-2** | **low**    | granting an override to a nonexistent id inserts a row nothing can read and no screen can list                                                                                          | `backend/src/modules/monetization/entities/entitlement-override.entity.ts:16-20` — index, no FK, no relation. Opened by B8-1's fix                                                                                                                                                                 | **0.5 d** (three writes, one FK question — not one rule three times)                                                              |
-| **T-10** | **low**    | every `QButton` is 44 px, so Android's 48 px tap-target guideline fails app-wide                                                                                                        | `qalam-mobile/lib/shared/widgets/buttons/q_button.dart:58` — `math.max(_visualHeight, 44)`                                                                                                                                                                                                         | **0.5–1 d** (height change on every screen)                                                                                       |
 
 > **C-15 is not the web-only row it is filed as — re-verified 2026-08-20.** Its "mobile is unaffected"
 > premise rested on **R-1** (nothing in the app navigated to any AF6 screen), and R-1 has been closed
@@ -4076,7 +4085,7 @@ load-bearing one.
    are not gated by it) is stated in 45 §4.9 and in the counting method's own comment; the api-types
    guard was checked and found not applicable, which is also written down there.
 
-### T-10 · **low** · **OPEN — ledger §3.22a** · every `QButton` is 44 px tall, so the Android 48 px tap-target guideline fails app-wide
+### T-10 · **low** · ✅ **CLOSED 2026-08-21** · every `QButton` is 44 px tall, so the Android 48 px tap-target guideline fails app-wide
 
 **What.** `q_button.dart` sets `tapHeight = max(visualHeight, 44)`. 44 is the iOS HIG minimum;
 Android's is 48, and `meetsGuideline(androidTapTargetGuideline)` fails for any screen containing a
@@ -4086,9 +4095,9 @@ Android's is 48, and `meetsGuideline(androidTapTargetGuideline)` fails for any s
 `labeledTapTargetGuideline` and `iOSTapTargetGuideline` in light and dark and states in the test why
 the fourth is absent.
 
-**Not fixed here.** Raising the clamp to 48 changes the height of every button in the app and is a
-design decision with visual consequences on every screen — a token/UI row, not a piece-limit row.
-Unowned.
+**Fixed 2026-08-21.** The clamp is now `max(visualHeight, 48)` (`q_button.dart:58`) — one line, since
+the guideline gap was app-wide and never per-surface. See [3.22's sixth
+reconciliation](#322-the-open-ledger-verified-2026-08-20) for the golden-regeneration note.
 
 ### 6.4 B6's sweep (2026-08-08)
 
