@@ -156,15 +156,17 @@ export const FLAGGED_AI_FEATURES: readonly AiFeature[] = [
  * in-editor assistant (`writing_assistant`, whose eight actions are prompt-template
  * keys, not distinct features), the AF2 Craft Coach, and the three vestigial AF1 codes
  * (`grammar`/`rewrite`/`summarization`) which have no caller but are mapped for
- * totality. Everything else maps to `null` — **deliberately**, and each for its own
- * reason:
+ * totality. Five more map to `story_intelligence` — **D4, decided 2026-08-21** (48
+ * §5.2): the AF3 story analyses (`character_analysis`, `plot_analysis`,
+ * `world_building`, `style_analysis`, `story_timeline`) that fold into a story's
+ * knowledge graph. Everything else maps to `null` — **deliberately**, and each for
+ * its own reason:
  *
- * - The five AF3 story analyses (`character_analysis`, `plot_analysis`,
- *   `world_building`, `style_analysis`, `story_timeline`) and the AF4 surfaces
- *   (`semantic_search`, `recommendations`, `ask_book`) belong to **D4**, whose scope
- *   the owner has DEFERRED. 48 §5.2 consequence 1 ("a client must not gate on the
- *   seven") still binds for every code but `ai_writing`. Gating them here would
- *   silently pre-empt a decision that has not been taken.
+ * - The AF4 surfaces (`semantic_search`, `recommendations`, `ask_book`) were
+ *   confirmed **already live and free on both clients** in the same D4 decision —
+ *   gating them now would repeat the `ai_writing` regression without sign-off, so
+ *   they stay `null` on purpose, not by omission. 48 §5.2 consequence 1 ("a client
+ *   must not gate on" these) still binds for them specifically.
  * - `moderation` and `playground` are infrastructure, not a sold capability.
  * - The reserved codes (`expand`, `shorten`, `title_suggestions`, `synopsis`,
  *   `voice_dictation`, `image_generation`) have no caller, no seeded flag, and no
@@ -184,12 +186,13 @@ export const AI_FEATURE_PREMIUM_CODE = {
   [AiFeature.Grammar]: PremiumFeature.AiWriting,
   [AiFeature.Rewrite]: PremiumFeature.AiWriting,
   [AiFeature.Summarization]: PremiumFeature.AiWriting,
-  // ── D4's codes — NOT gated (scope deferred by the owner) ─────────────────────
-  [AiFeature.CharacterAnalysis]: null,
-  [AiFeature.PlotAnalysis]: null,
-  [AiFeature.WorldBuilding]: null,
-  [AiFeature.StyleAnalysis]: null,
-  [AiFeature.StoryTimeline]: null,
+  // ── Paid: story intelligence (D4, decided 2026-08-21) ────────────────────────
+  [AiFeature.CharacterAnalysis]: PremiumFeature.StoryIntelligence,
+  [AiFeature.PlotAnalysis]: PremiumFeature.StoryIntelligence,
+  [AiFeature.WorldBuilding]: PremiumFeature.StoryIntelligence,
+  [AiFeature.StyleAnalysis]: PremiumFeature.StoryIntelligence,
+  [AiFeature.StoryTimeline]: PremiumFeature.StoryIntelligence,
+  // ── D4's codes — confirmed free, not gated (decided 2026-08-21) ──────────────
   [AiFeature.SemanticSearch]: null,
   [AiFeature.Recommendations]: null,
   [AiFeature.AskBook]: null,

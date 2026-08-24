@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import {
   AiMessageRole,
+  PremiumFeature,
   STORY_GRAPH_TITLE_MAX,
   StoryAnalysisKind,
   StoryAnalysisScope,
@@ -11,6 +12,8 @@ import {
 import type { CursorPayload } from '../../common/pagination/cursor.util';
 import { decodeCursor, encodeCursor } from '../../common/pagination/cursor.util';
 import { AiCompletionService } from '../ai/orchestration/ai-completion.service';
+import { EntitlementService } from '../monetization/entitlement.service';
+import { MonetizationFeatureService } from '../monetization/monetization.feature-service';
 import { parseStoryAnalysis } from './analysis/story-analysis.parser';
 import type { StoryGraphDto } from './dto/story-response.dto';
 import { toGraphDto } from './story.mappers';
@@ -63,7 +66,27 @@ export class StoryIntelligenceService {
   constructor(
     private readonly completion: AiCompletionService,
     private readonly repo: StoryIntelligenceRepository,
+    private readonly feature: MonetizationFeatureService,
+    private readonly entitlements: EntitlementService,
   ) {}
+
+  /**
+   * Dark-launch-aware entitlement check for a graph READ (D4, docs/48 §5.2, decided
+   * 2026-08-21). Mirrors `AiUsageMeterService.checkQuota`'s own escape hatch exactly:
+   * with payments dark nobody holds a subscription, so a gate that ran anyway would
+   * deny EVERY user rather than just free ones.
+   *
+   * Deliberately NOT inside {@link getGraph}/{@link getGraphSnapshot} — that method is
+   * also the reuse seam for `Recommendations` and Ask My Book's `GraphRetriever`
+   * (both confirmed free by the same D4 decision), so gating it there would silently
+   * wall those off too. Every read that has no other caller asserts this itself;
+   * `getGraph`'s controller action asserts it before calling in, since `getGraph` is
+   * the one method that isn't call-site-exclusive to this feature.
+   */
+  async assertGraphReadEntitled(userId: string): Promise<void> {
+    if (!(await this.feature.isEnabled())) return;
+    await this.entitlements.assertAllowed(userId, PremiumFeature.StoryIntelligence);
+  }
 
   /**
    * Run an analysis and fold its structured result into the graph. Returns the
@@ -132,6 +155,7 @@ export class StoryIntelligenceService {
     userId: string,
     storyId: string,
   ): Promise<{ graph: StoryGraph; characters: StoryNode[]; relationships: StoryEdge[] }> {
+    await this.assertGraphReadEntitled(userId);
     const graph = await this.getOwnedGraphOrThrow(userId, storyId);
     const [characters, allEdges] = await Promise.all([
       this.repo.listNodes(graph.id, 'character'),
@@ -150,6 +174,7 @@ export class StoryIntelligenceService {
     userId: string,
     storyId: string,
   ): Promise<{ graph: StoryGraph; events: StoryNode[] }> {
+    await this.assertGraphReadEntitled(userId);
     const graph = await this.getOwnedGraphOrThrow(userId, storyId);
     const events = await this.repo.listNodes(graph.id, 'event');
     events.sort((a, b) => orderOf(a) - orderOf(b));
@@ -162,6 +187,7 @@ export class StoryIntelligenceService {
     rawCursor: string | undefined,
     rawLimit?: number,
   ): Promise<AnalysisHistoryPage> {
+    await this.assertGraphReadEntitled(userId);
     const graph = await this.getOwnedGraphOrThrow(userId, storyId);
     const limit = Math.min(Math.max(rawLimit ?? PAGE_SIZE_DEFAULT, 1), PAGE_SIZE_MAX);
     const cursor: CursorPayload | null = decodeCursor(rawCursor);
@@ -183,6 +209,7 @@ export class StoryIntelligenceService {
   }
 
   async getAnalysis(userId: string, storyId: string, analysisId: string): Promise<StoryAnalysis> {
+    await this.assertGraphReadEntitled(userId);
     const graph = await this.getOwnedGraphOrThrow(userId, storyId);
     const analysis = await this.repo.findAnalysis(graph.id, analysisId);
     if (analysis === null) {
@@ -192,6 +219,7 @@ export class StoryIntelligenceService {
   }
 
   async resetGraph(userId: string, storyId: string): Promise<void> {
+    await this.assertGraphReadEntitled(userId);
     const graph = await this.getOwnedGraphOrThrow(userId, storyId);
     await this.repo.deleteGraph(graph.id);
   }

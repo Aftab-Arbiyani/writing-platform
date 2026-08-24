@@ -140,6 +140,7 @@ import { UsageService } from './usage.service';
   ],
   exports: [
     EntitlementService,
+    MonetizationFeatureService,
     SubscriptionService,
     CreditService,
     UsageService,

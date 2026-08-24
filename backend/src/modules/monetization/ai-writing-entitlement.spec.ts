@@ -35,9 +35,12 @@ import type { UsageService } from './usage.service';
  * is this user on" to "does this AI request proceed". A stubbed entitlement mock would
  * pass against the pre-fix code, which is the one property every test here must not have.
  *
- * The third describe block is the scope regression test and matters as much as the first:
- * D4's codes and the AF4 surfaces must stay ungated, so it pins that a free user can still
- * ask a book a question. Gating that would silently pre-empt a decision the owner deferred.
+ * The third describe block is a scope regression test and matters as much as the first: the
+ * three AF4 surfaces (`ask_book`, `semantic_search`, `recommendations`) were confirmed
+ * already live and free when D4 was decided (2026-08-21), so it pins that a free user can
+ * still ask a book a question. Gating one of them would silently reopen a decision that has
+ * already been made. The fourth block is D4's other half — the five AF3 story-analysis
+ * kinds, which the SAME decision put behind `story_intelligence` instead.
  */
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -162,6 +165,15 @@ const GATED_FEATURES = [
   AiFeature.Summarization,
 ] as const;
 
+/** Every AI feature D4 sells behind `story_intelligence` (decided 2026-08-21). */
+const GATED_STORY_INTELLIGENCE_FEATURES = [
+  AiFeature.CharacterAnalysis,
+  AiFeature.PlotAnalysis,
+  AiFeature.WorldBuilding,
+  AiFeature.StyleAnalysis,
+  AiFeature.StoryTimeline,
+] as const;
+
 // ── Tests ──────────────────────────────────────────────────────────────────────
 
 describe('D3 — AI writing is a paid capability', () => {
@@ -219,28 +231,76 @@ describe('D3 — AI writing is a paid capability', () => {
     );
   });
 
-  describe('scope — D4 and AF4 codes are NOT gated', () => {
+  describe('scope — the AF4 codes D4 confirmed free stay NOT gated', () => {
     /**
      * The regression test for scope creep. `ask_book`, `semantic_search` and
-     * `recommendations` (AF4) and the five AF3 analyses belong to **D4**, whose scope the
-     * owner deferred; docs/48 §5.2 consequence 1 still forbids gating them. They meter
-     * against `ai_budget`, which free DOES hold — which is the whole reason free keeps
-     * that allowance (it is spendable, contrary to what §5.2 assumed when it was written).
+     * `recommendations` (AF4) were confirmed already live and free on both clients when
+     * D4 was decided (2026-08-21, docs/48 §5.2) — gating them now would be an
+     * unsanctioned repeat of the `ai_writing` regression. They meter against
+     * `ai_budget`, which free DOES hold — which is the whole reason free keeps that
+     * allowance (it is spendable, contrary to what §5.2 assumed when it was written).
+     *
+     * The five AF3 story analyses used to sit in this block too — D4 decided the
+     * opposite for them (see `describe('D4 — story intelligence...')` below).
      */
-    it.each([
-      AiFeature.AskBook,
-      AiFeature.SemanticSearch,
-      AiFeature.Recommendations,
-      AiFeature.CharacterAnalysis,
-      AiFeature.PlotAnalysis,
-      AiFeature.WorldBuilding,
-      AiFeature.StyleAnalysis,
-      AiFeature.StoryTimeline,
-    ])('should allow %s for a FREE user', async (aiFeature) => {
-      const { service } = build({ subscription: null });
+    it.each([AiFeature.AskBook, AiFeature.SemanticSearch, AiFeature.Recommendations])(
+      'should allow %s for a FREE user',
+      async (aiFeature) => {
+        const { service } = build({ subscription: null });
 
-      await expect(service.checkQuota(quotaInput(aiFeature))).resolves.toBeUndefined();
-    });
+        await expect(service.checkQuota(quotaInput(aiFeature))).resolves.toBeUndefined();
+      },
+    );
+  });
+
+  describe('D4 — story intelligence is a paid capability (decided 2026-08-21)', () => {
+    /**
+     * The five AF3 story-analysis kinds now map to `story_intelligence`
+     * (`packages/shared/src/ai.ts`), reusing this exact meter — no new plumbing. Unlike
+     * `ai_writing`, the catalogue grants this feature to Pro/Enterprise only, NOT Plus
+     * (confirmed intentional when D4 was decided) — so Plus is asserted denied here
+     * too, not just Free.
+     */
+    it.each(GATED_STORY_INTELLIGENCE_FEATURES)(
+      'should deny %s with ENTITLEMENT_DENIED for a free user',
+      async (aiFeature) => {
+        const { service } = build({ subscription: null });
+
+        await expect(service.checkQuota(quotaInput(aiFeature))).rejects.toBeInstanceOf(
+          EntitlementDeniedException,
+        );
+      },
+    );
+
+    it.each(GATED_STORY_INTELLIGENCE_FEATURES)(
+      'should deny %s for a Plus subscriber — the catalogue excludes Plus for this feature',
+      async (aiFeature) => {
+        const { service } = build({ subscription: subscribedTo(PlanTier.Plus) });
+
+        await expect(service.checkQuota(quotaInput(aiFeature))).rejects.toBeInstanceOf(
+          EntitlementDeniedException,
+        );
+      },
+    );
+
+    it.each(GATED_STORY_INTELLIGENCE_FEATURES)(
+      'should allow %s for Pro/Enterprise',
+      async (aiFeature) => {
+        for (const tier of [PlanTier.Pro, PlanTier.Enterprise]) {
+          const { service } = build({ subscription: subscribedTo(tier) });
+          await expect(service.checkQuota(quotaInput(aiFeature))).resolves.toBeUndefined();
+        }
+      },
+    );
+
+    it.each(GATED_STORY_INTELLIGENCE_FEATURES)(
+      'should still allow %s for a free user when payments are dark',
+      async (aiFeature) => {
+        const { service } = build({ paymentsEnabled: false, subscription: null });
+
+        await expect(service.checkQuota(quotaInput(aiFeature))).resolves.toBeUndefined();
+      },
+    );
   });
 
   describe('payments dark', () => {

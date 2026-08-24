@@ -3955,15 +3955,33 @@ subscriber's plan is computed correctly and then ignored on every route but the 
    same as the other five. **Decision: gate `story_intelligence`, formally declare the other five
    included in every tier (including free) rather than continuing to nominally sell them unenforced.**
 
-   **Not yet built — this is the decision, not the implementation.** Gating `story_intelligence`
-   needs a real `isEntitled` call at the right boundary (the analyze trigger, the graph reads, or
-   both — unscoped) plus `PremiumGate`/its web equivalent wrapped around the Story Explorer entry
-   point on both clients. Web's own code (`writing-assistant-panel.tsx:25-27`) currently documents
-   _both_ "Explorer and Ask My Book" as D4-blocked from gating together — confirm whether "Ask My
-   Book" shares `story_intelligence`'s feature code or `ai_discovery`'s before touching that gate, or
-   the wrong surface gets walled off. Declaring the other five "included in every tier" is a
-   catalogue/copy change (`DEFAULT_PLAN_FEATURES`, `settings.catalog.ts`, pricing copy) — also not yet
-   made. Follow-up work, sized separately from this decision.
+   ~~**Not yet built — this is the decision, not the implementation.**~~ **Backend + mobile BUILT
+   2026-08-21** (web deferred, same phasing C-15 used). Both boundaries turned out to need gating,
+   not one: the analyze trigger (`AI_FEATURE_PREMIUM_CODE` in `packages/shared/src/ai.ts` — the five
+   AF3 story-analysis kinds now map to `story_intelligence`, reusing `AiUsageMeterService.checkQuota`
+   with no new plumbing) and the graph reads, which never touch that pipeline and needed a new
+   `StoryIntelligenceService.assertGraphReadEntitled(userId)` — dark-launch-aware, mirroring
+   `checkQuota`'s own escape hatch — called from **all six** `story-intelligence`/`retrieval` read
+   routes, not just the one mobile's Story Explorer calls (the other five had zero callers, but the
+   identical unenforced-catalogue bug). Deliberately NOT inside `getGraph`/`getGraphSnapshot`
+   themselves — that method is the reuse seam `Recommendations` and Ask My Book's `GraphRetriever`
+   both depend on, both confirmed free by this same decision; `getGraph`'s controller action asserts
+   before calling in instead, so the shared seam stays untouched. Mobile: `PremiumGate` wraps only
+   `story_explorer_screen.dart`'s body (not its AppBar's "Ask about this story" action, which must
+   stay reachable regardless — confirmed by a broken existing test before this was caught) and a
+   dark-launch pre-check swaps just the body, not the whole screen, for the identical reason.
+   `story_intelligence` is granted to Pro/Enterprise but **not Plus** — confirmed intentional, so a
+   paying Plus subscriber sees the lock card too. Tested (backend: 1376/1376, mobile: 844/844) but
+   **not live-verified against a running backend** — same caveat C-15 carries.
+
+   > **Web's equivalent gate, and "Ask My Book" shares `story_intelligence`'s code or `ai_discovery`'s"
+   > — still open, deferred.** Web's own code (`writing-assistant-panel.tsx:25-27`) documents _both_
+   > "Explorer and Ask My Book" as D4-blocked from gating together; only Explorer was resolved here
+   > (Ask My Book stays free, unconditionally, per this decision — it is not `story_intelligence`'s
+   > code either way, so the question is now moot for enforcement purposes, but the comment itself is
+   > still stale and should be corrected when web's gate is built). Declaring the other five "included
+   > in every tier" is a catalogue/copy change (`DEFAULT_PLAN_FEATURES`, `settings.catalog.ts`, pricing
+   > copy) — also not yet made. Both remain follow-up work, sized separately from this pass.
 
 **Ownership.** `premium_content` (a ninth code that does not exist yet) is owned by **B2**, held —
 [45 §4.5](./45_WebClientRoadmap.md#45-b2--premium-content-held-detail). B2 will write the **first real

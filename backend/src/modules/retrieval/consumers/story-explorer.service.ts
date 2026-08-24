@@ -37,6 +37,10 @@ export class StoryExplorerService {
     storyId: string,
     rawView: string,
   ): Promise<ExplorerViewResponseDto> {
+    // Asserted here, not inside `getGraphSnapshot` — that method is also the reuse
+    // seam Recommendations and Ask My Book call, both confirmed free by the same D4
+    // decision (docs/48 §5.2, decided 2026-08-21).
+    await this.story.assertGraphReadEntitled(userId);
     const view = normalizeView(rawView);
     const graph = await this.story.getGraphSnapshot(userId, storyId);
     const { nodes, edges } = project(graph, view);

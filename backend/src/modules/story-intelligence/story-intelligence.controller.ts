@@ -90,6 +90,11 @@ export class StoryIntelligenceController {
     @CurrentUser() user: AuthenticatedUser,
     @Param('storyId') storyId: string,
   ): Promise<StoryGraphDto> {
+    // Asserted HERE, not inside `service.getGraph` — that method is also the reuse
+    // seam `getGraphSnapshot` calls for Recommendations and Ask My Book, both
+    // confirmed free by the same D4 decision (docs/48 §5.2). This route has no other
+    // caller, so gating it at this one call site is exact.
+    await this.service.assertGraphReadEntitled(user.id);
     return toGraphDto(await this.service.getGraph(user.id, storyId));
   }
 

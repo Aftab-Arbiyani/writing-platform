@@ -1,6 +1,8 @@
 import { AiFeature, StoryAnalysisKind, StoryAnalysisScope } from '@qalam/shared';
 
 import type { AiCompletionService } from '../ai/orchestration/ai-completion.service';
+import type { EntitlementService } from '../monetization/entitlement.service';
+import type { MonetizationFeatureService } from '../monetization/monetization.feature-service';
 import type { StoryAnalysis } from './entities/story-analysis.entity';
 import type { StoryGraph } from './entities/story-graph.entity';
 import { StoryIntelligenceService } from './story-intelligence.service';
@@ -37,10 +39,14 @@ const graph = { id: 'g1', userId: 'u1', storyId: 'piece-1' } as unknown as Story
 function makeService(overrides: {
   complete?: jest.Mock;
   repo?: Partial<Record<keyof StoryIntelligenceRepository, jest.Mock>>;
+  paymentsEnabled?: boolean;
+  assertAllowed?: jest.Mock;
 }): {
   service: StoryIntelligenceService;
   complete: jest.Mock;
   repo: Partial<Record<keyof StoryIntelligenceRepository, jest.Mock>>;
+  assertAllowed: jest.Mock;
+  isEnabled: jest.Mock;
 } {
   const complete =
     overrides.complete ?? jest.fn().mockResolvedValue(completionOutput(CHARACTER_JSON));
@@ -52,13 +58,23 @@ function makeService(overrides: {
     findAnalysis: jest.fn(),
     listNodes: jest.fn().mockResolvedValue([]),
     listEdges: jest.fn().mockResolvedValue([]),
+    listAnalyses: jest.fn().mockResolvedValue([]),
+    deleteGraph: jest.fn().mockResolvedValue(undefined),
     ...overrides.repo,
   };
+  // Entitled by default — these tests are about graph logic, not gating. The gate's
+  // own behaviour (denied/dark-launch) is covered separately, per call site, below.
+  const isEnabled = jest.fn().mockResolvedValue(overrides.paymentsEnabled ?? true);
+  const feature = { isEnabled } as unknown as MonetizationFeatureService;
+  const assertAllowed = overrides.assertAllowed ?? jest.fn().mockResolvedValue(undefined);
+  const entitlements = { assertAllowed } as unknown as EntitlementService;
   const service = new StoryIntelligenceService(
     completion,
     repo as unknown as StoryIntelligenceRepository,
+    feature,
+    entitlements,
   );
-  return { service, complete, repo };
+  return { service, complete, repo, assertAllowed, isEnabled };
 }
 
 describe('StoryIntelligenceService', () => {
@@ -121,6 +137,53 @@ describe('StoryIntelligenceService', () => {
       await expect(service.getAnalysis('u1', 'piece-1', 'missing')).rejects.toBeInstanceOf(
         StoryAnalysisNotFoundException,
       );
+    });
+  });
+
+  // ── D4 — story_intelligence graph reads are entitlement-gated (docs/48 §5.2) ──────
+  //
+  // Every read here has no OTHER caller (confirmed by grep before this change), so the
+  // gate lives inside the service method itself. `getGraph` is the one exception — it
+  // is also `getGraphSnapshot`'s reuse seam for Recommendations and Ask My Book (both
+  // confirmed free), so it deliberately does NOT gate itself; its controller action
+  // asserts before calling in instead (see story-intelligence.controller.ts).
+  describe('graph reads are entitlement-gated, except getGraph itself', () => {
+    const READS: Array<[string, (service: StoryIntelligenceService) => Promise<unknown>]> = [
+      ['getCharacterGraph', (s) => s.getCharacterGraph('u1', 'piece-1')],
+      ['getTimeline', (s) => s.getTimeline('u1', 'piece-1')],
+      ['listAnalyses', (s) => s.listAnalyses('u1', 'piece-1', undefined)],
+      ['getAnalysis', (s) => s.getAnalysis('u1', 'piece-1', 'a1')],
+      ['resetGraph', (s) => s.resetGraph('u1', 'piece-1')],
+    ];
+
+    it.each(READS)('%s asserts entitlement before touching the graph', async (_name, call) => {
+      const denied = jest.fn().mockRejectedValue(new Error('ENTITLEMENT_DENIED'));
+      const { service, repo } = makeService({ assertAllowed: denied });
+
+      await expect(call(service)).rejects.toThrow('ENTITLEMENT_DENIED');
+      expect(denied).toHaveBeenCalledWith('u1', 'story_intelligence');
+      expect(repo.findGraph).not.toHaveBeenCalled();
+    });
+
+    it.each(READS)(
+      '%s skips the check when payments are dark (mirrors checkQuota)',
+      async (_name, call) => {
+        const { service, assertAllowed, repo } = makeService({ paymentsEnabled: false });
+
+        await call(service);
+
+        expect(assertAllowed).not.toHaveBeenCalled();
+        expect(repo.findGraph).toHaveBeenCalled();
+      },
+    );
+
+    it('getGraph itself never asserts entitlement — the controller does, so getGraphSnapshot stays free for Recommendations/Ask My Book', async () => {
+      const { service, assertAllowed } = makeService({});
+
+      await service.getGraph('u1', 'piece-1');
+      await service.getGraphSnapshot('u1', 'piece-1');
+
+      expect(assertAllowed).not.toHaveBeenCalled();
     });
   });
 });
