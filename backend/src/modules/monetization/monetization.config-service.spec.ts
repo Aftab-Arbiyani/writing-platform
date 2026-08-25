@@ -3,6 +3,7 @@ import {
   NEGATIVE_UNLIMITED_LIMIT_KEYS,
   PlanTier,
   PremiumFeature,
+  UNIVERSAL_PLAN_FEATURES,
   UNLIMITED_SEATS,
   resolvePlanLimit,
 } from '@qalam/shared';
@@ -280,10 +281,15 @@ describe('MonetizationConfigService — D3, AI writing is enforced', () => {
 
       await service.auditEnforcedPaidFeatures();
 
-      expect((await service.getPlans())[PlanTier.Plus].features).toEqual([
-        'ai_budget',
-        'premium_search',
-      ]);
+      const features = (await service.getPlans())[PlanTier.Plus].features;
+      // The claim is unchanged; the assertion is narrowed. It used to compare the whole array,
+      // which also caught D4's universally-included codes when they arrived (2026-08-24) — those
+      // are the owner's decision applied at resolution, not this audit repairing anything. What
+      // "does not repair" means is exactly this: the removed code stays removed, and the two the
+      // admin kept are still there.
+      expect(features).not.toContain(PremiumFeature.AiWriting);
+      expect(features).toContain(PremiumFeature.AiBudget);
+      expect(features).toContain(PremiumFeature.PremiumSearch);
     });
   });
 });
@@ -341,5 +347,85 @@ describe('MonetizationConfigService — a config patch persists all seven fields
     expect(next.taxRates).toEqual(DEFAULT_CONFIG.taxRates);
     expect(next.currencyRates).toEqual(DEFAULT_CONFIG.currencyRates);
     expect(next.regionCurrency).toEqual(DEFAULT_CONFIG.regionCurrency);
+  });
+});
+
+/**
+ * D4's catalogue half (owner, 2026-08-21; docs/48 §5.2, row `D4-copy`).
+ *
+ * Five premium codes were declared **included in every tier**, and the catalogue went on selling
+ * them per-tier — so a free plan card omitted capabilities the account had been using all along, and
+ * the entitlement snapshot said `PlanExcludes` for a feature nobody was excluded from.
+ *
+ * These tests exist because the obvious fix does not work. `mergePlans` spreads a stored tier's
+ * `features` WHOLESALE, and `syncDefinitions` inserts with `orIgnore()`, so a deployment seeded
+ * before the decision keeps its arrays forever: editing `DEFAULT_PLAN_FEATURES` alone would be inert
+ * exactly where it matters. D3 escaped this trap by needing no catalogue edit (§6.13). D4 cannot, so
+ * the five are unioned in at RESOLUTION — code, live everywhere on deploy, no data migration.
+ */
+describe('MonetizationConfigService — D4, the universally-included codes', () => {
+  /** `monetization.plans` as seeded before the decision: five paid codes, none of them free. */
+  const STORED_PRE_D4_CATALOGUE = {
+    free: { tier: 'free', name: 'Free', features: ['ai_budget'] },
+    plus: {
+      tier: 'plus',
+      name: 'Plus',
+      features: ['ai_budget', 'ai_writing', 'ai_discovery', 'premium_search'],
+    },
+  };
+
+  it('gives FREE all five on a database seeded before the decision — the point of the row', async () => {
+    const plans = await serviceReading(STORED_PRE_D4_CATALOGUE).getPlans();
+
+    for (const feature of UNIVERSAL_PLAN_FEATURES) {
+      expect(plans[PlanTier.Free].features).toContain(feature);
+    }
+  });
+
+  it('gives free all five on a FRESH database too', async () => {
+    const plans = await serviceReading(null).getPlans();
+
+    for (const feature of UNIVERSAL_PLAN_FEATURES) {
+      expect(plans[PlanTier.Free].features).toContain(feature);
+    }
+  });
+
+  it('does NOT hand free the three codes that are actually enforced', async () => {
+    // The scope regression test. D4 freed five and gated one; a union that swept up `ai_writing`
+    // would silently undo D3, and one that swept up `story_intelligence` would undo D4's own
+    // exception. `ai_budget` stays a real plan feature that free happens to hold.
+    const plans = await serviceReading(STORED_PRE_D4_CATALOGUE).getPlans();
+
+    expect(plans[PlanTier.Free].features).not.toContain(PremiumFeature.AiWriting);
+    expect(plans[PlanTier.Free].features).not.toContain(PremiumFeature.StoryIntelligence);
+  });
+
+  it('keeps story_intelligence on Pro and Enterprise but NOT on Plus', async () => {
+    // Confirmed intentional when D4 was built: a paying Plus subscriber sees the lock too.
+    const plans = await serviceReading(null).getPlans();
+
+    expect(plans[PlanTier.Pro].features).toContain(PremiumFeature.StoryIntelligence);
+    expect(plans[PlanTier.Enterprise].features).toContain(PremiumFeature.StoryIntelligence);
+    expect(plans[PlanTier.Plus].features).not.toContain(PremiumFeature.StoryIntelligence);
+  });
+
+  it('lists each code once, however the stored row already spelled it', async () => {
+    // A pre-D4 paid tier already names `ai_discovery`; the union must not duplicate it, because
+    // both clients render this array straight onto a plan card.
+    const plans = await serviceReading(STORED_PRE_D4_CATALOGUE).getPlans();
+    const discovery = plans[PlanTier.Plus].features.filter((f) => f === PremiumFeature.AiDiscovery);
+
+    expect(discovery).toHaveLength(1);
+  });
+
+  it('still lets an operator ADD a code to a tier', async () => {
+    // The union is one-way on purpose: it cannot be used to subtract a code the owner declared
+    // free, but it must not turn the catalogue read-only either.
+    const plans = await serviceReading({
+      free: { tier: 'free', name: 'Free', features: ['ai_budget', 'marketplace'] },
+    }).getPlans();
+
+    expect(plans[PlanTier.Free].features).toContain(PremiumFeature.Marketplace);
+    expect(plans[PlanTier.Free].features).toContain(PremiumFeature.AiDiscovery);
   });
 });

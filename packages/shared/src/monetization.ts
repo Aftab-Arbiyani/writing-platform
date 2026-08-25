@@ -633,34 +633,54 @@ export const DEFAULT_PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
   },
 };
 
-/** Which premium features each tier includes by default (admin config may override). */
+/**
+ * The premium codes **D4 declared included in every tier, free ones included** (owner, 2026-08-21;
+ * `docs/48` §5.2).
+ *
+ * All five were checked against the live product before the decision and found already reachable by
+ * free accounts with real usage behind them — `ai_discovery` (the Discovery hub), `premium_search`
+ * (semantic search), `premium_recommendations` (the shelves, reachable even signed-out on web),
+ * `advanced_analytics` (the only analytics dashboard either client has, with no "basic" tier to fall
+ * back to) and `publishing_pro` (the review/publish/version workflow). Gating any of them would have
+ * repeated D3's `ai_writing` regression without D3's sign-off, so the decision went the other way:
+ * they are free, permanently, and the catalogue now says so.
+ *
+ * **This is a global truth, not per-tier data, and that is why it lives here rather than in every
+ * tier's array.** A stored `monetization.plans` row spreads WHOLESALE over the compiled defaults
+ * (`mergePlans` merges only `limits` per key), so a deployment seeded before today keeps its own
+ * arrays forever — the trap that made D3's catalogue edit unnecessary and would have made this one
+ * INERT. `MonetizationConfigService` unions these into every resolved tier instead, which is code
+ * and therefore live on every deployment the moment it ships, with no data migration.
+ *
+ * Not in this list, deliberately: `ai_budget` (metered and asserted since AF5), `ai_writing` (gated
+ * by D3) and `story_intelligence` (gated by D4 — its single exception). Those three are real
+ * differentiators and stay per-tier.
+ */
+export const UNIVERSAL_PLAN_FEATURES: readonly PremiumFeature[] = [
+  PremiumFeature.AiDiscovery,
+  PremiumFeature.PremiumSearch,
+  PremiumFeature.PremiumRecommendations,
+  PremiumFeature.AdvancedAnalytics,
+  PremiumFeature.PublishingPro,
+];
+
+/**
+ * Which premium features each tier includes **beyond {@link UNIVERSAL_PLAN_FEATURES}** (admin config
+ * may override). Only the three enforced codes appear here now; the resolved catalogue every client
+ * and the entitlement service read is this unioned with the universal list.
+ */
 export const DEFAULT_PLAN_FEATURES: Record<PlanTier, readonly PremiumFeature[]> = {
   [PlanTier.Free]: [PremiumFeature.AiBudget],
-  [PlanTier.Plus]: [
-    PremiumFeature.AiBudget,
-    PremiumFeature.AiWriting,
-    PremiumFeature.AiDiscovery,
-    PremiumFeature.PremiumSearch,
-  ],
+  [PlanTier.Plus]: [PremiumFeature.AiBudget, PremiumFeature.AiWriting],
   [PlanTier.Pro]: [
     PremiumFeature.AiBudget,
     PremiumFeature.AiWriting,
-    PremiumFeature.AiDiscovery,
     PremiumFeature.StoryIntelligence,
-    PremiumFeature.PremiumSearch,
-    PremiumFeature.PremiumRecommendations,
-    PremiumFeature.AdvancedAnalytics,
-    PremiumFeature.PublishingPro,
   ],
   [PlanTier.Enterprise]: [
     PremiumFeature.AiBudget,
     PremiumFeature.AiWriting,
-    PremiumFeature.AiDiscovery,
     PremiumFeature.StoryIntelligence,
-    PremiumFeature.PremiumSearch,
-    PremiumFeature.PremiumRecommendations,
-    PremiumFeature.AdvancedAnalytics,
-    PremiumFeature.PublishingPro,
   ],
 };
 

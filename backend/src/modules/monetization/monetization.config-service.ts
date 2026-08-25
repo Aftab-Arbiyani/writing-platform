@@ -12,6 +12,7 @@ import {
   PLAN_TIER_ORDER,
   PlanTier,
   PremiumFeature,
+  UNIVERSAL_PLAN_FEATURES,
 } from '@qalam/shared';
 import type { PlanDefinition } from '@qalam/shared';
 
@@ -195,6 +196,17 @@ export const DEFAULT_CONFIG: ResolvedMonetizationConfig = {
 };
 
 /** The compiled default plan catalogue (also the seeded `monetization.plans`). */
+/**
+ * A tier's features with D4's universally-included codes folded in, de-duplicated and order-stable.
+ *
+ * Order matters only for display — both clients render `plan.features` in the order the server sends
+ * — so the tier's own codes come first and the universal ones follow, which keeps what a tier BUYS
+ * at the top of every plan card.
+ */
+function withUniversalFeatures(features: readonly PremiumFeature[] = []): PremiumFeature[] {
+  return [...new Set<PremiumFeature>([...features, ...UNIVERSAL_PLAN_FEATURES])];
+}
+
 export function compiledPlans(): ResolvedPlanCatalogue {
   const priceByTier: Record<PlanTier, Partial<Record<BillingInterval, number>>> = {
     [PlanTier.Free]: { [BillingInterval.None]: 0 },
@@ -218,7 +230,7 @@ export function compiledPlans(): ResolvedPlanCatalogue {
       tier,
       name: names[tier],
       description: `${names[tier]} plan`,
-      features: [...DEFAULT_PLAN_FEATURES[tier]],
+      features: withUniversalFeatures(DEFAULT_PLAN_FEATURES[tier]),
       limits: { ...DEFAULT_PLAN_LIMITS[tier] },
       monthlyCredits: DEFAULT_PLAN_LIMITS[tier].aiMonthlyCredits,
       prices,
@@ -262,6 +274,22 @@ function mergePlans(raw: unknown): ResolvedPlanCatalogue {
       ...defaults[tier],
       ...storedTier,
       limits: { ...defaults[tier].limits, ...(storedTier.limits ?? {}) },
+      /**
+       * **D4's five universally-included codes are unioned back in AFTER the stored spread**, which
+       * is the whole reason this row is a code change rather than a catalogue edit.
+       *
+       * A stored `features` array replaces the compiled one wholesale (see the note above — only
+       * `limits` merges per key), so a deployment seeded before 2026-08-21 would keep listing the
+       * five as paid forever and a free account would be told it lacks capabilities it has been
+       * using all along. Editing `DEFAULT_PLAN_FEATURES` alone would have been INERT everywhere that
+       * matters. D3 escaped this trap by needing no catalogue edit (§6.13); D4 cannot, so the
+       * decision is applied at resolution instead.
+       *
+       * The union is deliberately one-way: an operator can still ADD codes to a tier, and can still
+       * curate the three enforced ones, but cannot subtract a code the owner declared free — which
+       * is the correct asymmetry for a decision rather than a configuration.
+       */
+      features: withUniversalFeatures(storedTier.features ?? defaults[tier].features),
       tier,
     };
   }
