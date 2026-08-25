@@ -1,9 +1,11 @@
 import { PremiumFeature } from '@qalam/shared';
+import { QEmptyState } from '@qalam/ui';
+import { Sparkles } from 'lucide-react';
 import type { ReactElement } from 'react';
 
 import { AiAvailabilityNotice } from '@/components/ai-availability-notice';
 import { WritingAssistantPanel } from '@/features/ai';
-import { PremiumGate } from '@/features/monetization';
+import { PremiumGate, isMonetizationEnabled } from '@/features/monetization';
 import { EditorPage } from '@/features/writing';
 
 /**
@@ -22,9 +24,13 @@ import { EditorPage } from '@/features/writing';
  * either feature learning about the other, and without a new endpoint: `PremiumGate` reads the
  * `GET /monetization/entitlements` snapshot both clients already consume.
  *
- * The gate wraps ONLY the Assistant and Craft Coach tabs. Explorer and Ask My Book are AF4
- * surfaces belonging to D4, whose scope the owner deferred, and 48 §5.2 consequence 1 still forbids
- * gating them — a client-side wall in front of a route the server serves.
+ * **D4 adds the second gate** (decided 2026-08-21, docs/48 §5.2; backend + mobile built 2026-08-24,
+ * web here). `story_intelligence` is the one premium code of the six that D4 chose to enforce, so the
+ * Story Explorer gets its own gate — and **Ask My Book deliberately does not**: the same decision
+ * declared `ai_discovery` and four others included in every tier, so walling that tab would now
+ * contradict a settled call rather than pre-empt an open one. Two props rather than one, because the
+ * two gates answer different questions with different remedies and the panel must not be able to
+ * confuse them.
  */
 export function Component(): ReactElement {
   return (
@@ -44,6 +50,26 @@ export function Component(): ReactElement {
               {children}
             </PremiumGate>
           )}
+          explorerGate={(children) =>
+            /**
+             * **The dark-launch branch comes BEFORE the gate, and mobile's build is why.**
+             * `PremiumGate` fails closed, and that includes the client flag being off — but with
+             * monetization dark no subscription can exist, so every viewer would be told a feature
+             * that has not shipped "needs a paid plan", and sent to a plans page that is itself
+             * switched off. Mobile hit this first (`story_explorer_screen.dart`) and answered it the
+             * same way: say the honest thing instead, which is that the graph is not available yet.
+             */
+            isMonetizationEnabled() ? (
+              <PremiumGate feature={PremiumFeature.StoryIntelligence}>{children}</PremiumGate>
+            ) : (
+              <QEmptyState
+                icon={Sparkles}
+                title="Story Explorer isn’t available yet"
+                description="The story knowledge graph arrives with subscriptions."
+                minHeight={220}
+              />
+            )
+          }
         />
       }
     />

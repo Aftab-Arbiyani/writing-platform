@@ -46,14 +46,33 @@ export interface WritingAssistantPanelProps {
    *
    * **Required, not optional with an identity default.** An omitted gate would silently serve AI
    * writing to a free user, which is the exact regression D3 exists to prevent, so omitting it is
-   * a compile error instead. It wraps only these two tabs: Explorer and Ask are AF4/D4 surfaces and
-   * gating them would pre-empt a decision the owner deferred (docs/48 §5.2 consequence 1).
+   * a compile error instead. It wraps only these two tabs — the Explorer has its own gate below, and
+   * **Ask My Book has none**, deliberately.
    */
   writingGate: (children: ReactNode) => ReactNode;
+
+  /**
+   * Wraps the Story Explorer tab in the `story_intelligence` entitlement gate (**D4**, decided
+   * 2026-08-21, docs/48 §5.2). Supplied from `app/routes/write.tsx` for the same boundary reason as
+   * {@link writingGate}.
+   *
+   * **Why this tab and not the one beside it.** D4 checked all six unenforced premium codes against
+   * the live product and made `story_intelligence` the single exception: its graph is never
+   * populated, so enforcing it costs nothing observable, while the other five — Ask My Book's
+   * `ai_discovery` among them — are live and in real use for free users and were declared included
+   * in every tier. So the Ask tab stays ungated **permanently**, and gating it would now contradict a
+   * settled decision rather than pre-empt an open one.
+   *
+   * Required for the same reason as `writingGate`: the server enforces this on all six graph reads
+   * (`story-intelligence.service.ts`, `retrieval/consumers/story-explorer.service.ts`), so an omitted
+   * gate means a 402 rendered as a generic failure instead of a lock with a way out.
+   */
+  explorerGate: (children: ReactNode) => ReactNode;
 }
 
 export function WritingAssistantPanel({
   writingGate,
+  explorerGate,
 }: WritingAssistantPanelProps): ReactElement | null {
   const open = useAiEditorTarget((s) => s.open);
   const setOpen = useAiEditorTarget((s) => s.setOpen);
@@ -85,11 +104,16 @@ export function WritingAssistantPanel({
   const coach = resolve(AiFeature.CraftCoach, errorCode);
   const ask = resolve(AiFeature.AskBook, askErrorCode);
   /**
-   * The explorer has NO feature flag and makes NO model call (`story-explorer.controller.ts` carries
-   * `ai.use` alone), so `null` asks for the master-switch-only gate — see `resolveAvailability`. It
-   * also opts out of the mid-flight `errorCode` override the other tabs share: that code comes from
-   * whichever AI request last failed, and a spent allowance on the assistant must not wall off a
-   * read that spends nothing.
+   * The explorer has no FEATURE FLAG and makes no model call, so `null` asks for the
+   * master-switch-only gate — see `resolveAvailability`. It also opts out of the mid-flight
+   * `errorCode` override the other tabs share: that code comes from whichever AI request last
+   * failed, and a spent allowance on the assistant must not wall off a read that spends nothing.
+   *
+   * **This is the FLAG question only, and since D4 it is no longer the whole answer.** The sentence
+   * that used to live here — "`story-explorer.controller.ts` carries `ai.use` alone" — stopped being
+   * true on 2026-08-24: the consumer now asserts `story_intelligence` before it reads
+   * (`retrieval/consumers/story-explorer.service.ts`). Availability and entitlement are separate
+   * questions with separate answers, so the second one is `explorerGate`, not this line.
    */
   const explorer = resolveAvailability({
     feature: null,
@@ -152,9 +176,16 @@ export function WritingAssistantPanel({
                 {
                   key: 'explorer',
                   label: 'Explorer',
+                  /**
+                   * D4: availability first, entitlement second, and in that order deliberately.
+                   * A writer whose instance has AI switched off is not in a position to buy
+                   * anything, so "AI is turned off" beats "this needs a paid plan" — the same
+                   * precedence D3's gate documents on the two tabs above, and the same one mobile's
+                   * screen applies by checking `aiEnabled` before it reaches its `PremiumGate`.
+                   */
                   children:
                     explorer === 'available' || explorer === 'unknown' ? (
-                      <StoryExplorerTab storyId={storyId} />
+                      explorerGate(<StoryExplorerTab storyId={storyId} />)
                     ) : (
                       <AiAvailabilityNotice availability={explorer} />
                     ),

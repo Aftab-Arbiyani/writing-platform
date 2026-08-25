@@ -294,17 +294,32 @@ test.describe('@phase5 @a11y frontend accessibility (authenticated)', () => {
     return panel;
   }
 
-  test('the Story Explorer tab has no critical/serious a11y violations', async ({ page, data }) => {
+  /**
+   * **D4 (2026-08-24) added an entitlement to this scan's arrangement, and would otherwise have
+   * disarmed it.** `story_intelligence` is now gated, so the seeded free writer meets a lock card
+   * where the graph used to be — and the scan would still PASS, over the wrong surface. That is
+   * exactly how B4's piece cap, B6's seat cap and D3's gate each broke a suite quietly; caught here
+   * in the same change that shipped the gate rather than by a run three weeks later.
+   *
+   * The flag arrangement is unchanged and still says what it said: an EMPTY feature list, because
+   * the explorer needs the master switch and no per-feature flag. Availability and entitlement are
+   * separate questions, and this scan now arranges both.
+   */
+  test('the Story Explorer tab has no critical/serious a11y violations', async ({
+    page,
+    api,
+    data,
+  }) => {
     test.setTimeout(AI_FLAG_TEST_TIMEOUT_MS);
-    // An EMPTY feature list: the explorer needs the master switch and nothing else, which is exactly
-    // the asymmetry with Ask below — and raising only the master is how this scan proves it.
-    await withAiFeatures([], 'a11y: Story Explorer', async () => {
-      // A group of eight pressed-state chips over a list of card buttons — two patterns whose entire
-      // accessible state lives in `aria-pressed` and in a name assembled from spans.
-      const panel = await draftWithServerId(page, data.pieceTitle());
-      await panel.selectTab('Explorer');
-      await panel.expectExplorerSettled();
-      await expectNoSeriousA11yViolations(page, { label: 'frontend /write + Story Explorer' });
+    await asEntitledWriter({ page, api, data }, 'story_intelligence', async () => {
+      await withAiFeatures([], 'a11y: Story Explorer', async () => {
+        // A group of eight pressed-state chips over a list of card buttons — two patterns whose
+        // accessible state lives entirely in `aria-pressed` and in a name assembled from spans.
+        const panel = await draftWithServerId(page, data.pieceTitle());
+        await panel.selectTab('Explorer');
+        await panel.expectExplorerSettled();
+        await expectNoSeriousA11yViolations(page, { label: 'frontend /write + Story Explorer' });
+      });
     });
   });
 

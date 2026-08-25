@@ -48,17 +48,20 @@ const USAGE = { daily: WINDOW, monthly: WINDOW } as AiUsageResponse;
 const apply = vi.fn().mockReturnValue(true);
 
 /**
- * Renders the panel with a PASS-THROUGH `writingGate`.
+ * Renders the panel with PASS-THROUGH gates.
  *
- * The gate itself is monetization's `PremiumGate`, supplied by `app/routes/write.tsx` and covered
- * by `write-route-gate.spec.tsx` — these tests are about the panel's own behaviour, so the seam is
- * held open here rather than exercised. The prop is REQUIRED (D3), so a future test cannot forget
- * the gate exists.
+ * The gates themselves are monetization's `PremiumGate`, supplied by `app/routes/write.tsx` and
+ * covered by `write-route-gate.spec.tsx` — these tests are about the panel's own behaviour, so the
+ * seams are held open here rather than exercised. Both props are REQUIRED (`writingGate` for D3,
+ * `explorerGate` for D4), so a future test cannot forget either exists.
  */
 function renderPanel(
   writingGate: (children: ReactNode) => ReactNode = (children) => children,
+  explorerGate: (children: ReactNode) => ReactNode = (children) => children,
 ): ReturnType<typeof renderWithProviders> {
-  return renderWithProviders(<WritingAssistantPanel writingGate={writingGate} />);
+  return renderWithProviders(
+    <WritingAssistantPanel writingGate={writingGate} explorerGate={explorerGate} />,
+  );
 }
 
 function mockMeta(features: AiFeaturesResponse | undefined, usage: AiUsageResponse | undefined) {
@@ -214,6 +217,62 @@ describe('WritingAssistantPanel', () => {
     registerTarget({}, 'piece-1');
     renderPanel();
     expect(screen.getByRole('tab', { name: 'Explorer' })).toBeInTheDocument();
+  });
+
+  /**
+   * D4 (decided 2026-08-21, docs/48 §5.2): `story_intelligence` is the ONE premium code of the six
+   * that D4 chose to enforce, so the Explorer body goes through the entitlement gate — and Ask My
+   * Book, which the same decision declared included in every tier, must not.
+   *
+   * Asserted by COUNTING the gate's sentinel across both story-scoped tabs. AntD mounts a tabpanel
+   * on first activation and then keeps it mounted, so visiting Explorer and Ask and still finding
+   * exactly one occurrence is what proves one tab is wrapped and the other is not — a `queryByText`
+   * on the inactive tab would find the retained one and pass for the wrong reason.
+   */
+  it('puts ONLY the Explorer body behind the entitlement gate (D4)', () => {
+    registerTarget({}, 'piece-1');
+    renderPanel(
+      (children) => children,
+      () => <p>story intelligence locked</p>,
+    );
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Explorer' }));
+    expect(screen.getAllByText('story intelligence locked')).toHaveLength(1);
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Ask' }));
+    expect(screen.getAllByText('story intelligence locked')).toHaveLength(1);
+  });
+
+  it('leaves Ask My Book reachable while the Explorer is locked', () => {
+    // The half of D4 that is a decision rather than a gate: five codes were declared free, and
+    // `ask_book` is one of them. A gate that took this tab with it would contradict that.
+    registerTarget({}, 'piece-1');
+    renderPanel(
+      (children) => children,
+      () => <p>story intelligence locked</p>,
+    );
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Ask' }));
+    expect(screen.getByRole('tab', { name: 'Ask' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.queryByText('That feature needs a paid plan.')).not.toBeInTheDocument();
+  });
+
+  /**
+   * Precedence, and it is the same order mobile applies: a writer whose instance has AI switched
+   * off cannot act on "this needs a paid plan", so availability answers first and the gate never
+   * runs. Pinned because the two are independent and the wrong order is invisible in review.
+   */
+  it('says AI is off rather than offering a plan, when both would apply', () => {
+    mockMeta({ aiEnabled: false, userAiEnabled: true, features: [] }, USAGE);
+    registerTarget({}, 'piece-1');
+    renderPanel(
+      (children) => children,
+      () => <p>story intelligence locked</p>,
+    );
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Explorer' }));
+    expect(screen.getAllByText('AI is turned off').length).toBeGreaterThan(0);
+    expect(screen.queryByText('story intelligence locked')).not.toBeInTheDocument();
   });
 
   /**

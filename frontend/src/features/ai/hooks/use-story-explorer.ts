@@ -11,13 +11,19 @@ import { useAiFeatures, useAiUsage } from './use-ai-meta';
 const EXPLORER_STALE = 60_000;
 
 /**
- * Whether the Story Explorer may be opened (W9).
+ * Whether the Story Explorer may be opened (W9), as far as the **flags** are concerned.
  *
  * Its route carries `@Permissions(AiUse)` and **no feature flag**, and it renders the AF3 graph with
- * no model call — so its gate is the master AI switch alone (`feature: null`). Gating it on a
+ * no model call — so its flag gate is the master AI switch alone (`feature: null`). Gating it on a
  * neighbouring flag would hide a surface the server would happily have served, and gating it on the
  * token allowance would lock a writer out of reading their own story graph for spending tokens
  * somewhere else. Mobile draws the same distinction, in a comment, at `editor_screen.dart:241-247`.
+ *
+ * **It is no longer the whole gate, and this docblock said it was until 2026-08-24.** D4 made
+ * `story_intelligence` entitlement-gated on the server (all six graph reads plus this consumer), so
+ * the ENTITLEMENT question is answered separately by `explorerGate` in `app/routes/write.tsx`. Two
+ * questions, two answers, two remedies: "AI is turned off" is not "this needs a paid plan", and a
+ * viewer in the first situation cannot act on the second.
  */
 export function useExplorerAvailability(): AiAvailability {
   const features = useAiFeatures();

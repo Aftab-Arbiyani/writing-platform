@@ -70,8 +70,14 @@ const WINDOW = {
   usedFraction: 0.2,
 };
 
-/** A snapshot in which `ai_writing` is decided and `ai_budget` is always granted (DECISION 2a). */
-function snapshotWithWriting(allowed: boolean) {
+/**
+ * A snapshot in which `ai_writing` is decided and `ai_budget` is always granted (DECISION 2a).
+ *
+ * `storyIntelligence` defaults to DENIED because that is the free tier's real answer — D4 granted
+ * the code to Pro and Enterprise but deliberately not to Plus, so "entitled to writing" and
+ * "entitled to the graph" are genuinely independent and the tests must be able to say so.
+ */
+function snapshotWithWriting(allowed: boolean, storyIntelligence = false) {
   const decide = (feature: string, ok: boolean) => ({
     feature: feature as never,
     status: (ok ? EntitlementStatus.Allow : EntitlementStatus.Deny) as never,
@@ -84,7 +90,11 @@ function snapshotWithWriting(allowed: boolean) {
   return {
     tier: allowed ? PlanTier.Plus : PlanTier.Free,
     status: EntitlementStatus.Allow,
-    features: [decide('ai_writing', allowed), decide('ai_budget', true)],
+    features: [
+      decide('ai_writing', allowed),
+      decide('ai_budget', true),
+      decide('story_intelligence', storyIntelligence),
+    ],
     refreshAt: null,
   };
 }
@@ -152,10 +162,12 @@ describe('/write — the AI-writing entitlement gate (D3)', () => {
     expect(screen.queryByText('AI writing is on Plus and above')).not.toBeInTheDocument();
   });
 
-  it('leaves Ask My Book USABLE for a free writer — D4 was not pre-empted', async () => {
-    // The scope regression test, mirroring the server's. `ask_book` is an AF4 surface belonging to
-    // D4, whose scope the owner deferred; 48 §5.2 consequence 1 forbids a client-side wall in front
-    // of a route the server still serves. Free keeps `ai_budget`, so this genuinely works.
+  it('leaves Ask My Book USABLE for a free writer — permanently, since D4', async () => {
+    // The scope regression test, mirroring the server's. Its reason CHANGED on 2026-08-21 without
+    // the assertion changing: `ask_book` was an AF4 surface whose gating would have pre-empted a
+    // deferred decision, and it is now one of the five codes D4 declared included in every tier. So
+    // this is no longer "do not jump ahead of the owner" but "do not contradict them". Free keeps
+    // `ai_budget`, so this genuinely works.
     entitlements.mockResolvedValue(snapshotWithWriting(false) as never);
     registerEditor('story-1');
 
@@ -171,6 +183,58 @@ describe('/write — the AI-writing entitlement gate (D3)', () => {
         screen.getByPlaceholderText('e.g. How does Aria change by the end?'),
       ).toBeInTheDocument();
     });
+  });
+
+  it('gates the Story Explorer INDEPENDENTLY of AI writing', async () => {
+    // Plus includes `ai_writing` and NOT `story_intelligence` (D4 granted it to Pro/Enterprise
+    // only, confirmed intentional), so a real subscriber sees the assistant and a lock on the
+    // graph. One gate standing in for both would have passed a weaker version of this.
+    entitlements.mockResolvedValue(snapshotWithWriting(true, false) as never);
+    registerEditor('story-1');
+
+    renderWithProviders(<WriteRoute />);
+    expect(await screen.findByRole('button', { name: 'Continue writing' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('tab', { name: 'Explorer' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Story intelligence needs a paid plan')).toBeInTheDocument();
+    });
+  });
+
+  it('lets an entitled writer into the graph', async () => {
+    entitlements.mockResolvedValue(snapshotWithWriting(true, true) as never);
+    registerEditor('story-1');
+
+    renderWithProviders(<WriteRoute />);
+    fireEvent.click(await screen.findByRole('tab', { name: 'Explorer' }));
+
+    // The view selector renders above the query, so this is the tab itself rather than its data —
+    // which is the right assertion here: the gate is what is under test, not the graph read.
+    await waitFor(() => {
+      expect(screen.getByRole('group', { name: 'Explorer view' })).toBeInTheDocument();
+    });
+    expect(screen.queryByText('Story intelligence needs a paid plan')).not.toBeInTheDocument();
+  });
+
+  it('does NOT sell a plan while monetization is dark — it says the feature has not shipped', async () => {
+    /*
+     * The trap mobile hit first (`story_explorer_screen.dart`). `PremiumGate` fails closed and that
+     * includes the client flag being off, so without the dark-launch branch every viewer of a
+     * dark-launched deployment would be told a feature that does not exist yet "needs a paid plan"
+     * — and sent to a plans page that is itself switched off.
+     */
+    enabled.mockReturnValue(false);
+    entitlements.mockResolvedValue(snapshotWithWriting(false, false) as never);
+    registerEditor('story-1');
+
+    renderWithProviders(<WriteRoute />);
+    fireEvent.click(await screen.findByRole('tab', { name: 'Explorer' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Story Explorer isn’t available yet')).toBeInTheDocument();
+    });
+    expect(screen.queryByText('Story intelligence needs a paid plan')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'See plans' })).not.toBeInTheDocument();
   });
 
   it('fails closed when the entitlement snapshot cannot be read', async () => {
