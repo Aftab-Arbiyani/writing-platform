@@ -3651,6 +3651,37 @@ something that runs the app:
 > "That feature needs a paid plan." through the shared error catalogue, and mobile has no special
 > mid-flight handling either — adding one to web alone would be the unplanned divergence §1 forbids.
 
+> **Tenth reconciliation, 2026-08-24 — D4-copy, and with it D4 is fully closed.** Its line is gone
+> from 3.22b. The row was sized as a catalogue edit plus pricing copy; it was neither, and the reason
+> is the most useful thing here:
+>
+> - **The obvious fix would have been INERT on every deployment that matters.** `mergePlans` spreads
+>   a stored tier's `features` array WHOLESALE (only `limits` merges per key) and `syncDefinitions`
+>   inserts with `orIgnore()`, so a database seeded before 2026-08-21 keeps its arrays forever.
+>   Editing `DEFAULT_PLAN_FEATURES` alone would have changed nothing anywhere real. **D3 escaped this
+>   trap by needing no catalogue edit and said so at the time** ([§6.13](#613-d3s-sweep-2026-08-17));
+>   D4 could not, so the five are unioned in at RESOLUTION — `UNIVERSAL_PLAN_FEATURES` in
+>   `@qalam/shared`, folded into every tier by `MonetizationConfigService`. That is code, which is
+>   live the moment it deploys, and it needs **no data migration**.
+> - **These arrays are entitlement inputs, not display copy**, which settles the product question the
+>   row left open. `entitlement.service.ts` computes `included.has(feature)`, so "drop the five from
+>   the feature lists" would have encoded _nobody is entitled, on any tier_ — the opposite of what D4
+>   decided, and a future gate reading it would deny everyone. Listing them everywhere is the only
+>   option that records the decision truthfully, so the choice made itself.
+> - **The union is deliberately one-way.** An operator can still add codes to a tier and still curate
+>   the three enforced ones, but cannot subtract a code the owner declared free — the right asymmetry
+>   for a decision as against a configuration.
+> - **Both clients needed no change at all.** Web and mobile each render `plan.features` as the server
+>   sends it, so parity here is structural rather than something to port and re-verify.
+>
+> **Live-verified, not only unit-tested** — against the E2E database, whose `monetization.plans` row
+> was seeded before the decision and is therefore the exact case above. `GET /monetization/plans` now
+> returns free as `[ai_budget, ai_discovery, premium_search, premium_recommendations,
+advanced_analytics, publishing_pro]` (it returned `[ai_budget]` before the restart), Plus shows no
+> duplicate `ai_discovery` though its stored row already named it, and a free account's entitlement
+> snapshot answers `allowed: true` for all five while `ai_writing` and `story_intelligence` stay
+> denied. Backend 1382 tests, frontend 923, admin 400, monetization E2E 13/13.
+
 **This is the only admissible answer to "what is still open?".** Everything above it is a _diagnosis_
 — kept for its reasoning, and unreliable as a status, because a §3 heading is written once and the code
 moves afterwards. Twice now a pass has scheduled findings that were already fixed (the 2026-08-19
@@ -3714,13 +3745,12 @@ them (baseline re-mint, five call sites, a measurement loop) is the actual cost.
 
 ### 3.22b Contract + operability honesty — no user-visible break, real cost to the next reader
 
-| ID          | Sev     | What                                                                                                                                                                                                                             | Anchor (verified 2026-08-20)                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Size                                                                                                                                                                                                                                                                             |
-| ----------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **AI-4**    | **low** | the annotated env list `19 §3` points at (`backend/.env.example`) carries no AI or payments knob at all                                                                                                                          | `backend/.env.example` — 223 lines, zero of `STRIPE                                                                                                                                                                                                                                                                                                                                                                                                                              | APPLE                                                                                                                                                                                                                                                                            | GOOGLE_PLAY | OPENAI | ANTHROPIC | AI_ | PAYMENTS_`. Opened by AI-1's fix | **1 h** (a doc block, plus one decision about carrying credential names) |
-| **AI-2**    | **low** | both health indicators call a flag-gated provider `inert`, understating a working subsystem                                                                                                                                      | `backend/src/health/indicators/ai.health-indicator.ts:26-30`; `payment.health-indicator.ts:29` ignores `manual`                                                                                                                                                                                                                                                                                                                                                                  | **1 d** (needs the `live`/`test`/`inert` vocabulary, both indicators, or neither)                                                                                                                                                                                                |
-| **AI-3**    | **low** | `IMPLEMENTED_AI_PROVIDERS` / `IMPLEMENTED_PAYMENT_PROVIDERS` gate nothing, and the admin picker offers 6 adapterless providers                                                                                                   | `packages/shared/src/ai.ts:46`, `monetization.ts:246` (zero consumers); `admin/src/features/ai/pages/ai-config-page.tsx`                                                                                                                                                                                                                                                                                                                                                         | _(with AI-2)_                                                                                                                                                                                                                                                                    |
-| **A3-4**    | **low** | `AsyncSection` is at **five** copies, ~40 duplicated lines each                                                                                                                                                                  | `admin/src/features/{ai,monetization,operations,security,system}/components/async-section.tsx`                                                                                                                                                                                                                                                                                                                                                                                   | **0.5 d**                                                                                                                                                                                                                                                                        |
-| **D4-copy** | **low** | D4 declared five codes included in **every** tier, and the catalogue still sells them per-tier — so a Free or Plus plan card omits capabilities that account already has, which is the same dishonesty §5.2 opened for, inverted | `packages/shared/src/monetization.ts:637-666` (`DEFAULT_PLAN_FEATURES` — free lists `ai_budget` alone; `ai_discovery`/`premium_search`/`premium_recommendations`/`advanced_analytics`/`publishing_pro` appear only on paid tiers); `backend/src/modules/settings/settings.catalog.ts:503-511` (the runtime default the product actually serves); label map `frontend/src/features/monetization/lib/monetization-labels.ts:101-127`. Opened by D4's decision, verified 2026-08-24 | **0.5 d** — and one decision inside it: list the five as free capabilities on every card, or drop them from the feature lists entirely. `story_intelligence` is **not** in this row; it stays a paid code and its Pro/Enterprise-but-not-Plus placement is confirmed intentional |
+| ID       | Sev     | What                                                                                                                           | Anchor (verified 2026-08-20)                                                                                             | Size                                                                              |
+| -------- | ------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------- |
+| **AI-4** | **low** | the annotated env list `19 §3` points at (`backend/.env.example`) carries no AI or payments knob at all                        | `backend/.env.example` — 223 lines, zero of `STRIPE                                                                      | APPLE                                                                             | GOOGLE_PLAY | OPENAI | ANTHROPIC | AI_ | PAYMENTS_`. Opened by AI-1's fix | **1 h** (a doc block, plus one decision about carrying credential names) |
+| **AI-2** | **low** | both health indicators call a flag-gated provider `inert`, understating a working subsystem                                    | `backend/src/health/indicators/ai.health-indicator.ts:26-30`; `payment.health-indicator.ts:29` ignores `manual`          | **1 d** (needs the `live`/`test`/`inert` vocabulary, both indicators, or neither) |
+| **AI-3** | **low** | `IMPLEMENTED_AI_PROVIDERS` / `IMPLEMENTED_PAYMENT_PROVIDERS` gate nothing, and the admin picker offers 6 adapterless providers | `packages/shared/src/ai.ts:46`, `monetization.ts:246` (zero consumers); `admin/src/features/ai/pages/ai-config-page.tsx` | _(with AI-2)_                                                                     |
+| **A3-4** | **low** | `AsyncSection` is at **five** copies, ~40 duplicated lines each                                                                | `admin/src/features/{ai,monetization,operations,security,system}/components/async-section.tsx`                           | **0.5 d**                                                                         |
 
 ### 3.22c Harness — the suite's own honesty
 
@@ -4226,9 +4256,14 @@ subscriber's plan is computed correctly and then ignored on every route but the 
    > "Explorer and Ask My Book" as D4-blocked from gating together; only Explorer was resolved here
    > (Ask My Book stays free, unconditionally, per this decision — it is not `story_intelligence`'s
    > code either way, so the question is now moot for enforcement purposes, but the comment itself is
-   > still stale and should be corrected when web's gate is built). Declaring the other five "included
-   > in every tier" is a catalogue/copy change (`DEFAULT_PLAN_FEATURES`, `settings.catalog.ts`, pricing
-   > copy) — also not yet made. Both remain follow-up work, sized separately from this pass.
+   > still stale and should be corrected when web's gate is built). ~~Declaring the other five
+   > "included in every tier" is a catalogue/copy change (`DEFAULT_PLAN_FEATURES`,
+   > `settings.catalog.ts`, pricing copy) — also not yet made.~~ **BUILT 2026-08-24, and it was not a
+   > catalogue edit**: a stored `monetization.plans` row shadows the compiled defaults wholesale, so
+   > the five are unioned in at resolution from `UNIVERSAL_PLAN_FEATURES` instead — code rather than
+   > data, live on every deployment with no migration. `settings.catalog.ts` was left alone for the
+   > same reason: seeding a new default would have helped only fresh databases. Both halves of D4 are
+   > now closed.
 
 **Ownership.** `premium_content` (a ninth code that does not exist yet) is owned by **B2**, held —
 [45 §4.5](./45_WebClientRoadmap.md#45-b2--premium-content-held-detail). B2 will write the **first real
