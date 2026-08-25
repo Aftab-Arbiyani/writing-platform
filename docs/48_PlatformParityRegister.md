@@ -3622,6 +3622,35 @@ something that runs the app:
 > **§3.24** — the frontend `typecheck` and `build` gates had been RED since 2026-08-20, which blocked
 > the **CI** row outright while the ledger sized it at 0.5 d.
 
+> **Ninth reconciliation, 2026-08-24 — D4-web.** Its line is gone from 3.22a; D4 now has all three
+> surfaces and only its catalogue/copy row (**D4-copy**) remains. What shipped, and the two things
+> the row did not anticipate:
+>
+> - **Two gate props, not one.** `writing-assistant-panel.tsx` takes `explorerGate` beside D3's
+>   `writingGate`, supplied by `app/routes/write.tsx` (the only layer allowed to know both features).
+>   Required, not optional-with-a-default, for the reason D3's is: an omitted gate is a 402 rendered
+>   as a generic failure, and a compile error is cheaper than finding that in the wild.
+> - **The dark-launch branch had to come first, and mobile is why.** `PremiumGate` fails closed and
+>   that includes the client flag being off — so with monetization dark, every viewer would be told a
+>   feature that has not shipped "needs a paid plan" and sent to a plans page that is itself switched
+>   off. Mobile hit this on its own build and answered it the same way; web now says "Story Explorer
+>   isn't available yet" instead. A gate copied without that branch would have shipped a paywall for
+>   a product that does not exist yet.
+> - **Availability beats entitlement**, pinned by a test: a writer whose instance has AI switched off
+>   cannot act on "this needs a paid plan", so `AI is turned off` wins and the gate never runs. The
+>   two are independent, and the wrong order is invisible in review.
+> - **Ask My Book stays ungated, and its test's REASON changed without its assertion changing.** It
+>   used to be "do not pre-empt a deferred decision"; since D4 it is "do not contradict a settled
+>   one". The comment was updated rather than left to rot into a stale justification for a correct test.
+> - **It disarmed a spec of its own, and that was caught in the same change** — the Story Explorer
+>   a11y scan would have kept passing while scanning a lock card. Fourth instance of the pattern
+>   (B4, B6, D3, now D4), first one caught before landing rather than by a later run. Verified by
+>   granting `ai_discovery` instead and watching the scan fail.
+>
+> Not done, deliberately: **no web-only mid-flight 402 mapping.** `ENTITLEMENT_DENIED` already reads
+> "That feature needs a paid plan." through the shared error catalogue, and mobile has no special
+> mid-flight handling either — adding one to web alone would be the unplanned divergence §1 forbids.
+
 **This is the only admissible answer to "what is still open?".** Everything above it is a _diagnosis_
 — kept for its reasoning, and unreliable as a status, because a §3 heading is written once and the code
 moves afterwards. Twice now a pass has scheduled findings that were already fixed (the 2026-08-19
@@ -3646,11 +3675,10 @@ them (baseline re-mint, five call sites, a measurement loop) is the actual cost.
 
 ### 3.22a Product defects — a user or an operator can hit these
 
-| ID         | Sev        | What                                                                                                                                                                                                                                                                                   | Anchor (verified 2026-08-20)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Size                                                                                                                                                                            |
-| ---------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **C-15**   | **medium** | **mobile half CLOSED 2026-08-21** — mobile now has a whole-paragraph "propose an edit" composer. **Web half still open**: its hand-typed offset still **409s** against the offset-exact check, so the capability still does not work on web                                            | Mobile: `qalam-mobile/lib/features/reading/domain/content_parser.dart` (`parseContentWithAnchors`), `presentation/widgets/content_renderer.dart`, `presentation/screens/reading_screen.dart`, `features/collaboration/presentation/widgets/suggestion_composer_sheet.dart`. Web (unchanged): `frontend/src/features/collaboration/components/suggestion-composer.tsx:35,69,93` ("Starts at character")                                                                                                                                                                                               | Web fix re-scoped 2026-08-21 to **≈3–4 d** (a ProseMirror-position→`anchorText` converter + tests, an extended editor seam, a composer/route rework) — see the note under 3.22a |
-| **B8-2**   | **low**    | granting an override to a nonexistent id inserts a row nothing can read and no screen can list                                                                                                                                                                                         | `backend/src/modules/monetization/entities/entitlement-override.entity.ts:16-20` — index, no FK, no relation. Opened by B8-1's fix                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | **0.5 d** (three writes, one FK question — not one rule three times)                                                                                                            |
-| **D4-web** | **medium** | the backend now refuses a graph read to any account without `story_intelligence` (free **and** Plus), and web is the client that never learned: the Explorer tab renders **ungated**, so the 402 lands as a generic error state with no upgrade path, where mobile shows its lock card | Web: `frontend/src/features/ai/components/writing-assistant-panel.tsx:94` (availability resolved with `feature: null`) + `:153-157` (no `PremiumGate` wrapper) → `story-explorer-tab.tsx:76-80` (`QErrorState` + `getErrorMessage`). Two stale docblocks in the same file: `:49-50` ("a decision the owner deferred") and `:88-89` ("NO feature flag … `ai.use` alone"). Server: `backend/src/modules/retrieval/consumers/story-explorer.service.ts:43`. Mobile reference: `qalam-mobile/lib/features/ai/presentation/screens/story_explorer_screen.dart`. Opened by D4's build, verified 2026-08-24 | **0.5 d** (the gate, plus `ENTITLEMENT_DENIED` on a surface that has no `AiFeature` to map through `availabilityFromErrorCode`, plus the two docblocks)                         |
+| ID       | Sev        | What                                                                                                                                                                                                                                        | Anchor (verified 2026-08-20)                                                                                                                                                                                                                                                                                                                                                                           | Size                                                                                                                                                                            |
+| -------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **C-15** | **medium** | **mobile half CLOSED 2026-08-21** — mobile now has a whole-paragraph "propose an edit" composer. **Web half still open**: its hand-typed offset still **409s** against the offset-exact check, so the capability still does not work on web | Mobile: `qalam-mobile/lib/features/reading/domain/content_parser.dart` (`parseContentWithAnchors`), `presentation/widgets/content_renderer.dart`, `presentation/screens/reading_screen.dart`, `features/collaboration/presentation/widgets/suggestion_composer_sheet.dart`. Web (unchanged): `frontend/src/features/collaboration/components/suggestion-composer.tsx:35,69,93` ("Starts at character") | Web fix re-scoped 2026-08-21 to **≈3–4 d** (a ProseMirror-position→`anchorText` converter + tests, an extended editor seam, a composer/route rework) — see the note under 3.22a |
+| **B8-2** | **low**    | granting an override to a nonexistent id inserts a row nothing can read and no screen can list                                                                                                                                              | `backend/src/modules/monetization/entities/entitlement-override.entity.ts:16-20` — index, no FK, no relation. Opened by B8-1's fix                                                                                                                                                                                                                                                                     | **0.5 d** (three writes, one FK question — not one rule three times)                                                                                                            |
 
 > **C-15 is not the web-only row it is filed as — re-verified 2026-08-20.** Its "mobile is unaffected"
 > premise rested on **R-1** (nothing in the app navigated to any AF6 screen), and R-1 has been closed
@@ -4185,8 +4213,16 @@ subscriber's plan is computed correctly and then ignored on every route but the 
    paying Plus subscriber sees the lock card too. Tested (backend: 1376/1376, mobile: 844/844) but
    **not live-verified against a running backend** — same caveat C-15 carries.
 
-   > **Web's equivalent gate, and "Ask My Book" shares `story_intelligence`'s code or `ai_discovery`'s"
-   > — still open, deferred.** Web's own code (`writing-assistant-panel.tsx:25-27`) documents _both_
+   > **BUILT ON WEB 2026-08-24, so this note is now history rather than status.** The Explorer's body
+   > goes through `explorerGate` → `PremiumGate feature={StoryIntelligence}` from
+   > `app/routes/write.tsx`, behind a dark-launch branch that says "Story Explorer isn't available
+   > yet" rather than selling a plan while monetization is off. **Ask My Book is ungated on web too**,
+   > which settles the open question below: it needed neither code, because D4 declared its family
+   > free. The stale docblocks named here have been corrected, including a third one this note missed
+   > (`use-story-explorer.ts`, which claimed the master switch was the whole gate). Original note kept:
+   >
+   > **~~Web's equivalent gate, and "Ask My Book" shares `story_intelligence`'s code or `ai_discovery`'s"
+   > — still open, deferred.~~** Web's own code (`writing-assistant-panel.tsx:25-27`) documents _both_
    > "Explorer and Ask My Book" as D4-blocked from gating together; only Explorer was resolved here
    > (Ask My Book stays free, unconditionally, per this decision — it is not `story_intelligence`'s
    > code either way, so the question is now moot for enforcement purposes, but the comment itself is
