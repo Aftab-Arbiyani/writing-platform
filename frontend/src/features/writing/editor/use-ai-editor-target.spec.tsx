@@ -28,13 +28,29 @@ function register(editor: Editor) {
   );
 }
 
+/**
+ * Re-renderable variant, for the cases about what a PROP CHANGE does. The plain `register` helper
+ * above renders once with fixed props, which is exactly why it could not see the defect these three
+ * cases pin: everything it asserted was true on the first commit.
+ */
+function registerWithProps(initial: {
+  editor: Editor;
+  title: string;
+  languageCode: string;
+  pieceId?: string;
+}) {
+  return renderHook((props: typeof initial) => useRegisterAiEditorTarget(props), {
+    initialProps: initial,
+  });
+}
+
 const target = () => useAiEditorTarget.getState().target;
 
 describe('useRegisterAiEditorTarget', () => {
   let editor: Editor;
 
   beforeEach(() => {
-    useAiEditorTarget.setState({ target: null, open: false });
+    useAiEditorTarget.setState({ target: null, storyId: null, open: false });
   });
 
   afterEach(() => {
@@ -58,6 +74,47 @@ describe('useRegisterAiEditorTarget', () => {
 
     unmount();
     expect(useAiEditorTarget.getState().open).toBe(false);
+  });
+
+  /**
+   * The three cases below are one defect (48 §3.22c, found 2026-08-24 while fixing the AI-panel
+   * harness row). `title`, `languageCode` and `pieceId` were all dependencies of the registration
+   * effect, whose cleanup calls `unregister` — and `unregister` closes the panel. So the drawer shut
+   * itself on a title keystroke and again the moment autosave first synced the draft.
+   */
+  it('KEEPS the panel open when the title changes — it changes per keystroke', () => {
+    editor = makeEditor('Hello world');
+    const view = registerWithProps({ editor, title: 'Draft', languageCode: 'ur' });
+    useAiEditorTarget.getState().setOpen(true);
+
+    view.rerender({ editor, title: 'Drafts', languageCode: 'ur' });
+
+    expect(useAiEditorTarget.getState().open).toBe(true);
+    expect(target()).not.toBeNull();
+    // And the context still reports the CURRENT title — the ref is what makes both true at once.
+    expect(target()?.getContext().title).toBe('Drafts');
+  });
+
+  it('KEEPS the panel open when the draft first syncs and gains a server id', () => {
+    editor = makeEditor('Hello world');
+    const view = registerWithProps({ editor, title: 'Draft', languageCode: 'ur' });
+    useAiEditorTarget.getState().setOpen(true);
+    expect(useAiEditorTarget.getState().storyId).toBeNull();
+
+    // What autosave's CREATE does: the route becomes `/write/:id` and the id arrives mid-draft.
+    view.rerender({ editor, title: 'Draft', languageCode: 'ur', pieceId: 'piece-1' });
+
+    expect(useAiEditorTarget.getState().storyId).toBe('piece-1');
+    expect(useAiEditorTarget.getState().open).toBe(true);
+    expect(target()).not.toBeNull();
+  });
+
+  it('registers with the server id it already has, so a re-registration does not lose it', () => {
+    // The id lives in a ref, so an editor swap must still publish it rather than start at null.
+    editor = makeEditor('Hello world');
+    registerWithProps({ editor, title: 'Draft', languageCode: 'ur', pieceId: 'piece-7' });
+
+    expect(useAiEditorTarget.getState().storyId).toBe('piece-7');
   });
 
   it('reports the document, title, language and word count', () => {

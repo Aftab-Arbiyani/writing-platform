@@ -1,5 +1,5 @@
 import type { Editor } from '@tiptap/react';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 import {
   useAiEditorTarget,
@@ -41,16 +41,40 @@ export function useRegisterAiEditorTarget(args: {
   title: string;
   languageCode: string;
   /**
-   * The draft's SERVER id, or undefined while it is unsaved (W9). Published as-is: the story-scoped
-   * AI surfaces need it and hide themselves without it, and a brand-new `/write` gains one the
-   * moment autosave creates the piece (the route becomes `/write/:id`, which re-runs this effect).
+   * The draft's SERVER id, or undefined while it is unsaved (W9). The story-scoped AI surfaces need
+   * it and hide themselves without it, and a brand-new `/write` gains one the moment autosave
+   * creates the piece (the route becomes `/write/:id`). It is published through `setStoryId` rather
+   * than by re-registering — see the effects below for what that cost before.
    */
   pieceId?: string;
 }): void {
   const { editor, title, languageCode, pieceId } = args;
   const register = useAiEditorTarget((s) => s.register);
   const unregister = useAiEditorTarget((s) => s.unregister);
+  const setStoryId = useAiEditorTarget((s) => s.setStoryId);
 
+  /**
+   * **The title and the language ride a ref, and that is load-bearing rather than tidy.**
+   *
+   * `getContext()` is called at the moment the assistant reads it, never cached, so the target does
+   * not need to be rebuilt when either value changes — and rebuilding it is expensive in a way that
+   * has nothing to do with performance: the registration effect's cleanup calls `unregister`, which
+   * CLOSES the panel. With `title` in the dependency array (it is `useState` in `editor-page`, so it
+   * changes per keystroke), a writer who edited their title with the assistant open watched the
+   * drawer slam shut on the first character.
+   *
+   * Assigned in an effect rather than during render so this stays a legal ref write; by the time any
+   * interaction can read the context, it has run.
+   */
+  const latest = useRef({ title, languageCode, pieceId });
+  useEffect(() => {
+    latest.current = { title, languageCode, pieceId };
+  }, [title, languageCode, pieceId]);
+
+  /**
+   * Registers ONCE per editor instance. Its only dependencies are the editor and the two store
+   * actions (stable), so nothing the writer types re-runs it.
+   */
   useEffect(() => {
     if (!editor) return;
 
@@ -60,8 +84,8 @@ export function useRegisterAiEditorTarget(args: {
         return {
           selectionText: empty ? '' : editor.state.doc.textBetween(from, to, '\n\n'),
           documentText: editor.getText(),
-          title,
-          language: languageCode,
+          title: latest.current.title,
+          language: latest.current.languageCode,
           // The editor's own count, so the number the model is told matches the one on screen.
           wordCount: editor.getText().trim().split(/\s+/).filter(Boolean).length,
         };
@@ -102,9 +126,23 @@ export function useRegisterAiEditorTarget(args: {
       },
     };
 
-    register(target, pieceId ?? null);
+    register(target, latest.current.pieceId ?? null);
     return () => {
       unregister();
     };
-  }, [editor, title, languageCode, pieceId, register, unregister]);
+  }, [editor, register, unregister]);
+
+  /**
+   * The story id is published on its own, because it changes on a path the registration must not
+   * take: autosave CREATEs the piece, `editor-page` navigates to `/write/:id`, and the id arrives
+   * while the writer is mid-draft — possibly with the assistant open. Routing it through
+   * `register` would tear the seam down and close the panel (W9's own note called this re-run a
+   * feature and missed that it cost the writer their open drawer).
+   *
+   * Guarded on `editor` so it cannot publish an id for a document that has no target registered.
+   */
+  useEffect(() => {
+    if (!editor) return;
+    setStoryId(pieceId ?? null);
+  }, [editor, pieceId, setStoryId]);
 }

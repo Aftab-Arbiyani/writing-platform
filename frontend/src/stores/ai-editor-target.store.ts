@@ -64,6 +64,14 @@ interface AiEditorTargetState {
   open: boolean;
   register: (target: AiEditorTarget, storyId: string | null) => void;
   unregister: () => void;
+  /**
+   * Publish a new server id for the SAME document — the draft that just synced for the first time.
+   *
+   * Separate from {@link register} on purpose: re-registering to carry a changed id would run the
+   * editor's cleanup, and {@link unregister} closes the panel. A draft gaining an id is not the
+   * editor going away, and the writer must not lose an open assistant to it.
+   */
+  setStoryId: (storyId: string | null) => void;
   setOpen: (open: boolean) => void;
 }
 
@@ -88,6 +96,9 @@ export const useAiEditorTarget = create<AiEditorTargetState>((set) => ({
   // behind it (navigating away from /write while it is open).
   unregister: () => {
     set({ target: null, storyId: null, open: false });
+  },
+  setStoryId: (storyId) => {
+    set({ storyId });
   },
   setOpen: (open) => {
     set({ open });
