@@ -786,11 +786,30 @@ re-derive it. No other button label in `pages/` is a prefix of a sibling.
 > A local run no longer serves `frontend/dist` at all, so a root `npm run build` cannot overwrite what
 > the suite is testing, and the `FULL TURBO` recurrence is gone with it.
 >
-> **Residual, and it is why this keeps its diagnosis rather than being deleted:** `reuseExistingServer`
+> ~~**Residual, and it is why this keeps its diagnosis rather than being deleted:** `reuseExistingServer`
 > is still true locally (`:249`), so the suite attaches to whatever is already on :5173. A developer who
 > starts `vite preview` by hand reproduces the original trap exactly, with the same misleading
 > "Collaboration is off" symptom. That residual is carried in [§3.22](#322-the-open-ledger-verified-2026-08-20)
-> as a low harness item — the fix is a page-object assertion that names the cause, not another note.
+> as a low harness item — the fix is a page-object assertion that names the cause, not another note.~~
+>
+> **RESIDUAL CLOSED 2026-08-24.** `reuseExistingServer` is unchanged — attaching to a running server is
+> the behaviour the pinned-image visual job depends on, so removing it would break a real workflow.
+> What changed is that the suite now **refuses to run against the wrong one**:
+> `e2e/setup/stale-preview.global.ts` fetches `:5173` before any spec and fails the run when the HTML
+> carries no `/src/main.tsx` or `/@vite/client` — the fingerprint that separates Vite's dev server from
+> a built bundle. It is hosted in `globalSetup`, which Playwright runs **before** `webServer`, so
+> anything it finds on the port is by definition something a human started. Skipped under `CI` (where
+> `preview` is correct) and behind `E2E_ALLOW_PREVIEW=1` for the pinned-image case.
+>
+> A **global check rather than the page-object assertion this row prescribed**, because the prescription
+> would have fired ~40 times, once per spec, after each had already spent its timeout — and only in the
+> page objects someone remembered to annotate. This fails once, before the first test, naming the cause
+> and the fix.
+>
+> **Verified both ways** rather than reasoned about: a normal run is unaffected (2 passed), and with a
+> hand-started `vite preview` on :5173 the run stops in `globalSetup` with the message above. The
+> positive case was arranged by an ordinary `pnpm --filter frontend build`, which is exactly the
+> default-flag artefact this row is about.
 
 Opened 2026-08-05 while verifying T-6; **not fixed** (out of that pass's scope), and recorded because it
 cost an hour of chasing a defect that did not exist.
@@ -3581,6 +3600,28 @@ something that runs the app:
 >   gating decision is gone. Left in place and recorded in **D4-web** rather than corrected here:
 >   fixing the prose without the gate would leave the wrong behaviour reading more convincingly.
 
+> **Eighth reconciliation, 2026-08-24 — AI-panel and T-7, both closed, neither for the reason it was
+> filed under.** Their lines are gone from 3.22c and the full diagnosis is
+> [§3.23](#323-the-ai-panel-closed-itself-and-four-specs-could-not-see-it-2026-08-24). In brief, because
+> the shape of the error matters more than the fix:
+>
+> - **The suspicion in the AI-panel row was wrong, and no control run was needed to show it.** It read
+>   "flag raising / the `withAiFeatures` mutex under load — **not confirmed**". The cause was
+>   deterministic and had a commit: **B5** hid the editor's AI trigger while AI is off, so
+>   `AssistantPanel.open()` was clicking a button that is not rendered. One `git log -S` on the
+>   condition the row itself quoted would have found it in 2026-08-20's pass.
+> - **T-7 was never a flake.** Same file, same missing trigger, filed as "flaky under parallel load"
+>   with an unbounded estimate. §3.4's own rule — a failure is not a flake until it has been counted —
+>   was written for exactly this, and this row was carried for three weeks without the count.
+> - **Fixing them found a product defect neither row predicted**: the panel closed itself when the
+>   draft's title changed or the draft first synced. That is the only part of this pass a USER could
+>   hit, and it came out of repairing a test, not from reviewing the feature.
+>
+> **Also closed in the same pass: T-9's residual** (a global check that refuses to run against a
+> hand-started `preview`, verified both ways — §3.5). **Opened: RS-flake** (counted, above) and
+> **§3.24** — the frontend `typecheck` and `build` gates had been RED since 2026-08-20, which blocked
+> the **CI** row outright while the ledger sized it at 0.5 d.
+
 **This is the only admissible answer to "what is still open?".** Everything above it is a _diagnosis_
 — kept for its reasoning, and unreliable as a status, because a §3 heading is written once and the code
 moves afterwards. Twice now a pass has scheduled findings that were already fixed (the 2026-08-19
@@ -3702,15 +3743,14 @@ Naming that is the point: §3.4's rule is that a failure is not a flake until it
 
 | ID              | Sev          | What                                                                                                                                                                                                                                                                                                                                                                                                                                               | Anchor (verified 2026-08-20)                                                                                                                                                                                                                                                                                                                                                                                                         | Size                                                                                                                                                 |
 | --------------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **AI-panel**    | **medium**   | the AI-assistant surface fails on **both engines**: three `assistant.spec.ts` tests plus the panel's a11y scan, all timing out on a trigger that never renders. Measured 2026-08-20, chromium AND webkit, in the pinned image                                                                                                                                                                                                                      | the trigger is conditioned on `aiAvailability !== 'off'` (`editor-page.tsx:228`) and the suite starts every AI flag DARK (`setup/ai-flags.global.ts`), so the suspicion is flag raising / the `withAiFeatures` mutex under load — **not confirmed**                                                                                                                                                                                  | **0.5–1 d** (diagnose first; it may re-diagnose T-7)                                                                                                 |
-| **T-7**         | **medium**   | `assistant.spec.ts` "writes and autosaves" is flaky under parallel load                                                                                                                                                                                                                                                                                                                                                                            | `e2e/tests/frontend/assistant.spec.ts:220`                                                                                                                                                                                                                                                                                                                                                                                           | **0.5 d+**                                                                                                                                           |
 | **M-5**         | **medium**   | mobile's suite fails ~2 runs in 10 with **no assertion output at all**                                                                                                                                                                                                                                                                                                                                                                             | `qalam-mobile/test/features/ai/retrieval_controllers_test.dart:227`                                                                                                                                                                                                                                                                                                                                                                  | **0.5–1 d+**                                                                                                                                         |
 | **W5-12**       | harness      | three visual baselines do not reproduce outside CI (~21 px page offset)                                                                                                                                                                                                                                                                                                                                                                            | `frontend-comments`, `frontend-suggestions`, `frontend-collaborators`                                                                                                                                                                                                                                                                                                                                                                | **0.5 d+**                                                                                                                                           |
-| **T-9 res.**    | **low**      | `reuseExistingServer` still lets a hand-started `vite preview` reproduce T-9                                                                                                                                                                                                                                                                                                                                                                       | `e2e/playwright.config.ts:249`                                                                                                                                                                                                                                                                                                                                                                                                       | **1 h**                                                                                                                                              |
 | **AA-render**   | verification | ~~the W8-5 / T-4 pins have never been rendered~~ **DISCHARGED 2026-08-20** for the a11y half: 94/94 axe checks green across frontend+admin × light+dark, and a NEW rendered guard measures the hover and press fills directly. **Still owed: the visual half** — baselines are verified only in `mcr.microsoft.com/playwright:v1.61.1-noble` (10 §8.3), and a bare-host run is meaningless by design                                               | `e2e/tests/frontend/a11y.spec.ts` — "a hovered and a PRESSED primary button both clear AA". Owed: `web-e2e-visual` in the pinned image, which is the **CI** row below                                                                                                                                                                                                                                                                | **0.2 d** (it is the CI row)                                                                                                                         |
 | **WK**          | verification | ~~the frontend webkit shards have not been re-run~~ **RUN 2026-08-20, and the row's frame was wrong.** Webkit cannot launch on a dev host at all (missing `libgstcodecparsers`/`libavif` — `README` says so). In the pinned image: **140 passed / 7 failed / 3 flaky**, and an identical chromium control failed **6 of the same 7**. No engine-specific deterministic failure in the frontend suite either — same verdict §6.18 reached for admin | the shared failures are `assistant.spec.ts` ×3 + `a11y.spec.ts:227`, now **AI-flag** in [3.22c](#322c-harness--the-suites-own-honesty); collaboration ×3 was B6's seat cap and is FIXED                                                                                                                                                                                                                                              | **done**                                                                                                                                             |
-| **CI**          | verification | `web-e2e.yml` needs three green runs, then the flip to `pull_request`                                                                                                                                                                                                                                                                                                                                                                              | [e2e/07 §6.1](./e2e/07_CI.md)                                                                                                                                                                                                                                                                                                                                                                                                        | **0.5 d**                                                                                                                                            |
+| **CI**          | verification | `web-e2e.yml` needs three green runs, then the flip to `pull_request`. ⚠️ **This row was never 0.5 d away — until 2026-08-24 it was blocked outright** (§3.24): both jobs run `pnpm --filter frontend build`, and that build had been RED since 2026-08-20. The build is fixed; what now stands between here and the flip is **RS-flake**, because "three CONSECUTIVE green runs" cannot survive an intermittent failure                           | [e2e/07 §6.1](./e2e/07_CI.md); the build steps are `.github/workflows/web-e2e.yml:157` and `:326`                                                                                                                                                                                                                                                                                                                                    | **0.5 d, after RS-flake** (the flip itself is minutes; the three green runs are the cost, and one red resets the count)                              |
 | **LIVE-VERIFY** | verification | two shipped behaviours are unit-green and have **never met a running backend**, and both are the kind whose risk is agreement WITH the server rather than logic: **D4's gate** (a 402 raised in the graph-read path, rendered by mobile's lock card) and **C-15's mobile composer** (client-computed `anchorText` offsets against the server's offset-exact check, which answers 409 when they disagree)                                           | D4: `qalam-mobile/test/features/ai/story_explorer_screen_test.dart` + `backend/src/modules/story-intelligence/story-intelligence.service.ts` (`assertGraphReadEntitled`). C-15: `qalam-mobile/lib/features/reading/domain/content_parser.dart` (`parseContentWithAnchors`) + `features/collaboration/presentation/widgets/suggestion_composer_sheet.dart`. Recorded as owed on the day each shipped — D4 2026-08-24, C-15 2026-08-21 | **0.2 d** (one manual pass each against a live stack — AA-render's precedent: a computed agreement is not evidence of a rendered or on-the-wire one) |
+
+| **RS-flake** | **medium** | `reading-stats.spec.ts` fails intermittently in **two different tests**, and NOT under parallel load: `:107` (the account-menu item click does not navigate) failed once in a full parallel run, and `:161` (the signed-out bounce) failed **1 in 5 at `--workers=1` in isolation**. Counted 2026-08-24, chromium, three separate invocations — a flake by §3.4's standard, unlike T-7 which was filed as one without a count | `e2e/tests/frontend/reading-stats.spec.ts:107` and `:161`. ⚠️ **The failure snapshot is a red herring**: it shows an authenticated banner for the "signed-out" test, because `:161` builds its own context via `browser.newContext()` while the file's `beforeEach` has already created the authenticated FIXTURE page — and that is the page Playwright snapshots. The real failure is a plain 30 s timeout in the signed-out context | **0.5 d+** (two symptoms, possibly two causes; `:107` is §3.18b's lost-menu-click class, `:161` is not) |
 
 ### 3.22d Not defects — recorded so a future row does not size them as work
 
@@ -3745,6 +3785,124 @@ belong here at all: it becomes ledger lines above, or it disappears.
 > **D4-copy** ([3.22b](#322b-contract--operability-honesty--no-user-visible-break-real-cost-to-the-next-reader)),
 > **LIVE-VERIFY** ([3.22c](#322c-harness--the-suites-own-honesty)). Full decision and reasoning in
 > [§5.2](#52-the-monetization-catalogue-sells-eight-features-and-the-backend-enforces-one-opened-2026-07-29-during-w4).
+
+---
+
+## 3.23 The AI panel closed itself, and four specs could not see it (2026-08-24)
+
+Opened and closed in one pass, taking the **AI-panel** and **T-7** rows off the ledger. Kept as a
+diagnosis because **three** things were wrong here and only one of them was the row.
+
+### 3.23a The row's suspicion was wrong, and one `git log -S` would have shown it
+
+The AI-panel row read: "the suspicion is flag raising / the `withAiFeatures` mutex under load —
+**not confirmed**". It was neither. **B5** (`2797b69`, 2026-08-08) made the editor's AI trigger
+conditional on `aiAvailability !== 'off' && aiAvailability !== 'self-off'`
+(`frontend/src/features/writing/pages/editor-page.tsx:228`) — deliberately, citing
+[45 §4.10](./45_WebClientRoadmap.md) and mobile's editor: a Sparkles button fronting four "AI is off"
+notices is a stranded entry point. The suite starts every AI flag **dark**
+(`e2e/setup/ai-flags.global.ts`), so `aiEnabled: false` → `off` → **no trigger exists**, and
+`AssistantPanel.open()` timed out clicking a button that is not rendered. Deterministic, both
+engines, nothing to do with parallelism.
+
+The row even **quoted the guilty line** (`editor-page.tsx:228`) while attributing the failure to the
+mutex. Re-verifying an anchor means reading what it now says, not confirming the file still has a
+line there.
+
+### 3.23b T-7 was never a flake — it was the same missing trigger
+
+`assistant.spec.ts:220` ("the editor still writes and autosaves with the assistant mounted") calls
+`panel.open()` before typing, so it failed on the same absent trigger — which also means the test's
+own premise was false for three weeks: it asserted the editor was safe **with the assistant mounted**
+while no assistant was mounted. Filed as "flaky under parallel load, **0.5 d+**", it was deterministic
+the whole time and cost nothing to fix once the cause was known.
+
+[§3.4](#34-found-by-running-the-w3c-suite-2026-07-29)'s rule — a failure is not a flake until it has
+been **counted** — exists for this. Nothing had counted it. (For contrast, **RS-flake**, opened in the
+same pass, IS counted: two tests, three invocations, one of them 1-in-5 at `--workers=1`.)
+
+### 3.23c The real defect: the panel closed itself, and no test could have caught it
+
+The one thing here a **user** could hit, found by repairing a test rather than by reviewing the
+feature. `useRegisterAiEditorTarget`'s effect listed `title`, `languageCode` and `pieceId` in its
+dependency array, and its cleanup calls `unregister()` — which sets `open: false`
+(`frontend/src/stores/ai-editor-target.store.ts`). So:
+
+- **Typing in the title closed the assistant.** `title` is `useState` in `editor-page`, so it changes
+  per keystroke: a writer who opened the panel and then edited their title watched the drawer shut on
+  the first character.
+- **The first autosave closed it too.** Autosave `CREATE`s the piece, `editor-page` navigates to
+  `/write/:id`, `pieceId` changes → unregister → closed. W9's own docblock **predicted this re-run and
+  called it a feature** ("a brand-new `/write` gains one the moment autosave creates the piece, which
+  re-runs this effect") without noticing what the re-run cost.
+
+**Fixed** by making the registration depend only on the editor: `title`/`languageCode` ride a latest
+ref (`getContext()` is called on demand, so the target never needed rebuilding), and the story id is
+published through a new `setStoryId` action instead of a re-registration. `unregister` keeps its
+meaning — the panel must not linger over a screen with no editor — because that is a real teardown,
+which a prop change is not.
+
+**Why the existing spec was green:** `use-ai-editor-target.spec.tsx` had 11 tests and **rendered the
+hook once** with fixed props. Everything it asserted was true on the first commit; the defect only
+exists on the second. Three cases added, two of which fail against the old code (verified by reverting
+the hook and re-running).
+
+### 3.23d And a third instance of the disarm pattern — D3, this time
+
+Fixing the trigger revealed the next layer: **D3** (2026-08-17) put both AF2 tabs behind the
+`ai_writing` entitlement, which free does not include, so every test that drives the panel's insides
+met "AI writing is on Plus and above" where the controls used to be. Two of those tests had never even
+run, because the `describe.serial` block aborted on the earlier failure.
+
+That is **the third time** a later feature silently disarmed specs written before it — **B4**'s piece
+cap, **B6**'s seat cap, now **D3**'s entitlement gate — and the third time it was found by a run rather
+than by review. The arrangement now lives in one place (`e2e/fixtures/entitlements.ts`,
+`asEntitledWriter`), using the admin override the af5 row already built.
+
+It also caught a scan that was **passing over the wrong surface**: the AI-panel a11y scan opened the
+drawer with the master flag alone, so it scanned D3's upgrade wall while its label claimed "a drawer
+full of radio groups… the densest interactive surface in the editor". Now entitled and flag-raised, it
+scans what it says — and found no new violations.
+
+### Parity check — mobile does NOT have 3.23c, and the reason is structural
+
+Asked because §6's question 3 requires it, and the answer is not "probably fine": mobile builds its
+target **on demand** at the moment the panel opens (`DraftAiEditorTarget.build(ref, routeId)`, called
+from `editor_screen.dart` and `formatting_toolbar.dart`), and the panel is a modal sheet owned by the
+navigator. There is no store-held `open` flag for a re-registration to clear, and no effect whose
+cleanup runs on a prop change — so neither the title nor the first sync can dismiss it. Web's
+store-plus-effect shape is what created the defect; mobile's shape cannot express it.
+
+---
+
+## 3.24 The frontend's own gates were red, and CI could not have gone green (2026-08-24)
+
+Found by accident, while arranging T-9's verification: building the frontend to produce a `dist` to
+point a stale `preview` at.
+
+**`pnpm --filter frontend typecheck` and `pnpm --filter frontend build` had both been failing since
+`a47eb50` (2026-08-20)** — two TypeScript errors in `chart-options.spec.ts`, where a `matchAll`
+destructure yields `string | undefined` under `noUncheckedIndexedAccess`. Fixed by narrowing
+explicitly; the spec then compiled **and ran for the first time**: 5 tests, all passing, so nothing was
+wrong with what it asserted, only with whether it could be built.
+
+**Three things make this worth its own section rather than a one-line fix note:**
+
+1. **It blocked the CI row completely, and the ledger sized that row at 0.5 d.** `web-e2e.yml` runs
+   `pnpm --filter frontend build` in **both** jobs (`:157`, `:326`), so every run would have died at
+   the build step, before a single browser opened. "Three consecutive green runs" was unreachable, and
+   nothing in the register said so.
+2. **It is A2-6 again, on the other client.** That row was "the admin `typecheck` and `build` gates
+   have been RED since B8 landed". Same failure, same cause — a gate nobody runs locally between
+   epics — on a repo where the register had just spent a pass measuring browser behaviour in detail.
+   Two instances is a pattern: **the gates most likely to be red are the ones no row's definition of
+   done names.**
+3. **The commit that broke it was `a47eb50` — the W8-5 / T-4 / T-5 fix**, which is to say the pass that
+   was closing quality rows left a quality gate red behind it, and the 2026-08-20 measurement run that
+   followed could not have noticed: locally the suite runs the Vite **dev** server, which never
+   type-checks the app, and CI had not run since.
+
+**The gates now:** frontend `typecheck` clean, `build` clean, `137 files / 917 tests` green.
 
 ---
 
