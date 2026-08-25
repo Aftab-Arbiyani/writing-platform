@@ -112,8 +112,10 @@ test.describe('@phase4 frontend reader analytics', () => {
     await nav.expectAuthenticated();
 
     // Reached the way a real reader reaches it — through the account menu, not by typing a URL.
-    await page.getByRole('button', { name: 'Account menu' }).click();
-    await page.getByText('Your reading', { exact: true }).click();
+    // Via the page object, not a raw click: the menu is an AntD Dropdown and a coordinate click
+    // into its entrance motion is silently lost (48 §3.18b, and RS-flake — this line was the
+    // last frontend call site still doing it by hand).
+    await nav.openAccountMenuItem('Your reading');
     await expect(page).toHaveURL(/\/me\/reading/);
 
     const reading = new ReadingStatsPage(page);
@@ -158,23 +160,6 @@ test.describe('@phase4 frontend reader analytics', () => {
     await api.unbookmarkPiece(piece.id);
   });
 
-  test('a signed-out visit bounces to sign-in and does not render the page', async ({
-    browser,
-  }) => {
-    // A fresh context with no session — the route is auth-gated (`GET /analytics/readers/me`
-    // identifies the reader from the JWT, so there is nothing here for a visitor).
-    const context = await browser.newContext();
-    const page = await context.newPage();
-
-    await page.goto('/me/reading');
-    await expect(page).toHaveURL(/\/auth\/login/, { timeout: 30_000 });
-    // And it carries the return path, so signing in lands the reader where they meant to go.
-    await expect(page).toHaveURL(/returnTo=%2Fme%2Freading/);
-    await expect(page.getByRole('heading', { level: 1, name: 'Your reading' })).toHaveCount(0);
-
-    await context.close();
-  });
-
   test('a failed aggregate read shows an error, never a fabricated zero', async ({ page }) => {
     // Mobile degrades to local device reading history on failure; web has none (docs/48 §4), so the
     // only honest alternative to an error is nothing at all. A `0` here would be indistinguishable
@@ -200,5 +185,52 @@ test.describe('@phase4 frontend reader analytics', () => {
     await expect(page.getByText('Pieces read', { exact: true })).toHaveCount(0);
     await expect(page.getByText('Current streak', { exact: true })).toHaveCount(0);
     await expect(page.getByText('Longest streak', { exact: true })).toHaveCount(0);
+  });
+});
+
+/**
+ * The signed-out case, deliberately OUTSIDE the describe above — it must not inherit that
+ * block's `freshLogin` beforeEach.
+ *
+ * Two reasons, and the second one is why this test used to fail intermittently (**RS-flake**,
+ * `docs/48` §3.22c):
+ *
+ * 1. Logging in a fixture `page` this test never touches spends part of a 30 s test budget and,
+ *    on failure, is the page Playwright SNAPSHOTS — so the report showed a signed-IN banner for
+ *    a signed-out assertion and read as an app bug. The register carried that snapshot as a
+ *    documented red herring.
+ * 2. **`browser.newContext()` INHERITS the project's `use` options**, `storageState` included —
+ *    which for every `frontend-*` project is `.auth/frontend.json`, a file whose single cookie is
+ *    the writer's httpOnly `qalam_rt`. A bare `newContext()` was therefore never anonymous: it
+ *    booted, refreshed that cookie, and landed signed in. It only *usually* bounced because the
+ *    stored refresh token had normally already been consumed by another test — reuse-detection
+ *    then revokes the family and the app falls back to the login screen (see `fixtures/auth.ts`).
+ *    So the test passed for the wrong reason and failed whenever that token happened to still be
+ *    live: a spec arranged on someone else's side effect, not a flake.
+ *
+ * An explicitly empty `storageState` is the fix and the house pattern — `tests/admin/users.spec.ts`
+ * and `moderation.spec.ts` already do exactly this, one of them commented "force a
+ * guaranteed-anonymous context". This file was the only place that omitted it.
+ */
+test.describe('@phase4 frontend reader analytics — signed out', () => {
+  test('a signed-out visit bounces to sign-in and does not render the page', async ({
+    browser,
+    baseURL,
+  }) => {
+    // A genuinely anonymous context — the route is auth-gated (`GET /analytics/readers/me`
+    // identifies the reader from the JWT, so there is nothing here for a visitor).
+    const context = await browser.newContext({
+      baseURL,
+      storageState: { cookies: [], origins: [] },
+    });
+    const page = await context.newPage();
+
+    await page.goto('/me/reading');
+    await expect(page).toHaveURL(/\/auth\/login/, { timeout: 30_000 });
+    // And it carries the return path, so signing in lands the reader where they meant to go.
+    await expect(page).toHaveURL(/returnTo=%2Fme%2Freading/);
+    await expect(page.getByRole('heading', { level: 1, name: 'Your reading' })).toHaveCount(0);
+
+    await context.close();
   });
 });
