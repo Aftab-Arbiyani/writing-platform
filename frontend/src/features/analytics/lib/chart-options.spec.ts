@@ -33,7 +33,12 @@ function declarationsFor(css: string, mode: 'light' | 'dark'): Map<string, strin
   const block = css.slice(start, css.indexOf('\n}', start)).replace(/\/\*[\s\S]*?\*\//g, '');
 
   const found = new Map<string, string>();
-  for (const [, name, value] of block.matchAll(/(--q-[\w-]+)\s*:\s*([^;]+);/g)) {
+  for (const match of block.matchAll(/(--q-[\w-]+)\s*:\s*([^;]+);/g)) {
+    // Both groups are non-optional in the pattern, so a match implies both — but
+    // `noUncheckedIndexedAccess` types them `string | undefined` and cannot know that. Skipping is
+    // the honest narrowing: a non-match cannot reach here, so nothing real is dropped.
+    const [, name, value] = match;
+    if (name === undefined || value === undefined) continue;
     found.set(name, value.trim().toLowerCase());
   }
   return found;
