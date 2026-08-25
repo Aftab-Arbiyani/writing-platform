@@ -70,6 +70,27 @@ Production-relevant knobs (Epic 12):
 | `LOG_PRETTY`                            | pretty logs             | unset (raw JSON to stdout)        |
 | `WORKERS_ENABLED` / `SCHEDULER_ENABLED` | in-process workers/cron | `true`                            |
 
+**AI and payments credentials (AF1 / AF5).** Both subsystems are **credential-gated**: a provider
+with no key is inert, and every one of these knobs is Zod-validated like the rest. They were absent
+from `backend/.env.example` until 2026-08-25, which made them discoverable only by reading
+`src/config/{ai,payments}.config.ts` (48 §3.22b, AI-4); the example file now carries both blocks with
+which adapters actually ship.
+
+| Variable group                                    | Purpose                                | Prod value                                     |
+| ------------------------------------------------- | -------------------------------------- | ---------------------------------------------- |
+| `OPENAI_*` / `ANTHROPIC_*` / `GOOGLE_AI_*`        | the three **shipped** AI adapters      | the vendor key for whichever you use           |
+| `AI_DEFAULT_PROVIDER` / `AI_DEFAULT_MODEL`        | which provider serves an unnamed call  | a provider whose key is actually set           |
+| `AI_DAILY_TOKEN_LIMIT` / `AI_MONTHLY_TOKEN_LIMIT` | platform token ceilings                | a real number — **`0` means unlimited**        |
+| `AI_STUB_ENABLED`                                 | canned-passage provider                | `false` (test stacks only)                     |
+| `STRIPE_*` / `APPLE_*` / `GOOGLE_PLAY_*`          | the three **shipped** payment adapters | credentials for the processors you settle with |
+| `APPLE_USE_SANDBOX`                               | Apple receipt endpoint                 | `false` (the code default is `true`)           |
+| `PAYMENTS_MANUAL_ENABLED`                         | settle with no processor               | `false` — it books uncollected revenue         |
+
+> Monetization has a **second** gate that is not an env var: the `feature.payments.enabled` feature
+> flag, admin-toggleable and dark by default. Credentials decide _which processor can settle_; the
+> flag decides whether the platform is on at all. A stack with perfect Stripe keys and the flag down
+> still refuses every checkout — and a graph read still answers 404 rather than 402 (48 §3.22c).
+
 **Secrets** live in GitHub Environments (staging/production) and are injected as
 the container's `env_file` — never committed, never inlined in compose.
 

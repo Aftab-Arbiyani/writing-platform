@@ -3774,6 +3774,33 @@ orderedList, listItem, hardBreak, footnote, mention, hashtag`
 > **This unblocks the CI row.** "Three consecutive green runs" was standing behind RS-flake; nothing
 > in the ledger now stands between the `web-e2e.yml` flip and the runs themselves.
 
+> **Thirteenth reconciliation, 2026-08-25 — AI-4, closed.** Its line is gone from 3.22b.
+> `backend/.env.example` now carries an AI-providers block and a payments block, and `19 §3` has the
+> two tables it was pointing at a file for. Sized at 1 h and it was, but writing it turned up three
+> things the row did not contain:
+>
+> - **The vars were Zod-validated all along.** `env.schema.ts` types every one of them
+>   (`AI_DEFAULT_PROVIDER` as an enum, the keys as strings, the limits as coerced numbers). So this was
+>   never "unvalidated config" — it was config discoverable _only_ by reading `src/config/*.config.ts`,
+>   which is a documentation defect exactly as filed, and no more than that. Worth stating because the
+>   obvious next step from the row's wording would have been to add schema entries that already exist.
+> - **A blank numeric knob here would have been worse than an absent one, and the two limits fail
+>   SILENTLY.** `ai.config.ts` reads raw `process.env` rather than the validated object, and
+>   `Number(process.env.X ?? DEFAULT)` does not catch an empty string — so `AI_DAILY_TOKEN_LIMIT=`
+>   yields `0`, `.nonnegative()` accepts it, and `usage.service.ts` enforces only `if (limit > 0)`:
+>   **the token cap switches off**. The first draft of this block left those blank, which would have
+>   shipped an example file that disables a cost ceiling for anyone who copied it. They now carry their
+>   real defaults with the reason written beside them. `AI_REQUEST_TIMEOUT_MS` is safe by accident of
+>   being `.positive()` — a blank dies at boot instead.
+> - **`APPLE_USE_SANDBOX` defaults to `true`**, so the honest example value is `true` (copying the file
+>   changes nothing) with production named as the deployment that must set it false. The first draft
+>   had `false`, which would have made the example file behaviour-changing.
+>
+> Not done, deliberately: **`ai.config.ts` reading `process.env` directly instead of the
+> Zod-validated object is left alone.** It agrees with the schema today only because the two carry
+> matching defaults — a real fragility, but a code change with its own blast radius, and this row was
+> a doc row. Recorded here rather than fixed quietly.
+
 **This is the only admissible answer to "what is still open?".** Everything above it is a _diagnosis_
 — kept for its reasoning, and unreliable as a status, because a §3 heading is written once and the code
 moves afterwards. Twice now a pass has scheduled findings that were already fixed (the 2026-08-19
@@ -3844,7 +3871,6 @@ them (baseline re-mint, five call sites, a measurement loop) is the actual cost.
 
 | ID       | Sev     | What                                                                                                                           | Anchor (verified 2026-08-20)                                                                                             | Size                                                                              |
 | -------- | ------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------- |
-| **AI-4** | **low** | the annotated env list `19 §3` points at (`backend/.env.example`) carries no AI or payments knob at all                        | `backend/.env.example` — 223 lines, zero of `STRIPE                                                                      | APPLE                                                                             | GOOGLE_PLAY | OPENAI | ANTHROPIC | AI_ | PAYMENTS_`. Opened by AI-1's fix | **1 h** (a doc block, plus one decision about carrying credential names) |
 | **AI-2** | **low** | both health indicators call a flag-gated provider `inert`, understating a working subsystem                                    | `backend/src/health/indicators/ai.health-indicator.ts:26-30`; `payment.health-indicator.ts:29` ignores `manual`          | **1 d** (needs the `live`/`test`/`inert` vocabulary, both indicators, or neither) |
 | **AI-3** | **low** | `IMPLEMENTED_AI_PROVIDERS` / `IMPLEMENTED_PAYMENT_PROVIDERS` gate nothing, and the admin picker offers 6 adapterless providers | `packages/shared/src/ai.ts:46`, `monetization.ts:246` (zero consumers); `admin/src/features/ai/pages/ai-config-page.tsx` | _(with AI-2)_                                                                     |
 | **A3-4** | **low** | `AsyncSection` is at **five** copies, ~40 duplicated lines each                                                                | `admin/src/features/{ai,monetization,operations,security,system}/components/async-section.tsx`                           | **0.5 d**                                                                         |
