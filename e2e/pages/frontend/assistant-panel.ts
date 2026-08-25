@@ -71,6 +71,31 @@ export class AssistantPanel {
   }
 
   /**
+   * Assert the panel blocks this tab on **its own** feature flag rather than on the master switch —
+   * `feature-off`'s copy, not `off`'s.
+   *
+   * The distinction is the whole point wherever a test claims a tab is *separately* gated: with the
+   * master flag down every tab says "AI is turned off" and a passing assertion proves nothing about
+   * which flag did it. "Not available yet" can only render when the master is UP and this feature's
+   * own flag is down, so it is the assertion that actually carries the claim.
+   */
+  async expectFeatureOff(): Promise<void> {
+    await expect(this.activePanel.getByText('Not available yet')).toBeVisible({ timeout: 15_000 });
+    await expect(this.activePanel.getByRole('button', { name: 'Rewrite' })).toHaveCount(0);
+  }
+
+  /**
+   * Assert the editor offers **no** AI entry point at all — B5's contract when AI is off for the
+   * instance or for the account (`docs/45` §4.10, `editor-page.tsx`'s trigger condition). Distinct
+   * from {@link expectUnavailable}, which is about what the panel says once it is open; this is
+   * about the panel being unreachable in the first place, and the two cannot both hold.
+   */
+  async expectNoEntryPoint(): Promise<void> {
+    await expect(this.trigger).toHaveCount(0);
+    await expect(this.drawer).toHaveCount(0);
+  }
+
+  /**
    * Assert the panel offers its real controls — i.e. AI resolved to `available` rather than to any
    * of the four blocked states. The counterpart of {@link expectUnavailable}, and worth asserting
    * before driving an action so a flag that failed to flip reads as that, not as a dead button.

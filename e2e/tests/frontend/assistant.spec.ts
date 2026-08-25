@@ -1,4 +1,5 @@
 import { freshLogin } from '../../fixtures/auth';
+import { asEntitledWriter } from '../../fixtures/entitlements';
 import { AI_FLAG_TEST_TIMEOUT_MS, withAiFeatures, withAiFlags } from '../../fixtures/feature-flags';
 import { test, expect } from '../../fixtures/test';
 import { PromptLibraryPage } from '../../pages/frontend/ai-pages';
@@ -18,6 +19,14 @@ const STUB_SUGGESTION =
   'It is a fixed passage streamed one fragment at a time so the assistant, its accumulation of ' +
   'deltas, and the accept path can all be exercised end to end without calling a vendor. ' +
   'Nothing here was generated, and nothing about it will change between runs.';
+
+/**
+ * Every test that drives the panel's INSIDES runs as an entitled writer
+ * ([fixtures/entitlements.ts]) — D3 put both AF2 surfaces behind `ai_writing`, which free does not
+ * include, so the seeded writer meets an upgrade wall where the controls used to be. The flag-down
+ * and editor-safety tests deliberately do NOT take it: they assert what a writer without AI sees.
+ */
+const AI_WRITING = 'ai_writing';
 
 /**
  * The in-editor AI panel (W2/AF2, docs/45 §4.2) — `features/ai`'s first user-facing surface,
@@ -45,16 +54,30 @@ test.describe('@phase4 frontend AI assistant', () => {
     await freshLogin(page, 'writer');
   });
 
+  /**
+   * **The master flag has to be UP for this to be reachable at all, and that is B5's doing.**
+   * Before B5 the editor always rendered the AI trigger and the panel explained itself when the
+   * flags were down; B5 hides the trigger entirely whenever AI is off for the instance or for the
+   * account (`editor-page.tsx`, `docs/45` §4.10 — no stranded entry points). The AI flags ship dark
+   * ([setup/ai-flags.global.ts]), so a test that opens this panel now has to raise the master switch
+   * first, exactly as the two W9 a11y scans do ([a11y.spec.ts]).
+   *
+   * An EMPTY feature list raises the master and nothing else — this test is about the drawer opening
+   * and closing, which no per-feature flag governs.
+   */
   test('the assistant opens over the editor and closes again', async ({ page }) => {
-    const editor = new EditorPage(page);
-    await editor.goto();
+    test.setTimeout(AI_FLAG_TEST_TIMEOUT_MS);
+    await withAiFeatures([], 'assistant: opens and closes', async () => {
+      const editor = new EditorPage(page);
+      await editor.goto();
 
-    const panel = new AssistantPanel(page);
-    await panel.open();
-    await expect(panel.assistantTab).toBeVisible();
-    await expect(panel.coachTab).toBeVisible();
+      const panel = new AssistantPanel(page);
+      await panel.open();
+      await expect(panel.assistantTab).toBeVisible();
+      await expect(panel.coachTab).toBeVisible();
 
-    await panel.close();
+      await panel.close();
+    });
   });
 
   /**
@@ -77,30 +100,66 @@ test.describe('@phase4 frontend AI assistant', () => {
     // The lock queue is part of each test's own budget (see AI_FLAG_TEST_TIMEOUT_MS).
     test.describe.configure({ timeout: AI_FLAG_TEST_TIMEOUT_MS });
 
-    test('it explains itself instead of offering dead controls when AI is off', async ({
-      page,
-    }) => {
+    /**
+     * **This assertion INVERTED at B5, and the test's old name is what gave it away.**
+     * "It explains itself instead of offering dead controls" was the pre-B5 contract: the trigger
+     * was always there and the panel carried the explanation. B5 went further and removed the
+     * control — a Sparkles button fronting four "AI is off" notices is the stranded entry point
+     * `docs/45` §4.10 forbids — so the honest assertion is now that there is **no** control to be
+     * dead. Same claim as the old name made, enforced one step earlier.
+     *
+     * `withAiFlags` (lock, raise nothing) is still right: this asserts the shipped dark state, and
+     * the lock is what makes "the flags are down" true rather than merely likely.
+     */
+    test('it offers no AI entry point at all when AI is off', async ({ page }) => {
       await withAiFlags('assistant: AI off', async () => {
         const editor = new EditorPage(page);
         await editor.goto();
 
         const panel = new AssistantPanel(page);
-        await panel.open();
-        await panel.expectUnavailable();
+        await panel.expectNoEntryPoint();
       });
     });
 
-    test('the Craft Coach is a separate, separately-gated tab', async ({ page }) => {
-      await withAiFlags('assistant: coach gated', async () => {
-        const editor = new EditorPage(page);
-        await editor.goto();
+    /**
+     * **Three arrangements, because two later features each invalidated this test's original
+     * one-liner** — and neither failed it at the time, which is the whole problem:
+     *
+     * - **B5** (2026-08-08) hid the editor's AI trigger while AI is off, so "everything dark" can
+     *   no longer even open the panel.
+     * - **D3** (2026-08-17) put both AF2 tabs behind the `ai_writing` entitlement, and the gate
+     *   wraps the whole tab body — so a free writer gets "AI writing is on Plus and above"
+     *   whatever the flags say, and the flag notice this test is about is unreachable.
+     *
+     * Run without all three the test proved nothing about the coach's own flag: the copy it
+     * asserted came from the master switch (pre-B5), and would have come from the entitlement wall
+     * (post-D3). With the master up and `ai_writing` granted, "Not available yet" is attributable
+     * to `feature.ai.craftCoach.enabled` alone — which is what the name claims.
+     *
+     * The entitlement rides an admin OVERRIDE on a throwaway account rather than a subscription:
+     * same Entitlement Service and same snapshot the client gates on ([fixtures/api.ts]), with no
+     * once-per-account state to collide with on a re-run. A fresh user rather than the seeded
+     * writer so a leaked grant cannot quietly disarm D3's assertions in another spec — the flag
+     * hazard [fixtures/feature-flags.ts] is written against, in entitlement form.
+     */
+    test('the Craft Coach is a separate, separately-gated tab', async ({ page, api, data }) => {
+      await asEntitledWriter({ page, api, data }, AI_WRITING, async () => {
+        await withAiFeatures(
+          ['feature.ai.writingAssistant.enabled'],
+          'assistant: coach gated',
+          async () => {
+            const editor = new EditorPage(page);
+            await editor.goto();
 
-        const panel = new AssistantPanel(page);
-        await panel.open();
-        await panel.selectTab('Craft Coach');
+            const panel = new AssistantPanel(page);
+            await panel.open();
+            await panel.selectTab('Craft Coach');
 
-        // Craft Coach carries its own flag, so it resolves its own availability.
-        await panel.expectUnavailable();
+            // Craft Coach carries its own flag, so it resolves its own availability — and with the
+            // master switch up and the entitlement granted, this notice can only be that flag.
+            await panel.expectFeatureOff();
+          },
+        );
       });
     });
 
@@ -118,52 +177,58 @@ test.describe('@phase4 frontend AI assistant', () => {
      * worker and asserts its own flag is still down, and enabling features nothing asserts would make
      * the suite's own arrangement broader than its claims.
      */
-    test('a suggestion streams into the panel and lands in the draft', async ({ page, data }) => {
-      await withAiFeatures(
-        ['feature.ai.writingAssistant.enabled'],
-        'assistant: streamed suggestion',
-        async () => {
-          const editor = new EditorPage(page);
-          await editor.goto();
+    test('a suggestion streams into the panel and lands in the draft', async ({
+      page,
+      api,
+      data,
+    }) => {
+      await asEntitledWriter({ page, api, data }, AI_WRITING, async () => {
+        await withAiFeatures(
+          ['feature.ai.writingAssistant.enabled'],
+          'assistant: streamed suggestion',
+          async () => {
+            const editor = new EditorPage(page);
+            await editor.goto();
 
-          // The assistant refuses to act on an empty document (`nothingToWorkWith` disables every
-          // quick action), so the draft has to exist before the panel can be driven — which is also
-          // the realistic order: a writer asks for help with something they have written.
-          const title = data.pieceTitle();
-          await editor.writePiece({
-            title,
-            body: 'The lamp guttered twice before the door opened.',
-          });
-          await editor.waitForSaved();
+            // The assistant refuses to act on an empty document (`nothingToWorkWith` disables every
+            // quick action), so the draft has to exist before the panel can be driven — which is
+            // also the realistic order: a writer asks for help with something they have written.
+            const title = data.pieceTitle();
+            await editor.writePiece({
+              title,
+              body: 'The lamp guttered twice before the door opened.',
+            });
+            await editor.waitForSaved();
 
-          const panel = new AssistantPanel(page);
-          await panel.open();
-          // Asserted before acting: a flag that failed to flip must read as "AI is off", not as a
-          // mysteriously dead button 30 seconds later.
-          await panel.expectAvailable();
+            const panel = new AssistantPanel(page);
+            await panel.open();
+            // Asserted before acting: a flag that failed to flip must read as "AI is off", not as a
+            // mysteriously dead button 30 seconds later.
+            await panel.expectAvailable();
 
-          await panel.runQuickAction('Continue writing');
-          await panel.expectSuggestion(STUB_SUGGESTION);
+            await panel.runQuickAction('Continue writing');
+            await panel.expectSuggestion(STUB_SUGGESTION);
 
-          // ACCEPT — the half that makes this a writing feature rather than a chat window. The
-          // assistant hands text to the editor's registered target; nothing in `features/ai` touches
-          // the document (docs/45 §4.2).
-          //
-          // The autosave listener is armed BEFORE the click, because the draft has already saved once
-          // and the indicator therefore still reads "Saved" — waiting on that would pass instantly and
-          // the reload below would race the debounce (see `waitForNextAutosave`).
-          const autosaved = editor.waitForNextAutosave();
-          await panel.acceptSuggestion();
-          await editor.expectBodyContains(STUB_SUGGESTION);
+            // ACCEPT — the half that makes this a writing feature rather than a chat window. The
+            // assistant hands text to the editor's registered target; nothing in `features/ai`
+            // touches the document (docs/45 §4.2).
+            //
+            // The autosave listener is armed BEFORE the click, because the draft has already saved
+            // once and the indicator therefore still reads "Saved" — waiting on that would pass
+            // instantly and the reload below would race the debounce (see `waitForNextAutosave`).
+            const autosaved = editor.waitForNextAutosave();
+            await panel.acceptSuggestion();
+            await editor.expectBodyContains(STUB_SUGGESTION);
 
-          // And it is really in the draft, not just painted into the DOM: the insert goes through the
-          // editor's own commands, so autosave persists it with no AI-specific branch anywhere, and a
-          // reload reads it back from the server.
-          await autosaved;
-          await editor.reload();
-          await editor.expectBodyContains(STUB_SUGGESTION);
-        },
-      );
+            // And it is really in the draft, not just painted into the DOM: the insert goes through
+            // the editor's own commands, so autosave persists it with no AI-specific branch
+            // anywhere, and a reload reads it back from the server.
+            await autosaved;
+            await editor.reload();
+            await editor.expectBodyContains(STUB_SUGGESTION);
+          },
+        );
+      });
     });
 
     /**
@@ -183,61 +248,74 @@ test.describe('@phase4 frontend AI assistant', () => {
      */
     test('a prompt-library preset lands in the assistant’s Ask AI field', async ({
       page,
+      api,
       data,
     }) => {
-      await withAiFeatures(
-        ['feature.ai.writingAssistant.enabled'],
-        'assistant: prompt library hand-off',
-        async () => {
-          const library = new PromptLibraryPage(page);
-          await library.goto();
-          await library.expectResolved();
-          await library.useInAssistant('Essay');
+      await asEntitledWriter({ page, api, data }, AI_WRITING, async () => {
+        await withAiFeatures(
+          ['feature.ai.writingAssistant.enabled'],
+          'assistant: prompt library hand-off',
+          async () => {
+            const library = new PromptLibraryPage(page);
+            await library.goto();
+            await library.expectResolved();
+            await library.useInAssistant('Essay');
 
-          // Straight to the editor — the surface that has the manuscript the preset will act on.
-          await expect(page).toHaveURL(/\/write$/);
+            // Straight to the editor — the surface that has the manuscript the preset will act on.
+            await expect(page).toHaveURL(/\/write$/);
 
-          // The assistant disables its actions on an empty document, so give it something to work on
-          // before asserting the panel is live (the same precondition `expectAvailable` documents).
-          const editor = new EditorPage(page);
-          await editor.writePiece({
-            title: data.pieceTitle(),
-            body: 'The argument turns on a single unexamined assumption.',
-          });
-          await editor.waitForSaved();
+            // The assistant disables its actions on an empty document, so give it something to work
+            // on before asserting the panel is live (the precondition `expectAvailable` documents).
+            const editor = new EditorPage(page);
+            await editor.writePiece({
+              title: data.pieceTitle(),
+              body: 'The argument turns on a single unexamined assumption.',
+            });
+            await editor.waitForSaved();
 
-          const panel = new AssistantPanel(page);
-          await panel.open();
-          await panel.expectAvailable();
-          await expect(panel.activePanel.getByRole('textbox', { name: 'Ask AI' })).toHaveValue(
-            'Sharpen the argument in this passage and make the reasoning clearer.',
-          );
-        },
-      );
+            const panel = new AssistantPanel(page);
+            await panel.open();
+            await panel.expectAvailable();
+            await expect(panel.activePanel.getByRole('textbox', { name: 'Ask AI' })).toHaveValue(
+              'Sharpen the argument in this passage and make the reasoning clearer.',
+            );
+          },
+        );
+      });
     });
   });
 
+  /**
+   * **T-7 was filed as a flake and was not one** (48 §3.22c, closed 2026-08-24). It failed for the
+   * same deterministic reason as the two tests above: `panel.open()` waits on a trigger B5 hides
+   * while the AI flags are dark, so "with the assistant mounted" was asserted against an editor
+   * that had no assistant mounted. Raising the master switch is what makes the test's own premise
+   * true; nothing about the autosave path changed.
+   */
   test('the editor still writes and autosaves with the assistant mounted', async ({
     page,
     data,
   }) => {
-    // The regression that matters most: W2 adds a slot, a toggle and a target registration to
-    // the editor. None of it may cost the writer their draft.
-    const editor = new EditorPage(page);
-    await editor.goto();
+    test.setTimeout(AI_FLAG_TEST_TIMEOUT_MS);
+    await withAiFeatures([], 'assistant: autosave with the panel mounted', async () => {
+      // The regression that matters most: W2 adds a slot, a toggle and a target registration to
+      // the editor. None of it may cost the writer their draft.
+      const editor = new EditorPage(page);
+      await editor.goto();
 
-    const panel = new AssistantPanel(page);
-    await panel.open();
-    await panel.close();
+      const panel = new AssistantPanel(page);
+      await panel.open();
+      await panel.close();
 
-    const title = data.pieceTitle();
-    await editor.writePiece({ title, body: 'A line written with the assistant mounted.' });
-    await editor.waitForSaved();
+      const title = data.pieceTitle();
+      await editor.writePiece({ title, body: 'A line written with the assistant mounted.' });
+      await editor.waitForSaved();
 
-    await editor.reload();
-    await editor.expectRestored({
-      title,
-      body: 'A line written with the assistant mounted.',
+      await editor.reload();
+      await editor.expectRestored({
+        title,
+        body: 'A line written with the assistant mounted.',
+      });
     });
   });
 });

@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 
 import { expectNoSeriousA11yViolations } from '../../fixtures/a11y';
 import { freshLogin, freshLoginAs } from '../../fixtures/auth';
+import { asEntitledWriter } from '../../fixtures/entitlements';
 import { AI_FLAG_TEST_TIMEOUT_MS, withAiFeatures } from '../../fixtures/feature-flags';
 import { test, expect } from '../../fixtures/test';
 import { EditorPage } from '../../pages/frontend/editor-page';
@@ -224,14 +225,39 @@ test.describe('@phase5 @a11y frontend accessibility (authenticated)', () => {
     await expectNoSeriousA11yViolations(page, { label: 'frontend /write' });
   });
 
-  test('the AI assistant panel has no critical/serious a11y violations', async ({ page }) => {
-    // A drawer full of radio groups, tabs and a live region (W2, docs/45 §4.2) — the densest
-    // interactive surface in the editor, and the one axe is most likely to have something to say
-    // about. Scanned open, over the editor it overlays.
-    const editor = new EditorPage(page);
-    await editor.goto();
-    await new AssistantPanel(page).open();
-    await expectNoSeriousA11yViolations(page, { label: 'frontend /write + AI panel' });
+  /**
+   * **Two arrangements this scan did not have, and it was scanning the wrong surface without them.**
+   *
+   * - **B5** hides the editor's AI trigger whenever availability resolves to `off`, and the AI flags
+   *   ship dark — so there was nothing to open and nothing to scan (it timed out on both engines).
+   * - **D3** put the assistant behind the `ai_writing` entitlement. With the master flag alone the
+   *   drawer opens, so the scan PASSES — over an upgrade wall. The "drawer full of radio groups"
+   *   this test says it covers is exactly what a free writer never sees, so raising the flag and
+   *   granting the entitlement is what makes the label true.
+   *
+   * Both were found on 2026-08-24 while closing the AI-panel row (48 §3.22c).
+   */
+  test('the AI assistant panel has no critical/serious a11y violations', async ({
+    page,
+    api,
+    data,
+  }) => {
+    test.setTimeout(AI_FLAG_TEST_TIMEOUT_MS);
+    await asEntitledWriter({ page, api, data }, 'ai_writing', async () => {
+      await withAiFeatures(
+        ['feature.ai.writingAssistant.enabled'],
+        'a11y: AI assistant panel',
+        async () => {
+          // A drawer full of radio groups, tabs and a live region (W2, docs/45 §4.2) — the densest
+          // interactive surface in the editor, and the one axe is most likely to have something to
+          // say about. Scanned open, over the editor it overlays.
+          const editor = new EditorPage(page);
+          await editor.goto();
+          await new AssistantPanel(page).open();
+          await expectNoSeriousA11yViolations(page, { label: 'frontend /write + AI panel' });
+        },
+      );
+    });
   });
 
   /**

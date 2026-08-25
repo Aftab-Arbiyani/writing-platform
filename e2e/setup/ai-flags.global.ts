@@ -1,5 +1,7 @@
 import { request } from '@playwright/test';
 
+import { assertNotStalePreview } from './stale-preview.global';
+
 /**
  * Force every AI feature flag back to its **seeded, dark** state — once before the run, once after.
  *
@@ -92,5 +94,11 @@ export async function resetAiFeatureFlags(phase: 'setup' | 'teardown'): Promise<
 }
 
 export default async function globalSetup(): Promise<void> {
+  /**
+   * T-9's residual, checked FIRST and deliberately hosted here: Playwright allows one `globalSetup`,
+   * and this runs before `webServer` starts — so anything already on :5173 is something a human
+   * started, which is exactly the case the check is for. See `stale-preview.global.ts`.
+   */
+  await assertNotStalePreview();
   await resetAiFeatureFlags('setup');
 }
