@@ -267,7 +267,20 @@ test.describe('@phase5 @visual frontend (authenticated)', () => {
    * visually — a star vs. a bookmark glyph and a tinted tag — so this pins both.
    */
   test('the collections page matches its visual baseline', async ({ page, api, data }) => {
-    const collection = await api.createCollection({ title: 'E2E Collection — visual baseline' });
+    // The title is per-PROJECT, not fixed and not random.
+    //
+    // Fixed was a defect: all eight @visual projects run this spec as the same writer, so the
+    // second one to arrive got `409 COLLECTION_NAME_TAKEN` and failed in ARRANGE — four of the
+    // 2026-08-25 run's failures were this. It also broke the suite's own rule (04 §5: never create
+    // a record with a fixed name), three lines from a `data` fixture that was already injected.
+    //
+    // Random would break the screenshot instead: this name is RENDERED in the image the baseline
+    // pins. Keying it to the project gives both — stable within a project, unique across them —
+    // and costs nothing, because baselines are already namespaced per project
+    // (`…-frontend-chromium-linux.png`).
+    const collection = await api.createCollection({
+      title: `E2E Collection — visual baseline (${test.info().project.name})`,
+    });
     const piece = await api.createPublishedPiece({ title: data.pieceTitle() });
     await api.addPieceToCollection(collection.id, piece.id);
 
