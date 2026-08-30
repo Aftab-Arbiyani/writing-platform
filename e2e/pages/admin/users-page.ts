@@ -93,6 +93,18 @@ export class UsersPage {
    * can immediately assert the persisted role.
    */
   async changeRole(username: string, roleLabel: string): Promise<void> {
+    // A PREVIOUS changeRole for this same user may still have its notification on screen —
+    // AntD keeps one for ~4.5 s and `users.spec.ts` calls this twice in a row (grant, then
+    // revoke). Two identical toasts made the assertion below a strict-mode violation.
+    //
+    // Waiting the old one out, rather than `.first()`-ing past it, is the point: `.first()`
+    // would resolve to the STALE toast, so the assertion would pass without this save having
+    // succeeded at all — green because of the defect, which is the failure mode this suite
+    // keeps finding (48 §3.22, rule 3's neighbours). Clearing first also stops a lingering
+    // notification overlaying the row menu, which is its own lost-click hazard (§3.18b).
+    const toast = this.page.getByText(`Updated @${username}.`);
+    await expect(toast).toHaveCount(0);
+
     await this.rowActions(username).click();
     await clickAntdMenuItem(this.page, 'Edit user');
     const dialog = this.editDialog(username);
@@ -100,7 +112,8 @@ export class UsersPage {
 
     await this.selectRole(dialog, roleLabel);
     await dialog.getByRole('button', { name: 'Save changes' }).click();
-    await expect(this.page.getByText(`Updated @${username}.`)).toBeVisible();
+    // Exactly one, and it is necessarily this save's: the slate was clean on entry.
+    await expect(toast).toHaveCount(1);
     await expect(dialog).toBeHidden();
   }
 

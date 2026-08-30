@@ -31,7 +31,7 @@ test.describe('@phase4 admin monetization — A1a, the levers', () => {
     await freshLogin(page, 'admin');
   });
 
-  test('the plan catalogue states the inverted sentinel at the field', async ({ page }) => {
+  test('the plan catalogue states the inverted sentinel at the field', async ({ page, api }) => {
     const monetization = new MonetizationPage(page);
     await monetization.goto(MONETIZATION_ROUTES[0]!);
 
@@ -42,8 +42,34 @@ test.describe('@phase4 admin monetization — A1a, the levers', () => {
     ).toBeVisible();
     await expect(page.getByText('0 = unlimited.').first()).toBeVisible();
 
-    // Free ships zero seats, which must never render as "Unlimited".
-    await expect(page.getByText('None (0)').first()).toBeVisible();
+    // The rendered seat value is read from the SERVER, not hard-coded.
+    //
+    // This line used to assert `None (0)` with the comment "free ships zero seats". That is the
+    // production default and it is NOT what this stack has: `seed:e2e` sets
+    // `free.maxCollaborators = -1` so the collaboration specs can arrange (B6) — so the assertion
+    // failed on every seeded run, deterministically, and "three consecutive green CI runs" could
+    // never have happened. Fourth instance of a later fixture disarming an older spec, and the
+    // first where the disarming change was itself the fix for the previous instance (48 §3.22c).
+    //
+    // What this spec uniquely covers is the WIRING — that the surface renders through
+    // `describeLimit` at all. Both readings of the pure function are already pinned by
+    // `admin/src/features/monetization/lib/plan-provenance.spec.ts`, so deriving the expectation
+    // here loses no coverage and stops the spec contradicting the seed.
+    const { accessToken } = await api.login('admin@qalam.local', 'ChangeMe!SuperAdmin1');
+    const free = (await api.plans(accessToken)).find((plan) => plan.tier === 'free');
+    expect(free, 'the catalogue always carries a free tier').toBeDefined();
+
+    const seats = free?.limits.maxCollaborators ?? 0;
+    // The inverted key always keeps its stored number visible, whichever way it reads — that
+    // parenthetical is what tells an operator this field does not follow the usual convention.
+    const expected = seats === 0 ? 'None (0)' : `Unlimited (${String(seats)})`;
+    await expect(page.getByText(expected).first()).toBeVisible();
+
+    // And the inverse never renders: a `0` reading as a bare "Unlimited" is the exact defect B6
+    // exists to prevent, so it must not appear for this field however the stack is seeded.
+    if (seats === 0) {
+      await expect(page.getByText('Unlimited (0)')).toHaveCount(0);
+    }
   });
 
   test('the catalogue distinguishes compiled defaults from admin overrides', async ({ page }) => {

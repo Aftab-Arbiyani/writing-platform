@@ -121,8 +121,16 @@ test.describe('@phase4 frontend monetization', () => {
    * is exactly how this first failed (`MONETIZATION_DISABLED` on a request that should have succeeded).
    *
    * `describe.serial` pins them to one worker in order. The rest of the file stays parallel because
-   * nothing else here mutates server-global state — the entitlement-override test scopes its change to
-   * one user, which is why it does not need to be in here.
+   * nothing else here mutates server-global state — ~~the entitlement-override test scopes its change to
+   * one user, which is why it does not need to be in here.~~
+   *
+   * **That last clause was wrong, and it cost a CI-blocking failure (2026-08-25).** "Global state"
+   * is the wrong test for isolation. The entitlement-override test scoped its `deny` to one user —
+   * the SHARED SEEDED WRITER, which is the account every other test in this file runs as — so it
+   * closed the `ai_budget` gate underneath the parallel credits test and left it timing out on a
+   * Balance card that had been replaced by a lock. It now uses a throwaway account and genuinely
+   * does not need to be in here. **The rule to apply is "does any parallel test read what this one
+   * writes", not "is the row global".**
    */
   test.describe.serial('the platform flag', () => {
     /**
@@ -232,20 +240,35 @@ test.describe('@phase4 frontend monetization', () => {
    * revoke reopens it. Both directions are asserted, through the real Entitlement Service, so this
    * proves the whole path — admin write → decision cache invalidation → snapshot read → rendered gate.
    *
-   * Arranged on the shared seeded writer and cleaned up in `finally`: an override left in place would
-   * deny AI to every later spec on the same account.
+   * **On a THROWAWAY account, not the shared seeded writer.** It used to use the writer, and the
+   * serial block above excused it from serialization on the grounds that it "scopes its change to
+   * one user". That premise was false: scoping to one user is not isolation when it is the account
+   * every other test in this file runs as. While this test held its `deny`, the parallel credits
+   * test — whose Balance card is behind the very same `PremiumGate feature={AiBudget}` — rendered
+   * the lock instead of a balance and timed out looking for `region "Balance"`. That was RS-flake's
+   * neighbour in the 2026-08-25 full run, and it is a genuine cross-test race on a PER-USER
+   * resource, which is the kind the "global state only" rule above does not catch.
+   *
+   * A throwaway is the house pattern for exactly this — `fixtures/entitlements.ts` uses one for the
+   * `allow` direction and says why: "so a leaked grant cannot quietly disarm another spec". The
+   * override is still revoked in `finally`; the account is left behind deliberately (the stack is
+   * disposable, [09 §4]).
    */
   test('an entitlement denial closes the gate, and revoking it opens it again', async ({
     page,
     api,
+    data,
   }) => {
+    const creds = { email: data.email(), username: data.username(), password: data.password() };
+    const subject = await api.createVerifiedUser(creds);
+    await freshLoginAs(page, creds.email, creds.password);
+
     const credits = new CreditsPage(page);
     await credits.goto();
     await credits.expectResolved();
 
-    const writerId = await api.writerId();
     const override = await api.grantEntitlementOverride({
-      userId: writerId,
+      userId: subject.id,
       feature: 'ai_budget',
       effect: 'deny',
       reason: 'e2e af5 gate',
@@ -253,7 +276,7 @@ test.describe('@phase4 frontend monetization', () => {
 
     try {
       // The server side, asserted directly — so a failure here is unambiguously the grant, not the UI.
-      const token = await api.loginToken('writer@qalam.local', 'ChangeMe!Writer1');
+      const token = await api.loginToken(creds.email, creds.password);
       const snapshot = await api.entitlements(token);
       expect(
         snapshot.features.find((f) => f.feature === 'ai_budget')?.allowed,

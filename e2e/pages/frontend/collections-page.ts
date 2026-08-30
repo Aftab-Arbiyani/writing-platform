@@ -1,5 +1,7 @@
 import { type Page, type Locator, expect } from '@playwright/test';
 
+import { clickAntdMenuItem } from '../shared/antd';
+
 /**
  * The reader's collections (W7b, docs/45 §4.4) — `/me/collections` and
  * `/me/collections/:collectionId`, the same paths mobile uses.
@@ -49,7 +51,11 @@ export class CollectionsPage {
 
   async rename(from: string, to: string): Promise<void> {
     await this.actionsFor(from).click();
-    await this.page.getByText('Rename').click();
+    // The card's action menu is an AntD `Dropdown` (`collections-page.tsx:178`), so a coordinate
+    // click into its entrance motion is silently lost and REPORTED SUCCESSFUL — 48 §3.18b, whose
+    // fix covered five admin call sites and never reached this file. `clickAntdMenuItem` removes
+    // the mechanism rather than waiting the motion out.
+    await clickAntdMenuItem(this.page, 'Rename');
     const dialog = this.page.getByRole('dialog');
     await dialog.getByLabel('Name').fill(to);
     await dialog.getByRole('button', { name: 'Save' }).click();
@@ -59,7 +65,7 @@ export class CollectionsPage {
   /** Delete a collection, confirming. The confirmation must say the pieces survive. */
   async remove(title: string): Promise<void> {
     await this.actionsFor(title).click();
-    await this.page.getByText('Delete').click();
+    await clickAntdMenuItem(this.page, 'Delete');
     const dialog = this.page.getByRole('dialog');
     await expect(dialog).toContainText(/the pieces in it stay where they are/i);
     await dialog.getByRole('button', { name: /^Delete$/ }).click();

@@ -4085,6 +4085,91 @@ wrong with what it asserted, only with whether it could be built.
 
 ---
 
+## 3.25 What running the chromium leg actually found, and how much of it was the runner (2026-08-25)
+
+Run against the local stack to de-risk the **CI** row before spending its three green runs on
+discovery. Four failures the first time, and it is worth separating them properly, because **only
+some of them are CI's problem** — a distinction the first pass through this data got wrong.
+
+**The runs.**
+
+| Run | Concurrency                           | Result                                          |
+| --- | ------------------------------------- | ----------------------------------------------- |
+| 1   | 8 workers                             | 228 passed / 4 failed                           |
+| 2   | 8 workers, after three fixes          | 230 passed / **2 failed — two DIFFERENT tests** |
+| 3   | 4 workers                             | **232 passed**, 3.4 min (vs 3.3 min at 8)       |
+| 4   | **2 workers — what CI actually uses** | **232 passed**, 4.5 min, exit 0                 |
+
+**The rotation is the finding, and so is what it turned out to mean.** Run 2 fixed the four from run
+1 and produced two new ones (`conversation.spec.ts:247`, `engagement.spec.ts:196`). Every failure
+across both runs shares one signature — _a mutation's effect not visible within the timeout_: a
+tombstone that never appears, a collection that never disappears (62 polls over 30 s), a balance
+that never loads, a Save that never enables, a title that never restores.
+
+**But 8 workers is not what CI runs, and that was an error of method worth recording.** CI is
+`ubuntu-24.04` (4 vCPU) with `workers: '50%'` → **2 workers**, and `--shard=1/2` halves the tests per
+job. The local default on a 16-core box is **8**, over-subscribing a single backend and one Postgres
+by 4×. So the rotating cast is substantially an artifact of the harness, not a preview of CI, and
+"cap CI's workers" — the obvious recommendation from run 3 — is **not actionable, because CI is
+already at 2**. Halving concurrency cost 6 seconds of wall clock, which says the 8-worker run was
+spending its time on 30-second timeouts rather than on work.
+
+**Three were real and would have failed CI at any concurrency. Fixed:**
+
+- **The inverted-sentinel spec contradicted the seed, deterministically.** `admin/monetization.spec.ts`
+  asserted free renders `None (0)` seats — the production default — while `seed:e2e` sets
+  `free.maxCollaborators = -1` so the collaboration specs can arrange (B6). It could not pass on any
+  seeded stack, so **"three consecutive green runs" was unreachable and nothing said so** — the same
+  shape as §3.24, one layer further in. **Fourth instance of the disarm pattern, and the first where
+  the disarming change was itself the fix for the third**: B6's seat cap broke three collaboration
+  specs, the seed lift unbroke them, and the lift broke this. Now reads the value from
+  `GET /monetization/plans` (new `api.plans()`) and asserts the matching display; both readings of the
+  pure function stay pinned by `plan-provenance.spec.ts`, so no coverage moved.
+- **A `deny` override on the SHARED SEEDED WRITER, held while the suite ran parallel.**
+  `monetization.spec.ts`'s entitlement test denied `ai_budget` on the writer — closing the very
+  `PremiumGate feature={AiBudget}` the parallel credits test needs — and the serial block's docstring
+  had **explicitly excused it**: "the entitlement-override test scopes its change to one user, which
+  is why it does not need to be in here." Scoping to one user is not isolation when that user is the
+  account every other test in the file runs as. Now on a throwaway, the house pattern
+  `fixtures/entitlements.ts` already uses for the `allow` direction. **The rule is "does any parallel
+  test read what this one writes", not "is the row global"** — corrected in the docstring, because the
+  wrong rule is what let this through.
+- **Two identical AntD toasts made an assertion a strict-mode violation.** `users.spec.ts` calls
+  `changeRole` twice for one user; both "Updated @x." notices are on screen for the second. Fixed by
+  waiting the old one out on entry, **deliberately not with `.first()`** — that would resolve to the
+  STALE toast and pass without the second save having succeeded, which is this suite's signature
+  failure mode. Clearing first also stops a lingering notice overlaying the row menu (§3.18b).
+
+**And two more §3.18b call sites, found by reading rather than by a run.** The collections card menu is
+an AntD `Dropdown` (`frontend/src/features/collections/pages/collections-page.tsx:178`) whose items
+`pages/frontend/collections-page.ts` clicked with a raw `getByText`. That is the **7th and 8th**
+instances; §3.18b's fix covered five, all in admin, and RS-flake's `:107` was the sixth. Fixed with
+the existing helper. **Not claimed as the cause of `engagement.spec.ts:196`** — that failure landed
+after the confirm dialog, not at it, so the two are unproven neighbours.
+
+**Corrected in passing:** `fixtures/api.ts` claimed `evaluateFeatureFlag` "treats 0% as off even when
+`enabled` is true". It does not — `pct <= 0` returns `true` ("rollout mechanism off", governed by
+`enabled` + scope). LIVE-VERIFY proved it live: the D4 gate answered 402 with the seeded
+`rolloutPercentage: 0` untouched.
+
+**What this leaves the CI row.** Its three deterministic blockers are gone, and run 4 — the full
+chromium leg at **CI's own concurrency**, after every fix — is **232/232, exit 0**. That is the
+strongest statement available locally, and it is deliberately not "the CI row is done":
+
+- **This measured chromium functional only.** Firefox, webkit, the responsive and dark projects, and
+  the whole `@visual` job are unmeasured here. Webkit cannot even launch on a dev host (missing
+  `libgstcodecparsers`/`libavif`), so its half needs the pinned image, which is the **AA-render**
+  row's other name.
+- **Run 4 is one run, and the row needs three CONSECUTIVE.** One red resets the count, and runs 1–2
+  showed this suite can produce a failure that run 3 did not.
+- **The flip itself needs a push**, which is not this document's to make.
+
+The honest sizing is therefore unchanged in shape and better grounded in fact: the local prerequisite
+is now discharged for one engine, and what remains is CI's own runs plus the engines a dev host
+cannot speak for. Sizing the row off run 4 alone would repeat the mistake §3.24 records.
+
+---
+
 ## 4. Divergences that are NOT gaps (platform-inherent)
 
 These are accepted permanently and need no epic. They exist because the platforms genuinely differ.

@@ -594,8 +594,15 @@ export class ApiHelper {
     const previous = flag?.enabled === true && flag.rolloutPercentage > 0;
     const res = await this.request.patch(this.url(`/admin/feature-flags/${flag?.id ?? ''}`), {
       headers,
-      // Rollout matters as much as the boolean: `evaluateFeatureFlag` treats 0% as off even when
-      // `enabled` is true, so setting only the flag would leave the platform dark.
+      // ~~Rollout matters as much as the boolean: `evaluateFeatureFlag` treats 0% as off even when
+      // `enabled` is true, so setting only the flag would leave the platform dark.~~
+      //
+      // **That was wrong** (corrected 2026-08-25). `evaluateFeatureFlag` returns TRUE at
+      // `pct <= 0` — 0 means "rollout mechanism off", governed by `enabled` + scope, NOT "off".
+      // Verified on a live stack: raising only `enabled`, with the seeded `rolloutPercentage: 0`
+      // untouched, is what made the D4 gate answer 402 (48 §3.22c, LIVE-VERIFY). Setting 100 here
+      // is still correct and still the clearer intent — it just is not load-bearing, and the next
+      // reader should not infer a 0%-is-dark rule that the evaluator does not implement.
       data: { enabled, rolloutPercentage: enabled ? 100 : 0 },
     });
     await this.data(res);
@@ -744,6 +751,27 @@ export class ApiHelper {
       headers: { Authorization: `Bearer ${token}` },
     });
     return this.data(res);
+  }
+
+  /**
+   * The plan catalogue as the server resolves it (`GET /monetization/plans`).
+   *
+   * For specs that must assert a RENDERED limit: read the value here rather than hard-coding it.
+   * `seed:e2e` deliberately rewrites `free.limits` — `maxPieces = 0` and `maxCollaborators = -1`,
+   * both "unlimited" — so the collaboration and piece specs can arrange (B4-1, B6). A spec that
+   * hard-codes the production default instead asserts something this stack is seeded NOT to have,
+   * and fails on every CI run rather than intermittently (48 §3.22c).
+   */
+  async plans(
+    token: string,
+  ): Promise<Array<{ tier: string; features: string[]; limits: Record<string, number> }>> {
+    const res = await this.request.get(this.url('/monetization/plans'), {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const body = await this.data<{
+      plans: Array<{ tier: string; features: string[]; limits: Record<string, number> }>;
+    }>(res);
+    return body.plans;
   }
 
   /** The viewer's own entitlement snapshot — asserts the server side of a gate. */
