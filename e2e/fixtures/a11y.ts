@@ -108,6 +108,35 @@ export async function expectNoSeriousA11yViolations(
       transition-delay: 0s !important;
     }`,
   });
+  // The two lines above cannot touch an animation that is ALREADY RUNNING, and that gap is not
+  // theoretical: it failed both webkit shards of CI run #25 while chromium and firefox passed the
+  // same commit (48 §3.25d). `reducedMotion` only changes what framer-motion decides NEXT, and
+  // `transition-duration: 0s` is inert against an inline `opacity` driven per frame — which is
+  // exactly what the failing node had (`style="opacity: 0; tr…"`).
+  //
+  // The arithmetic is worth keeping, because it is what identifies this rather than a real
+  // violation: axe reported `#7e786e` on `#fffefe` at 4.34:1. `#7e786e` is `--q-text-muted`
+  // (`#726c61`) composited over white at α ≈ 0.916 — all three channels agree — and the SETTLED
+  // colour is 5.21:1, comfortably AA. So the tokens were compliant and the frame was not. Same
+  // defect the comment above already records at α = 0.93; the mitigation was simply incomplete.
+  //
+  // `getAnimations()` covers CSS transitions/animations and framer-motion's WAAPI-driven ones,
+  // and `finish()` jumps each to its end state — deterministic, no sleeps. An infinite or paused
+  // animation cannot finish and is skipped rather than throwing: a spinner is not a contrast risk,
+  // and failing here would trade a rare wrong answer for a common wrong failure.
+  // String form because this package's tsconfig omits the `dom` lib — the house pattern, see
+  // `pages/shared/viewport.ts` and the scan in `tests/frontend/a11y.spec.ts`.
+  await page.evaluate(
+    `(() => {
+       for (const animation of document.getAnimations()) {
+         try {
+           animation.finish();
+         } catch (e) {
+           /* infinite or paused — cannot finish, and does not need to */
+         }
+       }
+     })()`,
+  );
 
   let builder = new AxeBuilder({ page }).withTags([...WCAG_AA_TAGS]);
   for (const selector of options.exclude ?? []) {

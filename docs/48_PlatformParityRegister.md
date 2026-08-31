@@ -4375,6 +4375,58 @@ and unsized piece of work.
 
 ---
 
+### 3.25e Webkit was never engine-specific behaviour — it was engine-specific TIMING (2026-08-31)
+
+§3.25d left webkit at 1 green / 1 red and refused to call it. Counted now, and it is neither a flake
+nor an engine defect: **an a11y false positive with an exact arithmetic explanation.**
+
+**What run #25's webkit shards actually failed on** (read from the downloaded
+`playwright-report-webkit-shard1`, since artifact download needs auth): three `@a11y`
+**color-contrast** violations — `/auth/login`, `/auth/register`, `/write/:storyId/publishing` — while
+chromium and firefox passed the same commit.
+
+**The arithmetic is the finding.** axe reported `#7e786e` on `#fffefe` at **4.34:1**. `#7e786e` is
+`--q-text-muted` (`#726c61`) composited over white at **α ≈ 0.916** — solving per channel gives
+0.915 / 0.918 / 0.918, which is agreement, not coincidence. The **settled** colour is **5.207:1**,
+comfortably AA — and `KNOWN_A11Y_FINDINGS` records that this token was deliberately darkened to
+`#726c61` _for_ 5.21:1. So the tokens are compliant and the sampled FRAME was not: axe scanned a card
+at ~92% opacity mid-fade-in. The offending node proves it — `style="opacity: 0; tr…"`, an inline
+opacity being driven per frame.
+
+**The fixture already guarded this and the guard was incomplete.** Its own comment records the same
+defect at **α = 0.93** turning "a compliant `#726c61` into `#7c776c`". But
+`emulateMedia({ reducedMotion: 'reduce' })` only changes what framer-motion decides NEXT, and
+`transition-duration: 0s` is inert against a JS-driven inline opacity. **Neither can stop an animation
+already in flight** — which is the entire gap, and why the failure is a timing race rather than a
+behaviour difference. Webkit loses that race more often; that is the whole of its "engine
+specificity".
+
+**Fixed** by finishing in-flight animations before sampling —
+`document.getAnimations().forEach(a => a.finish())`, covering CSS transitions and framer-motion's
+WAAPI animations alike, deterministic and sleep-free. Infinite/paused animations are skipped rather
+than thrown on: a spinner is not a contrast risk, and failing there would trade a rare wrong answer
+for a common wrong failure.
+
+**Counted, matched, in the pinned image on webkit** — same command, same 3 reps, only the fixture
+differing:
+
+| Run                 | Result                  | `color-contrast` hits |
+| ------------------- | ----------------------- | --------------------- |
+| **without** the fix | 9 flaky / 94 passed     | **155**               |
+| **with** the fix    | **103 passed, 0 flaky** | **0**                 |
+
+**The control widened the blast radius beyond what CI showed.** Locally it also caught the **billing
+hub** and the **AI hub**, which run #25 never surfaced — because with `retries: 2` these land as
+**flaky**, and flaky _is_ failing ([e2e/00 §4.6]). So the same defect was present on more surfaces
+than either CI run revealed, and #24's green was a retry that happened to win. That reconciles #24 and
+#25 without either being wrong.
+
+**Consequence.** Webkit's exclusion, deferral and suspicion — running since 2026-08-03 — resolves to
+a harness race in the a11y helper, now fixed and counted. **§3.25c's closure was still premature and
+stays retracted**; what closes the question is this section's control, not run #24's single pass.
+
+---
+
 ## 4. Divergences that are NOT gaps (platform-inherent)
 
 These are accepted permanently and need no epic. They exist because the platforms genuinely differ.
