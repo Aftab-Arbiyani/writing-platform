@@ -4427,6 +4427,63 @@ stays retracted**; what closes the question is this section's control, not run #
 
 ---
 
+### 3.25f The visual job's remaining failures are THREE problems, and W5-12 is diagnosed (2026-08-31)
+
+Run #26 (`bde36a1`) — the a11y fix and the 124 committed baselines. **All six functional jobs green,
+webkit included (9.8 / 8.3 min); two consecutive fully-green functional runs now (#24, #26).**
+`web-e2e-visual` still failed, in 9.6 min against 17.6 — and reading its report (37 error contexts,
+6 distinct tests) separates what had looked like one problem into three.
+
+| Test                      | Failure                        | Actually a…                            |
+| ------------------------- | ------------------------------ | -------------------------------------- |
+| AI assistant panel ×19    | `locator.click` timeout        | **pre-screenshot** — `AI-panel-visual` |
+| publishing                | `toHaveCount` failed           | **pre-screenshot** — arrangement       |
+| safety settings           | no actual/diff produced        | **pre-screenshot** — arrangement       |
+| comments                  | 36,788 px, ratio 0.04          | pixel diff                             |
+| suggestions               | 36,957 / 38,351 px, ratio 0.05 | pixel diff                             |
+| users console (dark only) | 301,034 px, ratio 0.33         | stale baseline                         |
+
+**1. Three of the six never reach `toHaveScreenshot` at all.** They are arrangement failures wearing
+a visual failure's clothes, and no amount of re-minting fixes them — a test that dies before the
+screenshot mints nothing, which is also **why run #25's regeneration left their baselines untouched**
+and why #26 then compared against stale files. That is the mechanism behind the users console too.
+
+**2. The users console baseline is WRONG, and pre-existing** — from `9ad8e5c`, not from this pass's
+commit (checked: the baseline commit does not touch that file; it was among the 56 identical). Its
+"expected" shows an **empty search box, an unfiltered full-height masked table, no pagination, and no
+"Trust & safety" nav item**; the "actual" shows `e2e_writer` typed, one row, "1–1 of 1", and the nav
+item present. Both anomalies share one cause — **it was minted from a half-loaded page**, before the
+filter applied and before the permission-gated nav resolved. It has been wrong since it was minted and
+only surfaced now because `admin-dark` could finally run in CI. Exactly the hazard
+[10 §4.2] names ("a mid-load scan is noise") and exactly why baselines are reviewed.
+
+**3. W5-12 is no longer a mystery.** Its three baselines (`frontend-comments`,
+`frontend-suggestions`, `frontend-collaborators`) were carried for weeks as "~21 px page offset,
+does not reproduce outside CI". The diff image settles it: **every element is shifted vertically —
+heading, body, tabs and footer each render twice** — because the masked card's HEIGHT varies with the
+number of rows, and everything below moves with it. The suggestions/comments lists are populated by
+OTHER specs in the same parallel run, so the count is scheduling-dependent.
+`admin/visual.spec.ts` already documents this mechanism for its own table ("the masked table still
+contributes its HEIGHT … every element after it moves with the row count") and solved it by filtering
+to one row. **The row is therefore not environment-specific at all** — it reproduces wherever the row
+count differs, which is why it now reproduces CI-mint against CI-verify.
+
+**What follows, and the order matters.** Re-minting first would bake today's row counts into
+tomorrow's failures, so:
+
+1. **Make `web-e2e-visual` advisory** (`continue-on-error`) and flip the PR gate on the FUNCTIONAL
+   jobs, which are green twice over. The functional suite is the gate that has caught every real
+   defect this month; holding it behind the most brittle job buys nothing. Advisory, not deleted —
+   the same posture `KNOWN_A11Y_FINDINGS` takes.
+2. **`retries: 0` for the @visual projects.** A pixel diff cannot pass on retry; retries only
+   triple the cost, and are most of why the job was 17.6 min.
+3. **Fix the three arrangement failures** — they are ordinary spec bugs, except `AI-panel-visual`,
+   which needs the product answer first (§3.25a).
+4. **Make the four data-dependent shots deterministic** — filter or arrange an exact row count, per
+   the admin-users precedent — and only THEN re-mint.
+
+---
+
 ## 4. Divergences that are NOT gaps (platform-inherent)
 
 These are accepted permanently and need no epic. They exist because the platforms genuinely differ.
