@@ -62,10 +62,32 @@ export class SettingsService implements OnModuleInit {
     private readonly audit: AuditService,
   ) {}
 
-  /** Seeds the catalogue (idempotent) so the tables reflect every known setting/flag. */
+  /**
+   * Seeds the catalogue (idempotent) so the tables reflect every known setting/flag.
+   *
+   * **Then invalidates the caches, and that is not belt-and-braces — it is the fix for a
+   * deterministic CI outage.** These caches live in Redis, so a value read BEFORE this sync
+   * outlives the process that cached it. Nest gives no ordering guarantee between this hook and
+   * another module's, and `MonetizationConfigService` reads `monetization.plans` during its own
+   * init: on a stack whose Redis and Postgres are both empty, it lost that race, cached
+   * `settings:all = []`, and every later PROCESS inherited it. `pnpm seed` warmed the poison,
+   * `pnpm seed:e2e` then read it and threw `Unknown setting: monetization.plans`, which failed
+   * step 10 of `web-e2e.yml` in all seven jobs before a single test ran (run #23, 2026-08-31).
+   *
+   * It never reproduced locally because a long-lived dev stack's Redis has been warmed with a
+   * complete list, and it did not exist on 2026-07-30's green run because nothing read settings
+   * from a seed until B4-1's plan-cap lift was added. Invalidating here is the narrow fix: the
+   * sync is precisely the moment the catalogue changes, so nothing cached before it is valid
+   * after it, whoever read it and whenever.
+   */
   async onModuleInit(): Promise<void> {
     await this.repository.syncDefinitions(SETTING_DEFINITIONS);
     await this.repository.syncFlagDefinitions(FEATURE_FLAG_DEFINITIONS);
+    await this.cache.invalidate(
+      SETTINGS_CACHE_KEYS.All,
+      SETTINGS_CACHE_KEYS.Flags,
+      SETTINGS_CACHE_KEYS.Maintenance,
+    );
   }
 
   // ── Settings reads ────────────────────────────────────────────────────────────

@@ -357,4 +357,44 @@ describe('SettingsService — boot sync', () => {
     expect(repo.syncDefinitions).toHaveBeenCalled();
     expect(repo.syncFlagDefinitions).toHaveBeenCalled();
   });
+
+  /**
+   * Regression: `web-e2e.yml` run #23 (2026-08-31) failed step 10 in ALL SEVEN jobs, before a
+   * single test ran, with `Unknown setting: monetization.plans`.
+   *
+   * The caches are in Redis, so a read that happens BEFORE this sync outlives its process. Nest
+   * orders no module's init against another's, and `MonetizationConfigService` reads
+   * `monetization.plans` during its own — on a stack with empty Redis AND empty Postgres it lost
+   * that race, cached `settings:all = []`, and every later PROCESS inherited it: `pnpm seed`
+   * warmed the poison, `pnpm seed:e2e` read it and threw.
+   *
+   * So the invalidation is load-bearing, not hygiene, and it must happen AFTER both syncs —
+   * invalidating first would just re-open the window. Asserted by call order rather than by
+   * presence alone, because "it invalidates somewhere" is the version of this that still breaks.
+   */
+  it('invalidates the caches AFTER syncing, so nothing cached pre-sync survives', async () => {
+    const { service, repo, cache } = makeService();
+    const order: string[] = [];
+    (repo.syncDefinitions as jest.Mock).mockImplementation(() => {
+      order.push('syncDefinitions');
+      return Promise.resolve();
+    });
+    (repo.syncFlagDefinitions as jest.Mock).mockImplementation(() => {
+      order.push('syncFlagDefinitions');
+      return Promise.resolve();
+    });
+    (cache.invalidate as jest.Mock).mockImplementation(() => {
+      order.push('invalidate');
+      return Promise.resolve();
+    });
+
+    await service.onModuleInit();
+
+    expect(order).toEqual(['syncDefinitions', 'syncFlagDefinitions', 'invalidate']);
+    expect(cache.invalidate).toHaveBeenCalledWith(
+      SETTINGS_CACHE_KEYS.All,
+      SETTINGS_CACHE_KEYS.Flags,
+      SETTINGS_CACHE_KEYS.Maintenance,
+    );
+  });
 });

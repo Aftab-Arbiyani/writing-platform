@@ -4234,6 +4234,65 @@ cannot be minted by this or any run until the product question behind it is answ
 
 ---
 
+### 3.25b CI ran, and died before a single test — a Redis cache poisoned at boot (2026-08-31)
+
+`web-e2e.yml` **run #23**, the first real CI run since 2026-07-30 and the first ever triggered with
+`update_visual_baselines: true`. It came back red, and **not for any reason this register predicted**:
+**all seven jobs failed at step 10, "Build backend, migrate, seed, start", in 2m34s, before Playwright
+started.** Every job also reported "No files were found with the provided path:
+e2e/playwright-report/ e2e/test-results/" — the tell that nothing ran.
+
+**Root cause: `seed:e2e` threw `Unknown setting: monetization.plans` on a stack whose Redis was
+empty.** The mechanism, which is worth stating exactly because every part of it is load-bearing:
+
+1. `SettingsService.onModuleInit` syncs the catalogue into Postgres, and that is the ONLY thing that
+   creates the `monetization.plans` row.
+2. `MonetizationConfigService` reads `monetization.plans` during **its** init. Nest orders no
+   module's init hook against another's, so on a fresh stack it can lose that race.
+3. That read goes through `getAllSettings`, which caches the whole list in **Redis** under
+   `settings:all` — so the losing read cached `[]`, and **the poison outlived the process**.
+4. `pnpm seed` warmed it. `pnpm seed:e2e` — a separate process, one step later — read `[]`, found no
+   `monetization.plans`, and threw. Step 10 exits non-zero. Seven jobs, no tests.
+
+**Why nothing caught it.** It cannot reproduce on a dev stack: a long-lived Redis has been warmed
+with a complete list by a running backend, so `getValue` always finds the key. And it did not exist
+on 2026-07-30's green run — **nothing read a setting from a seed until B4-1's plan-cap lift was
+added**, which is the same lift that produced §3.25's fourth disarm instance. One change, three
+separate failures, in three different places.
+
+**Reproduced before fixing, without touching the E2E database.** Two scratch databases
+(`qalam_ci_probe`, `qalam_ci_probe2`) were CREATED and CI's exact sequence run against them —
+`migration:run` (all 20 migrations, clean) → `seed` (clean) → `seed:e2e` (**threw, as CI did**).
+Deleting the single `settings:all` key then made it pass, which is what proved the mechanism rather
+than merely suggesting it. Migrations and the backend build were each ruled out by measurement first,
+not by assumption.
+
+**Fix: `SettingsService.onModuleInit` invalidates `settings:all`, `feature_flags:all` and
+`settings:maintenance` AFTER both syncs.** Narrow and at the right level — the sync is precisely the
+moment the catalogue changes, so nothing cached before it is valid after it, whoever read it and
+whenever. Deliberately not fixed by reordering module init (fragile, and the next consumer re-opens
+it) nor by making the seed tolerate a missing setting (that makes the seed pass while leaving the
+caps unlifted, i.e. green with the suite still broken).
+
+**Verified end to end on `qalam_ci_probe2` — a fresh DB with an emptied Redis, CI's exact
+conditions:** `migration:run` 0 → `seed` 0 → `settings:all` **empty rather than `[]`** → `seed:e2e`
+**0, caps lifted**. Regression test asserts the invalidation happens **after** both syncs, by call
+ORDER (`settings.service.spec.ts`), and **fails against the reverted fix** — checked, because
+"it invalidates somewhere" is the version of this that still breaks. Backend suite: **1383 passed /
+156 suites**.
+
+**Two scratch databases were left in place** (`qalam_ci_probe`, `qalam_ci_probe2`) rather than
+dropped. They are inert and cost nothing; dropping a database is not this session's to do.
+
+**What this says about the CI row, again.** Its estimate has now been wrong three times in the same
+direction — §3.24 (a red frontend build), §3.25a (44 baselines that never existed), and now a
+boot-order cache bug that no local run could surface. The pattern is not bad estimating; it is that
+**a job which has not run cannot be sized**, and each run has bought exactly one layer of truth. The
+functional half is otherwise sound: chromium and firefox are 232/232 locally at CI's concurrency.
+**The next run is the first one that can actually reach a test.**
+
+---
+
 ## 4. Divergences that are NOT gaps (platform-inherent)
 
 These are accepted permanently and need no epic. They exist because the platforms genuinely differ.
