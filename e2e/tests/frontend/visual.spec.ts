@@ -369,6 +369,17 @@ test.describe('@phase5 @visual frontend (authenticated)', () => {
   });
 
   test('the publishing page matches its visual baseline', async ({ page, api, data }) => {
+    // 60 s, because 30 s is genuinely not enough for what this test does on a CI runner: create a
+    // piece, load the page, request a review, capture a version, settle two toasts, then take a
+    // fullPage shot with a mask. It failed in CI runs #26 AND #28 with "Test timeout of 30000ms
+    // exceeded" reported *alongside* `toHaveCount` still seeing 2 notices — i.e. the assertion was
+    // cut off by the budget, not by stuck toasts (48 §3.25f/§3.25g).
+    //
+    // Closing the toasts (see `settleToasts`) was necessary but not sufficient, and the reason it
+    // looked sufficient is worth recording: it PASSED on a 16-core dev box in the pinned image and
+    // failed on a 2-vCPU runner. A budget fix cannot be verified on faster hardware than the one
+    // that failed — the same lesson as [[e2e-local-workers-oversubscribe]] in the other direction.
+    test.setTimeout(60_000);
     // AF6/W3c (docs/49 §5). Arranged with a review in flight and one version captured, so the four
     // cards are all in a populated state rather than empty — the review chip, the gated publication
     // controls, the version row and the history timeline are exactly the tinted, state-carrying
