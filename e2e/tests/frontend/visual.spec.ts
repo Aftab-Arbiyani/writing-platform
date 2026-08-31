@@ -360,8 +360,13 @@ test.describe('@phase5 @visual frontend (authenticated)', () => {
     const collaborators = new CollaboratorsPage(page);
     await collaborators.goto(story.id);
     await collaborators.expectResolved();
+    // The THIRD W5-12 baseline, and the only one left on `fullPage` — which is why it was still
+    // drifting (0.10, 87,604 px in CI run #29) after comments and suggestions were fixed. Same
+    // treatment as those two, for the same measured reason: viewport captures one paint with no
+    // scroll-and-stitch, and `atScrollTop` removes the residual scroll offset that survived the
+    // switch on the other two (48 §3.25g).
+    await atScrollTop(page);
     await expect(page).toHaveScreenshot('frontend-collaborators.png', {
-      fullPage: true,
       // Rows carry identity resolved by id (B3): the seeded writer's pen name is stable, but the
       // avatar and the presence dot are not, so the rows stay masked.
       mask: [page.getByRole('listitem')],

@@ -101,7 +101,24 @@ export default defineConfig({
     navigationTimeout: 30_000,
   },
   expect: {
-    timeout: 10_000,
+    // 10 s LOCALLY, 30 s under CI — and the raise is a systemic fix, not a nudge.
+    //
+    // Three consecutive visual runs (#26, #28, #29) each failed ~3 tests, and each time they were
+    // DIFFERENT tests, every one of them "element(s) not found" against this 10 s default on a
+    // 2-vCPU runner: the review chip, an admin row's action button, a dialog, a flag-off notice.
+    // Patching three specs per run while three others surface is chasing the symptom — the default
+    // is simply too tight for a runner a quarter of a dev box's size.
+    //
+    // The suite had already reached the same conclusion piecemeal: **59 assertions carry an explicit
+    // `timeout: 30_000`**, which is this value being overridden by hand, spec by spec, wherever it
+    // has hurt. Raising it in one place aligns the default with the practice.
+    //
+    // CI-only on purpose (same shape as `retries` above). Locally 10 s stays, so a genuinely slow
+    // surface still shows up as slow on the machine where it is being written.
+    //
+    // The trade-off, stated: a truly broken assertion now takes 30 s to fail in CI instead of 10.
+    // That is a cost on red runs only, and cheaper than the false reds it removes.
+    timeout: CI ? 30_000 : 10_000,
     // Phase-5 visual defaults (docs/e2e/10 §2.2): disable animations + hide the caret so a
     // blinking cursor/transition never flips a run red, and allow a small pixel-ratio budget
     // for sub-pixel AA noise. Per-spec `mask:` covers genuinely volatile regions.
