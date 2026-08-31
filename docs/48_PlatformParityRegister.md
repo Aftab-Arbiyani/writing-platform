@@ -4484,7 +4484,50 @@ tomorrow's failures, so:
 
 ---
 
-## 4. Divergences that are NOT gaps (platform-inherent)
+### 3.25g §3.25f steps 1–4 done, and W5-12's residual measured to the pixel (2026-08-31)
+
+All four steps landed. Verified in the pinned image against `preview` servers, four frontend projects,
+`--retries=0` as CI now runs it: **16 passed · 4 skipped · 1 failed**, and the one failure is
+_expected_ — see the re-mint note below.
+
+**Steps 1–2 (`fd877bd`).** `web-e2e-visual` is `continue-on-error`, and @visual runs `--retries=0` on
+the job's command line (not per-project — the eight projects are shared with the functional jobs, so a
+per-project setting would disarm their retries too). `pull_request` deliberately NOT added: the
+criterion is three CONSECUTIVE green runs and the functional greens are #24 ✓, #25 ✗, #26 ✓.
+
+**Step 3 — the three pre-screenshot failures, all fixed and verified:**
+
+- **`publishing`** — `settleToasts` waited out AntD's timer, ~4.5 s per notice. Two notices cost ~9 s
+  of a 30 s budget, and the test spent it, then failed `toHaveCount(0)` at 2 with "Test timeout of
+  30000ms exceeded". **The notices were never stuck** — the budget ran out while they ticked down. Now
+  they are CLOSED, bounded by the count taken up front, with the assertion kept as the real gate.
+- **`safety settings`** — `toHaveScreenshot` timed out mid-stabilisation on **webkit only**,
+  producing neither an actual nor a diff. Timeout raised to 30 s, and **labelled in code as what the
+  evidence supports rather than a root cause**: why the page needs >10 s on webkit alone is not
+  established. A recurrence means investigating, not raising it again.
+- **`AI assistant panel`** — now `test.fixme`, referencing **AI-panel-visual**. It cannot reach
+  `toHaveScreenshot`, so it mints nothing, and a permanently-red test is indistinguishable from a
+  regression. It was **19 of run #26's 37 error contexts**, drowning the three real failures.
+
+**Step 4 — W5-12, and the correction that matters.** Both drifting baselines were ALREADY
+viewport-not-fullPage, so the scroll-and-stitch fix their docstrings describe had been applied and
+they drifted anyway. The specs' own measurements pointed at the answer: suggestions is **745 px
+against a 720 px fold**, comments 741, reader 731 — every drifter marginally over, every page well
+past it byte-identical. The residual is scroll POSITION, not stitching: Playwright scrolls an element
+into view before clicking, so `propose`/`addComment` park the page at its ~25 px maximum on one run
+and at 0 on the next. `atScrollTop` now scrolls to 0 and asserts it.
+
+**Measured, not inferred.** On the failing pair, expected content begins at row **103** and actual at
+row **128** — 25 px apart, exactly the page's maximum scroll. Scrolling down moves content up, so the
+**BASELINE** was minted at 25 px and the fix now pins the capture at 0. `comments` passes because its
+baseline happened to be minted at 0. **So the remaining failure is the fix working**, and W5-12 is
+diagnosed to the pixel rather than described.
+
+**What is left is a re-mint, and only CI can do it.** Two baselines are stale in ways no code change
+fixes: `frontend-suggestions` (minted at scroll 25) and `admin-users-*-dark` (minted from a half-loaded
+page — empty search box, unfiltered table, missing the permission-gated nav item, §3.25f). Both need
+`workflow_dispatch(update_visual_baselines: true)` **after** these fixes land, which is why step 4 put
+the re-mint last: minting before the determinism fix would have baked the same variance back in.
 
 These are accepted permanently and need no epic. They exist because the platforms genuinely differ.
 

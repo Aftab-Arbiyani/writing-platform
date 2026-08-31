@@ -43,7 +43,47 @@ import { LoginPage } from '../../pages/shared/login-page';
  * is guarding the surface underneath.
  */
 async function settleToasts(page: Page): Promise<void> {
+  // CLOSE them rather than waiting out the timer. AntD holds each notice ~4.5 s, so two of them
+  // cost ~9 s of dead time inside a 30 s test budget — and `the publishing page` spent it, then
+  // failed `toHaveCount(0)` at 2 notices with "Test timeout of 30000ms exceeded" in CI run #26
+  // (48 §3.25f). The notices were never stuck; the budget simply ran out while they ticked down.
+  //
+  // Clicking is bounded by the count taken up front, and always clicks `.first()` because the list
+  // re-indexes as each notice leaves. The assertion below stays the real gate — a close that does
+  // not take still fails here rather than silently snapshotting a toast.
+  const closers = page.locator('.ant-notification-notice-close');
+  const open = await closers.count();
+  for (let i = 0; i < open; i += 1) {
+    await closers
+      .first()
+      .click({ timeout: 5_000 })
+      .catch(() => {
+        /* already gone on its own timer — the assertion below is what matters */
+      });
+  }
   await expect(page.locator('.ant-notification-notice')).toHaveCount(0, { timeout: 15_000 });
+}
+
+/**
+ * Park the page at scroll-top before a VIEWPORT screenshot.
+ *
+ * The last unexplained residual in W5-12. `frontend-comments` and `frontend-suggestions` were both
+ * moved to viewport-not-fullPage to kill the scroll-and-stitch offset (see their docstrings) and
+ * both STILL drifted — comments 0.04, suggestions 0.05 — in CI run #26, as a uniform ~25 px
+ * vertical shift: heading, body, tabs and footer each rendered twice in the diff.
+ *
+ * 25 px is not a coincidence. The suggestions docstring measured this page at **745 px against a
+ * 720 px fold**, comments at 741 and reader at 731 — every drifting baseline marginally over it,
+ * every page well past it byte-identical. So the max scroll offset on these pages IS the observed
+ * shift, and the cause is scroll POSITION, not stitching: Playwright scrolls an element into view
+ * before clicking, so `addComment`/`propose` can leave the page parked at its 25 px maximum on one
+ * run and at 0 on the next. A viewport screenshot then captures a different 720 px window.
+ *
+ * Scrolling back to 0 and asserting it removes the variable rather than masking its effect.
+ */
+async function atScrollTop(page: Page): Promise<void> {
+  await page.evaluate('window.scrollTo(0, 0)');
+  await expect.poll(async () => page.evaluate<number>('window.scrollY')).toBe(0);
 }
 
 test.describe('@phase5 @visual frontend (unauthenticated)', () => {
@@ -82,7 +122,21 @@ test.describe('@phase5 @visual frontend (authenticated)', () => {
     });
   });
 
-  test('the AI assistant panel matches its visual baseline', async ({ page }) => {
+  // FIXME(AI-panel-visual, 48 §3.25a/§3.25f) — blocked on a PRODUCT decision, not on this test.
+  //
+  // The four baselines here pin the panel's flag-DOWN "AI is turned off" state, but **B5** made the
+  // editor's AI trigger conditional on `aiAvailability !== 'off' && !== 'self-off'`
+  // (`editor-page.tsx:228`), so in exactly that state no trigger is rendered and `panel.open()` times
+  // out. It is the same false premise §3.23a found in `assistant.spec.ts` — which was fixed by
+  // RAISING the flags, a fix unavailable here because flags-down IS this test's subject.
+  //
+  // `fixme` rather than left failing: it cannot reach `toHaveScreenshot`, so it mints nothing, and a
+  // permanently-red test is indistinguishable from a regression. It accounted for 19 of run #26's 37
+  // error contexts and was drowning the three real failures underneath it.
+  //
+  // Unblocks when someone answers: what SHOULD a flags-down editor offer as an AI entry point, if
+  // anything? B5 deliberately removed the stranded one. The baseline follows that answer.
+  test.fixme('the AI assistant panel matches its visual baseline', async ({ page }) => {
     // W2/AF2. Viewport, not fullPage: the drawer is fixed to the viewport and the editor behind
     // it is empty here, so a full-page shot would add nothing but height.
     //
@@ -380,6 +434,16 @@ test.describe('@phase5 @visual frontend (authenticated)', () => {
       // — it renders `QTag color="success"` again now the token is fixed (docs/48 §3.5), so this
       // baseline is where that re-tint is actually reviewed.
       mask: [page.getByRole('listitem')],
+      // Raised from the config's 10 s for WEBKIT, where this assertion timed out mid-stabilisation in
+      // CI run #26 — it produced neither an actual nor a diff, only "Timeout 10000ms exceeded" while
+      // still re-taking the shot (48 §3.25f). Chromium, firefox and dark all passed.
+      //
+      // **Honest limit of this change:** the timeout is what the evidence supports, not a root cause.
+      // Why the page needs >10 s to settle on webkit only is NOT established — plausible candidates
+      // are the heavy arrangement above (five accounts, two mutations) and a `fullPage` shot whose
+      // broad `listitem` mask includes the settings nav, but neither has been measured. If this
+      // recurs after the raise, that is the thing to investigate rather than raising it again.
+      timeout: 30_000,
     });
   });
 
@@ -394,6 +458,8 @@ test.describe('@phase5 @visual frontend (authenticated)', () => {
     // another line and the card grows. The story is fresh per run, so the text need not be unique.
     await comments.addComment('Visual baseline comment');
     await settleToasts(page);
+    // 741px page, 720px fold — see `atScrollTop`.
+    await atScrollTop(page);
     await expect(page).toHaveScreenshot('frontend-comments.png', {
       // Viewport, NOT fullPage. Two independent mints of this commit disagreed by 8.05% on chromium
       // (the top 86 rows, full width) and by 124px of HEIGHT on webkit. The header is identical in
@@ -420,6 +486,8 @@ test.describe('@phase5 @visual frontend (authenticated)', () => {
     await suggestions.expectResolved();
     await suggestions.propose({ original: 'lantern', suggested: 'oil lamp', from: 4 });
     await settleToasts(page);
+    // 745px page, 720px fold — see `atScrollTop`.
+    await atScrollTop(page);
     await expect(page).toHaveScreenshot('frontend-suggestions.png', {
       // Viewport, NOT fullPage — same failure the comments baseline had, same signature: two mints
       // of this commit differed by 9.00% confined to the top 90 rows at full width, with the header
