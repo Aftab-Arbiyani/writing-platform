@@ -4,6 +4,7 @@ import { PenLine, X } from 'lucide-react';
 import { type ReactElement, useState } from 'react';
 
 import { getErrorMessage } from '@/lib/errors';
+import { useAuthStore } from '@/stores/auth.store';
 import { useSuggestTarget } from '@/stores/suggest-target.store';
 
 import { useSuggestionActions } from '../hooks/use-suggestions';
@@ -32,10 +33,31 @@ import { CapabilityGate } from './capability-gate';
  */
 export function SuggestEditAffordance(): ReactElement | null {
   const storyId = useSuggestTarget((s) => s.storyId);
+  const authed = useAuthStore((s) => s.status) === 'authenticated';
 
   // No reader has registered — nothing to suggest against. Also the state on every other surface,
   // which is why mounting this component anywhere else is harmless rather than wrong.
   if (storyId === null || !isCollaborationEnabled()) return null;
+
+  /**
+   * **A signed-out reader must not even reach the capability query, and this line is load-bearing.**
+   *
+   * The reader is PUBLIC; this component is mounted on it for everyone. `CapabilityGate` calls
+   * `GET /stories/:id/capabilities`, which is authenticated — so without this check every anonymous
+   * visitor to every piece fired a request that 401s, and a non-expiry 401 runs
+   * `onUnauthorized()` (`lib/api-client.ts`), which drops the session. The visible symptom was the
+   * page's OTHER queries never resolving: five signed-out conversation specs hung on "Loading
+   * comments", and the cause was nowhere near the comments.
+   *
+   * Found by the first live browser run and proved by A/B — the specs passed on the pre-change
+   * source. Every unit test passed throughout, because they mock the api layer and so never make a
+   * real 401 happen.
+   *
+   * Gating on the session is also just correct: `POST /stories/:id/suggestions` requires auth, so
+   * there is nothing to offer an anonymous reader. Unlike `ReportAction`, which may show its trigger
+   * and route to sign-in on click, the cost here is paid before any click — so it must be earlier.
+   */
+  if (!authed) return null;
 
   return (
     <CapabilityGate storyId={storyId} action={POLICY_ACTIONS.StorySuggest}>

@@ -1,8 +1,9 @@
 import { POLICY_ACTIONS } from '@qalam/shared';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { renderWithProviders } from '@/test/render';
+import { useAuthStore } from '@/stores/auth.store';
 import { useSuggestTarget } from '@/stores/suggest-target.store';
 
 import { collaborationApi } from '../api/collaboration.api';
@@ -38,6 +39,13 @@ describe('SuggestEditAffordance', () => {
     useSuggestTarget.getState().unregister();
     vi.mocked(isCollaborationEnabled).mockReturnValue(true);
     allowSuggesting(true);
+    // Suggesting requires a session, and the reader is a PUBLIC page — so an authenticated status is
+    // part of the arrangement, not a detail. See the anonymous case below for why.
+    useAuthStore.setState({ status: 'authenticated' } as never);
+  });
+
+  afterEach(() => {
+    useAuthStore.getState().clear();
   });
 
   it('renders nothing until a reader registers a story', () => {
@@ -53,6 +61,22 @@ describe('SuggestEditAffordance', () => {
     const { container } = renderWithProviders(<SuggestEditAffordance />);
     // `container` always holds the AntD provider div; what must be empty is what we rendered.
     expect(container.firstElementChild).toBeEmptyDOMElement();
+  });
+
+  it('renders nothing — and queries NOTHING — for a signed-out reader', async () => {
+    // The regression this gate exists for, found by the first live browser run. The reader is public,
+    // so this component mounts for everyone; `CapabilityGate`'s capability read is authenticated, and
+    // a non-expiry 401 runs `onUnauthorized()` and drops the session. The visible symptom was five
+    // signed-out conversation specs hanging on "Loading comments" — nowhere near the comments.
+    //
+    // Asserting the REQUEST is not made is the whole point: rendering null while still firing the
+    // read would look correct here and still break the page.
+    useAuthStore.setState({ status: 'anonymous' } as never);
+    useSuggestTarget.getState().register('piece-1');
+    const { container } = renderWithProviders(<SuggestEditAffordance />);
+
+    expect(container.firstElementChild).toBeEmptyDOMElement();
+    expect(capabilities).not.toHaveBeenCalled();
   });
 
   it('renders nothing when the Policy Engine says this viewer may not suggest', async () => {

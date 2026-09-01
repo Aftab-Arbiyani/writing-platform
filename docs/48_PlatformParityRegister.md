@@ -4824,9 +4824,35 @@ into an intro reads like a broken selector, exactly as B6's 402 did.
   anonymous context — the frontend projects carry the writer's `storageState`, so a default page is
   redirected to `/feed` and would scan the feed while claiming to scan the intro.
 
-**Verified:** frontend typecheck + eslint + build clean, **142 spec files / 967 tests**; e2e
-typecheck + eslint clean, `--list` collects **892 tests in 41 files**. **Not run against a live
-stack** — the four new browser tests collect but have not executed.
+**RUN AGAINST A LIVE STACK 2026-09-01, and it found two real defects that every unit test missed.**
+158/158 frontend chromium specs green afterwards (`--grep-invert @visual`), plus the new a11y scans in
+both themes. Unit: 143 files / 970 tests; e2e typecheck + eslint clean.
+
+**Defect 1 — the intro route declared the error boundary as its ELEMENT.** `element:
+<RouteErrorBoundary />` where every other tree uses `errorElement:`, so `/onboarding` rendered
+"Something went wrong." unconditionally. All 15 unit tests for the feature passed throughout, because
+they mount the page directly and **never traverse the router**. A route-table typo is invisible to
+every test that does not route.
+
+**Defect 2 — and this one was serious, on the most-visited public page.** `SuggestEditAffordance` is
+mounted on the reader for everyone, and `CapabilityGate`'s `GET /stories/:id/capabilities` is
+authenticated — so **every anonymous visitor to every piece fired a request that 401s**, and a
+non-expiry 401 runs `onUnauthorized()` (`lib/api-client.ts:190`), dropping the session mid-load. The
+symptom was five signed-out `conversation.spec.ts` tests hanging on "Loading comments" and
+`reader.spec.ts`'s anonymous related-pieces test failing — **nowhere near the cause.**
+
+Proved rather than guessed, in three steps: `--workers=1` first (ruling out the documented local
+dev-server contention — it accounted for exactly one of the seven failures), then an **A/B against
+`git checkout 41b2b49 -- frontend/src`**, where the same six specs passed 6/6. Fixed by gating on the
+session before the query, which is also simply correct — `POST /stories/:id/suggestions` requires
+auth, so there is nothing to offer an anonymous reader. The regression test asserts the **request is
+not made**, not merely that nothing renders: rendering null while still firing the read would look
+right and still break the page.
+
+**The lesson, and it is the reason this row's verification mattered:** both defects were invisible to
+143 unit files because unit tests mock the api layer and mount components directly. Neither a 401 nor
+a route table exists in that world. C-15's web half was verified in the same run — all of
+`inline-review.spec.ts` green, including the reworked conflict arrangement.
 
 ---
 
