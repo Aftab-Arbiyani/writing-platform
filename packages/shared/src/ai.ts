@@ -42,7 +42,17 @@ export const AiProvider = {
 } as const;
 export type AiProvider = (typeof AiProvider)[keyof typeof AiProvider];
 
-/** Provider adapters shipped in AF1 (have a working implementation). */
+/**
+ * Provider adapters shipped in AF1 (have a working implementation).
+ *
+ * **Load-bearing since AI-3** (docs/48 §3.22b): admin's AI config Select is built from this list, so
+ * an operator can no longer save a provider with no adapter behind it. Before that this export had
+ * zero consumers and the picker offered all nine `AiProvider` values.
+ *
+ * `Stub` is excluded even though it has an adapter — see its note above; it is a test-stack path and
+ * offering it in a production admin UI is how every writer's suggestion becomes the same paragraph.
+ * Adding a provider here is what makes it selectable, so add the adapter first.
+ */
 export const IMPLEMENTED_AI_PROVIDERS: readonly AiProvider[] = [
   AiProvider.OpenAI,
   AiProvider.Anthropic,

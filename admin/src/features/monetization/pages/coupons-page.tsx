@@ -5,7 +5,7 @@ import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
 import { usePageTitle } from '@/hooks/use-page-title';
 
-import { AsyncSection } from '../components/async-section';
+import { AsyncSection } from '@/components/async-section';
 import { CouponCreateForm } from '../components/coupon-create-form';
 import { CouponTable } from '../components/coupon-table';
 import { useCoupons } from '../hooks/use-monetization';

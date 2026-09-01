@@ -12,7 +12,7 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { usePageTitle } from '@/hooks/use-page-title';
 import { formatCount, formatDateTime, formatDuration, formatPercent } from '@/lib/format';
 
-import { AsyncSection } from '../components/async-section';
+import { AsyncSection } from '@/components/async-section';
 import { DefinitionCard } from '../components/definition-card';
 import { DeploymentStatusBadge } from '../components/operations-badges';
 import { RolloutsSection } from '../components/rollouts-section';

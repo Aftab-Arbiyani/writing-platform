@@ -4,7 +4,7 @@ import type { ReactElement } from 'react';
 import { EmptyState } from '@/components/empty-state';
 import { formatDateTime } from '@/lib/format';
 
-import { AsyncSection } from './async-section';
+import { AsyncSection } from '@/components/async-section';
 import { useUserPayments } from '../hooks/use-monetization';
 import { formatMinorUnits } from '../lib/money-format';
 

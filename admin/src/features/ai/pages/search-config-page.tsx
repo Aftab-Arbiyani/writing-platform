@@ -13,7 +13,7 @@ import { PageHeader } from '@/components/page-header';
 import { usePageTitle } from '@/hooks/use-page-title';
 import { usePermissions } from '@/hooks/use-permissions';
 
-import { AsyncSection } from '../components/async-section';
+import { AsyncSection } from '@/components/async-section';
 import { useRetrievalConfig, useUpdateRetrievalConfig } from '../hooks/use-ai';
 import { SIGNAL_LABELS, SOURCE_HINTS, SOURCE_LABELS, SOURCE_ORDER } from '../lib/retrieval-labels';
 import { retrievalConfigSchema } from '../schemas/retrieval-config.schema';

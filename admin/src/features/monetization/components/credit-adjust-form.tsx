@@ -5,7 +5,7 @@ import { ConfirmationDialog } from '@/components/confirmation-dialog';
 import { getErrorMessage } from '@/lib/errors';
 import { formatDateTime } from '@/lib/format';
 
-import { AsyncSection } from './async-section';
+import { AsyncSection } from '@/components/async-section';
 import { useAdjustCredits, useUserCredits } from '../hooks/use-monetization';
 import { adjustmentResult, planAdjustment } from '../lib/credit-adjustment';
 

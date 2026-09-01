@@ -10,7 +10,7 @@ import { StatCard } from '@/components/stat-card';
 import { usePageTitle } from '@/hooks/use-page-title';
 import { formatUsd } from '@/lib/format';
 
-import { AsyncSection } from '../components/async-section';
+import { AsyncSection } from '@/components/async-section';
 import { CostTrendBadge } from '../components/operations-badges';
 import { useCost } from '../hooks/use-operations';
 import type { CostLine } from '../types/operations.types';

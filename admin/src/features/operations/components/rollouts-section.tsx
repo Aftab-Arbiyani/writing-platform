@@ -8,7 +8,7 @@ import { getErrorMessage } from '@/lib/errors';
 
 import { useKillRollout, useSetRolloutPercentage } from '../hooks/use-operations';
 import type { Rollout } from '../types/operations.types';
-import { AsyncSection } from './async-section';
+import { AsyncSection } from '@/components/async-section';
 import { BoolIndicator } from './bool-indicator';
 import { RolloutStrategyBadge } from './operations-badges';
 

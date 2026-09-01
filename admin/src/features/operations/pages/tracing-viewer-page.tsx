@@ -9,7 +9,7 @@ import { PageHeader } from '@/components/page-header';
 import { usePageTitle } from '@/hooks/use-page-title';
 import { formatCount, formatDateTime, formatMs } from '@/lib/format';
 
-import { AsyncSection } from '../components/async-section';
+import { AsyncSection } from '@/components/async-section';
 import { TraceStatusBadge } from '../components/operations-badges';
 import { useTraces } from '../hooks/use-operations';
 import type { Trace, TraceSpan } from '../types/operations.types';

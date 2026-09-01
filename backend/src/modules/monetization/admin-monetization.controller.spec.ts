@@ -7,7 +7,12 @@ import type { UsersService } from '../users/users.service';
 import { AdminMonetizationController } from './admin-monetization.controller';
 import type { BillingService } from './billing.service';
 import type { CreditService } from './credit.service';
-import { CursorQueryDto } from './dto/monetization-request.dto';
+import {
+  AdjustCreditsDto,
+  CursorQueryDto,
+  GrantOverrideDto,
+  RefundDto,
+} from './dto/monetization-request.dto';
 import type { EntitlementService } from './entitlement.service';
 import type { MonetizationAnalyticsService } from './monetization-analytics.service';
 import type { MonetizationConfigService } from './monetization.config-service';
@@ -42,9 +47,21 @@ function build(overrides?: {
   const credits = {
     findWallet: jest.fn().mockResolvedValue(overrides?.wallet ?? null),
     getOrCreateWallet: jest.fn(),
+    grant: jest.fn().mockResolvedValue({ userId: USER, balance: 10 }),
+    debit: jest.fn().mockResolvedValue({ userId: USER, balance: 0 }),
   } as unknown as CreditService;
   const billing = {
     listPayments: jest.fn().mockResolvedValue(overrides?.payments ?? []),
+    refund: jest.fn().mockResolvedValue({
+      id: 'pay-1',
+      provider: 'stripe',
+      method: 'card',
+      status: 'refunded',
+      amount: 500,
+      currency: 'usd',
+      description: null,
+      createdAt: new Date('2026-08-31T00:00:00.000Z'),
+    }),
   } as unknown as BillingService;
   const subscriptions = {
     findByUser: jest.fn().mockResolvedValue(overrides?.subscription ?? null),
@@ -60,6 +77,18 @@ function build(overrides?: {
   } as unknown as UsersService;
   const entitlements = {
     listOverrides: jest.fn().mockResolvedValue(overrides?.entitlementOverrides ?? []),
+    // A shape the mapper can serialise: `toEntitlementOverrideDto` calls `.toISOString()` on
+    // `createdAt`, so a two-field stub rejects before the assertion under test is reached.
+    grantOverride: jest.fn().mockResolvedValue({
+      id: 'ovr-1',
+      userId: USER,
+      feature: 'ai_writing',
+      effect: 'allow',
+      active: true,
+      expiresAt: null,
+      reason: null,
+      createdAt: new Date('2026-08-31T00:00:00.000Z'),
+    }),
   } as unknown as EntitlementService;
 
   const controller = new AdminMonetizationController(
@@ -320,5 +349,90 @@ describe('AdminMonetizationController — an id that belongs to nobody (B8-1)', 
     expect(permsOf(AdminMonetizationController.prototype.listOverrides)).toEqual([
       PERMISSIONS.BillingManage,
     ]);
+  });
+});
+
+/**
+ * **B8-2** (docs/48 §3.22a) — B8-1 gave the READS a 404 for an id that belongs to nobody and
+ * deliberately left the writes alone, recording that the three of them needed separate answers
+ * rather than one rule applied three times. They did, and these are the answers.
+ *
+ * The two writes that take a `userId` in the BODY now assert existence, because nothing upstream
+ * has proven it: granting an override against a mistyped id inserted a row that can never apply and
+ * that no screen can list (there is no cross-account override read), and adjusting credits
+ * MATERIALISED a wallet for nobody.
+ *
+ * `payments/:id/refund` is keyed by a PAYMENT id instead, and a payment that exists already carries
+ * a real `userId` — so it asserts nothing, and that absence is pinned below so a later pass does not
+ * "fix" it into a redundant query.
+ */
+describe('AdminMonetizationController — writes against an id that belongs to nobody (B8-2)', () => {
+  const actor = { id: 'admin-1' } as never;
+  const req = { ip: '127.0.0.1', headers: {} } as never;
+
+  function grantDto(): GrantOverrideDto {
+    return Object.assign(new GrantOverrideDto(), {
+      userId: USER,
+      feature: 'ai_writing',
+      effect: 'allow',
+    });
+  }
+
+  function adjustDto(): AdjustCreditsDto {
+    return Object.assign(new AdjustCreditsDto(), { userId: USER, amount: 10 });
+  }
+
+  it('POST overrides 404s USER_NOT_FOUND and writes nothing', async () => {
+    const { controller, entitlements } = build({ user: null });
+
+    await expect(controller.grantOverride(actor, req, grantDto())).rejects.toMatchObject({
+      code: ERROR_CODES.USER_NOT_FOUND,
+    });
+    // The row is what the defect was: an insert nothing can read back.
+    expect(entitlements.grantOverride).not.toHaveBeenCalled();
+  });
+
+  it('POST credits/adjust 404s USER_NOT_FOUND and materialises no wallet', async () => {
+    const { controller, credits } = build({ user: null });
+
+    await expect(controller.adjustCredits(actor, req, adjustDto())).rejects.toMatchObject({
+      code: ERROR_CODES.USER_NOT_FOUND,
+    });
+    expect(credits.grant).not.toHaveBeenCalled();
+    expect(credits.debit).not.toHaveBeenCalled();
+  });
+
+  it('a NEGATIVE adjustment is checked too, not just the granting branch', async () => {
+    // The handler forks on the sign before it would ever touch the wallet, so the assert has to sit
+    // above the fork. Pinned because moving it inside either branch would pass the test above.
+    const { controller, credits } = build({ user: null });
+
+    await expect(
+      controller.adjustCredits(
+        actor,
+        req,
+        Object.assign(new AdjustCreditsDto(), { userId: USER, amount: -5 }),
+      ),
+    ).rejects.toMatchObject({ code: ERROR_CODES.USER_NOT_FOUND });
+    expect(credits.debit).not.toHaveBeenCalled();
+  });
+
+  it('both writes still work for an account that exists', async () => {
+    // The regression the fix could plausibly introduce, asserted directly rather than trusted.
+    const { controller, entitlements, credits } = build();
+
+    await expect(controller.grantOverride(actor, req, grantDto())).resolves.toBeDefined();
+    await expect(controller.adjustCredits(actor, req, adjustDto())).resolves.toBeDefined();
+    expect(entitlements.grantOverride).toHaveBeenCalled();
+    expect(credits.grant).toHaveBeenCalled();
+  });
+
+  it('refund does NOT look the user up — the payment id already proves the account', async () => {
+    const { controller, users, billing } = build();
+
+    await controller.refund(actor, req, 'ffffffff-ffff-4fff-8fff-ffffffffffff', new RefundDto());
+
+    expect(users.findById).not.toHaveBeenCalled();
+    expect(billing.refund).toHaveBeenCalled();
   });
 });

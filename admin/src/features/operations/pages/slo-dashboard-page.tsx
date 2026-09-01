@@ -10,7 +10,7 @@ import { StatCard } from '@/components/stat-card';
 import { usePageTitle } from '@/hooks/use-page-title';
 import { formatCount, formatPercent } from '@/lib/format';
 
-import { AsyncSection } from '../components/async-section';
+import { AsyncSection } from '@/components/async-section';
 import { SloStatusBadge } from '../components/operations-badges';
 import { useSlo } from '../hooks/use-operations';
 import type { SloObjective } from '../types/operations.types';

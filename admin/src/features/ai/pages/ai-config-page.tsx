@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { AiProvider, PERMISSIONS } from '@qalam/shared';
+import { AiProvider, IMPLEMENTED_AI_PROVIDERS, PERMISSIONS } from '@qalam/shared';
 import { App, Button, Card, InputNumber, Select, Switch } from 'antd';
 import { useEffect } from 'react';
 import type { ReactElement } from 'react';
@@ -15,7 +15,34 @@ import { useAiModels, useAiOrgConfig, useUpdateAiOrgConfig } from '../hooks/use-
 import { aiOrgConfigSchema } from '../schemas/ai-config.schema';
 import type { AiOrgConfigForm } from '../schemas/ai-config.schema';
 
-const PROVIDER_OPTIONS = Object.values(AiProvider).map((value) => ({ value, label: value }));
+/**
+ * Only providers with a shipped adapter are offered (AI-3, docs/48 §3.22b).
+ *
+ * This used to be `Object.values(AiProvider)`, i.e. **nine** options for **three** working ones — an
+ * operator could select `ollama`, `openrouter`, `lm_studio`, `self_hosted` or `stub` and save it,
+ * and every subsequent AI call would fail against a provider with no adapter behind it. That is also
+ * what made `IMPLEMENTED_AI_PROVIDERS` a dead export: the list existed and nothing consulted it.
+ *
+ * `stub` is excluded on purpose even though it HAS an adapter — its own docblock in `@qalam/shared`
+ * says why: it is a test-stack path gated on `AI_STUB_ENABLED`, and offering it in a production admin
+ * UI is how every writer's suggestion becomes the same canned paragraph.
+ */
+const PROVIDER_OPTIONS = IMPLEMENTED_AI_PROVIDERS.map((value) => ({ value, label: value }));
+
+/**
+ * Keeps a STORED provider selectable even when it is not implemented.
+ *
+ * Narrowing the list is a refusal to offer a broken choice, not a licence to silently drop one an
+ * operator already saved: a deployment whose config says `ollama` must still round-trip, or opening
+ * this page and pressing Save would rewrite their provider to whatever the Select fell back to. The
+ * stray value is labelled rather than hidden, so the reason it is flagged is on screen.
+ */
+function providerOptions(stored: string | undefined) {
+  if (stored === undefined || IMPLEMENTED_AI_PROVIDERS.includes(stored as AiProvider)) {
+    return PROVIDER_OPTIONS;
+  }
+  return [...PROVIDER_OPTIONS, { value: stored, label: `${stored} (no adapter shipped)` }];
+}
 
 const DEFAULTS: AiOrgConfigForm = {
   provider: AiProvider.OpenAI,
@@ -106,7 +133,11 @@ export function AiConfigPage(): ReactElement {
                 control={form.control}
                 name="provider"
                 render={({ field }) => (
-                  <Select {...field} options={PROVIDER_OPTIONS} aria-label="Provider" />
+                  <Select
+                    {...field}
+                    options={providerOptions(configQuery.data?.provider)}
+                    aria-label="Provider"
+                  />
                 )}
               />
             </label>

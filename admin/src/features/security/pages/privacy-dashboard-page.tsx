@@ -7,7 +7,7 @@ import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
 import { usePageTitle } from '@/hooks/use-page-title';
 
-import { AsyncSection } from '../components/async-section';
+import { AsyncSection } from '@/components/async-section';
 import { AuditLinkCard } from '../components/audit-link-card';
 import { DefinitionCard } from '../components/definition-card';
 import { RetentionTable } from '../components/retention-table';

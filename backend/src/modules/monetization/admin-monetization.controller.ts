@@ -87,14 +87,25 @@ export class AdminMonetizationController {
    * services, so it lives here as one injection rather than four — the same reason the audit
    * `record()` helper below is a controller concern.
    *
-   * **Reads only, and that bound is deliberate rather than sufficient.** `POST overrides` does NOT
-   * check existence and `entitlement_override` has no FK to `users` (entity `:16-20` declares an
-   * index on `[userId, feature]` and no relation), so granting against a mistyped id inserts a row
-   * that can never apply and that no screen can list — there is no cross-account override read.
-   * Recorded as **B8-2** in docs/48 §3.22a rather than fixed here: the three writes on this surface
-   * (`overrides`, `credits/adjust`, `payments/:id/refund`) each need their own answer — a wallet
-   * adjustment MATERIALISES a wallet and a refund resolves a payment, so "assert the user exists"
-   * is not one decision applied three times.
+   * ~~**Reads only, and that bound is deliberate rather than sufficient.**~~ **B8-2 CLOSED
+   * 2026-08-31 — the writes are covered now too, and the three answers really were different:**
+   *
+   * - **`POST overrides`** and **`POST credits/adjust`** take a `userId` in the BODY, so a mistyped
+   *   id is unverifiable by the route itself. Both assert now. Granting against nobody used to
+   *   insert a row that can never apply and that no screen can list (there is no cross-account
+   *   override read); adjusting credits for nobody MATERIALISED a wallet for nobody.
+   * - **`POST payments/:id/refund` deliberately does NOT assert**, and that is the point of having
+   *   asked per-write: it is keyed by a PAYMENT id, and a payment that exists already carries a real
+   *   `userId`. Resolving it proves the account, so a second lookup would be a redundant query
+   *   answering a question the path has already answered.
+   *
+   * **The FK question is answered NO, on evidence rather than on effort.** All **12** monetization
+   * entities declare **zero** relations and **10** carry a bare `uuid userId` — "no FK to users" is
+   * this module's convention, not an oversight in this one table. An FK on `entitlement_overrides`
+   * alone would need a lock-taking `ALTER` on a populated table, would leave this table inconsistent
+   * with eleven siblings, and would still not protect the other nine. Validating at the write path
+   * costs one query on an admin-only route, needs no migration, and is the same answer for every
+   * table that ever needs it.
    */
   private async assertUserExists(userId: string): Promise<void> {
     if ((await this.users.findById(userId)) === null) {
@@ -175,12 +186,17 @@ export class AdminMonetizationController {
   @Post('overrides')
   @Permissions(PERMISSIONS.BillingManage)
   @RateLimit('write')
-  @ApiOperation({ summary: 'Grant/deny an entitlement override (admin/promotional/temporary).' })
+  @ApiOperation({
+    summary:
+      'Grant/deny an entitlement override (admin/promotional/temporary). Errors: USER_NOT_FOUND.',
+  })
   async grantOverride(
     @CurrentUser() user: AuthenticatedUser,
     @Req() req: Request,
     @Body() dto: GrantOverrideDto,
   ) {
+    // B8-2: the id arrives in the body, so nothing upstream has proven it belongs to anybody.
+    await this.assertUserExists(dto.userId);
     const override = await this.entitlements.grantOverride({
       userId: dto.userId,
       feature: dto.feature,
@@ -223,12 +239,17 @@ export class AdminMonetizationController {
   @Post('credits/adjust')
   @Permissions(PERMISSIONS.BillingManage)
   @RateLimit('write')
-  @ApiOperation({ summary: "Adjust a user's credit balance (grant or deduct)." })
+  @ApiOperation({
+    summary: "Adjust a user's credit balance (grant or deduct). Errors: USER_NOT_FOUND.",
+  })
   async adjustCredits(
     @CurrentUser() user: AuthenticatedUser,
     @Req() req: Request,
     @Body() dto: AdjustCreditsDto,
   ) {
+    // B8-2: same body-supplied id, and a worse failure than the override — `grant` MATERIALISES a
+    // wallet, so an unchecked mistype creates a balance nobody can ever spend or see.
+    await this.assertUserExists(dto.userId);
     const balance =
       dto.amount >= 0
         ? await this.credits.grant({

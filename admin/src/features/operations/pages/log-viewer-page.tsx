@@ -8,7 +8,7 @@ import { PageHeader } from '@/components/page-header';
 import { usePageTitle } from '@/hooks/use-page-title';
 import { formatCount, formatPercent } from '@/lib/format';
 
-import { AsyncSection } from '../components/async-section';
+import { AsyncSection } from '@/components/async-section';
 import { BoolIndicator } from '../components/bool-indicator';
 import { DefinitionCard } from '../components/definition-card';
 import { useObservability } from '../hooks/use-operations';

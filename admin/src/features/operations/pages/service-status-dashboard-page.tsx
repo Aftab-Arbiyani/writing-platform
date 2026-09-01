@@ -11,7 +11,7 @@ import { StatCard } from '@/components/stat-card';
 import { usePageTitle } from '@/hooks/use-page-title';
 import { formatCount, formatPercent } from '@/lib/format';
 
-import { AsyncSection } from '../components/async-section';
+import { AsyncSection } from '@/components/async-section';
 import { OperationalHealthBadge } from '../components/operations-badges';
 import { componentStatusLabel, componentStatusToHealth } from '../components/operations-status';
 import { useOperationsHealth, useReliability } from '../hooks/use-operations';

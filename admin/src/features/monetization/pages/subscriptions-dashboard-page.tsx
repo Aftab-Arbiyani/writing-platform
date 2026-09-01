@@ -17,7 +17,7 @@ import { StatCard } from '@/components/stat-card';
 import { usePageTitle } from '@/hooks/use-page-title';
 
 import { AccountSubscription } from '../components/account-subscription';
-import { AsyncSection } from '../components/async-section';
+import { AsyncSection } from '@/components/async-section';
 import { EMPTY_COPY, subscriptionsAreEmpty } from '../lib/analytics-emptiness';
 import { useSubscriptionAnalytics, useUserSubscription } from '../hooks/use-monetization';
 

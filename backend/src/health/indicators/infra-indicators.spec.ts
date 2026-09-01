@@ -60,6 +60,7 @@ describe('AiHealthIndicator', () => {
     const cfg = {
       defaultProvider: 'openai',
       providers: { openai: { apiKey: '' } },
+      stub: { enabled: false },
     } as unknown as ReturnType<typeof aiConfig>;
     const result = new AiHealthIndicator(terminusStub(), cfg).isHealthy('ai');
     expect(field(result, 'ai', 'status')).toBe('up');
@@ -70,9 +71,48 @@ describe('AiHealthIndicator', () => {
     const cfg = {
       defaultProvider: 'openai',
       providers: { openai: { apiKey: 'sk-real' } },
+      stub: { enabled: false },
     } as unknown as ReturnType<typeof aiConfig>;
     const result = new AiHealthIndicator(terminusStub(), cfg).isHealthy('ai');
     expect(field(result, 'ai', 'mode')).toBe('live');
+  });
+
+  /**
+   * AI-2 (docs/48 §3.22b) — `mode` used to be a two-state answer, which understated a stack that
+   * generates real completions through `StubAdapter`. The stub holds no credential BY DESIGN, so
+   * credential-presence alone reported it identically to a stack with no AI at all.
+   */
+  it('reports test when the stub is the active path', () => {
+    const cfg = {
+      defaultProvider: 'stub',
+      providers: { stub: { apiKey: '' } },
+      stub: { enabled: true },
+    } as unknown as ReturnType<typeof aiConfig>;
+    const result = new AiHealthIndicator(terminusStub(), cfg).isHealthy('ai');
+    expect(field(result, 'ai', 'mode')).toBe('test');
+  });
+
+  it('needs BOTH stub conditions — selected but disabled is still inert', () => {
+    // Its adapter refuses every call unless AI_STUB_ENABLED=true, so this really is inert.
+    const cfg = {
+      defaultProvider: 'stub',
+      providers: { stub: { apiKey: '' } },
+      stub: { enabled: false },
+    } as unknown as ReturnType<typeof aiConfig>;
+    expect(field(new AiHealthIndicator(terminusStub(), cfg).isHealthy('ai'), 'ai', 'mode')).toBe(
+      'inert',
+    );
+  });
+
+  it('needs BOTH stub conditions — enabled but not selected is still inert', () => {
+    const cfg = {
+      defaultProvider: 'openai',
+      providers: { openai: { apiKey: '' } },
+      stub: { enabled: true },
+    } as unknown as ReturnType<typeof aiConfig>;
+    expect(field(new AiHealthIndicator(terminusStub(), cfg).isHealthy('ai'), 'ai', 'mode')).toBe(
+      'inert',
+    );
   });
 });
 
@@ -82,9 +122,35 @@ describe('PaymentHealthIndicator', () => {
       stripe: { secretKey: '' },
       apple: { sharedSecret: '' },
       google: { serviceAccountKey: '' },
+      manual: { enabled: false },
     } as unknown as ReturnType<typeof paymentsConfig>;
     const result = new PaymentHealthIndicator(terminusStub(), cfg).isHealthy('payments');
     expect(field(result, 'payments', 'mode')).toBe('inert');
+  });
+
+  it('reports test when the manual adapter is the active path', () => {
+    // A preview/E2E deployment bills through `ManualAdapter` with no processor credential. Reporting
+    // that as `inert` said "cannot bill" about a stack that can.
+    const cfg = {
+      stripe: { secretKey: '' },
+      apple: { sharedSecret: '' },
+      google: { serviceAccountKey: '' },
+      manual: { enabled: true },
+    } as unknown as ReturnType<typeof paymentsConfig>;
+    const result = new PaymentHealthIndicator(terminusStub(), cfg).isHealthy('payments');
+    expect(field(result, 'payments', 'mode')).toBe('test');
+  });
+
+  it('a real processor outranks manual', () => {
+    // Where a customer's money actually goes is what an operator needs to see.
+    const cfg = {
+      stripe: { secretKey: 'sk-real' },
+      apple: { sharedSecret: '' },
+      google: { serviceAccountKey: '' },
+      manual: { enabled: true },
+    } as unknown as ReturnType<typeof paymentsConfig>;
+    const result = new PaymentHealthIndicator(terminusStub(), cfg).isHealthy('payments');
+    expect(field(result, 'payments', 'mode')).toBe('live');
   });
 });
 

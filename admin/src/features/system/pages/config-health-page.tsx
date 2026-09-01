@@ -11,7 +11,7 @@ import { StatusIndicator, type HealthStatus } from '@/components/status-indicato
 import { usePageTitle } from '@/hooks/use-page-title';
 import { formatDateTime } from '@/lib/format';
 
-import { AsyncSection } from '../components/async-section';
+import { AsyncSection } from '@/components/async-section';
 import { BoolIndicator } from '../components/bool-indicator';
 import { DefinitionCard } from '../components/definition-card';
 import { useConfigHealth } from '../hooks/use-system';

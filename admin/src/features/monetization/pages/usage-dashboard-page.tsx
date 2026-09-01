@@ -10,7 +10,7 @@ import { StatCard } from '@/components/stat-card';
 import { usePageTitle } from '@/hooks/use-page-title';
 import { formatUsd } from '@/lib/format';
 
-import { AsyncSection } from '../components/async-section';
+import { AsyncSection } from '@/components/async-section';
 import { EMPTY_COPY, usageIsEmpty } from '../lib/analytics-emptiness';
 import { useUsageAnalytics } from '../hooks/use-monetization';
 

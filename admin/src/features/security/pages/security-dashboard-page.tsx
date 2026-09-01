@@ -11,7 +11,7 @@ import { StatusBadge } from '@/components/status-badge';
 import { usePageTitle } from '@/hooks/use-page-title';
 import { formatCount } from '@/lib/format';
 
-import { AsyncSection } from '../components/async-section';
+import { AsyncSection } from '@/components/async-section';
 import { AuditLinkCard } from '../components/audit-link-card';
 import { BoolIndicator } from '../components/bool-indicator';
 import { ControlsPanel } from '../components/controls-panel';

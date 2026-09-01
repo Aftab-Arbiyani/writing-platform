@@ -7,7 +7,7 @@ import { PageHeader } from '@/components/page-header';
 import { SearchInput } from '@/components/search-input';
 import { usePageTitle } from '@/hooks/use-page-title';
 
-import { AsyncSection } from '../components/async-section';
+import { AsyncSection } from '@/components/async-section';
 import { EntitlementCacheNote } from '../components/entitlement-cache-note';
 import { OverrideGrantForm } from '../components/override-grant-form';
 import { OverrideTable } from '../components/override-table';

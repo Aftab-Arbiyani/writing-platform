@@ -9,7 +9,7 @@ import { StatCard } from '@/components/stat-card';
 import { usePageTitle } from '@/hooks/use-page-title';
 import { formatDateTime, formatDuration } from '@/lib/format';
 
-import { AsyncSection } from '../components/async-section';
+import { AsyncSection } from '@/components/async-section';
 import { BoolIndicator } from '../components/bool-indicator';
 import { DefinitionCard } from '../components/definition-card';
 import { useSystemInfo, useVersion } from '../hooks/use-system';

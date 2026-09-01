@@ -8,7 +8,7 @@ import { PageHeader } from '@/components/page-header';
 import { StatCard } from '@/components/stat-card';
 import { usePageTitle } from '@/hooks/use-page-title';
 
-import { AsyncSection } from '../components/async-section';
+import { AsyncSection } from '@/components/async-section';
 import { EMPTY_COPY, revenueIsEmpty } from '../lib/analytics-emptiness';
 import { formatMinorUnits } from '../lib/money-format';
 import { useRevenueAnalytics } from '../hooks/use-monetization';

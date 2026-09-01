@@ -12,7 +12,7 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { usePageTitle } from '@/hooks/use-page-title';
 import { formatCount, formatDateTime } from '@/lib/format';
 
-import { AsyncSection } from '../components/async-section';
+import { AsyncSection } from '@/components/async-section';
 import { BoolIndicator } from '../components/bool-indicator';
 import { MaintenanceWindowCreateModal } from '../components/maintenance-window-create-modal';
 import { AlertSeverityBadge } from '../components/operations-badges';

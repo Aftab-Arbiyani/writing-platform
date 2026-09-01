@@ -11,7 +11,7 @@ import { StatusBadge } from '@/components/status-badge';
 import { usePageTitle } from '@/hooks/use-page-title';
 import { formatCount, formatDateTime } from '@/lib/format';
 
-import { AsyncSection } from '../components/async-section';
+import { AsyncSection } from '@/components/async-section';
 import { RetentionTable } from '../components/retention-table';
 import { useComplianceReport } from '../hooks/use-security';
 import type { ComplianceFramework, FrameworkStatus } from '../types/security.types';

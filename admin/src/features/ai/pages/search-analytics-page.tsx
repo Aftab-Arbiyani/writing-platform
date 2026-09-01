@@ -17,7 +17,7 @@ import { StatCard } from '@/components/stat-card';
 import { usePageTitle } from '@/hooks/use-page-title';
 import { usePermissions } from '@/hooks/use-permissions';
 
-import { AsyncSection } from '../components/async-section';
+import { AsyncSection } from '@/components/async-section';
 import { useSearchAnalytics } from '../hooks/use-ai';
 import {
   asPercent,

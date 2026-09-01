@@ -25,7 +25,7 @@ import type { QueueStatus } from '@/features/dashboard/types/dashboard.types';
 import { usePageTitle } from '@/hooks/use-page-title';
 import { formatCount } from '@/lib/format';
 
-import { AsyncSection } from '../components/async-section';
+import { AsyncSection } from '@/components/async-section';
 import { BoolIndicator } from '../components/bool-indicator';
 import { useCache, useDeepHealth } from '../hooks/use-system';
 import type { WarmableCache } from '../types/system.types';

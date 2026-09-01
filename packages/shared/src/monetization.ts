@@ -242,7 +242,24 @@ export const PaymentProvider = {
 } as const;
 export type PaymentProvider = (typeof PaymentProvider)[keyof typeof PaymentProvider];
 
-/** Providers with a shipped adapter in AF5 (the rest are reserved extension points). */
+/**
+ * The three PROCESSOR integrations shipped in AF5 (the rest are reserved extension points).
+ *
+ * **This list must NOT be used to validate a wire value, and that is the finding of AI-3**
+ * (docs/48 §3.22b). It looks like the obvious narrowing for the three DTOs that accept a
+ * `provider` (`@IsIn(Object.values(PaymentProvider))` on subscribe, purchase and restore), and
+ * doing that would break real deployments: **`Manual` is a working, shipped adapter**
+ * (`payments/adapters/manual.adapter.ts`, with its own spec) that is deliberately absent from this
+ * list because it is not a processor — it settles a charge with no third party, gated on
+ * `PAYMENTS_MANUAL_ENABLED`. The E2E stack and the preview environment bill through it, so a
+ * narrowed `@IsIn` would refuse the only provider those deployments have.
+ *
+ * So this stays a REFERENCE list, and its one honest consumer is a UI that must not offer a broken
+ * choice. There is no admin payment-provider picker today (the provider is chosen per-purchase by
+ * the client flow, never configured org-wide), which is why — unlike
+ * {@link IMPLEMENTED_AI_PROVIDERS}, wired to admin's AI config Select in the same pass — this one
+ * still has no consumer. Recorded rather than given a fake one.
+ */
 export const IMPLEMENTED_PAYMENT_PROVIDERS: readonly PaymentProvider[] = [
   PaymentProvider.Stripe,
   PaymentProvider.AppleAppStore,

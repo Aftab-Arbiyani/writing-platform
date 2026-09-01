@@ -5,7 +5,7 @@ import { PageHeader } from '@/components/page-header';
 import { usePageTitle } from '@/hooks/use-page-title';
 import { ROUTES } from '@/lib/routes';
 
-import { AsyncSection } from '../components/async-section';
+import { AsyncSection } from '@/components/async-section';
 import { ConfigForm } from '../components/config-form';
 import { PlanCatalogue } from '../components/plan-catalogue';
 import { useMonetizationConfig, usePlans } from '../hooks/use-monetization';
