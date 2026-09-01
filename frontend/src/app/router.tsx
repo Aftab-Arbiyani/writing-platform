@@ -153,7 +153,13 @@ const router = createBrowserRouter([
     // no guard above it — it is public and session-less, running BEFORE sign-in and handing off to
     // it. Who gets SENT here is decided by `HomeRoute`, not by a guard over the tree; see the note
     // there for why a tree-wide guard was the wrong answer.
-    element: <RouteErrorBoundary />,
+    //
+    // `errorElement`, NOT `element`: this tree has no layout of its own, and an earlier draft wrote
+    // `element: <RouteErrorBoundary />` — which made the error boundary the route's own element, so
+    // `/onboarding` rendered "Something went wrong." unconditionally. Caught by the first live
+    // browser run; every unit test passed, because they mount the page directly and never traverse
+    // the router.
+    errorElement: <RouteErrorBoundary />,
     children: [{ path: 'onboarding', lazy: () => import('@/app/routes/onboarding') }],
   },
   {
