@@ -147,6 +147,16 @@ const router = createBrowserRouter([
     ],
   },
   {
+    // The first-run intro (docs/48 §2 row 7) — its OWN sibling tree, deliberately.
+    //
+    // No `RootLayout`: the intro is the whole viewport, like the editor and the auth corridor. And
+    // no guard above it — it is public and session-less, running BEFORE sign-in and handing off to
+    // it. Who gets SENT here is decided by `HomeRoute`, not by a guard over the tree; see the note
+    // there for why a tree-wide guard was the wrong answer.
+    element: <RouteErrorBoundary />,
+    children: [{ path: 'onboarding', lazy: () => import('@/app/routes/onboarding') }],
+  },
+  {
     // Guest-only auth corridor — no app chrome (docs/11 §3). Logged-in users are bounced
     // to their returnTo/feed by RequireGuest.
     element: <RequireGuest />,

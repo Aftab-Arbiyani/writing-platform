@@ -5,6 +5,9 @@
  */
 export const ROUTES = {
   landing: '/',
+  // First-run intro (docs/48 §2 row 7). Public and session-less: it runs BEFORE sign-in and
+  // hands off to it, which is why it sits outside both guarded trees.
+  onboarding: '/onboarding',
   // Authenticated placeholder surfaces (feature epics replace the placeholders):
   feed: '/feed',
   search: '/search',
@@ -143,6 +146,7 @@ export function profilePath(username: string): string {
  */
 export const RESERVED_HANDLES: readonly string[] = [
   'feed',
+  'onboarding',
   'search',
   'discover',
   'me',

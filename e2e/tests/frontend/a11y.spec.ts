@@ -361,6 +361,27 @@ test.describe('@phase5 @a11y frontend accessibility (authenticated)', () => {
     await expectNoSeriousA11yViolations(page, { label: 'frontend /p/:slug' });
   });
 
+  test('the first-run intro has no critical/serious a11y violations', async ({ browser }) => {
+    // Lives HERE and not in `onboarding.spec.ts` for one mechanical reason: `frontend-dark` matches
+    // only `(a11y|visual).spec.ts` (`UI_QUALITY_ONLY`), so a scan in any other file is light-theme
+    // only. A new public surface needs both themes (docs/e2e/10 §3.3).
+    //
+    // It needs its own context because the intro is gated on a `localStorage` flag AND on being
+    // signed out — this project's storageState is the writer's, so the default page would be
+    // redirected to /feed and this would scan the feed while claiming to scan the intro.
+    const context = await browser.newContext({ storageState: { cookies: [], origins: [] } });
+    const fresh = await context.newPage();
+    try {
+      await fresh.goto('/onboarding');
+      await expect(fresh.getByRole('heading', { name: 'A place for your words' })).toBeVisible({
+        timeout: 30_000,
+      });
+      await expectNoSeriousA11yViolations(fresh, { label: 'frontend /onboarding' });
+    } finally {
+      await context.close();
+    }
+  });
+
   test('the reader in "pick a passage" mode has no critical/serious a11y violations', async ({
     page,
     api,
