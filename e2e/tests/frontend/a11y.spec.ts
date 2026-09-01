@@ -361,6 +361,29 @@ test.describe('@phase5 @a11y frontend accessibility (authenticated)', () => {
     await expectNoSeriousA11yViolations(page, { label: 'frontend /p/:slug' });
   });
 
+  test('the reader in "pick a passage" mode has no critical/serious a11y violations', async ({
+    page,
+    api,
+    data,
+  }) => {
+    // C-15. This mode turns the whole prose column into a field of controls, which is a genuinely
+    // new a11y surface rather than a restyle: every paragraph becomes a named, focusable button, and
+    // the composer that opens on top of it is a dialog. Scanned with the composer OPEN because that
+    // is the state with both — the buttons behind it and the labelled textarea in front.
+    const story = await api.createPublishedPiece({
+      title: data.pieceTitle(),
+      body: 'The lantern burned low over the water.',
+    });
+    const reader = new ReaderPage(page);
+    await reader.gotoSlug(story.slug as string);
+    await reader.expectRendered(story.title as string);
+
+    await reader.suggestTrigger.click();
+    await page.getByRole('button', { name: /Suggest an edit to this passage: .*lantern/ }).click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await expectNoSeriousA11yViolations(page, { label: 'frontend /p/:slug — suggest mode' });
+  });
+
   /**
    * The conversation on a piece (W7a, docs/45 §4.4) — scanned with real CONTENT, because the parts
    * axe has something to say about only exist once there is a row: a comment's byline and action
@@ -515,12 +538,22 @@ test.describe('@phase5 @a11y frontend accessibility (authenticated)', () => {
     api,
     data,
   }) => {
-    // W3b, scanned with the composer OPEN: it carries the only numeric input in the feature, and a
-    // number field without a real label is exactly what axe is for.
-    const story = await api.createPiece({ title: data.pieceTitle(), body: 'The lantern burned.' });
+    // W3b, scanned with a suggestion PRESENT so the diff rows and the row actions are in the tree.
+    //
+    // It used to be scanned with the composer open, "because it carries the only numeric input in
+    // the feature". C-15 deleted that composer and its offset field — the offset is no longer typed
+    // by anyone — so the stated reason for that arrangement is gone. The suggestion is arranged from
+    // the reader now, which is where proposing lives; the composer's own scan moved there with it.
+    const story = await api.createPublishedPiece({
+      title: data.pieceTitle(),
+      body: 'The lantern burned low over the water.',
+    });
+    const reader = new ReaderPage(page);
+    await reader.gotoSlug(story.slug as string);
+    await reader.proposeEdit({ passage: 'lantern', suggested: 'The oil lamp burned low.' });
+
     const suggestions = new StorySuggestionsPage(page);
     await suggestions.goto(story.id);
-    await suggestions.propose({ original: 'lantern', suggested: 'oil lamp', from: 4 });
     await expectNoSeriousA11yViolations(page, { label: 'frontend /write/:storyId/suggestions' });
   });
 

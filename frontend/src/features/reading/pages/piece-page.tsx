@@ -1,5 +1,5 @@
 import { QErrorState, QSkeleton } from '@qalam/ui';
-import type { ReactElement, ReactNode } from 'react';
+import { useEffect, useMemo, type ReactElement, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router';
 
 import { PieceConversation } from '@/components/conversation';
@@ -10,11 +10,14 @@ import { formatDate, formatReadingTime } from '@/lib/format';
 import { mediaUrl } from '@/lib/media';
 import { piecePath, profilePath, ROUTES } from '@/lib/routes';
 
+import { useSuggestTarget } from '@/stores/suggest-target.store';
+
 import { ContentRenderer } from '../components/content-renderer';
 import { ReaderActionBar } from '../components/reader-action-bar';
 import { ReaderAuthorCard } from '../components/reader-author-card';
 import { ReaderSettings } from '../components/reader-settings';
 import { RelatedPieces } from '../components/related-pieces';
+import { buildBlockAnchors } from '../lib/content-anchors';
 import { usePiece, usePieceEngagement } from '../hooks/use-piece';
 import { useRelatedPieces } from '../hooks/use-related-pieces';
 import { COLUMN_WIDTH_PX, useReaderPreferences } from '../stores/reader-preferences.store';
@@ -57,13 +60,53 @@ function Column({
   );
 }
 
-export function PiecePage(): ReactElement {
+/**
+ * `suggest` is the "propose an edit" affordance (C-15), supplied by
+ * [`app/routes/piece.tsx`](../../../app/routes/piece.tsx) — the only layer allowed to know both
+ * this feature and `features/collaboration`. Identical arrangement to W2's
+ * `EditorPage({ assistant })`, and for the identical reason (docs/26 §4).
+ *
+ * This page never learns what a suggestion is. It publishes what it is showing to the app-level
+ * [`suggest-target`](../../../stores/suggest-target.store.ts) seam and renders whatever node it is
+ * handed; with no `suggest` passed, the reader is exactly what it was before.
+ */
+export interface PiecePageProps {
+  suggest?: ReactNode;
+}
+
+export function PiecePage({ suggest }: PiecePageProps = {}): ReactElement {
   const { slug } = useParams<{ slug: string }>();
   const query = usePiece(slug);
   const piece = query.data;
   const engagement = usePieceEngagement(piece?.id);
   const related = useRelatedPieces(piece);
   const maxWidth = COLUMN_WIDTH_PX[useReaderPreferences((s) => s.width)];
+
+  const picking = useSuggestTarget((s) => s.picking);
+  const register = useSuggestTarget((s) => s.register);
+  const unregister = useSuggestTarget((s) => s.unregister);
+  const select = useSuggestTarget((s) => s.select);
+
+  // Publish this piece to the seam while it is on screen, and clear it on the way out so a stale
+  // story id can never be paired with the next piece's anchors.
+  const pieceId = piece?.id;
+  useEffect(() => {
+    if (pieceId === undefined) return undefined;
+    register(pieceId);
+    return () => {
+      unregister();
+    };
+  }, [pieceId, register, unregister]);
+
+  /**
+   * Anchors are built from `piece.content` and memoised on it, which is load-bearing rather than an
+   * optimisation: the map is keyed by node IDENTITY, so it must be derived from the very object
+   * handed to `ContentRenderer`. Re-deriving on an unrelated re-render would produce a map whose
+   * keys are still the same node objects (React Query hands back the same parsed body), but
+   * memoising makes that guarantee explicit instead of incidental.
+   */
+  const content = piece?.content;
+  const blockAnchors = useMemo(() => (content ? buildBlockAnchors(content) : undefined), [content]);
 
   usePageTitle(piece?.title ?? 'Reading');
 
@@ -196,8 +239,25 @@ export function PiecePage(): ReactElement {
         </Column>
       ) : null}
 
+      {/* The "propose an edit" affordance, owned end-to-end by whoever supplied it. It sits
+          directly above the prose because that is what it acts on: the trigger, the "pick a
+          passage" banner and the composer are all one node to this page. */}
+      {suggest === undefined ? null : (
+        <Column maxWidth={maxWidth} className="mt-8">
+          {suggest}
+        </Column>
+      )}
+
       <Column maxWidth={maxWidth} className="mt-10">
-        <ContentRenderer content={piece.content} dir={dir} script={language?.script} />
+        {/* Selection is handed to the renderer only while the seam says we are picking, so the
+            prose carries no extra controls — and no extra a11y tree — the rest of the time. */}
+        <ContentRenderer
+          content={piece.content}
+          dir={dir}
+          script={language?.script}
+          blockAnchors={picking ? blockAnchors : undefined}
+          onBlockSelect={picking ? select : undefined}
+        />
       </Column>
 
       <Column maxWidth={maxWidth} className="mt-12">

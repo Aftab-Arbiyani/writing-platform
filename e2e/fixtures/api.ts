@@ -229,6 +229,22 @@ export class ApiHelper {
     return this.data<PieceSummary>(res);
   }
 
+  /**
+   * Rewrite a piece's body as the writer (PATCH /pieces/:id).
+   *
+   * Exists for one arrangement that cannot be produced through the UI any more, and that is the
+   * point of it: since C-15 the reader computes suggestion anchors from the document itself, so a
+   * bad anchor is no longer typeable. The only honest way to reach `SUGGESTION_CONFLICT` is the way
+   * a real writer reaches it — propose against the real prose, then MOVE the prose.
+   */
+  async updatePieceBody(id: string, body: string): Promise<PieceSummary> {
+    const res = await this.request.patch(this.url(`/pieces/${id}`), {
+      headers: await this.writerHeaders(),
+      data: { content: this.tiptapDoc(body) },
+    });
+    return this.data<PieceSummary>(res);
+  }
+
   /** Publish a draft piece as the writer (POST /pieces/:id/publish). Returns the published piece. */
   async publishPiece(id: string): Promise<PieceSummary> {
     const res = await this.request.post(this.url(`/pieces/${id}/publish`), {

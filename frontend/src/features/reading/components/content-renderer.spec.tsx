@@ -1,10 +1,11 @@
-import { screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { fireEvent, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { renderWithProviders } from '@/test/render';
 
 import { useReaderPreferences } from '../stores/reader-preferences.store';
 import type { TipTapNode } from '../types/reading.types';
+import { buildBlockAnchors } from '../lib/content-anchors';
 import { ContentRenderer } from './content-renderer';
 
 function doc(...content: TipTapNode[]): TipTapNode {
@@ -145,5 +146,95 @@ describe('ContentRenderer', () => {
     const paragraphs = container.querySelectorAll('p');
     expect(paragraphs[0]).toHaveStyle({ textAlign: 'center' });
     expect(paragraphs[1]?.getAttribute('style')).toBeNull();
+  });
+});
+
+describe('ContentRenderer — passage selection (C-15)', () => {
+  beforeEach(() => {
+    useReaderPreferences.getState().reset();
+  });
+
+  const body = doc(
+    { type: 'heading', attrs: { level: 2 }, content: [text('Chapter one')] },
+    { type: 'paragraph', content: [text('first')] },
+    { type: 'paragraph', content: [text('second')] },
+  );
+
+  it('renders no controls at all when selection is not offered', () => {
+    renderWithProviders(<ContentRenderer content={body} />);
+    expect(screen.queryAllByRole('button')).toHaveLength(0);
+    expect(screen.getByText('first')).toBeInTheDocument();
+  });
+
+  it('needs BOTH halves — a map with no handler renders nothing interactive', () => {
+    // A control that cannot report anywhere is worse than no control: it looks operable.
+    renderWithProviders(<ContentRenderer content={body} blockAnchors={buildBlockAnchors(body)} />);
+    expect(screen.queryAllByRole('button')).toHaveLength(0);
+  });
+
+  it('makes every anchored block a control and reports the SERVER-space anchor', () => {
+    const onBlockSelect = vi.fn();
+    renderWithProviders(
+      <ContentRenderer
+        content={body}
+        blockAnchors={buildBlockAnchors(body)}
+        onBlockSelect={onBlockSelect}
+      />,
+    );
+
+    expect(screen.getAllByRole('button')).toHaveLength(3);
+    fireEvent.click(
+      screen.getByRole('button', { name: /Suggest an edit to this passage: second/ }),
+    );
+
+    // anchorText space, no separators between blocks: 'Chapter one' + 'first' = 16.
+    expect(onBlockSelect).toHaveBeenCalledWith({ from: 16, to: 22, text: 'second' });
+  });
+
+  it('uses a real <button>, which is what makes it keyboard-operable', () => {
+    // The guarantee under test is the ELEMENT, not a synthesized keypress: jsdom does not turn
+    // Enter into a click on a button, so asserting the tag is the honest check. A click handler on
+    // the <p> would pass a click test and fail every keyboard and screen-reader user.
+    renderWithProviders(
+      <ContentRenderer
+        content={body}
+        blockAnchors={buildBlockAnchors(body)}
+        onBlockSelect={vi.fn()}
+      />,
+    );
+    for (const control of screen.getAllByRole('button')) {
+      expect(control.tagName).toBe('BUTTON');
+      expect(control).toHaveAttribute('type', 'button');
+    }
+  });
+
+  it('leaves an EMPTY block unselectable', () => {
+    const withBlank = doc(
+      { type: 'paragraph', content: [] },
+      { type: 'paragraph', content: [text('kept')] },
+    );
+    renderWithProviders(
+      <ContentRenderer
+        content={withBlank}
+        blockAnchors={buildBlockAnchors(withBlank)}
+        onBlockSelect={vi.fn()}
+      />,
+    );
+    // Offering to rewrite a blank paragraph is a broken-looking affordance for no benefit.
+    expect(screen.getAllByRole('button')).toHaveLength(1);
+  });
+
+  it('degrades to NO controls when the anchors came from a different parse', () => {
+    // The map is keyed by node identity. A separately-parsed copy matches nothing — which must
+    // degrade to "not selectable", never to a control carrying another document's offsets.
+    const copy = structuredClone(body);
+    renderWithProviders(
+      <ContentRenderer
+        content={body}
+        blockAnchors={buildBlockAnchors(copy)}
+        onBlockSelect={vi.fn()}
+      />,
+    );
+    expect(screen.queryAllByRole('button')).toHaveLength(0);
   });
 });

@@ -3825,10 +3825,9 @@ them (baseline re-mint, five call sites, a measurement loop) is the actual cost.
 
 ### 3.22a Product defects — a user or an operator can hit these
 
-| ID       | Sev        | What                                                                                                                                                                                                                                        | Anchor (verified 2026-08-20)                                                                                                                                                                                                                                                                                                                                                                           | Size                                                                                                                                                                            |
-| -------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **C-15** | **medium** | **mobile half CLOSED 2026-08-21** — mobile now has a whole-paragraph "propose an edit" composer. **Web half still open**: its hand-typed offset still **409s** against the offset-exact check, so the capability still does not work on web | Mobile: `qalam-mobile/lib/features/reading/domain/content_parser.dart` (`parseContentWithAnchors`), `presentation/widgets/content_renderer.dart`, `presentation/screens/reading_screen.dart`, `features/collaboration/presentation/widgets/suggestion_composer_sheet.dart`. Web (unchanged): `frontend/src/features/collaboration/components/suggestion-composer.tsx:35,69,93` ("Starts at character") | Web fix re-scoped 2026-08-21 to **≈3–4 d** (a ProseMirror-position→`anchorText` converter + tests, an extended editor seam, a composer/route rework) — see the note under 3.22a |
-| **B8-2** | **low**    | granting an override to a nonexistent id inserts a row nothing can read and no screen can list                                                                                                                                              | `backend/src/modules/monetization/entities/entitlement-override.entity.ts:16-20` — index, no FK, no relation. Opened by B8-1's fix                                                                                                                                                                                                                                                                     | **0.5 d** (three writes, one FK question — not one rule three times)                                                                                                            |
+| ID       | Sev     | What                                                                                           | Anchor (verified 2026-08-20)                                                                                                       | Size                                                                 |
+| -------- | ------- | ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| **B8-2** | **low** | granting an override to a nonexistent id inserts a row nothing can read and no screen can list | `backend/src/modules/monetization/entities/entitlement-override.entity.ts:16-20` — index, no FK, no relation. Opened by B8-1's fix | **0.5 d** (three writes, one FK question — not one rule three times) |
 
 > **C-15 is not the web-only row it is filed as — re-verified 2026-08-20.** Its "mobile is unaffected"
 > premise rested on **R-1** (nothing in the app navigated to any AF6 screen), and R-1 has been closed
@@ -3861,11 +3860,76 @@ them (baseline re-mint, five call sites, a measurement loop) is the actual cost.
 > sanitizer's allowlist holds no node type mobile's parser fails to handle — the walk is
 > forward-compatibility, not a live hazard.
 >
-> **The web half is unchanged and still open.** It needs the editor-integrated selection seam this
+> ~~**The web half is unchanged and still open.** It needs the editor-integrated selection seam this
 > document already named — re-scoped 2026-08-21 after reading the actual code (not just the DTOs): the
 > route the composer renders on has no editor mounted to select from, the 409 fires at _accept_, not
 > create, and there is no ProseMirror-position → `anchorText`-offset converter anywhere in the frontend
-> yet. ≈3–4 d, revised up from the original ≈1.5–2 d estimate once that was actually traced through.
+> yet. ≈3–4 d, revised up from the original ≈1.5–2 d estimate once that was actually traced through.~~
+>
+> **CLOSED 2026-08-31. C-15 is fully closed, on both platforms — and the ≈3–4 d scope above was
+> WRONG, in a way worth reading before sizing the next port.**
+>
+> That estimate priced _free-range selection inside a live editor_: a ProseMirror-position →
+> `anchorText` converter, an extended editor seam, a composer/route rework. **None of it was needed,
+> because none of it is what mobile shipped.** The owner decision of 2026-08-21 — recorded four
+> paragraphs above, in this very row — was **whole-paragraph granularity, no drag-select**. Web is
+> bound by §1 to ship the same product, not a richer one, so the correct scope was always "port the
+> shape mobile already proved". A ProseMirror position never enters it: the READER holds the raw
+> document and already walks it.
+>
+> **The row also had the wrong location, and that was the actual defect.** The composer lived on
+> `/write/:storyId/suggestions`, a route that renders **no piece content at all** — which is precisely
+> why its offset had to be typed by hand, and therefore why it 409'd. No amount of work on that route
+> could have fixed it. Mobile's `SuggestionComposerSheet` has exactly **one** caller in the whole app,
+> `reading_screen.dart`, and mobile's own suggestions screen carries only accept/reject/withdraw.
+>
+> **What shipped** (all in `frontend/`, no backend change — the contract already carried `anchor`):
+>
+> | Piece                                                                                        | Precedent it copies                                 |
+> | -------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+> | `src/features/reading/lib/content-anchors.ts` — the document → per-block `anchorText` walker | mobile's `parseContentWithAnchors`                  |
+> | `src/stores/suggest-target.store.ts` — the app-level seam                                    | `ai-editor-target.store.ts` (W2)                    |
+> | `content-renderer.tsx` — optional `blockAnchors` + `onBlockSelect`                           | mobile's `blockAnchors` / `onBlockTap`              |
+> | `piece-page.tsx` — publishes to the seam, takes a `suggest` slot                             | `EditorPage({ assistant })` (W2)                    |
+> | `features/collaboration/components/suggest-edit-affordance.tsx`                              | `writing-assistant-panel.tsx` + `report-action.tsx` |
+> | `app/routes/piece.tsx` — composes both                                                       | `app/routes/write.tsx` (W2)                         |
+> | **deleted** `suggestion-composer.tsx` + spec, and its trigger on the suggestions page        | mobile's review-only screen                         |
+>
+> Nothing here was designed: `features/reading` may not import `features/collaboration` (docs/26 §4,
+> and the rule is honoured — **zero** feature→feature imports in `frontend/src` today), so the seam
+> shape was already determined by how W2 solved the identical problem for the editor and the AI panel.
+>
+> **Three things the build turned up that the row did not contain:**
+>
+> - **The offsets were cross-checked against the REAL server util, not a reimplementation of it.**
+>   `content-anchors.spec.ts` asserts the property the server enforces on accept —
+>   `anchorText.slice(from, to) === text` — against an independent reimplementation of `anchorText`;
+>   that reimplementation was then verified by running the same hazard fixture through the actual
+>   `anchorText` import inside the backend's own jest. All six slices matched, total length 57. The
+>   numbers are asserted in the spec, so a divergence fails a test instead of 409-ing a user.
+> - **One deliberate divergence from mobile, tested and documented.** A stray non-`listItem` child of
+>   a list is COUNTED on web where `content_parser.dart` skips it. The server has no such filter, so
+>   counting matches the space that decides accept-vs-409. Unreachable through `POST /pieces` either
+>   way, so both clients are correct in practice and web's degrades more safely.
+> - **The E2E suite was arranged on the defect, and the fix made one test inexpressible.** The
+>   conflict spec used to _type_ an anchor for text that is not in the piece. That cannot be expressed
+>   through the UI any more — every anchor now comes from the real document — so it is arranged the
+>   way a real writer reaches a conflict: propose against the real prose, then MOVE the prose
+>   (`api.updatePieceBody`, added for exactly this). Fifth instance of the pattern
+>   ([48 §3.22c] and B4/B6/D3/D4 before it).
+>
+> ⚠️ **One baseline is now stale and needs a dispatch:** `frontend-suggestions` — the shot's subject is
+> unchanged (a pending suggestion's diff rows) but its header has one fewer control, since the
+> "Suggest an edit" button that lived there is gone. `@visual` is `workflow_dispatch`-only as of
+> `11f5efb`, so this needs a deliberate `update_visual_baselines: true` run; it will not surface on a
+> push. The a11y scan that used to justify itself by "the only numeric input in the feature" was
+> repointed, and a new scan covers the reader's pick-a-passage mode, which is a genuinely new
+> interactive surface (every paragraph becomes a named, focusable button).
+>
+> **Verified:** frontend typecheck + eslint + build clean, **139 spec files / 952 tests green**; e2e
+> typecheck + eslint clean, `--list` collects 879 tests in 40 files. **Not live-verified against a
+> running backend** — the offsets are pinned against the server's own util, but the end-to-end
+> propose→accept path on web has not met a live stack.
 
 ### 3.22b Contract + operability honesty — no user-visible break, real cost to the next reader
 

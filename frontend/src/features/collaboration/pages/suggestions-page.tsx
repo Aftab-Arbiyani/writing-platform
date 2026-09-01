@@ -1,4 +1,4 @@
-import { POLICY_ACTIONS, SuggestionStatus } from '@qalam/shared';
+import { SuggestionStatus } from '@qalam/shared';
 import { QButton, QEmptyState, QErrorState, QSectionHeader, QSkeleton } from '@qalam/ui';
 import { PenLine } from 'lucide-react';
 import { type ReactElement, useState } from 'react';
@@ -7,17 +7,24 @@ import { useParams } from 'react-router';
 import { usePageTitle } from '@/hooks/use-page-title';
 import { getErrorMessage, getRequestId } from '@/lib/errors';
 
-import { CapabilityGate } from '../components/capability-gate';
 import { SuggestionCard } from '../components/suggestion-card';
-import { SuggestionComposer } from '../components/suggestion-composer';
-import { useStorySuggestions, useSuggestionActions } from '../hooks/use-suggestions';
+import { useStorySuggestions } from '../hooks/use-suggestions';
 import { isCollaborationEnabled } from '../lib/collaboration-enabled';
 
 /**
- * A story's suggested edits (`/write/:storyId/suggestions`, AF6 W3b).
+ * A story's suggested edits (`/write/:storyId/suggestions`, AF6 W3b) — **review only**.
  *
- * Built entirely from the DTOs: mobile's equivalent screen has **no create affordance at all** and
- * its `addSuggestion` could only ever 400 (defect M-2, docs/48 §3.2), so there was nothing to port.
+ * It used to carry a composer, and removing it is C-15's web half (docs/48 §3.22a). That composer
+ * asked the writer to type "Starts at character" by hand, because this route renders no piece
+ * content to select from — so the offset it produced was a guess, and the server's offset-exact
+ * check 409'd it. The capability never worked here and could not be made to work here.
+ *
+ * Proposing now starts **in the reader**, where the passage actually is: the prose is walked into
+ * per-block anchors and the reader picks one, so an offset is never typed by a human. That is also
+ * where mobile puts it — `SuggestionComposerSheet` has exactly one caller in the whole app,
+ * `reading_screen.dart`, and mobile's own suggestions screen carries only accept/reject/withdraw.
+ * Two surfaces offering the same action in different shapes is the divergence §1 forbids, so this
+ * page keeps the half it can do honestly.
  */
 const FILTERS: { label: string; value: SuggestionStatus | undefined }[] = [
   { label: 'All', value: undefined },
@@ -29,11 +36,9 @@ export function SuggestionsPage(): ReactElement {
   usePageTitle('Suggestions');
   const { storyId = '' } = useParams<{ storyId: string }>();
   const [status, setStatus] = useState<SuggestionStatus | undefined>(undefined);
-  const [composing, setComposing] = useState(false);
 
   const enabled = isCollaborationEnabled();
   const query = useStorySuggestions(enabled ? storyId : undefined, status);
-  const { addSuggestion } = useSuggestionActions(storyId);
 
   if (!enabled) {
     return (
@@ -69,25 +74,9 @@ export function SuggestionsPage(): ReactElement {
                 </QButton>
               ))}
             </div>
-            <CapabilityGate storyId={storyId} action={POLICY_ACTIONS.StorySuggest}>
-              <QButton size="sm" onClick={() => setComposing(true)}>
-                Suggest an edit
-              </QButton>
-            </CapabilityGate>
           </div>
         }
       />
-
-      {composing ? (
-        <SuggestionComposer
-          isPending={addSuggestion.isPending}
-          onCancel={() => setComposing(false)}
-          onSubmit={async (input) => {
-            await addSuggestion.mutateAsync(input);
-            setComposing(false);
-          }}
-        />
-      ) : null}
 
       {query.isLoading ? (
         <div

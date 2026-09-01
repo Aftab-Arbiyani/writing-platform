@@ -16,6 +16,7 @@ export { PublishingPage } from './pages/publishing-page';
 export { BlocksPage } from './pages/blocks-page';
 
 export { CapabilityGate } from './components/capability-gate';
+export { SuggestEditAffordance } from './components/suggest-edit-affordance';
 export { RoleBadge } from './components/role-badge';
 export { PresenceBar } from './components/presence-bar';
 export { RestrictedWall } from './components/restricted-wall';

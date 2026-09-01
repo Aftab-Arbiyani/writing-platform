@@ -1,5 +1,6 @@
 import { freshLogin } from '../../fixtures/auth';
 import { expect, test } from '../../fixtures/test';
+import { ReaderPage } from '../../pages/frontend/reader-page';
 import { StoryCommentsPage } from '../../pages/frontend/story-comments-page';
 import { StorySuggestionsPage } from '../../pages/frontend/story-suggestions-page';
 
@@ -51,22 +52,22 @@ test.describe('@phase4 frontend inline review — comments & suggestions', () =>
     await expect(page.getByRole('listitem').filter({ hasText: body })).toBeVisible();
   });
 
-  test('a suggestion is proposed with its anchor, then accepted', async ({ page, api, data }) => {
+  test('a suggestion is proposed FROM THE READER, then accepted', async ({ page, api, data }) => {
     await freshLogin(page, 'writer');
-    // A known body, so the anchor offset and the replaced text are real rather than plausible —
-    // the server checks the original text still exists before it will accept.
-    const original = 'lantern';
-    const story = await api.createPiece({
-      title: data.pieceTitle(),
-      body: `The ${original} burned low over the water.`,
-    });
+    // Published, because proposing now happens on the reader (C-15) and that route loads by slug.
+    const body = 'The lantern burned low over the water.';
+    const story = await api.createPublishedPiece({ title: data.pieceTitle(), body });
+    expect(story.slug, 'publishing must mint a slug').toBeTruthy();
+
+    // The whole point of C-15: no offset is passed here, because none is typed. The reader walks
+    // the document into per-block anchors and the picked paragraph carries its own.
+    const reader = new ReaderPage(page);
+    await reader.gotoSlug(story.slug as string);
+    await reader.proposeEdit({ passage: 'lantern', suggested: 'The oil lamp burned low.' });
 
     const suggestions = new StorySuggestionsPage(page);
     await suggestions.goto(story.id);
     await suggestions.expectResolved();
-    await suggestions.expectEmpty();
-
-    await suggestions.propose({ original, suggested: 'oil lamp', from: 4 });
     await suggestions.acceptFirst();
     // Accepting APPLIES the edit server-side, and the card now says so (W3c-4). This asserts the
     // copy only; that the piece body really changed is covered by the backend's own accept tests.
@@ -79,17 +80,26 @@ test.describe('@phase4 frontend inline review — comments & suggestions', () =>
     data,
   }) => {
     await freshLogin(page, 'writer');
-    const story = await api.createPiece({
+    const story = await api.createPublishedPiece({
       title: data.pieceTitle(),
       body: 'The harbour was quiet that evening.',
     });
 
+    // ARRANGED DIFFERENTLY SINCE C-15, and the reason is the fix itself: this test used to type an
+    // anchor for text that was not in the piece. That is no longer expressible through the UI — the
+    // reader derives every anchor from the real document — so the conflict is now reached the way a
+    // real writer reaches it: propose against the real prose, then MOVE the prose.
+    const reader = new ReaderPage(page);
+    await reader.gotoSlug(story.slug as string);
+    await reader.proposeEdit({
+      passage: 'harbour',
+      suggested: 'The harbour was loud that evening.',
+    });
+
+    await api.updatePieceBody(story.id, 'Nothing of the original wording survives this rewrite.');
+
     const suggestions = new StorySuggestionsPage(page);
     await suggestions.goto(story.id);
-    // Anchored to text that is NOT in the piece — the same state as prose edited after the
-    // suggestion was written, which is what SUGGESTION_CONFLICT exists for.
-    await suggestions.propose({ original: 'a lighthouse', suggested: 'a beacon', from: 4 });
-
     await suggestions.acceptFirstExpectingFailure();
     await suggestions.expectConflict();
   });

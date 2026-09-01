@@ -2,6 +2,7 @@ import type { CSSProperties, ReactElement, ReactNode } from 'react';
 import { Fragment } from 'react';
 
 import { useNastaliqFont } from '../hooks/use-nastaliq-font';
+import type { BlockAnchor } from '../lib/content-anchors';
 import { readerStyle, useReaderPreferences } from '../stores/reader-preferences.store';
 import type { TipTapNode } from '../types/reading.types';
 
@@ -47,41 +48,84 @@ function applyMarks(text: string, marks: TipTapNode['marks']): ReactNode {
   return out;
 }
 
-function renderChildren(node: TipTapNode): ReactNode {
+/**
+ * Optional per-render selection state (C-15). Threaded as an argument rather than read from a
+ * store so `renderNode` stays a pure function of its inputs and the renderer keeps working
+ * unchanged — and identically — on every surface that does not offer selection.
+ */
+interface SelectionCtx {
+  anchors: Map<TipTapNode, BlockAnchor>;
+  onSelect: (anchor: BlockAnchor) => void;
+}
+
+function renderChildren(node: TipTapNode, ctx?: SelectionCtx): ReactNode {
   return (node.content ?? []).map((child, index) => (
     // TipTap documents have no stable per-node ids, and the array is positional and only
     // re-rendered wholesale when the piece changes — index keys are correct here.
-    <Fragment key={index}>{renderNode(child)}</Fragment>
+    <Fragment key={index}>{renderNode(child, ctx)}</Fragment>
   ));
 }
 
-function renderNode(node: TipTapNode): ReactNode {
+/**
+ * Wraps a selectable block in a real `<button>` (C-15).
+ *
+ * A button rather than a click handler on the `<p>`: this is an interactive control, so it must be
+ * focusable, Enter/Space-operable and announced as such. `text-start`/`w-full` keep the prose
+ * laying out exactly as it does when selection is off, and `display: contents` is deliberately NOT
+ * used — it would drop the button from the a11y tree in some engines, which is the whole point of
+ * using one.
+ */
+function selectable(node: TipTapNode, ctx: SelectionCtx, child: ReactNode): ReactNode {
+  const anchor = ctx.anchors.get(node);
+  if (anchor === undefined) return child;
+  return (
+    <button
+      type="button"
+      onClick={() => ctx.onSelect(anchor)}
+      aria-label={`Suggest an edit to this passage: ${anchor.text.slice(0, 80)}`}
+      className="hover:bg-raised focus-visible:outline-accent w-full cursor-pointer rounded-md text-start focus-visible:outline-2"
+    >
+      {child}
+    </button>
+  );
+}
+
+function renderNode(node: TipTapNode, ctx?: SelectionCtx): ReactNode {
+  if (ctx !== undefined && (node.type === 'paragraph' || node.type === 'heading')) {
+    return selectable(node, ctx, renderBlock(node, ctx));
+  }
+  return renderBlock(node, ctx);
+}
+
+function renderBlock(node: TipTapNode, ctx?: SelectionCtx): ReactNode {
   switch (node.type) {
     case 'text':
       return applyMarks(node.text ?? '', node.marks);
 
     case 'paragraph':
-      return <p style={alignStyle(node)}>{renderChildren(node)}</p>;
+      return <p style={alignStyle(node)}>{renderChildren(node, ctx)}</p>;
 
     case 'heading': {
       const level = node.attrs?.level;
       const Tag = HEADING_TAGS[level as 2 | 3 | 4] ?? 'h2';
-      return <Tag style={alignStyle(node)}>{renderChildren(node)}</Tag>;
+      return <Tag style={alignStyle(node)}>{renderChildren(node, ctx)}</Tag>;
     }
 
     case 'blockquote':
-      return <blockquote>{renderChildren(node)}</blockquote>;
+      return <blockquote>{renderChildren(node, ctx)}</blockquote>;
 
     case 'bulletList':
-      return <ul>{renderChildren(node)}</ul>;
+      return <ul>{renderChildren(node, ctx)}</ul>;
 
     case 'orderedList': {
       const start = node.attrs?.start;
-      return <ol start={typeof start === 'number' ? start : undefined}>{renderChildren(node)}</ol>;
+      return (
+        <ol start={typeof start === 'number' ? start : undefined}>{renderChildren(node, ctx)}</ol>
+      );
     }
 
     case 'listItem':
-      return <li>{renderChildren(node)}</li>;
+      return <li>{renderChildren(node, ctx)}</li>;
 
     case 'hardBreak':
       return <br />;
@@ -111,7 +155,7 @@ function renderNode(node: TipTapNode): ReactNode {
     }
 
     case 'doc':
-      return renderChildren(node);
+      return renderChildren(node, ctx);
 
     default:
       return null;
@@ -124,6 +168,19 @@ export interface ContentRendererProps {
   dir?: 'ltr' | 'rtl';
   /** Nastaliq is vertically demanding and is floored at 2.0 leading (docs/06 §7). */
   script?: string | null;
+  /**
+   * Per-block anchors (C-15). When supplied **together with** `onBlockSelect`, every paragraph or
+   * heading that has an entry becomes a focusable control that reports its anchor when activated.
+   * Mirrors mobile's `ContentRenderer.blockAnchors` / `onBlockTap` pair.
+   *
+   * Build it with [`buildBlockAnchors`](../lib/content-anchors.ts) over **the same `content` object
+   * passed here** — the map is keyed by node identity, so a separately-parsed copy of the document
+   * will match nothing and silently render no controls at all.
+   *
+   * Omit both (the default on every other surface) and this component behaves exactly as before.
+   */
+  blockAnchors?: Map<TipTapNode, BlockAnchor>;
+  onBlockSelect?: (anchor: BlockAnchor) => void;
 }
 
 /**
@@ -136,6 +193,8 @@ export function ContentRenderer({
   content,
   dir = 'ltr',
   script,
+  blockAnchors,
+  onBlockSelect,
 }: ContentRendererProps): ReactElement {
   const textSize = useReaderPreferences((s) => s.textSize);
   const lineSpacing = useReaderPreferences((s) => s.lineSpacing);
@@ -154,7 +213,14 @@ export function ContentRenderer({
         } as CSSProperties
       }
     >
-      {renderNode(content)}
+      {/* Selection is offered only when BOTH halves are present — a map with no handler would
+          render controls that do nothing, and a handler with no map would never fire. */}
+      {renderNode(
+        content,
+        blockAnchors !== undefined && onBlockSelect !== undefined
+          ? { anchors: blockAnchors, onSelect: onBlockSelect }
+          : undefined,
+      )}
     </div>
   );
 }

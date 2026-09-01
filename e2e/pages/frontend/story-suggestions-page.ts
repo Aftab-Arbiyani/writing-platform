@@ -1,11 +1,12 @@
 import { type Locator, type Page, expect } from '@playwright/test';
 
 /**
- * A story's suggested edits (AF6 W3b — `/write/:storyId/suggestions`).
+ * A story's suggested edits (AF6 W3b — `/write/:storyId/suggestions`) — **review only since C-15**.
  *
- * The composer asks for an anchor offset because the contract requires `{from, to}` and this route
- * has no live editor selection to read it from (docs/49 §5). Mobile omitted the anchor entirely,
- * which is why its create could only ever 400 (M-2).
+ * It used to have a `propose()` here, driving a composer that asked for the anchor offset by hand
+ * because this route renders no prose to select from. That offset was a guess and the server's
+ * offset-exact check 409'd it, so the capability never worked on web (docs/48 §3.22a). Proposing now
+ * happens in the reader, where the passage is — see `ReaderPage.proposeEdit`.
  */
 export class StorySuggestionsPage {
   constructor(private readonly page: Page) {}
@@ -41,19 +42,6 @@ export class StorySuggestionsPage {
 
   async expectEmpty(): Promise<void> {
     await expect(this.page.getByText('No suggestions yet', { exact: true })).toBeVisible();
-  }
-
-  /**
-   * Propose an edit through the UI. `from` must be a real offset into the piece's text for a later
-   * accept to pass the server's conflict check.
-   */
-  async propose(input: { original: string; suggested: string; from: number }): Promise<void> {
-    await this.page.getByRole('button', { name: 'Suggest an edit' }).click();
-    await this.page.getByLabel('Text to replace').fill(input.original);
-    await this.page.getByLabel('Proposed wording').fill(input.suggested);
-    await this.page.getByLabel('Starts at character').fill(String(input.from));
-    await this.page.getByRole('button', { name: 'Propose edit' }).click();
-    await expect(this.page.getByText(input.suggested, { exact: true })).toBeVisible();
   }
 
   async acceptFirst(): Promise<void> {

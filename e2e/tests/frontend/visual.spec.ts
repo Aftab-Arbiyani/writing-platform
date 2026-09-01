@@ -493,14 +493,23 @@ test.describe('@phase5 @visual frontend (authenticated)', () => {
   test('the suggestions page matches its visual baseline', async ({ page, api, data }) => {
     // AF6/W3b. A proposed edit, so the diff lines and the anchor label are in the shot — the
     // strikethrough/replacement pair is the part whose colours have to survive both themes.
-    const story = await api.createPiece({
+    //
+    // ⚠️ ARRANGEMENT CHANGED BY C-15, so this baseline needs a re-mint: the suggestion is now
+    // proposed from the READER (the composer that lived on this page is gone, and with it the
+    // "Suggest an edit" button that used to sit in this header). The shot's subject is unchanged —
+    // a pending suggestion's diff rows — but the header has one fewer control, so the committed
+    // image is stale until a `workflow_dispatch(update_visual_baselines: true)` run re-mints it.
+    const story = await api.createPublishedPiece({
       title: data.pieceTitle(),
       body: 'The lantern burned low over the water.',
     });
+    const reader = new ReaderPage(page);
+    await reader.gotoSlug(story.slug as string);
+    await reader.proposeEdit({ passage: 'lantern', suggested: 'The oil lamp burned low.' });
+
     const suggestions = new StorySuggestionsPage(page);
     await suggestions.goto(story.id);
     await suggestions.expectResolved();
-    await suggestions.propose({ original: 'lantern', suggested: 'oil lamp', from: 4 });
     await settleToasts(page);
     // 745px page, 720px fold — see `atScrollTop`.
     await atScrollTop(page);

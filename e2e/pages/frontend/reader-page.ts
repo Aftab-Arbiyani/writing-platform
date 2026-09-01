@@ -43,6 +43,45 @@ export class ReaderPage {
     await this.page.goto(`/p/${slug}`);
   }
 
+  // ── propose an edit (AF6, C-15 — docs/48 §3.22a) ──────────────────────────────────────────────
+
+  get suggestTrigger(): Locator {
+    return this.page.getByRole('button', { name: 'Suggest an edit' });
+  }
+
+  /**
+   * Propose an edit to the paragraph containing `passage`.
+   *
+   * **No offset is passed, and that is the assertion.** The old composer on
+   * `/write/:storyId/suggestions` asked the writer to type "Starts at character" by hand, because
+   * that route renders no prose to select from — so the offset was a guess and the server's
+   * offset-exact check 409'd it. Here the reader computes the anchor from the document, so this
+   * method cannot express a wrong one.
+   */
+  async proposeEdit(input: { passage: string; suggested: string }): Promise<void> {
+    await this.suggestTrigger.click();
+    await expect(this.page.getByRole('status')).toContainText('Pick the paragraph');
+
+    // Every selectable block is a real button named after its own passage, which is what makes the
+    // prose keyboard-operable in this mode — see `content-renderer.tsx`.
+    await this.page
+      .getByRole('button', {
+        name: new RegExp(`Suggest an edit to this passage: .*${input.passage}`),
+      })
+      .click();
+
+    const dialog = this.page.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+    await dialog.getByLabel('Your suggested wording').fill(input.suggested);
+    await dialog.getByRole('button', { name: 'Send suggestion' }).click();
+    await expect(dialog).toHaveCount(0);
+  }
+
+  /** The affordance must be absent for a viewer the Policy Engine does not allow to suggest. */
+  async expectNoSuggestAffordance(): Promise<void> {
+    await expect(this.suggestTrigger).toHaveCount(0);
+  }
+
   /** The piece rendered: title present and the body actually produced content. */
   async expectRendered(title: string): Promise<void> {
     await expect(this.title).toHaveText(title, { timeout: 30_000 });
