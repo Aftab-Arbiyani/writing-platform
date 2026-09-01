@@ -66,6 +66,37 @@ export default defineConfig({
   forbidOnly: CI, // a stray test.only fails CI, never silently narrows the run
   retries: CI ? 2 : 0, // retry only in CI; locally a flake must be seen
   workers: CI ? '50%' : undefined, // leave headroom for three engines
+
+  /**
+   * **The per-test budget, and it MUST stay strictly greater than `expect.timeout` below.**
+   *
+   * This key was absent until 2026-08-31, so the budget was Playwright's own default of 30 s
+   * ("Timeout for each test in milliseconds. Defaults to 30 seconds", `playwright/types/test.d.ts`).
+   * That was fine while assertions were capped at 10 s. It stopped being fine the moment `7090050`
+   * raised `expect.timeout` to **30 s under CI**: the assertion budget then equalled the whole test
+   * budget, so a single slow `expect` could consume everything the test had and the test died on
+   * "Test timeout of 30000ms exceeded" — with no failed assertion to point at.
+   *
+   * **That is what run #30 hit**, and it is why the register records #30's webkit red as
+   * self-inflicted by the commit it ran on rather than as evidence about the engine (48 §3.25h).
+   * Webkit is simply the slowest leg, so it lost the race first; nothing about the collision is
+   * engine-specific and chromium/firefox were exposed to it too.
+   *
+   * The value is derived from this config's own numbers, not picked: the documented worst case for
+   * a slow-but-passing test is one navigation (`navigationTimeout` 30 s) plus one slow assertion
+   * (`expect.timeout` 30 s) = 60 s, and arrange still has to fit. 90 s clears that with headroom.
+   *
+   * Locally this is Playwright's own default, unchanged, so local behaviour is exactly what it was.
+   *
+   * The reasoning for being generous is already house practice, stated at `fixtures/feature-flags.ts`
+   * for `AI_FLAG_TEST_TIMEOUT_MS`: "A large budget costs nothing when there is no contention — a test
+   * that gets the lock immediately still finishes in seconds. It only prevents the false red."
+   *
+   * The trade-off, stated: a genuinely hung test now takes 90 s to fail in CI rather than 30. That is
+   * a cost on red runs only, and it buys back the class of failure that has no assertion to read.
+   */
+  timeout: CI ? 90_000 : 30_000,
+
   reporter: CI
     ? [['html', { open: 'never' }], ['github'], ['list']]
     : [['html', { open: 'never' }], ['list']],
@@ -118,6 +149,11 @@ export default defineConfig({
     //
     // The trade-off, stated: a truly broken assertion now takes 30 s to fail in CI instead of 10.
     // That is a cost on red runs only, and cheaper than the false reds it removes.
+    //
+    // INVARIANT: this must stay strictly BELOW the per-test `timeout` above. When the two are equal
+    // one assertion can consume the entire test budget, and the test then dies with no failed
+    // assertion to read — see the note on `timeout` and 48 §3.25h. Raising this one means raising
+    // that one.
     timeout: CI ? 30_000 : 10_000,
     // Phase-5 visual defaults (docs/e2e/10 §2.2): disable animations + hide the caret so a
     // blinking cursor/transition never flips a run red, and allow a small pixel-ratio budget

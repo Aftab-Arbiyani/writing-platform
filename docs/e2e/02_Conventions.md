@@ -201,6 +201,12 @@ test('admin approves a reported piece and it disappears from the queue', async (
 
 - Global timeouts are set in config ([01 §5](./01_Architecture.md)); a spec that needs more time
   **MUST** justify it inline (`test.setTimeout(60_000); // AI generation can take up to 45s`).
+- **The per-test budget must stay strictly above the per-assertion budget** (`timeout` >
+  `expect.timeout`, [01 §5](./01_Architecture.md) invariant 6). Two consequences for spec authors:
+  a `test.setTimeout(…)` that lands at or below `expect.timeout` re-creates the collision **for that
+  one test**, and a long `expect(...).toPass()` / `toHaveScreenshot()` chain needs headroom for the
+  arrange that precedes it, not just for itself. A test that dies with **no failed assertion in the
+  report** is the signature — read it as a budget collision before reading it as a hang.
 - **Retries are CI-only.** A test that only passes on retry is **flaky** and gets a `@flaky` tag +
   tracking issue, per [08_Runbook flake policy](./08_Runbook.md). Retries are a diagnostic safety net,
   not a fix.

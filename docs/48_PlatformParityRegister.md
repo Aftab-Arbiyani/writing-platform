@@ -4548,15 +4548,47 @@ and the ledger did not.
 **The count is `#28 ✓ · #29 ✓ · #30 ✗` → back to ZERO.** Two consecutive, then a red, which is exactly
 the reset the CI row's own wording anticipated.
 
-**#30's red is most likely self-inflicted by the commit it ran on, and that is the finding.** `7090050`
-raised `expect.timeout` to `CI ? 30_000 : 10_000` to stop the rotating pre-screenshot failures — but the
-**TEST** timeout is also 30 s, so an assertion can now consume the entire budget. A case that used to
+**#30's red is self-inflicted by the commit it ran on, and that is the finding.** `7090050` raised
+`expect.timeout` to `CI ? 30_000 : 10_000` to stop the rotating pre-screenshot failures — but the
+**TEST** timeout was also 30 s, so an assertion could consume the entire budget. A case that used to
 fail its assertion fast and pass on retry instead blows the whole test. **So this is not evidence about
-webkit**, and diagnosing it must precede any statement that is. The raise itself was sound in motive:
-runs #26, #28 and #29 each failed ~3 tests and each time they were **different** tests, every one
-"element(s) not found" against the 10 s default on a 2-vCPU runner — and the suite had already reached
-that conclusion piecemeal, with **59** assertions carrying a hand-written `timeout: 30_000`. Aligning
-the default with the practice was right; not noticing it collided with the test budget was not.
+webkit**, and diagnosing it had to precede any statement that is.
+
+> **Confirmed and fixed, 2026-08-31.** Not inferred from the commit message — read off the config.
+> `defineConfig` carried **no root `timeout` key at all**, so the per-test budget was Playwright's own
+> default, which its installed types state outright: _"Timeout for each test in milliseconds. Defaults
+> to 30 seconds"_ (`playwright/types/test.d.ts:700`, v1.61.1). Against `expect.timeout: CI ? 30_000`
+> that is not "tight", it is **exactly equal** — one assertion could spend the whole test.
+>
+> Three things worth keeping:
+>
+> - **The omission is older than the bug, and it was in the DESIGN DOC.** `timeout` was missing from
+>   `e2e/01 §5`'s config sample — "the single source of truth for run behavior" — since that document
+>   was written. It was harmless for as long as assertions were capped at 10 s, and it became a defect
+>   the moment someone raised `expect.timeout` for entirely sound reasons. A latent gap in a contract
+>   is invisible until another correct change walks into it.
+> - **It was never webkit-shaped.** Webkit is the slowest leg, so it lost the race first; chromium and
+>   firefox were exposed to the identical collision and would have hit it on a slower runner or a
+>   heavier page. Reading #30 as an engine signal — the exact error §3.25c/§3.25d already made once in
+>   the other direction — would have sent the next pass hunting an engine defect that does not exist.
+> - **The `test.setTimeout(60_000)` added to `publishing` in `31bcbf2` was the same defect treated one
+>   spec at a time.** It worked, and it is why the collision took another run to surface generally.
+>
+> **Fix:** a derived root budget — `timeout: CI ? 90_000 : 30_000` — from this config's own numbers:
+> one navigation (`navigationTimeout` 30 s) plus one slow assertion (`expect.timeout` 30 s) is 60 s
+> before arrange. Local is Playwright's default unchanged, so local behaviour is byte-identical.
+> The invariant `timeout > expect.timeout` is now recorded three places: beside both keys in the
+> config, as binding invariant 6 in `e2e/01 §5`, and as an authoring rule in `e2e/02 §7`. Verified:
+> `e2e` typecheck clean, and `--list` collects **875 tests in 40 files** identically with and without
+> `CI=1`.
+>
+> **Not claimed:** that this makes the next run green. It removes one proven cause of a failure class
+> whose signature is "no assertion output"; whether #30's webkit shards had anything else wrong with
+> them is unknown, because webkit is now off the push matrix and the artifacts were not re-read. The raise itself was sound in motive:
+> runs #26, #28 and #29 each failed ~3 tests and each time they were **different** tests, every one
+> "element(s) not found" against the 10 s default on a 2-vCPU runner — and the suite had already reached
+> that conclusion piecemeal, with **59** assertions carrying a hand-written `timeout: 30_000`. Aligning
+> the default with the practice was right; not noticing it collided with the test budget was not.
 
 **`11f5efb` narrows a push run from 7 jobs to 4, and both halves are owner calls on TIME, not defects.**
 Webkit comes off the **push** matrix (it was the slowest leg by 2–3 min, and it was green in #26, #28

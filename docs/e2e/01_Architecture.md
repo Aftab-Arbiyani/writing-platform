@@ -149,6 +149,7 @@ export default defineConfig({
   forbidOnly: CI, // a stray test.only fails CI, never silently narrows the run
   retries: CI ? 2 : 0, // retry only in CI; locally a flake must be seen
   workers: CI ? '50%' : undefined, // leave headroom for 3 browser engines
+  timeout: CI ? 90_000 : 30_000, // per-test budget — MUST exceed expect.timeout, see below
   // Diagnostics (see 08_Runbook)
   reporter: CI ? [['html'], ['github'], ['list']] : [['html'], ['list']],
   use: {
@@ -158,7 +159,7 @@ export default defineConfig({
     actionTimeout: 15_000,
     navigationTimeout: 30_000,
   },
-  expect: { timeout: 10_000 },
+  expect: { timeout: CI ? 30_000 : 10_000 },
 
   projects: [
     // 1) setup — produce storageState (chromium only)
@@ -219,6 +220,21 @@ Binding config invariants (reviewers block on violations):
    proven healthy _before_ Playwright starts (`stack-up.sh` polls health).
 5. `baseURL` per project — specs use relative paths (`page.goto('/feed')`) so the same spec is
    app-scoped by its project, never hardcoding host/port.
+6. **`timeout` > `expect.timeout`, in every branch.** The per-test budget must strictly exceed the
+   per-assertion budget. When the two are equal, one slow `expect` can consume everything the test
+   has, and the test dies on "Test timeout of Nms exceeded" **with no failed assertion to read** —
+   which looks like a hang or an engine defect and is neither.
+
+   This invariant was learned the expensive way, and the shape of the mistake is why it is written
+   here rather than only in the config. `timeout` was **absent** from this sample and from the real
+   config until 2026-08-31, so the budget was Playwright's own default of 30 s. That was safe while
+   assertions were capped at 10 s, and it silently stopped being safe the moment `expect.timeout` was
+   raised to 30 s under CI for its own good reasons — the two became equal, and CI run #30 failed on
+   it. See [48 §3.25h](../48_PlatformParityRegister.md). **Raising one means raising the other.**
+
+   A value that is merely large is not the point; it should be _derived_. The documented worst case
+   for a slow-but-passing test is one navigation (`navigationTimeout`) plus one slow assertion
+   (`expect.timeout`), with arrange still to fit — which is what 90 s under CI clears.
 
 ---
 
