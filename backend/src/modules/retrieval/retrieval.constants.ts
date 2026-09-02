@@ -61,5 +61,4 @@ export const DEFAULT_RETRIEVAL_CONFIG: ResolvedRetrievalConfig = {
     [RetrievalSource.Vector]: true,
   },
   rankingWeights: DEFAULT_RANKING_WEIGHTS,
-  synthesisEnabled: true,
 };

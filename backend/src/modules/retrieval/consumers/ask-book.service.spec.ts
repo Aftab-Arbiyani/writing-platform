@@ -27,7 +27,6 @@ function resultFixture(): RetrievalResult {
       rankingSignals: [],
       rankingWeights: {} as never,
       nodeTypes: ['character'],
-      synthesize: true,
     },
     candidates: [],
     context: {

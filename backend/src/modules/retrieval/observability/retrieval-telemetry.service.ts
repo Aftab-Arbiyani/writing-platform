@@ -6,7 +6,8 @@ import { ANALYTICS_ROW_CAP, RetrievalLogRepository } from './retrieval-log.repos
 
 /** What a consumer records after a full request (retrieval telemetry + LLM cost + status). */
 export interface RecordInput {
-  userId: string;
+  /** `null` for an anonymous search (public since D5). */
+  userId: string | null;
   storyId?: string;
   telemetry: RetrievalTelemetry;
   totalLatencyMs: number;

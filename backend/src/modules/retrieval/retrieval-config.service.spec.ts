@@ -45,14 +45,27 @@ describe('RetrievalConfigService', () => {
     });
 
     it('merges a partial stored value over the defaults', async () => {
-      const { service } = build({ topK: 3, synthesisEnabled: false });
+      const { service } = build({ topK: 3 });
 
       const config = await service.getConfig();
 
       expect(config.topK).toBe(3);
-      expect(config.synthesisEnabled).toBe(false);
       expect(config.timeoutMs).toBe(DEFAULT_RETRIEVAL_CONFIG.timeoutMs);
       expect(config.rankingWeights).toEqual(DEFAULT_RETRIEVAL_CONFIG.rankingWeights);
+    });
+
+    /**
+     * Every deployment seeded before D5 has `synthesisEnabled` in its stored row. The merge
+     * keeps only keys the compiled default knows, so the stale key is dropped rather than
+     * handed to the planner as a resurrected knob.
+     */
+    it('drops the retired synthesisEnabled key from a pre-D5 stored row', async () => {
+      const { service } = build({ topK: 3, synthesisEnabled: true });
+
+      const config = await service.getConfig();
+
+      expect(config).not.toHaveProperty('synthesisEnabled');
+      expect(config.topK).toBe(3);
     });
 
     it('keeps every source and signal key, so the editor renders a complete form', async () => {

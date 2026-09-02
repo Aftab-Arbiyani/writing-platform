@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import {
-  AiFeature,
   RecommendationKind,
   RetrievalIntent,
   RetrievalQueryType,
@@ -8,7 +7,6 @@ import {
   SearchSort,
 } from '@qalam/shared';
 
-import { AiFeatureService } from '../../ai';
 import { DiscoveryService } from '../../feed/discovery.service';
 import { TrendingService } from '../../feed/trending.service';
 import { PiecesService } from '../../pieces/pieces.service';
@@ -33,11 +31,13 @@ const DEFAULT_LIMIT = 10;
  * DiscoveryService, SearchService, and the story graph. Story-scoped kinds derive from the
  * knowledge graph (SSOT); library kinds reuse the feed/discovery signals. Reading history is
  * client-local (docs M3), so ContinueReading uses community signal as an honest proxy.
+ *
+ * **No LLM is involved and never was** — D5 therefore removed its AI feature flag; this is an
+ * ordinary authenticated product surface, not an AI one.
  */
 @Injectable()
 export class RecommendationService {
   constructor(
-    private readonly features: AiFeatureService,
     private readonly trending: TrendingService,
     private readonly discovery: DiscoveryService,
     private readonly search: SearchService,
@@ -49,7 +49,6 @@ export class RecommendationService {
   ) {}
 
   async recommend(userId: string, dto: RecommendationQueryDto): Promise<RecommendationResponseDto> {
-    await this.features.assertEnabled(AiFeature.Recommendations, userId);
     const start = Date.now();
     const limit = Math.min(Math.max(dto.limit ?? DEFAULT_LIMIT, 1), 50);
 

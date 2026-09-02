@@ -13,6 +13,7 @@ import { UpdateRetrievalConfigDto, SearchAnalyticsQueryDto } from '../dto/retrie
 import { RetrievalConfigDto, SearchAnalyticsDto } from '../dto/retrieval-response.dto';
 import { RetrievalTelemetryService } from '../observability/retrieval-telemetry.service';
 import { RetrievalConfigService } from '../retrieval-config.service';
+import type { ResolvedRetrievalConfig } from '../retrieval.types';
 
 /**
  * Admin: retrieval configuration + search analytics (AF4). Requires `ai.manage`. Search /
@@ -37,8 +38,8 @@ export class AdminRetrievalController {
   @RateLimit('read')
   @ApiOperation({ summary: 'The effective retrieval config (sources, ranking weights, budgets).' })
   @ApiOkResponse({ type: RetrievalConfigDto })
-  getConfig(): Promise<RetrievalConfigDto> {
-    return this.config.getConfig();
+  async getConfig(): Promise<RetrievalConfigDto> {
+    return withRetiredSynthesis(await this.config.getConfig());
   }
 
   @Put('search-config')
@@ -48,12 +49,12 @@ export class AdminRetrievalController {
     summary: 'Update retrieval config (partial). Audited via the settings write path.',
   })
   @ApiOkResponse({ type: RetrievalConfigDto })
-  updateConfig(
+  async updateConfig(
     @CurrentUser() user: AuthenticatedUser,
     @Req() req: Request,
     @Body() dto: UpdateRetrievalConfigDto,
   ): Promise<RetrievalConfigDto> {
-    return this.config.update(dto, buildActor(user, req));
+    return withRetiredSynthesis(await this.config.update(dto, buildActor(user, req)));
   }
 
   @Get('search-analytics')
@@ -64,4 +65,14 @@ export class AdminRetrievalController {
   analytics(@Query() query: SearchAnalyticsQueryDto): Promise<SearchAnalyticsDto> {
     return this.telemetry.getAnalytics(query.windowDays ?? SEARCH_ANALYTICS_DEFAULT_WINDOW_DAYS);
   }
+}
+
+/**
+ * D5 retired grounded synthesis, so there is no internal `synthesisEnabled` knob any more.
+ * The wire field survives one release so the admin client's form keeps compiling, and it is
+ * answered with a constant `false` — an operator who still sees the toggle is told the truth
+ * rather than shown a stored value nothing reads.
+ */
+function withRetiredSynthesis(config: ResolvedRetrievalConfig): RetrievalConfigDto {
+  return { ...config, synthesisEnabled: false };
 }

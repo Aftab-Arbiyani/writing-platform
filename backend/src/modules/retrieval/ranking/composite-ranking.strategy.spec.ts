@@ -18,7 +18,6 @@ const plan: RetrievalPlan = {
     [RankingSignal.Popularity]: 0.5,
   } as Record<RankingSignal, number>,
   nodeTypes: [],
-  synthesize: false,
 };
 
 const request: RetrievalRequest = {

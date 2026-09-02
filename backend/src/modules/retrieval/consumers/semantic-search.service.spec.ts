@@ -1,11 +1,8 @@
-import { RetrievalIntent, RetrievalQueryType, RetrievalSource } from '@qalam/shared';
+import { ERROR_CODES, RetrievalIntent, RetrievalQueryType, RetrievalSource } from '@qalam/shared';
 
-import type { AiCompletionService, AiFeatureService } from '../../ai';
 import type { RetrievalCacheService } from '../retrieval-cache.service';
-import type { RetrievalConfigService } from '../retrieval-config.service';
-import { DEFAULT_RETRIEVAL_CONFIG } from '../retrieval.constants';
 import type { RetrievalService } from '../retrieval.service';
-import type { RankedCandidate, RetrievalResult } from '../retrieval.types';
+import type { RankedCandidate, RetrievalRequest, RetrievalResult } from '../retrieval.types';
 import type { RetrievalTelemetryService } from '../observability/retrieval-telemetry.service';
 import { SemanticSearchService } from './semantic-search.service';
 
@@ -36,7 +33,7 @@ function rankedFixture(): RankedCandidate {
   };
 }
 
-function resultFixture(synthesize: boolean): RetrievalResult {
+function resultFixture(): RetrievalResult {
   return {
     plan: {
       intent: RetrievalIntent.Search,
@@ -50,7 +47,6 @@ function resultFixture(synthesize: boolean): RetrievalResult {
       rankingSignals: [],
       rankingWeights: {} as never,
       nodeTypes: ['character'],
-      synthesize,
     },
     candidates: [rankedFixture()],
     context: { text: 'CTX', tokenCount: 10, compressionRatio: 1, fragments: 1, evidence: [] },
@@ -74,18 +70,9 @@ function resultFixture(synthesize: boolean): RetrievalResult {
   };
 }
 
-function makeService(result: RetrievalResult, synthesisEnabled = true) {
-  const retrieval = {
-    retrieve: jest.fn().mockResolvedValue(result),
-  } as unknown as RetrievalService;
-  const complete = jest.fn().mockResolvedValue({
-    content: 'A grounded answer.',
-    usage: { inputTokens: 5, outputTokens: 5, totalTokens: 10 },
-    costUsd: 0,
-  });
-  const completion = { complete } as unknown as AiCompletionService;
-  const assertEnabled = jest.fn().mockResolvedValue(undefined);
-  const features = { assertEnabled } as unknown as AiFeatureService;
+function makeService(result: RetrievalResult) {
+  const retrieve = jest.fn().mockResolvedValue(result);
+  const retrieval = { retrieve } as unknown as RetrievalService;
   const cache = {
     key: jest.fn().mockReturnValue('k'),
     remember: jest.fn(async (_k: string, _ttl: number, fn: () => Promise<RetrievalResult>) => ({
@@ -93,70 +80,82 @@ function makeService(result: RetrievalResult, synthesisEnabled = true) {
       hit: false,
     })),
   } as unknown as RetrievalCacheService;
-  const telemetry = {
-    record: jest.fn().mockResolvedValue(undefined),
-  } as unknown as RetrievalTelemetryService;
-  const config = {
-    getConfig: jest.fn().mockResolvedValue({ ...DEFAULT_RETRIEVAL_CONFIG, synthesisEnabled }),
-  } as unknown as RetrievalConfigService;
+  const record = jest.fn().mockResolvedValue(undefined);
+  const telemetry = { record } as unknown as RetrievalTelemetryService;
   return {
-    service: new SemanticSearchService(retrieval, completion, features, cache, telemetry, config),
-    complete,
-    assertEnabled,
-    telemetry,
+    service: new SemanticSearchService(retrieval, cache, telemetry),
+    retrieve,
+    record,
   };
 }
 
 describe('SemanticSearchService', () => {
-  it('gates the feature, returns ranked/explained results, and records telemetry', async () => {
-    const { service, complete, assertEnabled, telemetry } = makeService(resultFixture(false));
+  it('returns ranked, explained results and records telemetry', async () => {
+    const { service, record } = makeService(resultFixture());
     const res = await service.search('u1', { query: 'who is aria' });
 
-    expect(assertEnabled).toHaveBeenCalled();
     expect(res.results[0]?.title).toBe('Aria');
     expect(res.results[0]?.reason).toContain('strong match');
-    expect(res.answer).toBeNull(); // no synthesis requested
-    expect(complete).not.toHaveBeenCalled();
-    expect(telemetry.record).toHaveBeenCalled();
-  });
-
-  it('synthesises a grounded answer through the AF1 orchestrator when requested', async () => {
-    const { service, complete } = makeService(resultFixture(true));
-    const res = await service.search('u1', { query: 'who is aria', synthesize: true });
-
-    expect(complete).toHaveBeenCalledTimes(1);
-    const input = (complete.mock.calls[0] as unknown[])[0] as {
-      promptKey: string;
-      promptVariables: { context: string };
-    };
-    expect(input.promptKey).toBe('semantic_search.answer');
-    expect(input.promptVariables.context).toBe('CTX'); // grounded on assembled context, not raw query
-    expect(res.answer).toBe('A grounded answer.');
+    expect(record).toHaveBeenCalled();
   });
 
   /**
-   * The defect the W5 browser run found (docs/48 §3.9 W5-8): synthesis used to be gated on
-   * `result.plan.synthesize`, and the plan rides inside the CACHED retrieval result whose key has no
-   * `synthesize` in it. So a reader who loaded results and then pressed "Explain these results" hit the
-   * plan cached by their own first request — `synthesize: false` — and never got an answer.
-   *
-   * The fixture below is exactly that state: a cached plan that says no, a request that says yes.
+   * D5: the engine calls no LLM at all. `answer` survives on the wire for one release so a
+   * client built against the old shape keeps compiling, but nothing can populate it — and no
+   * LLM latency or token cost is ever attributed to a search.
    */
-  it('synthesises on the REQUEST, not on a cached plan that predates it', async () => {
-    const { service, complete } = makeService(resultFixture(false));
+  it('never answers in prose, whatever the caller asks for', async () => {
+    const { service, record } = makeService(resultFixture());
     const res = await service.search('u1', { query: 'who is aria', synthesize: true });
 
-    expect(complete).toHaveBeenCalledTimes(1);
-    expect(res.answer).toBe('A grounded answer.');
+    expect(res.answer).toBeNull();
+    const recorded = (record.mock.calls[0] as unknown[])[0] as {
+      llmLatencyMs: number;
+      tokenUsage: number;
+    };
+    expect(recorded.llmLatencyMs).toBe(0);
+    expect(recorded.tokenUsage).toBe(0);
   });
 
-  it('still refuses synthesis when the admin switch is off', async () => {
-    // The one thing `plan.synthesize` carried that the request does not — read from the config
-    // directly, so it keeps working and keeps being request-scoped.
-    const { service, complete } = makeService(resultFixture(true), false);
-    const res = await service.search('u1', { query: 'who is aria', synthesize: true });
+  describe('anonymous callers (search is public since D5)', () => {
+    it('searches the library with a null viewer', async () => {
+      const { service, retrieve, record } = makeService(resultFixture());
+      const res = await service.search(null, { query: 'who is aria' });
 
-    expect(complete).not.toHaveBeenCalled();
-    expect(res.answer).toBeNull();
+      expect(res.results[0]?.title).toBe('Aria');
+      const request = (retrieve.mock.calls[0] as unknown[])[0] as RetrievalRequest;
+      expect(request.userId).toBeNull();
+      const recorded = (record.mock.calls[0] as unknown[])[0] as { userId: string | null };
+      expect(recorded.userId).toBeNull();
+    });
+
+    /**
+     * A story-scoped plan draws only on the owner-scoped graph and the inert vector source, so
+     * an anonymous caller would otherwise get an empty result that reads like "this story is
+     * empty" rather than "you are not signed in". Refuse, and say which it is.
+     */
+    it('refuses a story-scoped search instead of returning a misleading empty result', async () => {
+      const { service, retrieve } = makeService(resultFixture());
+
+      await expect(
+        service.search(null, { query: 'who is aria', storyId: 's1' }),
+      ).rejects.toMatchObject({ code: ERROR_CODES.RETRIEVAL_QUERY_INVALID });
+      expect(retrieve).not.toHaveBeenCalled();
+    });
+
+    it('refuses story-scoped suggestions on the same rule', async () => {
+      const { service, retrieve } = makeService(resultFixture());
+
+      await expect(service.suggestions(null, 'ari', 's1')).rejects.toMatchObject({
+        code: ERROR_CODES.RETRIEVAL_QUERY_INVALID,
+      });
+      expect(retrieve).not.toHaveBeenCalled();
+    });
+
+    it('serves library suggestions', async () => {
+      const { service } = makeService(resultFixture());
+
+      await expect(service.suggestions(null, 'ari')).resolves.toEqual(['Aria']);
+    });
   });
 });

@@ -41,7 +41,6 @@ export class RetrievalConfigService {
       timeoutMs: patch.timeoutMs ?? current.timeoutMs,
       sources: { ...current.sources, ...(patch.sources ?? {}) },
       rankingWeights: { ...current.rankingWeights, ...(patch.rankingWeights ?? {}) },
-      synthesisEnabled: patch.synthesisEnabled ?? current.synthesisEnabled,
     };
     await this.settings.updateSettings(
       [{ key: RETRIEVAL_SETTING_KEYS.Config, value: next }],
@@ -66,8 +65,6 @@ function mergeConfig(raw: unknown): ResolvedRetrievalConfig {
     rankingWeights: mergeRecord(r.rankingWeights, d.rankingWeights, (v) =>
       typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 1 ? v : undefined,
     ),
-    synthesisEnabled:
-      typeof r.synthesisEnabled === 'boolean' ? r.synthesisEnabled : d.synthesisEnabled,
   };
 }
 

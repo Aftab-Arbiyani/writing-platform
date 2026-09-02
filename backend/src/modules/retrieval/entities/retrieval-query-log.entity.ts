@@ -21,8 +21,9 @@ import { QalamAppendOnlyEntity } from '../../../common/base/append-only.entity';
 @Index('idx_retrieval_logs_user_created', ['userId', 'createdAt'])
 @Index('idx_retrieval_logs_intent_created', ['intent', 'createdAt'])
 export class RetrievalQueryLog extends QalamAppendOnlyEntity {
-  @Column({ type: 'uuid' })
-  userId!: string;
+  /** `null` for an anonymous search — the query surface is public since D5. */
+  @Column({ type: 'uuid', nullable: true })
+  userId!: string | null;
 
   @Column({ type: 'varchar', length: 20 })
   intent!: RetrievalIntent;

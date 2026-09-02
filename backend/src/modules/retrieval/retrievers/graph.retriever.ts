@@ -44,6 +44,9 @@ export class GraphRetriever implements Retriever {
 
   async retrieve(plan: RetrievalPlan, request: RetrievalRequest): Promise<RetrievalCandidate[]> {
     if (request.storyId === undefined || request.storyId === '') return [];
+    // The graph is owner-scoped: an anonymous caller has no graph to read, so this source
+    // contributes nothing rather than querying with a missing owner (search is public since D5).
+    if (request.userId === null) return [];
 
     // Owner-scoped read of the SSOT. STORY_NOT_FOUND propagates by design.
     const graph = await this.story.getGraphSnapshot(request.userId, request.storyId);

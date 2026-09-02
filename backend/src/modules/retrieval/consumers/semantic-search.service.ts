@@ -1,38 +1,37 @@
 import { Injectable } from '@nestjs/common';
-import { AiFeature, AiMessageRole, RetrievalIntent } from '@qalam/shared';
+import { RetrievalIntent } from '@qalam/shared';
 
-import { AiCompletionService } from '../../ai';
-import { AiFeatureService } from '../../ai';
 import type { SemanticSearchDto } from '../dto/retrieval-request.dto';
 import type { SemanticSearchResponseDto } from '../dto/retrieval-response.dto';
 import { RetrievalTelemetryService } from '../observability/retrieval-telemetry.service';
 import { RetrievalCacheService } from '../retrieval-cache.service';
-import { RetrievalConfigService } from '../retrieval-config.service';
 import { RETRIEVAL_CACHE_TTL_SECONDS } from '../retrieval.constants';
+import { RetrievalQueryInvalidException } from '../retrieval.exceptions';
 import { RetrievalService } from '../retrieval.service';
 import type { RetrievalRequest, RetrievalResult } from '../retrieval.types';
 import { toResponseMeta, toSearchResultItem } from '../retrieval.mappers';
 
 /**
- * Semantic Search (AF4). The consumer that turns a query into ranked, grounded, explainable
- * results — and, optionally, a grounded natural-language answer. It gates the SemanticSearch
- * feature (AF1 flag), runs the reusable RetrievalService pipeline (cached), and ONLY when
- * synthesis is requested does it call the AF1 orchestrator with the ASSEMBLED context (never
- * the raw query) so the answer is grounded. Records telemetry for every request.
+ * Search (AF4 retrieval engine). Turns a query into ranked, grounded, explainable results by
+ * running the reusable RetrievalService pipeline (cached) and recording telemetry. **No LLM
+ * is involved** — D5 removed the optional grounded synthesis, so this consumer no longer
+ * depends on the AI module at all and needs no feature flag or entitlement.
+ *
+ * `userId` is nullable: the endpoint is public (E8 parity). An anonymous caller gets the
+ * keyword + metadata sources; the knowledge-graph source is owner-scoped and contributes
+ * nothing, which is why a story-scoped query without a user is refused up front rather than
+ * silently returning an empty library search.
  */
 @Injectable()
 export class SemanticSearchService {
   constructor(
     private readonly retrieval: RetrievalService,
-    private readonly completion: AiCompletionService,
-    private readonly features: AiFeatureService,
     private readonly cache: RetrievalCacheService,
     private readonly telemetry: RetrievalTelemetryService,
-    private readonly config: RetrievalConfigService,
   ) {}
 
-  async search(userId: string, dto: SemanticSearchDto): Promise<SemanticSearchResponseDto> {
-    await this.features.assertEnabled(AiFeature.SemanticSearch, userId);
+  async search(userId: string | null, dto: SemanticSearchDto): Promise<SemanticSearchResponseDto> {
+    this.assertScopeReachable(userId, dto.storyId);
     const start = Date.now();
 
     const request: RetrievalRequest = {
@@ -42,7 +41,6 @@ export class SemanticSearchService {
       storyId: dto.storyId,
       queryType: dto.queryType,
       limit: dto.limit ?? 0,
-      synthesize: dto.synthesize,
       filters: {
         language: dto.language,
         genre: dto.genre,
@@ -67,43 +65,13 @@ export class SemanticSearchService {
       () => this.retrieval.retrieve(request),
     );
 
-    let answer: string | null = null;
-    let llmLatencyMs = 0;
-    let tokenUsage = 0;
-    /**
-     * **Whether to synthesise is decided from THIS request plus the admin switch — never from the
-     * cached plan.**
-     *
-     * `plan.synthesize` is `config.synthesisEnabled && request.synthesize === true`, and the plan
-     * travels inside the cached `RetrievalResult` whose key does not include `synthesize` (nor should
-     * it: the retrieval half is identical either way). So the first caller of a query fixed the answer
-     * for the next 120 s — a reader who loaded results and *then* asked for an explanation got a
-     * cached plan saying "no synthesis" and no answer at all, with the toggle showing on and nothing
-     * to report. Found live by the W5 E2E run (docs/48 §3.9 W5-8); the config read is Redis-cached, so
-     * asking it here costs nothing the cached plan was saving.
-     */
-    const synthesisEnabled = (await this.config.getConfig()).synthesisEnabled;
-    if (dto.synthesize === true && synthesisEnabled && result.candidates.length > 0) {
-      const llmStart = Date.now();
-      const output = await this.completion.complete({
-        userId,
-        feature: AiFeature.SemanticSearch,
-        promptKey: 'semantic_search.answer',
-        promptVariables: { query: dto.query, context: result.context.text },
-        messages: [{ role: AiMessageRole.User, content: dto.query }],
-      });
-      answer = output.content;
-      llmLatencyMs = Date.now() - llmStart;
-      tokenUsage = output.usage.totalTokens;
-    }
-
     await this.telemetry.record({
       userId,
       storyId: dto.storyId,
       telemetry: { ...result.telemetry, cacheHit: hit },
       totalLatencyMs: Date.now() - start,
-      llmLatencyMs,
-      tokenUsage,
+      llmLatencyMs: 0,
+      tokenUsage: 0,
       status:
         result.candidates.length === 0
           ? 'no_results'
@@ -116,16 +84,21 @@ export class SemanticSearchService {
       query: dto.query,
       intent: result.plan.intent,
       queryType: result.plan.queryType,
-      answer,
+      /**
+       * Always `null` since D5 removed synthesis. The field stays on the wire until the
+       * coordinated vocabulary contract so a client built against the old shape keeps
+       * compiling; nothing populates it.
+       */
+      answer: null,
       results: result.candidates.map(toSearchResultItem),
       evidence: result.context.evidence,
       meta: toResponseMeta(result),
     };
   }
 
-  /** Query suggestions: the top result titles for a short prefix (cheap, no LLM). */
-  async suggestions(userId: string, q: string, storyId?: string): Promise<string[]> {
-    await this.features.assertEnabled(AiFeature.SemanticSearch, userId);
+  /** Query suggestions: the top result titles for a short prefix. */
+  async suggestions(userId: string | null, q: string, storyId?: string): Promise<string[]> {
+    this.assertScopeReachable(userId, storyId);
     const result = await this.retrieval.retrieve({
       userId,
       query: q,
@@ -134,5 +107,16 @@ export class SemanticSearchService {
       limit: 8,
     });
     return result.candidates.slice(0, 8).map((c) => c.title);
+  }
+
+  /**
+   * A story-scoped plan draws on the knowledge graph (owner-scoped) and the vector source
+   * (inert), so an anonymous caller would get a silent empty result that reads like "this
+   * story has nothing in it". Refuse instead, and say why.
+   */
+  private assertScopeReachable(userId: string | null, storyId?: string): void {
+    if (userId === null && storyId !== undefined && storyId !== '') {
+      throw new RetrievalQueryInvalidException('Sign in to search within a story.');
+    }
   }
 }

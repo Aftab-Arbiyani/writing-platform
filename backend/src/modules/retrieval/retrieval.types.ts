@@ -67,7 +67,6 @@ export interface ResolvedRetrievalConfig {
   timeoutMs: number;
   sources: Record<RetrievalSource, boolean>;
   rankingWeights: Record<RankingSignal, number>;
-  synthesisEnabled: boolean;
 }
 
 /** A partial admin update — source/weight maps may themselves be partial. */
@@ -78,14 +77,18 @@ export interface RetrievalConfigPatch {
   timeoutMs?: number;
   sources?: Partial<Record<RetrievalSource, boolean>>;
   rankingWeights?: Partial<Record<RankingSignal, number>>;
-  synthesisEnabled?: boolean;
 }
 
 // ── Pipeline shapes ─────────────────────────────────────────────────────────────
 
 /** The normalised inbound request — every consumer funnels through this one shape. */
 export interface RetrievalRequest {
-  userId: string;
+  /**
+   * `null` for an anonymous caller (search is public since D5). Owner-scoped sources —
+   * today only the knowledge graph — must skip themselves rather than query with a
+   * missing owner.
+   */
+  userId: string | null;
   query: string;
   intent: RetrievalIntent;
   storyId?: string;
@@ -94,7 +97,6 @@ export interface RetrievalRequest {
   subject?: string;
   limit: number;
   filters?: { language?: string; genre?: string; tags?: string[] };
-  synthesize?: boolean;
   signal?: AbortSignal;
 }
 
@@ -132,7 +134,6 @@ export interface RetrievalPlan {
   rankingSignals: RankingSignal[];
   rankingWeights: Record<RankingSignal, number>;
   nodeTypes: string[];
-  synthesize: boolean;
 }
 
 /** A candidate after ranking — final score + confidence + per-signal explanation. */

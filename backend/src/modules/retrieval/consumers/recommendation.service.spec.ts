@@ -1,6 +1,5 @@
 import { RecommendationKind } from '@qalam/shared';
 
-import type { AiFeatureService } from '../../ai';
 import type { DiscoveryService } from '../../feed/discovery.service';
 import type { TrendingService } from '../../feed/trending.service';
 import type { PiecesService } from '../../pieces/pieces.service';
@@ -37,8 +36,6 @@ const graph: StoryGraphDto = {
 };
 
 function makeService() {
-  const assertEnabled = jest.fn().mockResolvedValue(undefined);
-  const features = { assertEnabled } as unknown as AiFeatureService;
   const trending = {
     getFeed: jest.fn().mockResolvedValue({
       items: [{ id: 'p1', slug: 's1', title: 'Trend', subtitle: 'sub' }],
@@ -70,16 +67,7 @@ function makeService() {
     record: jest.fn().mockResolvedValue(undefined),
   } as unknown as RetrievalTelemetryService;
   return {
-    service: new RecommendationService(
-      features,
-      trending,
-      discovery,
-      search,
-      story,
-      pieces,
-      telemetry,
-    ),
-    assertEnabled,
+    service: new RecommendationService(trending, discovery, search, story, pieces, telemetry),
     trending,
     story,
     searchPieces,
@@ -88,11 +76,10 @@ function makeService() {
 }
 
 describe('RecommendationService', () => {
-  it('gates the feature and reuses TrendingService for trending — every item explains itself', async () => {
-    const { service, assertEnabled, trending } = makeService();
+  it('reuses TrendingService for trending — every item explains itself', async () => {
+    const { service, trending } = makeService();
     const res = await service.recommend('u1', { kind: RecommendationKind.Trending });
 
-    expect(assertEnabled).toHaveBeenCalled();
     expect(trending.getFeed).toHaveBeenCalled();
     expect(res.kind).toBe(RecommendationKind.Trending);
     expect(res.items[0]?.targetType).toBe('piece');

@@ -35,20 +35,22 @@ describe('RetrievalPlannerService', () => {
     expect(plan.nodeTypes).toEqual(['character']);
   });
 
-  it('an ask uses its scope node types and always synthesises', () => {
+  it('an ask uses its scope node types', () => {
     const plan = planner.plan(
       { ...base, intent: RetrievalIntent.Ask, storyId: 's', scope: AskScope.Timeline },
       DEFAULT_RETRIEVAL_CONFIG,
     );
     expect(plan.nodeTypes).toEqual(['event']);
-    expect(plan.synthesize).toBe(true);
   });
 
-  it('a search only synthesises when requested and enabled', () => {
-    expect(planner.plan(base, DEFAULT_RETRIEVAL_CONFIG).synthesize).toBe(false);
-    expect(planner.plan({ ...base, synthesize: true }, DEFAULT_RETRIEVAL_CONFIG).synthesize).toBe(
-      true,
-    );
+  /**
+   * D5 removed grounded synthesis: the pipeline calls no LLM, so a plan can no longer carry
+   * a "synthesise" decision. Pinned as an absence — a reintroduced flag here would be the
+   * first step back towards an LLM in the search path.
+   */
+  it('no plan carries a synthesis decision — retrieval calls no LLM', () => {
+    const plan = planner.plan(base, DEFAULT_RETRIEVAL_CONFIG);
+    expect(plan).not.toHaveProperty('synthesize');
   });
 
   it('drops sources disabled in config and clamps topK', () => {

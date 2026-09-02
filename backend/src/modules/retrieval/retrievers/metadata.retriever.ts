@@ -28,7 +28,8 @@ export class MetadataRetriever implements Retriever {
     if (request.query.trim().length < 2) return [];
 
     const perFacet = Math.max(3, Math.ceil(plan.candidatesPerSource / 3));
-    const viewer = { id: request.userId };
+    // Search is public since D5; `SearchService` accepts an absent viewer.
+    const viewer = request.userId === null ? null : { id: request.userId };
 
     const writersQuery: Parameters<SearchService['searchWriters']>[0] = {
       q: request.query,

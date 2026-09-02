@@ -55,7 +55,11 @@ export class SemanticSearchDto {
   @Max(RETRIEVAL_MAX_TOP_K)
   limit?: number;
 
-  @ApiPropertyOptional({ description: 'Ask for a grounded natural-language synthesis (LLM).' })
+  /**
+   * @deprecated Accepted and IGNORED since D5 removed grounded synthesis. Kept so a client
+   * built against the old shape still validates; the response's `answer` is always null.
+   */
+  @ApiPropertyOptional({ deprecated: true, description: 'Ignored — synthesis was removed (D5).' })
   @IsOptional()
   @Type(() => Boolean)
   @IsBoolean()
@@ -303,7 +307,11 @@ export class UpdateRetrievalConfigDto {
   @Validate(IsRankingWeightTable)
   rankingWeights?: Partial<Record<RankingSignal, number>>;
 
-  @ApiPropertyOptional()
+  /**
+   * @deprecated Accepted and IGNORED since D5 — there is no synthesis to enable. Kept so the
+   * admin client's existing form does not 422 before it drops the field.
+   */
+  @ApiPropertyOptional({ deprecated: true, description: 'Ignored — synthesis was removed (D5).' })
   @IsOptional()
   @IsBoolean()
   synthesisEnabled?: boolean;

@@ -71,7 +71,6 @@ export class RetrievalPlannerService {
       rankingSignals: rankingOrder(config),
       rankingWeights: config.rankingWeights,
       nodeTypes,
-      synthesize: resolveSynthesize(request, config),
     };
   }
 }
@@ -82,13 +81,4 @@ function rankingOrder(config: ResolvedRetrievalConfig): RankingSignal[] {
     .filter(([, weight]) => weight > 0)
     .sort((a, b) => b[1] - a[1])
     .map(([signal]) => signal);
-}
-
-/** Ask always synthesises; search synthesises on request; explore/recommend do not. */
-function resolveSynthesize(request: RetrievalRequest, config: ResolvedRetrievalConfig): boolean {
-  if (request.intent === RetrievalIntent.Ask) return true;
-  if (request.intent === RetrievalIntent.Search) {
-    return config.synthesisEnabled && request.synthesize === true;
-  }
-  return false;
 }

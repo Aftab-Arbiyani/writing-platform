@@ -11,13 +11,13 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { PERMISSIONS } from '@qalam/shared';
 
 import { RateLimit } from '../../../common/decorators/rate-limit.decorator';
 import { RateLimitGuard } from '../../../common/guards/rate-limit.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import { Public } from '../../auth/decorators/public.decorator';
+import { OptionalAuthGuard } from '../../auth/guards/optional-auth.guard';
 import type { AuthenticatedUser } from '../../auth/interfaces/authenticated-user.interface';
-import { Permissions } from '../../permissions/permissions.decorator';
 import {
   SaveSearchDto,
   SearchSuggestionsQueryDto,
@@ -32,15 +32,16 @@ import { SavedSearchService } from './saved-search.service';
 import { SemanticSearchService } from './semantic-search.service';
 
 /**
- * Semantic Search + saved searches (AF4). Requires `ai.use`; gated by the SemanticSearch
- * feature inside the service. Search runs the reusable Retrieval Platform and returns
- * ranked, grounded, explainable results (optionally a grounded LLM answer). Recent searches
- * reuse the existing `/search/recent` (E8); this owns only the saved-search surface.
+ * Search + saved searches (AF4 retrieval engine). The query endpoints are `@Public()`
+ * (browse without an account) but attach the viewer when present (`OptionalAuthGuard`),
+ * exactly like E8's `/search` — the knowledge-graph source is owner-scoped and simply
+ * contributes nothing for an anonymous caller. Search runs the reusable Retrieval
+ * Platform and returns ranked, grounded, explainable results; no LLM is involved (D5).
+ * Recent searches reuse the existing `/search/recent` (E8); this owns only the
+ * saved-search surface, which stays authenticated.
  */
 @ApiTags('ai-search')
-@ApiBearerAuth()
 @Controller('ai')
-@UseGuards(RateLimitGuard)
 export class SemanticSearchController {
   constructor(
     private readonly search: SemanticSearchService,
@@ -48,36 +49,41 @@ export class SemanticSearchController {
   ) {}
 
   @Post('search')
-  @Permissions(PERMISSIONS.AiUse)
+  @Public()
+  @UseGuards(OptionalAuthGuard, RateLimitGuard)
   @RateLimit('search')
   @ApiOperation({
     summary:
-      'Semantic/hybrid search over a story graph or the library. Returns ranked, grounded, ' +
-      'explainable results; set `synthesize` for a grounded natural-language answer. Errors: ' +
-      'AI_DISABLED, AI_FEATURE_DISABLED, STORY_NOT_FOUND, RETRIEVAL_FAILED.',
+      'Hybrid search over a story graph or the library. Returns ranked, grounded, ' +
+      'explainable results. Story-scoped search requires a signed-in owner. Errors: ' +
+      'RETRIEVAL_QUERY_INVALID, STORY_NOT_FOUND, RETRIEVAL_FAILED.',
   })
   @ApiOkResponse({ type: SemanticSearchResponseDto })
   search_(
-    @CurrentUser() user: AuthenticatedUser,
     @Body() dto: SemanticSearchDto,
+    @CurrentUser() user?: AuthenticatedUser,
   ): Promise<SemanticSearchResponseDto> {
-    return this.search.search(user.id, dto);
+    return this.search.search(user?.id ?? null, dto);
   }
 
   @Get('search/suggestions')
-  @Permissions(PERMISSIONS.AiUse)
+  @Public()
+  @UseGuards(OptionalAuthGuard, RateLimitGuard)
   @RateLimit('search')
   @ApiOperation({ summary: 'Query suggestions (top matching titles) for a short prefix.' })
   @ApiOkResponse({ type: SearchSuggestionsResponseDto })
   async suggestions(
-    @CurrentUser() user: AuthenticatedUser,
     @Query() query: SearchSuggestionsQueryDto,
+    @CurrentUser() user?: AuthenticatedUser,
   ): Promise<SearchSuggestionsResponseDto> {
-    return { suggestions: await this.search.suggestions(user.id, query.q, query.storyId) };
+    return {
+      suggestions: await this.search.suggestions(user?.id ?? null, query.q, query.storyId),
+    };
   }
 
   @Get('search/saved')
-  @Permissions(PERMISSIONS.AiUse)
+  @ApiBearerAuth()
+  @UseGuards(RateLimitGuard)
   @RateLimit('read')
   @ApiOperation({ summary: "The caller's saved searches, newest first." })
   @ApiOkResponse({ type: [SavedSearchDto] })
@@ -86,7 +92,8 @@ export class SemanticSearchController {
   }
 
   @Post('search/saved')
-  @Permissions(PERMISSIONS.AiUse)
+  @ApiBearerAuth()
+  @UseGuards(RateLimitGuard)
   @RateLimit('write')
   @ApiOperation({
     summary: 'Save a search (idempotent by name). Errors: SAVED_SEARCH_LIMIT_EXCEEDED.',
@@ -100,7 +107,8 @@ export class SemanticSearchController {
   }
 
   @Delete('search/saved/:id')
-  @Permissions(PERMISSIONS.AiUse)
+  @ApiBearerAuth()
+  @UseGuards(RateLimitGuard)
   @RateLimit('write')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete a saved search. Errors: SAVED_SEARCH_NOT_FOUND.' })

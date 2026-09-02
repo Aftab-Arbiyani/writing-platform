@@ -79,7 +79,6 @@ const plan: RetrievalPlan = {
   rankingSignals: [],
   rankingWeights: {} as never,
   nodeTypes: ['character'],
-  synthesize: false,
 };
 
 const request: RetrievalRequest = {

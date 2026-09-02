@@ -119,7 +119,13 @@ export class RetrievalConfigDto {
   @ApiProperty() timeoutMs!: number;
   @ApiProperty({ type: Object }) sources!: Record<RetrievalSource, boolean>;
   @ApiProperty({ type: Object }) rankingWeights!: Record<RankingSignal, number>;
-  @ApiProperty() synthesisEnabled!: boolean;
+  /**
+   * @deprecated Always `false` since D5 removed grounded synthesis — retrieval calls no LLM.
+   * Kept on the wire only until the admin client stops reading it; do not reintroduce a
+   * knob for it.
+   */
+  @ApiProperty({ deprecated: true, description: 'Always false — synthesis was removed (D5).' })
+  synthesisEnabled!: boolean;
 }
 
 export class SearchAnalyticsDto {

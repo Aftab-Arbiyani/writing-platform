@@ -43,7 +43,10 @@ export class KeywordRetriever implements Retriever {
       genre: request.filters?.genre,
       tag: request.filters?.tags?.[0],
     };
-    const page = await this.search.searchPieces(query, { id: request.userId });
+    // Search is public since D5: `SearchService` already models an absent viewer (it skips
+    // recent-search history for one), so anonymous callers get the same lexical results.
+    const viewer = request.userId === null ? null : { id: request.userId };
+    const page = await this.search.searchPieces(query, viewer);
 
     const total = page.items.length;
     return page.items.map((piece, index) => {
