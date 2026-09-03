@@ -1,10 +1,11 @@
 # 48 — Platform Parity Register (web ↔ mobile)
 
-> 🔨 **IN FLIGHT, 2026-09-03 — D5 removes the AI surface.** All four backend phases have landed on
-> `develop` (`9214fc6`, `7f3b459`, `952a790`, `d4d03b6` — the backend is complete) and **neither
-> client has moved**, so parts of this
-> register describe surfaces the server no longer serves. The decision, the built-vs-outstanding
-> table, and the one defect that state opens (**D5-clients**, §3.22a) are in
+> 🔨 **IN FLIGHT, 2026-09-03 — D5 removes the AI surface.** The backend is complete (`9214fc6`,
+> `7f3b459`, `952a790`, `d4d03b6`) and the **web app half has landed** (`52922b3`, `468e6f3`,
+> `b349798`). **Mobile has not moved**, and neither has the admin/monetization UI, so parts of this
+> register still describe surfaces the server no longer serves. The decision, the
+> built-vs-outstanding table, and the defect that state opens (**D5-clients**, §3.22a — now half
+> closed) are in
 > [§5.2 → D5](#d5--the-ai-surface-is-removed-the-tools-stay-owner-2026-09-02). Read that before
 > scheduling anything that touches AI, search, or plan limits.
 
@@ -3958,9 +3959,9 @@ D5's own build**, and it is recorded rather than waved through because it is exa
 breakage a phased migration makes easy to leave undocumented: deliberate, known, and invisible to
 every test that passed.
 
-| Row                       | What                                                                                                                                                                                                                                                                                                                                                                      | Opened                   | Closes when                                    |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ | ---------------------------------------------- |
-| **D5-clients** · **high** | Both clients call routes B2 deleted. Web's Ask tab, AI conversation pages and prompt library, and mobile's Ask My Book screen and conversation screens, now hit **404** on `develop`; web's `/settings/ai/usage` reads a `GET /ai/usage/me` that is gone. Nothing 404s in production — nothing has deployed — but any developer running both halves off `develop` sees it | 2026-09-03, by `7f3b459` | F1 (web) and M1 (mobile) delete those surfaces |
+| Row                       | What                                                                                                                                                                                                                                                                                                                                                                                                                          | Opened                                               | Closes when                    |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- | ------------------------------ |
+| **D5-clients** · **high** | ~~Both clients~~ **Mobile** calls routes B2 deleted: its Ask My Book screen and conversation screens hit **404** on `develop`. **Web half CLOSED by `b349798`** — the Ask tab, conversation pages, prompt library and `/settings/ai/usage` are deleted, and `useAiAvailability` no longer reads the removed `GET /ai/usage/me`, which had been 404ing on every editor load. Nothing 404s in production — nothing has deployed | 2026-09-03, by `7f3b459`; web half closed 2026-09-03 | M1 deletes the mobile surfaces |
 
 **Why this is a row and not a footnote.** The backend phases are green on their own terms — 1413
 tests, every workspace typechecking — and _that is the problem_: the clients compile because the
@@ -5404,10 +5405,12 @@ language model. Your text isn't used to train it."_ — plus a privacy-policy cl
 considered and rejected: this audience punishes discovery far harder than disclosure, and GDPR
 processor disclosure and the EU AI Act's transparency article both bind regardless.
 
-**Status — built vs outstanding.** The backend is COMPLETE (B1–B4). **Nothing has shipped on
-either client**, so every client-side claim in the table above is a decision, not a state, and
-`D5-clients` in [§3.22a](#322a-product-defects--a-user-or-an-operator-can-hit-these) is open until
-they move.
+**Status — built vs outstanding.** The backend is COMPLETE (B1–B4) and the **web app half is done
+(F0, F1)**. Admin and the monetization UI (F2), all of mobile, and the two contract phases remain,
+so the mobile claims in the table above are still decisions rather than states.
+
+`D5-clients` in [§3.22a](#322a-product-defects--a-user-or-an-operator-can-hit-these) is **half
+closed**: web no longer calls anything B2 deleted, mobile still does.
 
 | Phase     | What                                                                                                                          | State        |
 | --------- | ----------------------------------------------------------------------------------------------------------------------------- | ------------ |
@@ -5415,7 +5418,11 @@ they move.
 | **B2**    | Ask My Book, conversations, dead prompts deleted; completions stateless                                                       | ✅ `7f3b459` |
 | **B3**    | Per-feature allowances; "Map this story"; E2E seed lifts the new caps                                                         | ✅ `952a790` |
 | **B4**    | Credit economy off (`ai_budget`, wallet, purchases, admin credit actions); admin cost dashboard re-pointed at `ai_usage_logs` | ✅ `d4d03b6` |
-| **F0–F2** | Web + admin: writing-tools drawer, search consolidation, allowance UI                                                         | ⬜           |
+| **F0**    | Web + admin test fixtures moved off the vocabulary V deletes, so V is one reviewable diff                                     | ✅ `52922b3` |
+| **F1a**   | One search, public: engine toggle gone, `All` is the ranked scope, the three gates become auth gates                          | ✅ `468e6f3` |
+| **F1b**   | Writing tools drawer (Polish · Feedback · Story Map), "Map this story", 5 routes + Ask deleted, availability shrunk           | ✅ `b349798` |
+| **F2**    | Monetization UI: allowance cards, credits pages deleted, plan/labels copy, admin synthesis + credit forms                     | ⬜           |
+| **F3**    | E2E: rewrite `search`/`assistant`/`ai-surfaces` specs, re-mint the visual baselines                                           | ⬜           |
 | **M1–M4** | Mobile: Polish sheet, `shared/retrieval`, allowance cards, copy sweep                                                         | ⬜           |
 | **V**     | Vocabulary contract — delete the deprecated enum values, api-types and wire fields in one coordinated PR                      | ⬜           |
 | **C**     | DB contract — drop `ai_conversations`, `ai_messages`, `credit_wallets`, `credit_transactions`                                 | ⬜           |
