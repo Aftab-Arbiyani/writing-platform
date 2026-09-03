@@ -23,7 +23,6 @@ function makeParams(over: Partial<UseSearchQueryParamsResult> = {}): UseSearchQu
   return {
     q: 'barish',
     hasQuery: true,
-    mode: 'keyword',
     type: SearchType.Pieces,
     sort: SearchSort.Relevance,
     language: null,
@@ -34,8 +33,6 @@ function makeParams(over: Partial<UseSearchQueryParamsResult> = {}): UseSearchQu
     filters: {},
     hasActiveFilters: false,
     setQuery: vi.fn(),
-    setMode: vi.fn(),
-    setSearch: vi.fn(),
     setType: vi.fn(),
     setSort: vi.fn(),
     setLanguage: vi.fn(),
@@ -84,24 +81,21 @@ describe('SearchFilterBar', () => {
   });
 
   /**
-   * AI mode (W5). The engine has no scope tabs — it answers mixed entity types — so the bar cannot be
-   * gated on one, and it may only offer what `SemanticSearchDto` accepts (48 §3.9 W5-11).
+   * The `All` scope (W5-11, re-arranged by D5). It shows the ranked results, which accept exactly
+   * what `SemanticSearchDto` accepts — so the bar renders there, and offers only those three.
+   *
+   * Both halves matter and they used to be one bug each: `All` rendered NO bar (so the filter
+   * mapping W5-1 fixed was unreachable), and the AI engine rendered reading-time / date / sort,
+   * which it silently ignored.
    */
-  it('offers language + genre in AI mode, where the default tab would have hidden every filter', () => {
-    renderWithProviders(
-      <SearchFilterBar params={makeParams({ mode: 'ai', type: SearchType.All })} />,
-    );
+  it('offers language + genre on the All scope, which used to show no filters at all', () => {
+    renderWithProviders(<SearchFilterBar params={makeParams({ type: SearchType.All })} />);
     expect(screen.getByText('Language')).toBeInTheDocument();
     expect(screen.getByText('Genre')).toBeInTheDocument();
   });
 
-  it('hides the keyword-only filters in AI mode even when the tab says pieces', () => {
-    // The state a reader reaches by filtering on the Pieces tab and then switching engines: `type`
-    // stays in the URL, and reading-time / date / sort would render controls AF4 ignores.
-    renderWithProviders(
-      <SearchFilterBar params={makeParams({ mode: 'ai', type: SearchType.Pieces })} />,
-    );
-    expect(screen.getByText('Language')).toBeInTheDocument();
+  it('hides the pieces-only filters on the All scope, which cannot honour them', () => {
+    renderWithProviders(<SearchFilterBar params={makeParams({ type: SearchType.All })} />);
     expect(screen.queryByText('Reading time')).not.toBeInTheDocument();
     expect(screen.queryByText('Any time')).not.toBeInTheDocument();
     expect(screen.queryByText('Most relevant')).not.toBeInTheDocument();

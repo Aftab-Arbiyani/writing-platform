@@ -58,19 +58,16 @@ function isDatePreset(value: string | null): value is DatePreset {
 }
 
 /**
- * Which engine answers the query (W5/AF4). `keyword` is the E8 full-text search this page has
- * always run; `ai` is the retrieval-backed one. In the URL (`mode=ai`) for the same reason every
- * other control is: a shared link has to reproduce the results, and the two engines answer
- * differently. `keyword` is the default and is omitted from the URL.
+ * D5 removed `mode`. There used to be two engines behind this page and a `mode=ai` parameter that
+ * chose between them; there is one now, so the parameter has nothing to select. An old link that
+ * still carries `?mode=ai` is not broken — the key is simply unread, and the reader lands on the
+ * ranked results, which is what `mode=ai` meant.
  */
-export type SearchMode = 'keyword' | 'ai';
-
 export interface UseSearchQueryParamsResult {
   /** Raw query as typed into the URL (may be empty / below the minimum). */
   q: string;
   /** True once `q` is long enough to hit the FTS endpoints (docs 05 §3.2 — 2 chars). */
   hasQuery: boolean;
-  mode: SearchMode;
   type: SearchType;
   sort: SearchSort;
   language: string | null;
@@ -84,9 +81,6 @@ export interface UseSearchQueryParamsResult {
   hasActiveFilters: boolean;
 
   setQuery: (q: string) => void;
-  setMode: (mode: SearchMode) => void;
-  /** Set the query AND the engine in one navigation — see the implementation for why it must be one. */
-  setSearch: (q: string, mode: SearchMode) => void;
   setType: (type: SearchType) => void;
   setSort: (sort: SearchSort) => void;
   setLanguage: (code: string | null) => void;
@@ -101,7 +95,6 @@ export function useSearchQueryParams(): UseSearchQueryParamsResult {
   const [params, setParams] = useSearchParams();
 
   const q = params.get('q') ?? '';
-  const mode: SearchMode = params.get('mode') === 'ai' ? 'ai' : 'keyword';
   const type = isSearchType(params.get('type'))
     ? (params.get('type') as SearchType)
     : SearchType.All;
@@ -118,6 +111,19 @@ export function useSearchQueryParams(): UseSearchQueryParamsResult {
 
   const hasQuery = q.trim().length >= SEARCH_QUERY_MIN;
 
+  /**
+   * Patch the URL. **Two keys that change together must go in ONE call.**
+   *
+   * This patches `prev` inside a functional `setSearchParams`, and two calls in the same handler both
+   * receive the SAME pre-navigation `prev` — React has not re-rendered in between — so the second
+   * silently discards the first. W5-7 was exactly this: `setMode('ai')` followed by `setQuery(q)`
+   * produced a URL with `q` and no `mode`, and re-running a saved search answered the reader's
+   * question with the wrong engine. Found by the E2E run and invisible to a unit test that stubs the
+   * router (48 §3.9 W5-7).
+   *
+   * D5 removed `mode`, so the specific pair is gone; the hazard is a property of this function and
+   * outlives the bug that revealed it.
+   */
   const update = useCallback(
     (patch: Record<string, string | null>, { replace = false } = {}) => {
       setParams(
@@ -154,7 +160,6 @@ export function useSearchQueryParams(): UseSearchQueryParamsResult {
   return {
     q,
     hasQuery,
-    mode,
     type,
     sort,
     language,
@@ -167,24 +172,6 @@ export function useSearchQueryParams(): UseSearchQueryParamsResult {
     // The query is the primary navigation act (each search is a history entry, docs/06 §3.6).
     setQuery: (value) => {
       update({ q: value });
-    },
-    // Switching engine is navigational: it is a different answer to the same question, and back
-    // should return to the previous one rather than silently re-run it.
-    setMode: (value) => {
-      update({ mode: value === 'keyword' ? null : value });
-    },
-    /**
-     * Query + engine in ONE update, because two updates lose one of them.
-     *
-     * `update` patches `prev` inside a functional `setSearchParams`, and within a single handler both
-     * calls receive the SAME pre-navigation `prev` — React has not re-rendered in between. So
-     * `setMode('ai')` followed by `setQuery(q)` produced a URL with `q` and no `mode`: re-running a
-     * saved AF4 search landed in KEYWORD mode and answered the reader's saved question with a
-     * different engine, which is exactly the confusion `runSavedQuery` exists to prevent. Found by
-     * the E2E run, invisible in a unit test that stubs the router (docs/48 §3.9 W5-7).
-     */
-    setSearch: (value, mode) => {
-      update({ q: value, mode: mode === 'keyword' ? null : mode });
     },
     // Switching tab is navigational too (back button returns to the prior tab).
     setType: (value) => {

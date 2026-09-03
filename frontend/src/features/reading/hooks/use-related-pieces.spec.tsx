@@ -4,14 +4,11 @@ import { renderHook, waitFor } from '@testing-library/react';
 import type { ReactElement, ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { useAiAvailability } from '@/hooks/use-ai-availability';
 import { useAuthStore } from '@/stores/auth.store';
 
 import { readingApi } from '../api/reading.api';
 import type { PieceDetail } from '../types/reading.types';
 import { useRelatedPieces } from './use-related-pieces';
-
-vi.mock('@/hooks/use-ai-availability', () => ({ useAiAvailability: vi.fn() }));
 
 vi.mock('../api/reading.api', () => ({
   readingApi: { related: vi.fn(), recommendedFor: vi.fn() },
@@ -88,7 +85,6 @@ describe('useRelatedPieces', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     useAuthStore.setState({ status: 'authenticated' });
-    vi.mocked(useAiAvailability).mockReturnValue('available');
     vi.mocked(readingApi.related).mockResolvedValue(TAG_RESULT);
   });
 
@@ -123,17 +119,11 @@ describe('useRelatedPieces', () => {
     expect(result.current.data?.[0]?.reason).toBe('');
   });
 
-  it('falls back when the recommendations flag is down', async () => {
-    vi.mocked(useAiAvailability).mockReturnValue('feature-off');
-
-    const { result } = renderHook(() => useRelatedPieces(PIECE), { wrapper: wrapper() });
-
-    await waitFor(() => {
-      expect(result.current.data?.[0]?.title).toBe('From the tag search');
-    });
-    expect(readingApi.recommendedFor).not.toHaveBeenCalled();
-  });
-
+  /**
+   * D5 deleted the case above this one: "falls back when the recommendations flag is down". There
+   * is no flag — the recommender calls no model, so there was never anything for one to protect,
+   * and `authed` (asserted directly above) was always the condition that decided this.
+   */
   it('falls back when the recommender answers with nothing', async () => {
     vi.mocked(readingApi.recommendedFor).mockResolvedValue(recommendation({ items: [] }));
 

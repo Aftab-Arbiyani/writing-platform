@@ -1,8 +1,6 @@
-import { AiFeature } from '@qalam/shared';
 import type { RecommendationItem } from '@qalam/api-types';
 import { useQuery } from '@tanstack/react-query';
 
-import { useAiAvailability } from '@/hooks/use-ai-availability';
 import { qk } from '@/lib/query-keys';
 import { useAuthStore } from '@/stores/auth.store';
 
@@ -11,7 +9,7 @@ import type { PieceDetail, RelatedPiece } from '../types/reading.types';
 
 const RELATED_STALE = 5 * 60 * 1000;
 
-/** A related piece plus, when the AF4 recommender produced it, why it was recommended. */
+/** A related piece plus, when the recommender produced it, why it was recommended. */
 export interface RelatedSuggestion extends RelatedPiece {
   /** The server's explanation. Empty for the tag-search fallback, which cannot explain itself. */
   reason: string;
@@ -23,12 +21,18 @@ export interface RelatedSuggestion extends RelatedPiece {
  *
  * **Two sources, deliberately in this order:**
  *
- * 1. **The AF4 recommender** (`kind=related_stories&pieceId=…`) for a signed-in reader on a
- *    deployment with `feature.ai.recommendations` up. It seeds from every tag on the piece plus its
- *    title, excludes the piece from its own results, and explains each suggestion — the `pieceId`
- *    parameter W5 implemented for exactly this ([48 §3.9](../../../../../docs/48_PlatformParityRegister.md), W5-2).
+ * 1. **The recommender** (`kind=related_stories&pieceId=…`) for a signed-in reader. It seeds from
+ *    every tag on the piece plus its title, excludes the piece from its own results, and explains
+ *    each suggestion — the `pieceId` parameter W5 implemented for exactly this
+ *    ([48 §3.9](../../../../../docs/48_PlatformParityRegister.md), W5-2).
  * 2. **The tag search** otherwise, which is what W1 shipped and what a signed-out reader still gets.
- *    Every AF4 route needs auth + `ai.use`, and a public reading page's majority traffic has neither.
+ *    The recommender personalizes against the caller's own history, so it needs a session, and a
+ *    public reading page's majority traffic does not have one.
+ *
+ * D5 removed the third condition — a `feature.ai.recommendations` flag hop. The route calls no model,
+ * so there was nothing for the flag to protect; `authed` was always the condition that mattered, and
+ * it is now the only one. Dropping it is what lets an anonymous reader keep the tag fallback without
+ * a 401 on the way (48 §3.25).
  *
  * The fallback also catches the recommender coming back empty or failing, so the section degrades to
  * the older, dumber answer instead of disappearing. Non-critical throughout: no retries, a failure
@@ -40,9 +44,8 @@ export function useRelatedPieces(piece: PieceDetail | undefined): {
   isRecommended: boolean;
 } {
   const authed = useAuthStore((s) => s.status) === 'authenticated';
-  const availability = useAiAvailability(AiFeature.Recommendations);
   const pieceId = piece?.id ?? '';
-  const canRecommend = authed && availability === 'available' && pieceId !== '';
+  const canRecommend = authed && pieceId !== '';
 
   const recommended = useQuery({
     queryKey: qk.retrieval.recommendations('related_stories', pieceId),

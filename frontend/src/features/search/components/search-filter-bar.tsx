@@ -60,13 +60,14 @@ function FilterControls({
   const languages = useDiscoverLanguages();
   const genres = useDiscoverGenres();
   /**
-   * Reading time, publish date and sort are **keyword-only**, because `SemanticSearchDto` accepts
-   * `language`, `genre` and `tags` and nothing else (48 §3.9 W5-1). Rendering them in AI mode would put
-   * three controls on screen that silently do nothing — the exact objection that keeps the scope tabs
-   * out of AI mode, and it applied here too until the W5 parity sweep noticed
-   * ([48 §3.9 W5-11](../../../../../docs/48_PlatformParityRegister.md)).
+   * Reading time, publish date and sort belong to the **Pieces scope only**, because the ranked
+   * `All` results come from `SemanticSearchDto`, which accepts `language`, `genre` and `tags` and
+   * nothing else (48 §3.9 W5-1). Rendering them on `All` would put three controls on screen that
+   * silently do nothing — the objection the W5 parity sweep raised
+   * ([48 §3.9 W5-11](../../../../../docs/48_PlatformParityRegister.md)), and it survives D5 unchanged
+   * now that `All` is the ranked scope rather than a separate engine.
    */
-  const isPieces = params.mode === 'keyword' && params.type === SearchType.Pieces;
+  const isPieces = params.type === SearchType.Pieces;
 
   const controlStyle = stacked ? { width: '100%' } : { minWidth: 152 };
   const wrapClass = stacked ? 'flex flex-col gap-4' : 'flex flex-wrap items-center gap-2';
@@ -156,19 +157,20 @@ export function SearchFilterBar({
   const closeFilterPanel = useSearchStore((s) => s.closeFilterPanel);
 
   /**
-   * In keyword mode filters only apply to the Pieces + Writers tabs — the other scopes have nothing to
-   * filter on.
+   * Filters apply to `All`, `Pieces` and `Writers`. The remaining scopes (tags, genres, languages)
+   * are lists of the filter dimensions themselves, so there is nothing left to narrow by.
    *
-   * **AI mode has no tabs, so it cannot be gated on one.** The engine returns mixed entity types, which
-   * is why the scope tabs are hidden there; the consequence, until the W5 parity sweep found it, was
-   * that `type` stayed at its `all` default and this bar returned `null` — so the language/genre
-   * mapping the AI panel builds (and that W5-1 corrected `api-types` for) was **unreachable on a normal
-   * AI search**, while a reader who arrived from the Pieces tab kept `type=pieces` and got three
-   * controls the engine ignores. Both halves are one gate: render for the AI engine on its own terms,
-   * and offer only what it accepts ([48 §3.9 W5-11](../../../../../docs/48_PlatformParityRegister.md)).
+   * `All` is included because it is where the ranked search lives, and language/genre/tags are
+   * exactly what it accepts. Before D5 that scope showed no bar at all — the ranked engine had no
+   * tabs, so `type` stayed at its `all` default and this returned `null`, which made the filter
+   * mapping W5-1 had corrected `api-types` for **unreachable on a normal ranked search**. Merging the
+   * engines fixed that by construction: one scope list, and the bar renders against it.
    */
-  const aiMode = params.mode === 'ai';
-  if (!aiMode && params.type !== SearchType.Pieces && params.type !== SearchType.Writers)
+  if (
+    params.type !== SearchType.All &&
+    params.type !== SearchType.Pieces &&
+    params.type !== SearchType.Writers
+  )
     return null;
 
   const clearButton = params.hasActiveFilters ? (

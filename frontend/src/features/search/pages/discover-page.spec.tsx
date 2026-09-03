@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CursorPage } from '@/lib/api-client';
 import { renderWithProviders } from '@/test/render';
 
-import { useAiAvailability } from '@/hooks/use-ai-availability';
+import { useAuthStore } from '@/stores/auth.store';
 
 import { discoverApi } from '../api/discover.api';
 import { retrievalApi } from '../api/retrieval.api';
@@ -25,8 +25,6 @@ vi.mock('../api/discover.api', () => ({
 // The AF4 shelves (W5) gate on the app-level availability hook and read through the retrieval api.
 // Both are mocked rather than left to the real api-client: an unmocked gate read would make the
 // shelves' absence depend on a failed fetch, which is not evidence that they self-silence.
-vi.mock('@/hooks/use-ai-availability', () => ({ useAiAvailability: vi.fn() }));
-
 vi.mock('../api/retrieval.api', () => ({
   retrievalApi: {
     features: vi.fn(),
@@ -93,8 +91,10 @@ function seedAll(): void {
 describe('DiscoverPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Default posture: AI dark, which is what AF1 seeds and therefore what most deployments show.
-    vi.mocked(useAiAvailability).mockReturnValue('off');
+    // Default posture: signed out. Discover is a public editorial page and that is its majority
+    // traffic — before D5 the default was "AI dark", which AF1 seeded and which hid the shelves for
+    // a different reason.
+    useAuthStore.setState({ status: 'anonymous' });
   });
 
   it('renders every discovery section from real backend reads', async () => {
@@ -129,11 +129,16 @@ describe('DiscoverPage', () => {
   });
 
   /**
-   * The AF4 shelves (W5). The editorial page is public and must be unchanged for a reader who has no
-   * AI — so the interesting assertions are the silent ones.
+   * The recommendation shelves (W5, re-gated by D5). The editorial page is public and must be
+   * unchanged for a reader with no session — so the interesting assertions are the silent ones.
+   *
+   * "Asks for nothing" is the load-bearing half. `/ai/recommendations` still needs a session, and a
+   * 401 here would take the api layer's `onUnauthorized()` path and sign the reader out of a page
+   * they were browsing anonymously (48 §3.25). The feature flag used to prevent that as a side
+   * effect; the auth gate now does it on purpose.
    */
-  describe('AI recommendation shelves', () => {
-    it('renders nothing, and asks for nothing, while the flag is down', async () => {
+  describe('Recommendation shelves', () => {
+    it('renders nothing, and asks for NOTHING, for a signed-out reader', async () => {
       seedAll();
       renderWithProviders(<DiscoverPage />, { route: '/discover' });
 
@@ -145,7 +150,7 @@ describe('DiscoverPage', () => {
 
     it('renders a shelf with each item explained when recommendations are live', async () => {
       seedAll();
-      vi.mocked(useAiAvailability).mockReturnValue('available');
+      useAuthStore.setState({ status: 'authenticated' });
       vi.mocked(retrievalApi.recommendations).mockImplementation((args) =>
         Promise.resolve({
           kind: args.kind,

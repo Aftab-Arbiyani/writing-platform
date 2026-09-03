@@ -3,16 +3,11 @@ import type { SearchResultItem, SemanticSearchResponse } from '@qalam/api-types'
 import { screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { useAiAvailability } from '@/hooks/use-ai-availability';
 import { renderWithProviders } from '@/test/render';
 
 import { retrievalApi } from '../api/retrieval.api';
 import type { UseSearchQueryParamsResult } from '../hooks/use-search-query-params';
-import { AiSearchPanel } from './ai-search-panel';
-
-// The gate is app-level (one read shared by every AI surface), so the availability it resolves is
-// the input to this component — stubbed directly rather than reconstructed from two payloads.
-vi.mock('@/hooks/use-ai-availability', () => ({ useAiAvailability: vi.fn() }));
+import { SearchResultsPanel } from './search-results-panel';
 
 vi.mock('../api/retrieval.api', () => ({
   retrievalApi: {
@@ -25,6 +20,15 @@ vi.mock('../api/retrieval.api', () => ({
     deleteSavedSearch: vi.fn(),
     recommendations: vi.fn(),
   },
+}));
+
+/**
+ * The keyword lists stand in for themselves. The claim under test is "on a ranking failure this
+ * renders the keyword results", which is about the fallback DECISION; mounting the real list would
+ * drag in five infinite queries and test their loading states instead.
+ */
+vi.mock('./search-results', () => ({
+  SearchResults: () => <div data-testid="keyword-results" />,
 }));
 
 function result(over: Partial<SearchResultItem> = {}): SearchResultItem {
@@ -77,7 +81,6 @@ function params(over: Partial<UseSearchQueryParamsResult> = {}): UseSearchQueryP
   return {
     q: 'rain',
     hasQuery: true,
-    mode: 'ai',
     type: 'all',
     sort: 'relevance',
     language: null,
@@ -88,7 +91,6 @@ function params(over: Partial<UseSearchQueryParamsResult> = {}): UseSearchQueryP
     filters: {},
     hasActiveFilters: false,
     setQuery: vi.fn(),
-    setMode: vi.fn(),
     setType: vi.fn(),
     setSort: vi.fn(),
     setLanguage: vi.fn(),
@@ -102,38 +104,30 @@ function params(over: Partial<UseSearchQueryParamsResult> = {}): UseSearchQueryP
 }
 
 /**
- * The AI search surface (W5/AF4).
+ * The default search results.
  *
- * The gating cases come first because they are the majority state: AF1 seeds every AI flag disabled,
- * so on a stock deployment this panel's whole job is to explain itself rather than to render results.
+ * D5 deleted this file's largest describe block — the gating cases. There used to be four ways for
+ * this panel to render an explanation instead of results (AI off / feature off / no allowance / no
+ * plan), and on a stock deployment explaining itself was its whole job, because AF1 seeds every AI
+ * flag disabled. The route is public now and calls no model, so a reader searches and gets results.
+ * What is left to test is the search.
  */
-describe('AiSearchPanel', () => {
+describe('SearchResultsPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(useAiAvailability).mockReturnValue('available');
   });
 
-  it('explains itself and asks for NOTHING when the master AI flag is down', async () => {
-    vi.mocked(useAiAvailability).mockReturnValue('off');
-    renderWithProviders(<AiSearchPanel params={params()} />);
+  it('searches without waiting for any feature gate', async () => {
+    vi.mocked(retrievalApi.search).mockResolvedValue(response());
+    renderWithProviders(<SearchResultsPanel params={params()} />);
 
-    expect(await screen.findByText('AI is turned off')).toBeInTheDocument();
-    // The gate is what decides whether a request happens — a dark deployment must not spend a
-    // rate-limited call to be told what its own flags already said.
-    expect(retrievalApi.search).not.toHaveBeenCalled();
-  });
-
-  it('distinguishes "this feature is off" from "AI is off"', async () => {
-    vi.mocked(useAiAvailability).mockReturnValue('feature-off');
-    renderWithProviders(<AiSearchPanel params={params()} />);
-
-    expect(await screen.findByText('Not available yet')).toBeInTheDocument();
-    expect(retrievalApi.search).not.toHaveBeenCalled();
+    expect(await screen.findByText('Rain over the old city')).toBeInTheDocument();
+    expect(retrievalApi.search).toHaveBeenCalledTimes(1);
   });
 
   it('renders ranked results with their reason, related entities and evidence', async () => {
     vi.mocked(retrievalApi.search).mockResolvedValue(response());
-    renderWithProviders(<AiSearchPanel params={params()} />);
+    renderWithProviders(<SearchResultsPanel params={params()} />);
 
     expect(await screen.findByText('Rain over the old city')).toBeInTheDocument();
     // A result must explain itself — that is the platform's design law, not a nicety.
@@ -145,7 +139,7 @@ describe('AiSearchPanel', () => {
   it('sends the row filters as flat fields, with the tag as `tags` (W5-1)', async () => {
     vi.mocked(retrievalApi.search).mockResolvedValue(response());
     renderWithProviders(
-      <AiSearchPanel params={params({ language: 'ur', genre: 'ghazal', tag: 'rain' })} />,
+      <SearchResultsPanel params={params({ language: 'ur', genre: 'ghazal', tag: 'rain' })} />,
     );
 
     await screen.findByText('Rain over the old city');
@@ -155,18 +149,27 @@ describe('AiSearchPanel', () => {
     );
   });
 
-  it('does not ask for a synthesised answer until the reader asks for one', async () => {
+  it('never asks for a synthesised answer', async () => {
     vi.mocked(retrievalApi.search).mockResolvedValue(response());
-    renderWithProviders(<AiSearchPanel params={params()} />);
+    renderWithProviders(<SearchResultsPanel params={params()} />);
 
     await screen.findByText('Rain over the old city');
-    // Synthesis is the only part of search that spends tokens and meters against the allowance.
+    // The one part of search that ever reached a model. The server ignores the field and V deletes
+    // it; until then, not sending it is what keeps this off the AI platform entirely.
     const body = vi.mocked(retrievalApi.search).mock.calls[0]?.[0];
     expect(body).not.toHaveProperty('synthesize');
-    expect(screen.getByRole('button', { name: /Explain these results/ })).toHaveAttribute(
-      'aria-pressed',
-      'false',
+  });
+
+  it('renders no answer block even if the server still sends one', async () => {
+    vi.mocked(retrievalApi.search).mockResolvedValue(
+      response({ answer: 'Three pieces touch on monsoon grief.' }),
     );
+    renderWithProviders(<SearchResultsPanel params={params()} />);
+
+    await screen.findByText('Rain over the old city');
+    // `answer` is pinned to null server-side and leaves the wire in V. A client that still rendered
+    // it would resurrect the one AI-authored thing on this page the moment anything wrote to it.
+    expect(screen.queryByText('Three pieces touch on monsoon grief.')).not.toBeInTheDocument();
   });
 
   it('says so when the server reports a degraded run', async () => {
@@ -181,28 +184,22 @@ describe('AiSearchPanel', () => {
         },
       }),
     );
-    renderWithProviders(<AiSearchPanel params={params()} />);
+    renderWithProviders(<SearchResultsPanel params={params()} />);
 
     // A partial answer that looks complete is this platform's most dangerous failure mode: a source
     // can time out and the request still succeeds.
     expect(await screen.findByText(/some sources were unavailable/)).toBeInTheDocument();
   });
 
-  it('renders the answer when one comes back', async () => {
-    vi.mocked(retrievalApi.search).mockResolvedValue(
-      response({ answer: 'Three pieces touch on monsoon grief.' }),
-    );
-    renderWithProviders(<AiSearchPanel params={params()} />);
-
-    expect(await screen.findByText('Three pieces touch on monsoon grief.')).toBeInTheDocument();
-  });
-
-  it('offers keyword search as the way out when retrieval fails', async () => {
+  it('falls back to the keyword results when ranking fails, without an error', async () => {
     vi.mocked(retrievalApi.search).mockRejectedValue(new Error('retrieval failed'));
-    renderWithProviders(<AiSearchPanel params={params()} />);
+    renderWithProviders(<SearchResultsPanel params={params()} />);
 
-    expect(await screen.findByText('AI search didn’t finish')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Use keyword search' })).toBeInTheDocument();
+    // The reader asked for search, not for the ranker. Before D5 they were told their chosen engine
+    // failed, which was right when choosing was theirs to do; now it would report an implementation
+    // detail they never picked.
+    expect(await screen.findByTestId('keyword-results')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Search results')).not.toBeInTheDocument();
   });
 
   it('answers an empty result set as "nothing found", not as an error', async () => {
@@ -218,7 +215,7 @@ describe('AiSearchPanel', () => {
         },
       }),
     );
-    renderWithProviders(<AiSearchPanel params={params()} />);
+    renderWithProviders(<SearchResultsPanel params={params()} />);
 
     expect(await screen.findByText('Nothing found')).toBeInTheDocument();
   });

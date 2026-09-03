@@ -1,35 +1,37 @@
-import { AiFeature } from '@qalam/shared';
 import type { SavedSearch } from '@qalam/api-types';
 import { QButton, QDialog, QInput, useToast } from '@qalam/ui';
 import { Bookmark, BookmarkPlus, X } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
 
 import { getErrorMessage } from '@/lib/errors';
-
-import { useAiAvailability } from '@/hooks/use-ai-availability';
+import { useAuthStore } from '@/stores/auth.store';
 
 import { useDeleteSavedSearch, useSavedSearches, useSaveSearch } from '../hooks/use-retrieval';
 
 /**
- * Saved searches (AF4 / W5) — the reader's named, server-side searches.
+ * Saved searches — the reader's named, server-side searches.
  *
- * **Deliberately quiet when there is nothing to show.** It renders null while AI is unavailable or
- * the list is empty, exactly like `RecentSearches` does: this sits on the search landing beside
- * Recent and Trending, and an empty shell there would push the two lists that DO have content below
- * the fold. The place a reader learns saved searches exist is the save button on a result set
+ * **Deliberately quiet when there is nothing to show.** It renders null for a signed-out reader or
+ * an empty list, exactly like `RecentSearches` does: this sits on the search landing beside Recent
+ * and Trending, and an empty shell there would push the two lists that DO have content below the
+ * fold. The place a reader learns saved searches exist is the save button on a result set
  * ({@link SaveSearchButton}), not an empty heading.
  *
- * These are AF4's own list — distinct from the E8 recent-search history (`/search/recent`), which is
- * unnamed, automatic, and shared with keyword search. The server caps them at 50 per user.
+ * D5 swapped the AI-availability gate for a plain session check. Saving is the one retrieval route
+ * that stayed authenticated — a saved search belongs to somebody — so a session is the real
+ * condition, and it always was; the feature flag was standing in front of it.
+ *
+ * Distinct from the E8 recent-search history (`/search/recent`), which is unnamed, automatic, and
+ * kept locally. The server caps these at 50 per user.
  */
 export function SavedSearches({ onRun }: { onRun: (query: string) => void }): ReactElement | null {
-  const availability = useAiAvailability(AiFeature.SemanticSearch);
+  const authed = useAuthStore((s) => s.status) === 'authenticated';
   const { data } = useSavedSearches();
   const remove = useDeleteSavedSearch();
   const toast = useToast();
 
   const items = data ?? [];
-  if (availability !== 'available' || items.length === 0) return null;
+  if (!authed || items.length === 0) return null;
 
   const onRemove = (item: SavedSearch): void => {
     remove.mutate(item.id, {
@@ -91,7 +93,7 @@ export function SavedSearches({ onRun }: { onRun: (query: string) => void }): Re
 }
 
 /**
- * Save the current AI search under a name (`POST /ai/search/saved`).
+ * Save the current search under a name (`POST /ai/search/saved`).
  *
  * The name is asked for rather than derived, because that is the whole point of a saved search: the
  * query is already the query. A dialog rather than an inline field so the query text stays visible
@@ -102,13 +104,15 @@ export function SavedSearches({ onRun }: { onRun: (query: string) => void }): Re
  * and does not need to.
  */
 export function SaveSearchButton({ query }: { query: string }): ReactElement | null {
-  const availability = useAiAvailability(AiFeature.SemanticSearch);
+  const authed = useAuthStore((s) => s.status) === 'authenticated';
   const save = useSaveSearch();
   const toast = useToast();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
 
-  if (availability !== 'available' || query.trim() === '') return null;
+  // Self-hiding is what lets the search page render this unconditionally: a signed-out reader gets
+  // search without a control that would only 401.
+  if (!authed || query.trim() === '') return null;
 
   const openDialog = (): void => {
     setName(query.trim().slice(0, 120));

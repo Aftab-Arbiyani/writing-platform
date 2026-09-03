@@ -2,13 +2,11 @@ import type { SavedSearch } from '@qalam/api-types';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { useAiAvailability } from '@/hooks/use-ai-availability';
 import { renderWithProviders } from '@/test/render';
+import { useAuthStore } from '@/stores/auth.store';
 
 import { retrievalApi } from '../api/retrieval.api';
 import { SavedSearches, SaveSearchButton } from './saved-searches';
-
-vi.mock('@/hooks/use-ai-availability', () => ({ useAiAvailability: vi.fn() }));
 
 vi.mock('../api/retrieval.api', () => ({
   retrievalApi: {
@@ -35,7 +33,8 @@ const SAVED: SavedSearch = {
 describe('SavedSearches', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(useAiAvailability).mockReturnValue('available');
+    // D5: the gate is a session, not a feature flag. A saved search belongs to somebody.
+    useAuthStore.setState({ status: 'authenticated' });
   });
 
   it('lists a saved search by name, with the query it runs', async () => {
@@ -83,11 +82,14 @@ describe('SavedSearches', () => {
     expect(container.querySelector('section')).toBeNull();
   });
 
-  it('renders nothing and asks nothing when AI is off', async () => {
-    vi.mocked(useAiAvailability).mockReturnValue('off');
+  it('renders nothing and asks NOTHING for a signed-out reader', () => {
+    useAuthStore.setState({ status: 'anonymous' });
     const { container } = renderWithProviders(<SavedSearches onRun={vi.fn()} />);
 
     expect(container.querySelector('section')).toBeNull();
+    // Not asking is the point, not merely not rendering. `/ai/search/saved` still requires a
+    // session, and a 401 on the public search landing would take the api layer's `onUnauthorized()`
+    // path and drop the reader's session on a page they were browsing anonymously (48 §3.25).
     expect(retrievalApi.savedSearches).not.toHaveBeenCalled();
   });
 });
@@ -95,7 +97,8 @@ describe('SavedSearches', () => {
 describe('SaveSearchButton', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(useAiAvailability).mockReturnValue('available');
+    // D5: the gate is a session, not a feature flag. A saved search belongs to somebody.
+    useAuthStore.setState({ status: 'authenticated' });
   });
 
   it('pre-fills the name with the query, so accepting the default is one keystroke', async () => {
@@ -133,6 +136,17 @@ describe('SaveSearchButton', () => {
 
   it('offers nothing to save when there is no query', () => {
     const { container } = renderWithProviders(<SaveSearchButton query="  " />);
+    expect(container.querySelector('button')).toBeNull();
+  });
+
+  /**
+   * The search page renders this unconditionally since D5 — the engine switch it used to hang off
+   * is gone, and gating it on anything else would hide saving from every search on the page. Which
+   * makes self-hiding load-bearing: this is what a signed-out reader must not see.
+   */
+  it('hides itself for a signed-out reader, which is what lets the page render it always', () => {
+    useAuthStore.setState({ status: 'anonymous' });
+    const { container } = renderWithProviders(<SaveSearchButton query="rain and grief" />);
     expect(container.querySelector('button')).toBeNull();
   });
 });

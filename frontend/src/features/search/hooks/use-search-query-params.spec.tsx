@@ -49,44 +49,39 @@ describe('useSearchQueryParams', () => {
   });
 
   /**
-   * The regression the W5 E2E run caught: two `update` calls in one handler both patch the same
-   * pre-navigation URL, so the second dropped the first's key. `setSearch` is one update.
+   * The W5-7 hazard, kept alive after the bug that revealed it was removed.
+   *
+   * Two `update` calls in one handler both patch the same pre-navigation URL, so the second discards
+   * the first's key. It was found on `setMode` + `setQuery`, and D5 deleted `mode` — but the hazard
+   * belongs to `update`, not to `mode`, so the case is re-arranged on two setters that still exist
+   * rather than deleted with the parameter. A future handler that sets two keys will meet it again.
    */
-  it('sets the query and the engine together, keeping both', () => {
+  it('drops one of two keys when they are set in separate calls — the shape that broke', () => {
     const { result } = renderHook(() => useSearchQueryParams(), {
       wrapper: wrapperFor('/search'),
     });
     act(() => {
-      result.current.setSearch('barish', 'ai');
-    });
-    expect(result.current.q).toBe('barish');
-    expect(result.current.mode).toBe('ai');
-  });
-
-  it('loses nothing when the engine is set back to the default alongside a query', () => {
-    const { result } = renderHook(() => useSearchQueryParams(), {
-      wrapper: wrapperFor('/search?q=old&mode=ai'),
-    });
-    act(() => {
-      result.current.setSearch('barish', 'keyword');
-    });
-    expect(result.current.q).toBe('barish');
-    // `keyword` is the default and is omitted from the URL rather than written as a value.
-    expect(result.current.mode).toBe('keyword');
-  });
-
-  it('drops the engine when set separately after the query — the shape that broke', () => {
-    const { result } = renderHook(() => useSearchQueryParams(), {
-      wrapper: wrapperFor('/search'),
-    });
-    act(() => {
-      result.current.setMode('ai');
+      result.current.setType(SearchType.Writers);
       result.current.setQuery('barish');
     });
     // Documents the hazard rather than endorsing it: both setters patched the same snapshot, so the
-    // engine is gone. Any caller needing both must use `setSearch`.
+    // scope is gone. Any caller needing both must patch them in ONE `update`.
     expect(result.current.q).toBe('barish');
-    expect(result.current.mode).toBe('keyword');
+    expect(result.current.type).toBe(SearchType.All);
+  });
+
+  /**
+   * D5 merged the two engines. Links carrying the old `mode=ai` are in readers' bookmarks and in
+   * saved searches, and they must still land on the results that parameter used to select — which
+   * they do by being ignored, since the ranked results are now the default.
+   */
+  it('ignores a legacy mode= parameter instead of breaking on it', () => {
+    const { result } = renderHook(() => useSearchQueryParams(), {
+      wrapper: wrapperFor('/search?q=barish&mode=ai'),
+    });
+    expect(result.current.q).toBe('barish');
+    expect(result.current.type).toBe(SearchType.All);
+    expect(result.current.hasQuery).toBe(true);
   });
 
   it('adds an explicit sort to the filters when changed', () => {

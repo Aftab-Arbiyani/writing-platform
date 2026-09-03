@@ -1,3 +1,4 @@
+import { SearchType } from '@qalam/shared';
 import { QSearch } from '@qalam/ui';
 import { Compass } from 'lucide-react';
 import type { KeyboardEvent, ReactElement } from 'react';
@@ -7,8 +8,8 @@ import { Seo } from '@/components/seo';
 import { usePageTitle } from '@/hooks/use-page-title';
 import { ROUTES } from '@/lib/routes';
 
-import { AiSearchPanel } from '../components/ai-search-panel';
-import { AiSearchSuggestions, SearchModeToggle } from '../components/ai-search-controls';
+import { SearchResultsPanel } from '../components/search-results-panel';
+import { SearchSuggestions } from '../components/search-suggestions';
 import { RecentSearches } from '../components/recent-searches';
 import { SavedSearches, SaveSearchButton } from '../components/saved-searches';
 import { RemovableChip } from '../components/search-chip';
@@ -23,14 +24,20 @@ import { useSearchQueryParams } from '../hooks/use-search-query-params';
 /**
  * The Search & Discovery screen (docs/06 §3.6, docs/11 §10) — the full experience and the mobile
  * search surface. All state is in the URL (`useSearchQueryParams`); the field debounces into it
- * (`useSearchInput`). Below the field: with a query, the engine switch + filters + results; without
- * one, the recent / saved / trending panel. Every list owns its own loading/empty/error state.
+ * (`useSearchInput`). Below the field: with a query, the scope tabs + filters + results; without one,
+ * the recent / saved / trending panel. Every list owns its own loading/empty/error state.
  *
- * **Two engines answer the same field (W5/AF4, docs/45 §4).** `mode=keyword` is the E8 full-text
- * search this page has always run — public, always available, scoped by the tabs. `mode=ai` is the
- * retrieval-backed one: ranked, grounded, explainable, and gated on auth + `ai.use` + a feature flag
- * that ships dark. The AI half is additive on purpose — a reader who is signed out, or a deployment
- * that has not raised the flags, keeps exactly the search it had.
+ * **One search (D5).** There used to be an engine switch here — `mode=keyword` for E8 full-text and
+ * `mode=ai` for the retrieval-backed one, the second gated on auth + a dark feature flag. The two
+ * were never really alternatives: the retrieval pipeline is a graph + keyword + metadata retriever
+ * behind a ranker, and the only part of it that ever called a model was an optional synthesized
+ * answer, which is gone. So there is one search, it is the ranked one, and it is public.
+ *
+ * **The scope tabs survived the merge and the switch did not**, because they are different kinds of
+ * choice. The switch asked the reader to pick an implementation, which is a question a reader has no
+ * way to answer. A scope is a refinement of their own intent — "just writers" — so `All` shows the
+ * ranked, mixed-type results and every other tab narrows to that entity's keyword list. Nothing was
+ * lost: both engines are still reachable, just not as a thing to choose between.
  */
 export function SearchPage(): ReactElement {
   usePageTitle('Search');
@@ -45,16 +52,14 @@ export function SearchPage(): ReactElement {
   };
 
   /**
-   * Run a SAVED search. Saved searches are an AF4 concept, so re-running one switches to the AI
-   * engine as well as setting the query — restoring it into keyword mode would answer the reader's
-   * saved question with a different engine and quietly call it the same search.
+   * Run a SAVED search.
+   *
+   * Identical to {@link runQuery} since D5: a saved search used to have to restore the AI engine as
+   * well as the query, because re-running one in keyword mode answered the reader's saved question
+   * with a different engine and called it the same search (48 §3.9 W5-7). With one engine there is
+   * no engine to restore, so the distinction — and the two-navigations bug it once hid — is gone.
    */
-  const runSavedQuery = (query: string): void => {
-    recent.record(query);
-    // ONE navigation, not two: `setMode` + `setQuery` in the same handler both patch the same
-    // pre-navigation URL, so the second silently dropped the engine (docs/48 §3.9 W5-7).
-    params.setSearch(query, 'ai');
-  };
+  const runSavedQuery = runQuery;
 
   const onKeyDown = (event: KeyboardEvent<HTMLInputElement>): void => {
     if (event.key === 'Enter') {
@@ -89,20 +94,15 @@ export function SearchPage(): ReactElement {
       {params.hasQuery ? (
         <>
           {/*
-            The engine switch sits above the scope tabs because it is the coarser choice: the tabs
-            narrow WHERE keyword search looks, while this decides WHICH engine answers. AI search
-            returns mixed entity types by design, so the scope tabs do not apply to it and are not
-            rendered in that mode — a tab that silently did nothing would be worse than its absence.
+            Unconditional since D5. `SaveSearchButton` self-hides for a signed-out reader, which is
+            the only condition that ever mattered — it used to ALSO be hidden outside AI mode, and
+            with one engine that would hide it from every search on the page.
           */}
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <SearchModeToggle mode={params.mode} onSelect={params.setMode} />
-            {/* Saving belongs to the AI engine — the E8 history already records keyword queries. */}
-            {params.mode === 'ai' ? <SaveSearchButton query={params.q} /> : null}
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <SaveSearchButton query={params.q} />
           </div>
 
-          {params.mode === 'keyword' ? (
-            <SearchTabs type={params.type} onSelect={params.setType} />
-          ) : null}
+          <SearchTabs type={params.type} onSelect={params.setType} />
           <SearchFilterBar params={params} />
 
           {params.tag ? (
@@ -121,10 +121,16 @@ export function SearchPage(): ReactElement {
             </div>
           ) : null}
 
-          {params.mode === 'ai' ? (
+          {/*
+            `All` is the ranked, mixed-type answer; every narrower scope is that entity's keyword
+            list. Suggestions ride with `All` because they are query reformulations — offering one
+            while the reader has deliberately narrowed to "Writers" would push them back out of the
+            scope they just chose.
+          */}
+          {params.type === SearchType.All ? (
             <>
-              <AiSearchSuggestions prefix={params.q.trim()} onPick={runQuery} />
-              <AiSearchPanel params={params} />
+              <SearchSuggestions prefix={params.q.trim()} onPick={runQuery} />
+              <SearchResultsPanel params={params} />
             </>
           ) : (
             <SearchResults params={params} />

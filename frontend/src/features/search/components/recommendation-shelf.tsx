@@ -5,6 +5,7 @@ import type { ReactElement } from 'react';
 import { Link } from 'react-router';
 
 import { piecePath, profilePath } from '@/lib/routes';
+import { useAuthStore } from '@/stores/auth.store';
 
 import { useRecommendations } from '../hooks/use-retrieval';
 import { entityTypeLabel } from '../lib/retrieval-labels';
@@ -58,15 +59,17 @@ function RecommendationCardView({ item }: { item: RecommendationItem }): ReactEl
 /**
  * A shelf of recommendations for one surface (`GET /ai/recommendations?kind=…`).
  *
- * **Silent unless it has something to say.** It renders nothing while the flag is down (the majority
- * state — AF1 seeds `feature.ai.recommendations` disabled), nothing for a signed-out reader (every
- * AF4 route needs `ai.use`), and nothing when the set comes back empty. That is the same rule the
- * editorial sections on this page already follow: a hollow heading is worse than no heading.
+ * **Silent unless it has something to say.** It renders nothing for a signed-out reader, and nothing
+ * when the set comes back empty. That is the same rule the editorial sections on this page already
+ * follow: a hollow heading is worse than no heading.
  *
- * It deliberately does NOT render an availability notice. The discover page is a public editorial
- * surface that works without AI; explaining an AI feature nobody asked for, to a reader who may not
- * be signed in, would be noise. The place that explains itself is the AI search panel, which a reader
- * chose to open.
+ * The signed-out check is a REQUEST gate, not just a render gate. `/ai/recommendations` still needs
+ * a session, and firing it anonymously would 401 — which on a public page is not harmless, because
+ * the api layer's `onUnauthorized()` drops the session on the way past. Before D5 the feature-flag
+ * hop happened to prevent that; the flag is gone, so the gate has to be stated.
+ *
+ * It deliberately does NOT explain its own absence. Discover is a public editorial surface that
+ * works without recommendations; a notice about a feature nobody asked for would be noise.
  */
 export function RecommendationShelf({
   kind,
@@ -79,9 +82,10 @@ export function RecommendationShelf({
   icon: LucideIcon;
   limit?: number;
 }): ReactElement | null {
-  const { data, isLoading, isError } = useRecommendations({ kind, limit });
+  const authed = useAuthStore((s) => s.status) === 'authenticated';
+  const { data, isLoading, isError } = useRecommendations({ kind, limit, enabled: authed });
 
-  if (isError) return null;
+  if (!authed || isError) return null;
   if (isLoading) {
     return (
       <DiscoverSection title={title} icon={icon}>
