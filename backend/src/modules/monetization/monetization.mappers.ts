@@ -1,8 +1,6 @@
 import type { EntitlementSnapshot } from '@qalam/shared';
 
 import type { Coupon } from './entities/coupon.entity';
-import type { CreditTransaction } from './entities/credit-transaction.entity';
-import type { CreditWallet } from './entities/credit-wallet.entity';
 import type { EntitlementOverride } from './entities/entitlement-override.entity';
 import type { Invoice } from './entities/invoice.entity';
 import type { Payment } from './entities/payment.entity';
@@ -11,8 +9,6 @@ import type { Subscription } from './entities/subscription.entity';
 import type { SubscriptionEvent } from './entities/subscription-event.entity';
 import type {
   CouponDto,
-  CreditBalanceDto,
-  CreditTransactionDto,
   EntitlementOverrideDto,
   EntitlementSnapshotDto,
   InvoiceDto,
@@ -85,30 +81,6 @@ export function toUsageSummaryDto(summary: UsageSummary, quotas: FeatureQuota[])
     byFeature: summary.byFeature,
     forecastMonthlyTokens: summary.forecastMonthlyTokens,
     forecastMonthlyCostUsd: summary.forecastMonthlyCostUsd,
-  };
-}
-
-export function toCreditBalanceDto(wallet: CreditWallet, creditsPerUsd: number): CreditBalanceDto {
-  return {
-    balance: wallet.balance,
-    lifetimeGranted: wallet.lifetimeGranted,
-    lifetimeConsumed: wallet.lifetimeConsumed,
-    creditsPerUsd,
-    updatedAt: wallet.updatedAt.toISOString(),
-  };
-}
-
-export function toCreditTransactionDto(t: CreditTransaction): CreditTransactionDto {
-  return {
-    id: t.id,
-    type: t.type,
-    reason: t.reason,
-    delta: t.delta,
-    balanceAfter: t.balanceAfter,
-    feature: t.feature,
-    tokens: t.tokens,
-    costUsd: t.costUsd,
-    createdAt: t.createdAt.toISOString(),
   };
 }
 

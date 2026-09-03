@@ -9,13 +9,11 @@ import type { BillingInterval, PlanDefinition, PlanTier } from '@qalam/shared';
 /** Cross-cutting monetization config (the `monetization.config` JSON setting, resolved). */
 export interface ResolvedMonetizationConfig {
   /** Credits granted per USD of AI spend when converting cost → credits. */
-  creditsPerUsd: number;
   /** Default free-trial length (days) when a plan does not override it. */
   trialDays: number;
   /** Dunning/grace window (days) after a failed renewal before access ends. */
   gracePeriodDays: number;
   /** Warn the user when their credit balance drops below this. */
-  lowCreditThreshold: number;
   /** Tax rate (fraction, e.g. 0.2 = 20%) by region code; `default` is the fallback. */
   taxRates: Record<string, number>;
   /** Currency conversion multiplier vs USD (e.g. inr: 83). */
@@ -29,10 +27,8 @@ export type ResolvedPlanCatalogue = Record<PlanTier, PlanDefinition>;
 
 /** A partial patch to the monetization config (admin update). */
 export interface MonetizationConfigPatch {
-  creditsPerUsd?: number;
   trialDays?: number;
   gracePeriodDays?: number;
-  lowCreditThreshold?: number;
   taxRates?: Record<string, number>;
   currencyRates?: Record<string, number>;
   regionCurrency?: Record<string, string>;

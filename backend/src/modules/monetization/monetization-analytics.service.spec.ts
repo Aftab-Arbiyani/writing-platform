@@ -1,10 +1,10 @@
 import { PaymentStatus } from '@qalam/shared';
 import type { Repository } from 'typeorm';
 
-import type { CreditTransaction } from './entities/credit-transaction.entity';
 import type { Payment } from './entities/payment.entity';
 import type { Subscription } from './entities/subscription.entity';
 import type { SubscriptionEvent } from './entities/subscription-event.entity';
+import type { UsageService as AiUsageService } from '../ai';
 import { MonetizationAnalyticsService } from './monetization-analytics.service';
 
 /**
@@ -80,7 +80,12 @@ function build(opts: {
     payments,
     {} as Repository<Subscription>,
     {} as Repository<SubscriptionEvent>,
-    {} as Repository<CreditTransaction>,
+    // D5: AI cost now comes from `ai_usage_logs` through the AI module's own service, not
+    // from the credit ledger the meter used to mirror into. These revenue tests never touch it.
+    {
+      platformTotals: jest.fn().mockResolvedValue({ totalTokens: 0, totalCostUsd: 0 }),
+      platformByFeature: jest.fn().mockResolvedValue([]),
+    } as unknown as AiUsageService,
   );
 }
 

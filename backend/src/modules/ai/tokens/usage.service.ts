@@ -184,6 +184,42 @@ export class UsageService {
     return Number(row?.count ?? 0);
   }
 
+  /**
+   * Platform-wide token/cost totals — the operator's cost signal, not a user's.
+   *
+   * Lives here because `ai_usage_logs` is this module's table and cross-module repository reads
+   * are forbidden. Before D5 the admin dashboards read the same numbers off the monetization
+   * CREDIT ledger, which was a mirror of these rows; the mirror is gone, so the dashboards read
+   * the original. `since` narrows the window; omit it for lifetime.
+   */
+  async platformTotals(since?: Date): Promise<{ totalTokens: number; totalCostUsd: number }> {
+    const qb = this.repo
+      .createQueryBuilder('u')
+      .select('COALESCE(SUM(u.total_tokens), 0)', 'tokens')
+      .addSelect('COALESCE(SUM(u.cost_usd), 0)', 'cost');
+    if (since !== undefined) {
+      qb.where('u.created_at >= :since', { since });
+    }
+    const row = await qb.getRawOne<{ tokens: string; cost: string }>();
+    return { totalTokens: Number(row?.tokens ?? 0), totalCostUsd: Number(row?.cost ?? 0) };
+  }
+
+  /** Platform-wide tokens + cost per feature (operator cost attribution). */
+  async platformByFeature(): Promise<Array<{ feature: string; tokens: number; costUsd: number }>> {
+    const rows = await this.repo
+      .createQueryBuilder('u')
+      .select('u.feature', 'feature')
+      .addSelect('COALESCE(SUM(u.total_tokens), 0)', 'tokens')
+      .addSelect('COALESCE(SUM(u.cost_usd), 0)', 'cost')
+      .groupBy('u.feature')
+      .getRawMany<{ feature: string; tokens: string; cost: string }>();
+    return rows.map((r) => ({
+      feature: r.feature,
+      tokens: Number(r.tokens),
+      costUsd: Number(r.cost),
+    }));
+  }
+
   private async sumTokensSince(userId: string, since: Date): Promise<number> {
     const row = await this.repo
       .createQueryBuilder('u')

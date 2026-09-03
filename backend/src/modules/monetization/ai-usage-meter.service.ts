@@ -1,53 +1,37 @@
-import { Injectable, Logger } from '@nestjs/common';
-import {
-  CreditReason,
-  PremiumFeature,
-  QuotaWindow,
-  quotaRuleForAiFeature,
-  creditsForCostUsd,
-  premiumCodeForAiFeature,
-} from '@qalam/shared';
+import { Injectable } from '@nestjs/common';
+import { QuotaWindow, quotaRuleForAiFeature, premiumCodeForAiFeature } from '@qalam/shared';
 
 import { DomainEventBus } from '../../common/events/domain-event-bus';
 import { DomainEventType } from '../../common/events/domain-events';
-import type {
-  AiUsageConsumption,
-  AiUsageMeter,
-  AiUsageQuotaCheck,
-} from '../../common/metering/ai-usage-meter.port';
-import { CreditService } from './credit.service';
+import type { AiUsageMeter, AiUsageQuotaCheck } from '../../common/metering/ai-usage-meter.port';
 import { EntitlementService } from './entitlement.service';
-import { MonetizationConfigService } from './monetization.config-service';
 import { MonetizationFeatureService } from './monetization.feature-service';
 import { QuotaExceededException } from './monetization.exceptions';
 import { UsageService } from './usage.service';
 
 /**
- * The credit-aware AI usage meter (AF5) — the Monetization module's implementation of the
- * `AI_USAGE_METER` port the AI orchestrator delegates to. This is HOW "every AI request
- * passes through the Usage Service" is realized without duplicating any token counting:
+ * The AI usage meter (AF5) — the Monetization module's implementation of the `AI_USAGE_METER`
+ * port the AI orchestrator delegates to, and the one place a plan's limits meet a generation.
  *
- * - `checkQuota` (before generation): confirms the user is entitled to an AI budget, then
- *   to the requested feature's premium code when it has one (D3 — `ai_writing`), then
- *   enforces the plan's daily/monthly token quota (budget protection). A QUOTA_EXCEEDED
- *   also emits a cost-alert event.
- * - `recordConsumption` (after generation): converts the cost the AI platform already
- *   computed into credits and debits the ledger (feature-attributed, for usage analytics),
- *   emitting a low-credit alert when the balance drops under the threshold.
+ * `checkQuota` runs before every generation: the requested feature's premium code when it has
+ * one (`ai_writing`, `story_intelligence`), then that feature's per-plan allowance. Entitlement
+ * is asserted FIRST so a user who is not sold the feature gets ENTITLEMENT_DENIED ("upgrade")
+ * rather than QUOTA_EXCEEDED ("wait for the reset") — the conflation docs/48 §3.6 records as W4.
  *
- * When the monetization platform flag is OFF, the meter is a NO-OP so the AI platform keeps
- * its own token-cap behavior with zero change (backward compatible dark launch).
+ * **There is no `recordConsumption` any more (D5).** It existed to convert a generation's cost
+ * into credits and debit a wallet; with the credit economy gone there is nothing to debit, and
+ * `ai_usage_logs` — written by the AI platform itself — is both the cost record and the source
+ * the allowance counts. A second write-path here would only be a copy to keep in step.
+ *
+ * When the monetization platform flag is OFF the meter is a NO-OP, so the AI platform keeps its
+ * own token-cap behaviour with zero change (backward-compatible dark launch).
  */
 @Injectable()
 export class AiUsageMeterService implements AiUsageMeter {
-  private readonly logger = new Logger(AiUsageMeterService.name);
-
   constructor(
     private readonly feature: MonetizationFeatureService,
     private readonly entitlements: EntitlementService,
     private readonly usage: UsageService,
-    private readonly credits: CreditService,
-    private readonly config: MonetizationConfigService,
     private readonly events: DomainEventBus,
   ) {}
 
@@ -55,9 +39,7 @@ export class AiUsageMeterService implements AiUsageMeter {
     if (!(await this.feature.isEnabled())) {
       return; // monetization dark → AF1 token caps apply, meter is inert
     }
-    // Must be entitled to an AI budget at all (a deny override blocks AI entirely).
-    await this.entitlements.assertAllowed(input.userId, PremiumFeature.AiBudget);
-    // Then the per-feature premium code, when the feature is sold behind one (D3,
+    // The per-feature premium code, when the feature is sold behind one (D3,
     // docs/45 §4 row D3, docs/48 §6.13). Asserted HERE rather than in `AiFeatureService`
     // for three reasons that all point the same way:
     //
@@ -97,33 +79,6 @@ export class AiUsageMeterService implements AiUsageMeter {
         });
       }
       throw error;
-    }
-  }
-
-  async recordConsumption(input: AiUsageConsumption): Promise<void> {
-    if (!(await this.feature.isEnabled())) {
-      return;
-    }
-    try {
-      const config = await this.config.getConfig();
-      const credits = creditsForCostUsd(input.costUsd, config.creditsPerUsd);
-      const balance = await this.credits.debit({
-        userId: input.userId,
-        amount: credits,
-        reason: CreditReason.AiUsage,
-        feature: input.feature,
-        tokens: input.usage.totalTokens,
-        costUsd: input.costUsd,
-        refType: 'ai_request',
-        refId: input.requestId ?? input.conversationId ?? null,
-      });
-      if (balance > 0 && balance < config.lowCreditThreshold) {
-        await this.events.emit(DomainEventType.CreditsLow, { userId: input.userId, balance });
-      }
-    } catch (error) {
-      // Metering must never break a completed generation — record failures are logged,
-      // not propagated (the ai_usage_logs telemetry row was already written by AF1).
-      this.logger.error(`usage metering failed for ${input.userId}: ${String(error)}`);
     }
   }
 }

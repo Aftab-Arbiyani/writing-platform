@@ -99,6 +99,11 @@ export const NotificationType = {
   PaymentFailed: 'payment_failed',
   PaymentReceipt: 'payment_receipt',
   QuotaExceeded: 'quota_exceeded',
+  /**
+   * @deprecated Unreachable since D5 removed the credit economy — nothing emits it. Kept
+   * because a shipped client may still branch on the string and because rows may exist in
+   * `notifications`; the channel map must keep its entry while this value does.
+   */
   CreditsLow: 'credits_low',
   // ── Collaboration/Publishing/Trust (AF6) — open catalogue, additive without a
   // migration; all map to the `system` preference key (notifications.constants).

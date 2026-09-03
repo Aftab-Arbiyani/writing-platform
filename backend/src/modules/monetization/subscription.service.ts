@@ -3,7 +3,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import {
   ACCESS_GRANTING_SUBSCRIPTION_STATUSES,
   BillingInterval,
-  CreditReason,
   PlanTier,
   SubscriptionEventType,
   SubscriptionStatus,
@@ -14,7 +13,6 @@ import { LessThan, Repository } from 'typeorm';
 import type { CursorPayload } from '../../common/pagination/cursor.util';
 import { DomainEventBus } from '../../common/events/domain-event-bus';
 import { DomainEventType } from '../../common/events/domain-events';
-import { CreditService } from './credit.service';
 import { EntitlementService } from './entitlement.service';
 import { MonetizationConfigService } from './monetization.config-service';
 import {
@@ -48,8 +46,8 @@ export interface OpenSubscriptionInput {
  * is no dependency cycle). Every transition writes an append-only `subscription_events`
  * row, emits a `SubscriptionChanged` domain event (notifications + analytics subscribe),
  * and invalidates the user's cached entitlement — so premium access is always consistent
- * with the subscription state, computed in one place. Grants plan credits on
- * activation/renewal (reusing the Credit service). One subscription per user.
+ * with the subscription state, computed in one place. Grants plan access on
+ * activation/renewal. One subscription per user.
  */
 @Injectable()
 export class SubscriptionService {
@@ -60,7 +58,6 @@ export class SubscriptionService {
     private readonly entitlements: EntitlementService,
     private readonly config: MonetizationConfigService,
     private readonly trials: TrialService,
-    private readonly credits: CreditService,
     private readonly bus: DomainEventBus,
   ) {}
 
@@ -125,9 +122,6 @@ export class SubscriptionService {
     if (trial !== null) {
       await this.recordEvent(saved, SubscriptionEventType.TrialStarted, null, null);
     }
-    if (status === SubscriptionStatus.Active) {
-      await this.grantPlanCredits(saved);
-    }
     await this.recordEvent(
       saved,
       status === SubscriptionStatus.PendingActivation
@@ -150,12 +144,11 @@ export class SubscriptionService {
     subscription.currentPeriodEnd = period.end;
     subscription.gracePeriodEnd = null;
     const saved = await this.subscriptions.save(subscription);
-    await this.grantPlanCredits(saved);
     await this.recordEvent(saved, SubscriptionEventType.Activated, null, from);
     return saved;
   }
 
-  /** Renew (a successful recurring payment): extend the period + re-grant credits. */
+  /** Renew (a successful recurring payment): extend the period. */
   async renew(userId: string, periodEnd: Date | null): Promise<Subscription> {
     const subscription = await this.getByUser(userId);
     const now = new Date();
@@ -174,7 +167,6 @@ export class SubscriptionService {
       subscription.scheduledInterval = null;
     }
     const saved = await this.subscriptions.save(subscription);
-    await this.grantPlanCredits(saved);
     await this.recordEvent(saved, SubscriptionEventType.Renewed, null, null);
     return saved;
   }
@@ -196,13 +188,12 @@ export class SubscriptionService {
     const fromTier = subscription.tier;
     const upgrade = isPlanUpgrade(fromTier, tier);
     if (upgrade && !atPeriodEnd) {
-      // Immediate upgrade — take effect now, grant the new plan's credits.
+      // Immediate upgrade — take effect now.
       subscription.tier = tier;
       subscription.interval = interval;
       subscription.scheduledTier = null;
       subscription.scheduledInterval = null;
       const saved = await this.subscriptions.save(subscription);
-      await this.grantPlanCredits(saved);
       await this.recordEvent(saved, SubscriptionEventType.Upgraded, fromTier, null);
       return saved;
     }
@@ -375,21 +366,6 @@ export class SubscriptionService {
   }
 
   // ── Internals ──────────────────────────────────────────────────────────────
-
-  /** Grant the plan's monthly AI credit allowance (idempotency is period-scoped upstream). */
-  private async grantPlanCredits(subscription: Subscription): Promise<void> {
-    const plan = await this.config.getPlan(subscription.tier);
-    if (plan === undefined || plan.monthlyCredits <= 0) {
-      return;
-    }
-    await this.credits.grant({
-      userId: subscription.userId,
-      amount: plan.monthlyCredits,
-      reason: CreditReason.SubscriptionGrant,
-      refType: 'subscription',
-      refId: subscription.id,
-    });
-  }
 
   private periodFor(
     interval: BillingInterval,

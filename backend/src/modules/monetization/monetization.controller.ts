@@ -9,34 +9,27 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { Permissions } from '../permissions/permissions.decorator';
 import { BillingService } from './billing.service';
-import { CreditService } from './credit.service';
 import {
   CancelSubscriptionDto,
   ChangePlanDto,
   CreateSubscriptionDto,
   CursorQueryDto,
-  PurchaseCreditsDto,
   RestorePurchasesDto,
   ValidateCouponDto,
 } from './dto/monetization-request.dto';
 import {
   CheckoutDto,
-  CreditBalanceDto,
   EntitlementDecisionDto,
   EntitlementSnapshotDto,
   PlansDto,
-  PurchaseDto,
   RestoreResultDto,
   SubscriptionDto,
   UsageSummaryDto,
 } from './dto/monetization-response.dto';
 import { EntitlementService } from './entitlement.service';
 import { InvoiceService } from './invoice.service';
-import { MonetizationConfigService } from './monetization.config-service';
 import { MonetizationFeatureService } from './monetization.feature-service';
 import {
-  toCreditBalanceDto,
-  toCreditTransactionDto,
   toEntitlementSnapshotDto,
   toInvoiceDto,
   toPaymentDto,
@@ -48,11 +41,7 @@ import {
 import { PricingService } from './pricing.service';
 import { PromotionService } from './promotion.service';
 import { PurchaseService } from './purchase.service';
-import {
-  CouponNotFoundException,
-  CouponNotRedeemableException,
-  ReceiptValidationFailedException,
-} from './monetization.exceptions';
+import { CouponNotFoundException, CouponNotRedeemableException } from './monetization.exceptions';
 import { SubscriptionService } from './subscription.service';
 import { UsageService } from './usage.service';
 
@@ -61,8 +50,8 @@ const DEFAULT_LIMIT = 20;
 /**
  * The user-facing monetization surface (AF5). Every premium capability elsewhere in the
  * app validates access through the Entitlement service (exposed here at `/entitlements`);
- * these endpoints let a user manage their subscription, view usage/credits/billing, buy
- * credits, and restore store purchases. All are `billing.use`; mutating flows also assert
+ * these endpoints let a user manage their subscription, view usage and billing, and
+ * restore store purchases. All are `billing.use`; mutating flows also assert
  * the platform flag + a tight `billing` rate tier. Payment provider work is delegated to
  * the Billing service — never touched here.
  */
@@ -77,12 +66,10 @@ export class MonetizationController {
     private readonly billing: BillingService,
     private readonly entitlements: EntitlementService,
     private readonly usage: UsageService,
-    private readonly credits: CreditService,
     private readonly purchases: PurchaseService,
     private readonly pricing: PricingService,
     private readonly promotions: PromotionService,
     private readonly invoices: InvoiceService,
-    private readonly config: MonetizationConfigService,
   ) {}
 
   // ── Plans & entitlements ──────────────────────────────────────────────────────
@@ -104,7 +91,7 @@ export class MonetizationController {
         description: plan.description,
         features: [...plan.features],
         limits: plan.limits,
-        monthlyCredits: plan.monthlyCredits,
+        monthlyCredits: 0, // D5: retired; the field goes with the vocabulary contract.
         prices: plan.prices as Record<string, Record<string, number>>,
         trialDays: plan.trialDays,
       })),
@@ -258,7 +245,7 @@ export class MonetizationController {
     return page(rows, limit, toSubscriptionEventDto);
   }
 
-  // ── Usage & credits ─────────────────────────────────────────────────────────
+  // ── Usage ───────────────────────────────────────────────────────────────────
 
   @Get('usage')
   @Permissions(PERMISSIONS.BillingUse)
@@ -273,55 +260,6 @@ export class MonetizationController {
       this.usage.quotas(user.id),
     ]);
     return toUsageSummaryDto(summary, quotas);
-  }
-
-  @Get('credits')
-  @Permissions(PERMISSIONS.BillingUse)
-  @RateLimit('read')
-  @ApiOperation({ summary: 'AI credit wallet balance.' })
-  @ApiOkResponse({ type: CreditBalanceDto })
-  async creditBalance(@CurrentUser() user: AuthenticatedUser): Promise<CreditBalanceDto> {
-    const [wallet, config] = await Promise.all([
-      this.credits.getOrCreateWallet(user.id),
-      this.config.getConfig(),
-    ]);
-    return toCreditBalanceDto(wallet, config.creditsPerUsd);
-  }
-
-  @Get('credits/transactions')
-  @Permissions(PERMISSIONS.BillingUse)
-  @RateLimit('read')
-  @ApiOperation({ summary: 'Credit ledger (cursor-paginated).' })
-  async creditTransactions(@CurrentUser() user: AuthenticatedUser, @Query() query: CursorQueryDto) {
-    const limit = query.limit ?? DEFAULT_LIMIT;
-    const rows = await this.credits.listTransactions(user.id, decodeCursor(query.cursor), limit);
-    return page(rows, limit, toCreditTransactionDto);
-  }
-
-  @Post('credits/purchase')
-  @Permissions(PERMISSIONS.BillingUse)
-  @RateLimit('billing')
-  @ApiOperation({
-    summary:
-      'Buy a credit pack via a validated store receipt (Apple/Google). ' +
-      'Errors: MONETIZATION_DISABLED, RECEIPT_VALIDATION_FAILED, PURCHASE_NOT_FOUND.',
-  })
-  @ApiOkResponse({ type: PurchaseDto })
-  async purchaseCredits(
-    @CurrentUser() user: AuthenticatedUser,
-    @Body() dto: PurchaseCreditsDto,
-  ): Promise<PurchaseDto> {
-    await this.feature.assertEnabled();
-    if (dto.receipt === undefined || dto.receipt === '') {
-      throw new ReceiptValidationFailedException('A store receipt is required to buy credits.');
-    }
-    const purchase = await this.purchases.fulfilStoreCreditPurchase(
-      user.id,
-      dto.provider,
-      dto.receipt,
-      dto.credits,
-    );
-    return toPurchaseDto(purchase);
   }
 
   // ── Billing history & purchases ───────────────────────────────────────────────

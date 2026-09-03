@@ -5,7 +5,6 @@ import { DomainEventBus } from '../../../common/events/domain-event-bus';
 import {
   DomainEventType,
   type AiQuotaExceededEvent,
-  type CreditsLowEvent,
   type PaymentFailedEvent,
   type PaymentSucceededEvent,
   type SubscriptionChangedEvent,
@@ -36,7 +35,6 @@ export class MonetizationNotificationListener implements OnModuleInit {
     this.bus.on(DomainEventType.SubscriptionTrialEnding, (e) => this.onTrialEnding(e));
     this.bus.on(DomainEventType.PaymentSucceeded, (e) => this.onPaymentSucceeded(e));
     this.bus.on(DomainEventType.PaymentFailed, (e) => this.onPaymentFailed(e));
-    this.bus.on(DomainEventType.CreditsLow, (e) => this.onCreditsLow(e));
     this.bus.on(DomainEventType.AiQuotaExceeded, (e) => this.onQuotaExceeded(e));
   }
 
@@ -92,17 +90,6 @@ export class MonetizationNotificationListener implements OnModuleInit {
       type: NotificationType.PaymentFailed,
       entityType: NotificationEntityType.System,
       data: { amount: e.amount, currency: e.currency, reason: e.reason },
-    });
-  }
-
-  private async onCreditsLow(e: CreditsLowEvent): Promise<void> {
-    this.logger.log(`credits.low user=${e.userId} balance=${e.balance}`);
-    await this.notifications.create({
-      recipientId: e.userId,
-      type: NotificationType.CreditsLow,
-      entityType: NotificationEntityType.System,
-      data: { balance: e.balance },
-      dedupe: true,
     });
   }
 

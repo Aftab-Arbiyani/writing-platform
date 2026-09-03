@@ -107,28 +107,6 @@ export class UsageSummaryDto {
   @ApiProperty() forecastMonthlyCostUsd!: number;
 }
 
-/** Credit wallet balance. */
-export class CreditBalanceDto {
-  @ApiProperty() balance!: number;
-  @ApiProperty() lifetimeGranted!: number;
-  @ApiProperty() lifetimeConsumed!: number;
-  @ApiProperty() creditsPerUsd!: number;
-  @ApiProperty() updatedAt!: string;
-}
-
-/** One credit-ledger entry. */
-export class CreditTransactionDto {
-  @ApiProperty() id!: string;
-  @ApiProperty() type!: string;
-  @ApiProperty() reason!: string;
-  @ApiProperty() delta!: number;
-  @ApiProperty() balanceAfter!: number;
-  @ApiProperty({ nullable: true, type: String }) feature!: string | null;
-  @ApiProperty() tokens!: number;
-  @ApiProperty() costUsd!: number;
-  @ApiProperty() createdAt!: string;
-}
-
 /** A billing document. */
 export class InvoiceDto {
   @ApiProperty() id!: string;
@@ -196,7 +174,8 @@ export class PlanDto {
   @ApiProperty() description!: string;
   @ApiProperty({ type: [String] }) features!: string[];
   @ApiProperty({ type: Object }) limits!: Record<string, number>;
-  @ApiProperty() monthlyCredits!: number;
+  /** @deprecated Always 0 since D5 retired credits; the field goes with the vocabulary contract. */
+  @ApiProperty({ deprecated: true }) monthlyCredits!: number;
   @ApiProperty({ type: Object }) prices!: Record<string, Record<string, number>>;
   @ApiProperty() trialDays!: number;
 }
@@ -253,21 +232,6 @@ export class AdminUserSubscriptionDto {
   @ApiProperty() userId!: string;
   @ApiProperty({ type: SubscriptionDto, nullable: true })
   subscription!: SubscriptionDto | null;
-}
-
-/**
- * One user's credit wallet, read by an operator (`GET admin/monetization/users/:userId/credits`).
- *
- * `credits` is `null` when no wallet row has ever existed — the account has never been granted or
- * spent a credit, so its effective balance is 0. Null rather than a fabricated zero-wallet because
- * there is no honest `updatedAt` for a row that does not exist, and because this route reads through
- * `CreditService.findWallet`, which does NOT create one: an admin looking at an account must not
- * write to it.
- */
-export class AdminUserCreditsDto {
-  @ApiProperty() userId!: string;
-  @ApiProperty({ type: CreditBalanceDto, nullable: true })
-  credits!: CreditBalanceDto | null;
 }
 
 /** An entitlement override (admin). */

@@ -2,11 +2,10 @@ import { createHash } from 'node:crypto';
 
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { CreditReason, PaymentProvider, PurchaseKind, PurchaseStatus } from '@qalam/shared';
+import { PaymentProvider, PurchaseKind, PurchaseStatus } from '@qalam/shared';
 import { Repository } from 'typeorm';
 
 import type { CursorPayload } from '../../common/pagination/cursor.util';
-import { CreditService } from './credit.service';
 import { PurchaseNotFoundException } from './monetization.exceptions';
 import { Purchase } from './entities/purchase.entity';
 import { PaymentRegistryService } from './payments/payment-registry.service';
@@ -20,25 +19,27 @@ export interface RecordPurchaseInput {
   productId?: string | null;
   amount?: number;
   currency?: string;
-  credits?: number;
   subscriptionId?: string | null;
   receiptHash?: string | null;
 }
 
 /**
- * The Purchase service (AF5) — one-time purchases, credit packs, and store purchase
+ * The Purchase service (AF5) — one-time purchases and store purchase
  * RESTORATION. Every recorded purchase is de-duplicated on `(provider, providerRef)` so a
  * replayed/restored receipt never double-grants (idempotent fulfilment). Store receipts are
  * validated server-side via the provider adapter (NEVER trusting the client) before any
- * grant. Credit fulfilment reuses the Credit service; subscription restoration is delegated
- * to the Subscription service by the caller (Billing), keeping this service side-effect-lean.
+ * grant. Subscription restoration is delegated to the Subscription service by the caller
+ * (Billing), keeping this service side-effect-lean.
+ *
+ * D5 removed credit-pack fulfilment: there is no wallet to grant into. Existing
+ * `purchases.kind = 'credits'` rows stay readable as history — the column is open varchar —
+ * but nothing mints new ones.
  */
 @Injectable()
 export class PurchaseService {
   constructor(
     @InjectRepository(Purchase) private readonly purchases: Repository<Purchase>,
     private readonly registry: PaymentRegistryService,
-    private readonly credits: CreditService,
   ) {}
 
   /**
@@ -64,47 +65,15 @@ export class PurchaseService {
         productId: input.productId ?? null,
         amount: input.amount ?? 0,
         currency: input.currency ?? 'usd',
-        creditsGranted: input.credits ?? 0,
+        // Always 0 since D5 retired credits. The column survives until the contract phase
+        // so existing purchase history keeps its recorded grant.
+        creditsGranted: 0,
         subscriptionId: input.subscriptionId ?? null,
         receiptHash: input.receiptHash ?? null,
         metadata: {},
       }),
     );
-    if ((input.credits ?? 0) > 0) {
-      await this.credits.grant({
-        userId: input.userId,
-        amount: input.credits ?? 0,
-        reason: CreditReason.Purchase,
-        refType: 'purchase',
-        refId: purchase.id,
-      });
-    }
     return purchase;
-  }
-
-  /**
-   * Validate a store receipt and record/fulfil the credit purchase it represents
-   * (idempotent). Returns the purchase.
-   */
-  async fulfilStoreCreditPurchase(
-    userId: string,
-    provider: PaymentProvider,
-    receipt: string,
-    credits: number,
-  ): Promise<Purchase> {
-    const validation = await this.registry.get(provider).validateReceipt(receipt);
-    if (!validation.valid) {
-      throw new PurchaseNotFoundException();
-    }
-    return this.record({
-      userId,
-      kind: PurchaseKind.Credits,
-      provider,
-      providerRef: validation.providerRef,
-      productId: validation.productId,
-      credits,
-      receiptHash: hashReceipt(receipt),
-    });
   }
 
   /**

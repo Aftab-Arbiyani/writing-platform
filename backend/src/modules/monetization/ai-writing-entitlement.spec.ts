@@ -16,7 +16,6 @@ import type { CacheService } from '../../infrastructure/cache/cache.service';
 import type { DomainEventBus } from '../../common/events/domain-event-bus';
 import type { AiUsageQuotaCheck } from '../../common/metering/ai-usage-meter.port';
 import { AiUsageMeterService } from './ai-usage-meter.service';
-import type { CreditService } from './credit.service';
 import { EntitlementService } from './entitlement.service';
 import type { EntitlementOverride } from './entities/entitlement-override.entity';
 import type { Subscription } from './entities/subscription.entity';
@@ -120,8 +119,6 @@ function build(opts?: {
   const config = {
     getPlan: jest.fn().mockImplementation((tier: PlanTier) => Promise.resolve(planFor(tier))),
     getConfig: jest.fn().mockResolvedValue({
-      creditsPerUsd: 100,
-      lowCreditThreshold: 500,
       trialDays: 14,
       gracePeriodDays: 7,
       taxRates: {},
@@ -149,10 +146,9 @@ function build(opts?: {
     assertWithinQuota: jest.fn().mockResolvedValue(undefined),
   } as unknown as UsageService;
 
-  const credits = { debit: jest.fn().mockResolvedValue(5_000) } as unknown as CreditService;
   const events = { emit: jest.fn().mockResolvedValue(undefined) } as unknown as DomainEventBus;
 
-  const service = new AiUsageMeterService(feature, entitlements, usage, credits, config, events);
+  const service = new AiUsageMeterService(feature, entitlements, usage, events);
   return { service, usage };
 }
 

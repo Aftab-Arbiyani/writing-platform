@@ -11,7 +11,6 @@ import type { Repository } from 'typeorm';
 
 import type { DomainEventBus } from '../../common/events/domain-event-bus';
 import { DomainEventType } from '../../common/events/domain-events';
-import type { CreditService } from './credit.service';
 import type { EntitlementService } from './entitlement.service';
 import type { Subscription } from './entities/subscription.entity';
 import type { SubscriptionEvent } from './entities/subscription-event.entity';
@@ -97,7 +96,7 @@ function build(opts?: { existingSub?: Subscription | null; planMonthlyCredits?: 
   } as unknown as EntitlementService;
 
   const config = {
-    // Return a valid plan for any tier; credits=0 by default to skip grantPlanCredits
+    // Return a valid plan for any tier.
     getPlan: jest
       .fn()
       .mockImplementation((tier: PlanTier) =>
@@ -111,24 +110,12 @@ function build(opts?: { existingSub?: Subscription | null; planMonthlyCredits?: 
     windowFor: jest.fn().mockResolvedValue(null),
   } as unknown as TrialService;
 
-  const credits = {
-    grant: jest.fn().mockResolvedValue(5_000),
-  } as unknown as CreditService;
-
   const bus = {
     emit: jest.fn().mockResolvedValue(undefined),
   } as unknown as DomainEventBus;
 
-  const service = new SubscriptionService(
-    subscriptions,
-    events,
-    entitlements,
-    config,
-    trials,
-    credits,
-    bus,
-  );
-  return { service, subscriptions, events, entitlements, config, trials, credits, bus };
+  const service = new SubscriptionService(subscriptions, events, entitlements, config, trials, bus);
+  return { service, subscriptions, events, entitlements, config, trials, bus };
 }
 
 // ── Tests ──────────────────────────────────────────────────────────────────────
@@ -192,28 +179,6 @@ describe('SubscriptionService', () => {
       expect(bus.emit).toHaveBeenCalledWith(
         DomainEventType.SubscriptionChanged,
         expect.objectContaining({ userId: 'u1' }),
-      );
-    });
-
-    it('should grant plan credits immediately when activate=true and plan has monthly credits', async () => {
-      const { service, credits } = build({
-        existingSub: null,
-        planMonthlyCredits: 5_000,
-      });
-
-      await service.open({
-        userId: 'u1',
-        tier: PlanTier.Plus,
-        interval: BillingInterval.Monthly,
-        provider: 'stripe',
-        currency: 'usd',
-        activate: true,
-        allowTrial: false,
-      });
-
-      expect(credits.grant).toHaveBeenCalledTimes(1);
-      expect(credits.grant).toHaveBeenCalledWith(
-        expect.objectContaining({ userId: 'u1', amount: 5_000 }),
       );
     });
   });

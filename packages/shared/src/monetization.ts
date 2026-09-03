@@ -113,7 +113,12 @@ export const PremiumFeature = {
   PremiumRecommendations: 'premium_recommendations',
   AdvancedAnalytics: 'advanced_analytics',
   PublishingPro: 'publishing_pro',
-  /** AI credit / token budget gate (checked by the Usage meter). */
+  /**
+   * @deprecated Retired by D5. It was the blanket "may you use AI at all" gate that guarded a
+   * credit balance; with credits gone, the only entitlement a generation asserts is the code
+   * its FEATURE is sold behind. Nothing enforces this any more. Kept until the clients stop
+   * importing it — a plan may still LIST it, which is harmless and stops mid-migration.
+   */
   AiBudget: 'ai_budget',
   // ── Reserved future capabilities (no plan grants them yet). ────────────────
   Marketplace: 'marketplace',
@@ -206,6 +211,7 @@ export type LimitEnforcement = (typeof LimitEnforcement)[keyof typeof LimitEnfor
 // ── Credits (the AI credit ledger) ───────────────────────────────────────────────
 
 /** Direction of a credit-ledger entry. */
+/** @deprecated Retired by D5 — the credit economy is gone. Kept only until the web and mobile clients stop importing it; delete with the vocabulary contract. */
 export const CreditEntryType = {
   Grant: 'grant',
   Debit: 'debit',
@@ -213,6 +219,7 @@ export const CreditEntryType = {
 export type CreditEntryType = (typeof CreditEntryType)[keyof typeof CreditEntryType];
 
 /** Why a credit-ledger entry was written (source of a grant / reason for a debit). */
+/** @deprecated Retired by D5 — the credit economy is gone. Kept only until the web and mobile clients stop importing it; delete with the vocabulary contract. */
 export const CreditReason = {
   Purchase: 'purchase',
   SubscriptionGrant: 'subscription_grant',
@@ -354,6 +361,7 @@ export interface PlanDefinition {
   /** Per-feature quota limits (0 / absent = unlimited). */
   limits: PlanLimits;
   /** AI credits granted per billing period (0 = none). */
+  /** @deprecated Retired by D5 — the credit economy is gone. Kept only until the web and mobile clients stop importing it; delete with the vocabulary contract. Always 0 on the wire. */
   monthlyCredits: number;
   /** Price per interval in minor units (cents), keyed by interval then currency. */
   prices: Partial<Record<BillingInterval, Record<string, number>>>;
@@ -553,6 +561,7 @@ export function subscriptionStatusToEntitlement(status: SubscriptionStatus): Ent
 }
 
 /** Credits consumed for a USD cost, at a credits-per-USD rate (ceil so free never rounds away). */
+/** @deprecated Retired by D5 — the credit economy is gone. Kept only until the web and mobile clients stop importing it; delete with the vocabulary contract. */
 export function creditsForCostUsd(costUsd: number, creditsPerUsd: number): number {
   if (costUsd <= 0 || creditsPerUsd <= 0) return 0;
   return Math.max(1, Math.ceil(costUsd * creditsPerUsd));
@@ -593,9 +602,11 @@ export const COUPON_CODE_MAX = 40;
 export const COUPON_CODE_REGEX = /^[A-Z0-9][A-Z0-9-]{1,38}[A-Z0-9]$/;
 
 /** Default credits granted per USD of AI spend converted to credits (100 = $0.01/credit). */
+/** @deprecated Retired by D5 — the credit economy is gone. Kept only until the web and mobile clients stop importing it; delete with the vocabulary contract. */
 export const DEFAULT_CREDITS_PER_USD = 100;
 
 /** Minimum credits a user may buy in one credit purchase. */
+/** @deprecated Retired by D5 — the credit economy is gone. Kept only until the web and mobile clients stop importing it; delete with the vocabulary contract. */
 export const CREDIT_MIN_PURCHASE = 100;
 export const CREDIT_MAX_PURCHASE = 1_000_000;
 

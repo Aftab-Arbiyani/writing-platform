@@ -12,7 +12,6 @@ import { AdminMonetizationController } from './admin-monetization.controller';
 import { AiUsageMeterService } from './ai-usage-meter.service';
 import { BillingWebhookController } from './billing-webhook.controller';
 import { BillingService } from './billing.service';
-import { CreditService } from './credit.service';
 import { Coupon } from './entities/coupon.entity';
 import { CreditTransaction } from './entities/credit-transaction.entity';
 import { CreditWallet } from './entities/credit-wallet.entity';
@@ -135,7 +134,6 @@ import { UsageService } from './usage.service';
     MonetizationFeatureService,
     // Core services.
     EntitlementService,
-    CreditService,
     UsageService,
     TrialService,
     PricingService,
@@ -156,7 +154,6 @@ import { UsageService } from './usage.service';
     EntitlementService,
     MonetizationFeatureService,
     SubscriptionService,
-    CreditService,
     UsageService,
     BillingService,
     AI_USAGE_METER,

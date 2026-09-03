@@ -28,15 +28,12 @@ import {
   CancelSubscriptionDto,
   ChangePlanDto,
   CreateSubscriptionDto,
-  PurchaseCreditsDto,
   RestorePurchasesDto,
   ValidateCouponDto,
 } from '../../modules/monetization/dto/monetization-request.dto';
 import {
   CheckoutDto,
   CouponValidationDto,
-  CreditBalanceDto,
-  CreditTransactionDto,
   EntitlementDecisionDto,
   EntitlementSnapshotDto,
   InvoiceDto,
@@ -304,9 +301,6 @@ const MIRRORS: readonly Mirror[] = [
   { type: 'UsageWindowResponse', dto: UsageWindowDto, direction: 'response' },
   { type: 'UsageSummaryResponse', dto: UsageSummaryDto, direction: 'response' },
   { type: 'FeatureQuotaResponse', dto: FeatureQuotaDto, direction: 'response' },
-  { type: 'CreditBalanceResponse', dto: CreditBalanceDto, direction: 'response' },
-  { type: 'CreditTransactionResponse', dto: CreditTransactionDto, direction: 'response' },
-  { type: 'PurchaseCreditsRequest', dto: PurchaseCreditsDto, direction: 'request' },
   { type: 'InvoiceResponse', dto: InvoiceDto, direction: 'response' },
   { type: 'PaymentResponse', dto: PaymentDto, direction: 'response' },
   { type: 'RestorePurchasesRequest', dto: RestorePurchasesDto, direction: 'request' },
@@ -343,6 +337,9 @@ const UNMIRRORED: Readonly<Record<string, string>> = {
   // typecheck in a commit that cannot also fix them. They are exempted with the reason rather
   // than quietly dropped, so the completeness check still accounts for every export and the
   // debt has an expiry rather than becoming permanent.
+  CreditBalanceResponse: 'Removed server-side (D5); type retained until the client half lands.',
+  CreditTransactionResponse: 'Removed server-side (D5); type retained until the client half lands.',
+  PurchaseCreditsRequest: 'Removed server-side (D5); type retained until the client half lands.',
   AskCitation: 'Removed server-side (D5); type retained until the client half lands.',
   AskBookRequest: 'Removed server-side (D5); type retained until the client half lands.',
   AskBookResponse: 'Removed server-side (D5); type retained until the client half lands.',

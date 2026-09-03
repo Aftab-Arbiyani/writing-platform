@@ -14,7 +14,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { CreditReason, PERMISSIONS } from '@qalam/shared';
+import { PERMISSIONS } from '@qalam/shared';
 import type { Request } from 'express';
 
 import { RateLimit } from '../../common/decorators/rate-limit.decorator';
@@ -28,9 +28,7 @@ import { buildActor } from '../settings/settings.util';
 import { UserNotFoundException } from '../users/exceptions/users.exceptions';
 import { UsersService } from '../users/users.service';
 import { BillingService } from './billing.service';
-import { CreditService } from './credit.service';
 import {
-  AdjustCreditsDto,
   CreateCouponDto,
   CursorQueryDto,
   GrantOverrideDto,
@@ -38,7 +36,7 @@ import {
   UpdateCouponDto,
   UpdateMonetizationConfigDto,
 } from './dto/monetization-request.dto';
-import { AdminUserCreditsDto, AdminUserSubscriptionDto } from './dto/monetization-response.dto';
+import { AdminUserSubscriptionDto } from './dto/monetization-response.dto';
 import { EntitlementService } from './entitlement.service';
 import { MONETIZATION_AUDIT_ACTIONS, MONETIZATION_AUDIT_TARGET } from './monetization.constants';
 import { MonetizationAnalyticsService } from './monetization-analytics.service';
@@ -46,7 +44,6 @@ import { MonetizationConfigService } from './monetization.config-service';
 import { page } from './monetization.controller';
 import {
   toCouponDto,
-  toCreditBalanceDto,
   toEntitlementOverrideDto,
   toPaymentDto,
   toSubscriptionDto,
@@ -72,7 +69,6 @@ export class AdminMonetizationController {
   constructor(
     private readonly promotions: PromotionService,
     private readonly entitlements: EntitlementService,
-    private readonly credits: CreditService,
     private readonly billing: BillingService,
     private readonly subscriptionService: SubscriptionService,
     private readonly config: MonetizationConfigService,
@@ -90,10 +86,11 @@ export class AdminMonetizationController {
    * ~~**Reads only, and that bound is deliberate rather than sufficient.**~~ **B8-2 CLOSED
    * 2026-08-31 — the writes are covered now too, and the three answers really were different:**
    *
-   * - **`POST overrides`** and **`POST credits/adjust`** take a `userId` in the BODY, so a mistyped
-   *   id is unverifiable by the route itself. Both assert now. Granting against nobody used to
-   *   insert a row that can never apply and that no screen can list (there is no cross-account
-   *   override read); adjusting credits for nobody MATERIALISED a wallet for nobody.
+   * - **`POST overrides`** takes a `userId` in the BODY, so a mistyped id is unverifiable by
+   *   the route itself, and it asserts. Granting against nobody used to insert a row that can
+   *   never apply and that no screen can list (there is no cross-account override read).
+   *   (`POST credits/adjust` was the other half of this pair and had a worse failure — `grant`
+   *   MATERIALISED a wallet for nobody. D5 removed the route entirely.)
    * - **`POST payments/:id/refund` deliberately does NOT assert**, and that is the point of having
    *   asked per-write: it is keyed by a PAYMENT id, and a payment that exists already carries a real
    *   `userId`. Resolving it proves the account, so a second lookup would be a redundant query
@@ -234,42 +231,7 @@ export class AdminMonetizationController {
     );
   }
 
-  // ── Credits / refunds ─────────────────────────────────────────────────────────
-
-  @Post('credits/adjust')
-  @Permissions(PERMISSIONS.BillingManage)
-  @RateLimit('write')
-  @ApiOperation({
-    summary: "Adjust a user's credit balance (grant or deduct). Errors: USER_NOT_FOUND.",
-  })
-  async adjustCredits(
-    @CurrentUser() user: AuthenticatedUser,
-    @Req() req: Request,
-    @Body() dto: AdjustCreditsDto,
-  ) {
-    // B8-2: same body-supplied id, and a worse failure than the override — `grant` MATERIALISES a
-    // wallet, so an unchecked mistype creates a balance nobody can ever spend or see.
-    await this.assertUserExists(dto.userId);
-    const balance =
-      dto.amount >= 0
-        ? await this.credits.grant({
-            userId: dto.userId,
-            amount: dto.amount,
-            reason: CreditReason.AdminAdjustment,
-            metadata: { reason: dto.reason },
-          })
-        : await this.credits.debit({
-            userId: dto.userId,
-            amount: Math.abs(dto.amount),
-            reason: CreditReason.AdminAdjustment,
-            metadata: { reason: dto.reason },
-          });
-    await this.record(user, req, MONETIZATION_AUDIT_ACTIONS.CreditAdjust, dto.userId, {
-      amount: dto.amount,
-      reason: dto.reason,
-    });
-    return { userId: dto.userId, balance };
-  }
+  // ── Refunds ───────────────────────────────────────────────────────────────────
 
   @Post('payments/:id/refund')
   @Permissions(PERMISSIONS.BillingManage)
@@ -335,27 +297,6 @@ export class AdminMonetizationController {
     const limit = query.limit ?? DEFAULT_PAGE_LIMIT;
     const rows = await this.billing.listPayments(userId, decodeCursor(query.cursor), limit);
     return page(rows, limit, toPaymentDto);
-  }
-
-  @Get('users/:userId/credits')
-  @Permissions(PERMISSIONS.BillingManage)
-  @RateLimit('read')
-  @ApiOperation({
-    summary:
-      "One user's AI credit wallet, or null when they have never had one (effective balance 0). " +
-      'A pure read — it does not create a wallet. Errors: USER_NOT_FOUND.',
-  })
-  @ApiOkResponse({ type: AdminUserCreditsDto })
-  async userCredits(@Param('userId', ParseUUIDPipe) userId: string): Promise<AdminUserCreditsDto> {
-    await this.assertUserExists(userId);
-    const [wallet, config] = await Promise.all([
-      this.credits.findWallet(userId),
-      this.config.getConfig(),
-    ]);
-    return {
-      userId,
-      credits: wallet === null ? null : toCreditBalanceDto(wallet, config.creditsPerUsd),
-    };
   }
 
   // ── Config / plans / analytics ─────────────────────────────────────────────────

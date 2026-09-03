@@ -1,4 +1,4 @@
-import type { AiFeature, AiProvider, AiTokenUsage } from '@qalam/shared';
+import type { AiFeature, AiProvider } from '@qalam/shared';
 
 /**
  * The AI usage-metering seam (AF5). Lives in `common` (dependency-free) so the AI
@@ -31,30 +31,21 @@ export interface AiUsageQuotaCheck {
   reserve?: number;
 }
 
-/** A completed AI call's consumption, recorded after the provider responds. */
-export interface AiUsageConsumption {
-  userId: string;
-  feature: AiFeature;
-  provider: AiProvider;
-  model: string;
-  usage: AiTokenUsage;
-  /** Estimated USD cost the AI platform already computed from the model rates. */
-  costUsd: number;
-  conversationId?: string | null;
-  /** Correlation id of the originating request (the ledger's dedupe/ref key). */
-  requestId?: string | null;
-}
-
-/** The metering port the AI orchestrator delegates quota + consumption to. */
+/**
+ * The metering port the AI orchestrator delegates the quota decision to.
+ *
+ * **Ask-only since D5.** It used to have a `recordConsumption` half that ran after every
+ * generation to debit a credit wallet; with the credit economy gone there is nothing to debit,
+ * and the allowance is counted from `ai_usage_logs`, which the AI platform writes itself. A
+ * second write-path here would be a copy to keep in step, and metering that only READS cannot
+ * corrupt anything after a generation the user already paid for in time.
+ */
 export interface AiUsageMeter {
   /**
-   * Throw a domain exception (e.g. QUOTA_EXCEEDED / INSUFFICIENT_CREDITS / ENTITLEMENT_DENIED)
-   * if the user may not make this AI request. Called BEFORE the provider call.
+   * Throw a domain exception (QUOTA_EXCEEDED / ENTITLEMENT_DENIED) if the user may not make
+   * this AI request. Called BEFORE the provider call.
    */
   checkQuota(input: AiUsageQuotaCheck): Promise<void>;
-
-  /** Record a completed call's consumption (usage rollup + credit debit). Called AFTER. */
-  recordConsumption(input: AiUsageConsumption): Promise<void>;
 }
 
 /** DI token for the {@link AiUsageMeter} (provided globally by the Monetization module). */

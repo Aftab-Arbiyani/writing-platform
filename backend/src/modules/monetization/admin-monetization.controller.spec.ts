@@ -6,13 +6,7 @@ import type { AuditService } from '../audit/audit.service';
 import type { UsersService } from '../users/users.service';
 import { AdminMonetizationController } from './admin-monetization.controller';
 import type { BillingService } from './billing.service';
-import type { CreditService } from './credit.service';
-import {
-  AdjustCreditsDto,
-  CursorQueryDto,
-  GrantOverrideDto,
-  RefundDto,
-} from './dto/monetization-request.dto';
+import { CursorQueryDto, GrantOverrideDto, RefundDto } from './dto/monetization-request.dto';
 import type { EntitlementService } from './entitlement.service';
 import type { MonetizationAnalyticsService } from './monetization-analytics.service';
 import type { MonetizationConfigService } from './monetization.config-service';
@@ -44,12 +38,6 @@ function build(overrides?: {
   user?: unknown;
   entitlementOverrides?: unknown[];
 }) {
-  const credits = {
-    findWallet: jest.fn().mockResolvedValue(overrides?.wallet ?? null),
-    getOrCreateWallet: jest.fn(),
-    grant: jest.fn().mockResolvedValue({ userId: USER, balance: 10 }),
-    debit: jest.fn().mockResolvedValue({ userId: USER, balance: 0 }),
-  } as unknown as CreditService;
   const billing = {
     listPayments: jest.fn().mockResolvedValue(overrides?.payments ?? []),
     refund: jest.fn().mockResolvedValue({
@@ -67,7 +55,7 @@ function build(overrides?: {
     findByUser: jest.fn().mockResolvedValue(overrides?.subscription ?? null),
   } as unknown as SubscriptionService;
   const config = {
-    getConfig: jest.fn().mockResolvedValue({ creditsPerUsd: 1000 }),
+    getConfig: jest.fn().mockResolvedValue({}),
   } as unknown as MonetizationConfigService;
 
   const users = {
@@ -94,7 +82,6 @@ function build(overrides?: {
   const controller = new AdminMonetizationController(
     {} as PromotionService,
     entitlements,
-    credits,
     billing,
     subscriptions,
     config,
@@ -102,7 +89,7 @@ function build(overrides?: {
     { record: jest.fn().mockResolvedValue(undefined) } as unknown as AuditService,
     users,
   );
-  return { controller, credits, billing, subscriptions, users, entitlements };
+  return { controller, billing, subscriptions, users, entitlements };
 }
 
 const USER = '11111111-1111-4111-8111-111111111111';
@@ -115,7 +102,6 @@ describe('AdminMonetizationController — the B8 account reads require billing.m
   const routes: Array<[string, (...args: never[]) => unknown]> = [
     ['users/:userId/subscription', AdminMonetizationController.prototype.userSubscription],
     ['users/:userId/payments', AdminMonetizationController.prototype.userPayments],
-    ['users/:userId/credits', AdminMonetizationController.prototype.userCredits],
   ];
 
   it.each(routes)('GET %s requires billing.manage', (_name, handler) => {
@@ -125,8 +111,8 @@ describe('AdminMonetizationController — the B8 account reads require billing.m
   it('declares the same grant the rest of the controller does', () => {
     // A read that leaked onto a weaker permission than its sibling WRITES would be the whole point
     // of the surface, missed. Compare against a route that shipped in A1 rather than a literal.
-    expect(permsOf(AdminMonetizationController.prototype.userCredits)).toEqual(
-      permsOf(AdminMonetizationController.prototype.adjustCredits),
+    expect(permsOf(AdminMonetizationController.prototype.userPayments)).toEqual(
+      permsOf(AdminMonetizationController.prototype.grantOverride),
     );
   });
 });
@@ -237,68 +223,10 @@ describe('AdminMonetizationController — one user’s payments (A1-5)', () => {
   });
 });
 
-describe('AdminMonetizationController — one user’s credits (A1-3)', () => {
-  const wallet = {
-    id: 'w1',
-    userId: USER,
-    balance: 250,
-    lifetimeGranted: 1000,
-    lifetimeConsumed: 750,
-    updatedAt: new Date('2026-08-16T12:00:00.000Z'),
-  };
-
-  it('returns the balance with the credit rate that priced it', async () => {
-    const { controller } = build({ wallet });
-
-    const result = await controller.userCredits(USER);
-
-    expect(result).toEqual({
-      userId: USER,
-      credits: {
-        balance: 250,
-        lifetimeGranted: 1000,
-        lifetimeConsumed: 750,
-        creditsPerUsd: 1000,
-        updatedAt: '2026-08-16T12:00:00.000Z',
-      },
-    });
-  });
-
-  it('answers null for an account that has never had a wallet', async () => {
-    const { controller } = build({ wallet: null });
-
-    await expect(controller.userCredits(USER)).resolves.toEqual({ userId: USER, credits: null });
-  });
-
-  it('NEVER creates a wallet — an admin looking at an account must not write to it', async () => {
-    // The side-effect question this row was told to answer. `getOrCreateWallet` (which the
-    // self-scoped route uses, correctly, because a user reading their own balance is the moment to
-    // materialise it) would have an operator's idle lookup insert a row for an account that has
-    // none — and a typo'd id would create one for a user that does not exist.
-    const { controller, credits } = build({ wallet: null });
-
-    await controller.userCredits(USER);
-
-    expect(credits.findWallet).toHaveBeenCalledWith(USER);
-    expect(credits.getOrCreateWallet).not.toHaveBeenCalled();
-  });
-});
-
-/**
- * **B8-1** (docs/48 §3.22a) — every per-account read used to answer a nullable shape for an id that
- * belongs to nobody, so an operator who mistyped one character of a UUID was told the account was on
- * free with an empty wallet. This converges on the answer B9 gave the three admin TRUST reads
- * (§3.16, A2-4): `404 USER_NOT_FOUND`.
- *
- * The distinction that must survive: `null` still means "this account has no billing", which is a
- * normal state and asserted by the three "answers null / empty" tests above. Only a **nonexistent
- * account** 404s. Both halves are load-bearing, so both are tested.
- */
 describe('AdminMonetizationController — an id that belongs to nobody (B8-1)', () => {
   const reads: Array<[string, (c: AdminMonetizationController) => Promise<unknown>]> = [
     ['users/:userId/subscription', (c) => c.userSubscription(USER)],
     ['users/:userId/payments', (c) => c.userPayments(USER, query())],
-    ['users/:userId/credits', (c) => c.userCredits(USER)],
     ['overrides/:userId', (c) => c.listOverrides(USER)],
   ];
 
@@ -314,11 +242,10 @@ describe('AdminMonetizationController — an id that belongs to nobody (B8-1)', 
     // The existence check comes FIRST, so a mistyped id cannot touch the monetization tables. Not a
     // performance point: it is what keeps the 404 honest — a read that ran and then threw would have
     // the operator's typo appear in whatever the services log.
-    const { controller, credits, billing, subscriptions, entitlements } = build({ user: null });
+    const { controller, billing, subscriptions, entitlements } = build({ user: null });
 
     await expect(call(controller)).rejects.toBeDefined();
 
-    expect(credits.findWallet).not.toHaveBeenCalled();
     expect(billing.listPayments).not.toHaveBeenCalled();
     expect(subscriptions.findByUser).not.toHaveBeenCalled();
     expect(entitlements.listOverrides).not.toHaveBeenCalled();
@@ -326,13 +253,12 @@ describe('AdminMonetizationController — an id that belongs to nobody (B8-1)', 
 
   it('still answers null — not 404 — when the account exists and simply has no billing', async () => {
     // The regression this fix could plausibly introduce, asserted directly rather than trusted.
-    const { controller } = build({ user: { id: USER }, subscription: null, wallet: null });
+    const { controller } = build({ user: { id: USER }, subscription: null });
 
     await expect(controller.userSubscription(USER)).resolves.toEqual({
       userId: USER,
       subscription: null,
     });
-    await expect(controller.userCredits(USER)).resolves.toEqual({ userId: USER, credits: null });
   });
 
   it('checks existence through the exported UsersService, by id', async () => {
@@ -357,10 +283,12 @@ describe('AdminMonetizationController — an id that belongs to nobody (B8-1)', 
  * deliberately left the writes alone, recording that the three of them needed separate answers
  * rather than one rule applied three times. They did, and these are the answers.
  *
- * The two writes that take a `userId` in the BODY now assert existence, because nothing upstream
- * has proven it: granting an override against a mistyped id inserted a row that can never apply and
- * that no screen can list (there is no cross-account override read), and adjusting credits
- * MATERIALISED a wallet for nobody.
+ * The write that takes a `userId` in the BODY asserts existence, because nothing upstream has
+ * proven it: granting an override against a mistyped id inserted a row that can never apply and
+ * that no screen can list (there is no cross-account override read). It had a sibling —
+ * `POST credits/adjust`, whose failure was worse (`grant` MATERIALISED a wallet for nobody) — and
+ * D5 removed that route with the rest of the credit economy, which is why only one write is
+ * pinned here now.
  *
  * `payments/:id/refund` is keyed by a PAYMENT id instead, and a payment that exists already carries
  * a real `userId` — so it asserts nothing, and that absence is pinned below so a later pass does not
@@ -378,10 +306,6 @@ describe('AdminMonetizationController — writes against an id that belongs to n
     });
   }
 
-  function adjustDto(): AdjustCreditsDto {
-    return Object.assign(new AdjustCreditsDto(), { userId: USER, amount: 10 });
-  }
-
   it('POST overrides 404s USER_NOT_FOUND and writes nothing', async () => {
     const { controller, entitlements } = build({ user: null });
 
@@ -392,39 +316,12 @@ describe('AdminMonetizationController — writes against an id that belongs to n
     expect(entitlements.grantOverride).not.toHaveBeenCalled();
   });
 
-  it('POST credits/adjust 404s USER_NOT_FOUND and materialises no wallet', async () => {
-    const { controller, credits } = build({ user: null });
-
-    await expect(controller.adjustCredits(actor, req, adjustDto())).rejects.toMatchObject({
-      code: ERROR_CODES.USER_NOT_FOUND,
-    });
-    expect(credits.grant).not.toHaveBeenCalled();
-    expect(credits.debit).not.toHaveBeenCalled();
-  });
-
-  it('a NEGATIVE adjustment is checked too, not just the granting branch', async () => {
-    // The handler forks on the sign before it would ever touch the wallet, so the assert has to sit
-    // above the fork. Pinned because moving it inside either branch would pass the test above.
-    const { controller, credits } = build({ user: null });
-
-    await expect(
-      controller.adjustCredits(
-        actor,
-        req,
-        Object.assign(new AdjustCreditsDto(), { userId: USER, amount: -5 }),
-      ),
-    ).rejects.toMatchObject({ code: ERROR_CODES.USER_NOT_FOUND });
-    expect(credits.debit).not.toHaveBeenCalled();
-  });
-
-  it('both writes still work for an account that exists', async () => {
+  it('the write still works for an account that exists', async () => {
     // The regression the fix could plausibly introduce, asserted directly rather than trusted.
-    const { controller, entitlements, credits } = build();
+    const { controller, entitlements } = build();
 
     await expect(controller.grantOverride(actor, req, grantDto())).resolves.toBeDefined();
-    await expect(controller.adjustCredits(actor, req, adjustDto())).resolves.toBeDefined();
     expect(entitlements.grantOverride).toHaveBeenCalled();
-    expect(credits.grant).toHaveBeenCalled();
   });
 
   it('refund does NOT look the user up — the payment id already proves the account', async () => {

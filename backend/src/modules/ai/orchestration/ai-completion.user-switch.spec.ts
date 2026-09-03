@@ -24,11 +24,12 @@ type Env = ReturnType<typeof aiConfig>;
  * B5 (docs/45 §4.10) — **the refusal must meter nothing.**
  *
  * §4.10: "an opted-out user issues no AI requests, so nothing meters. Confirm no
- * credit or token accounting fires on the refusal path." That is a placement claim
+ * allowance or token accounting fires on the refusal path." That is a placement claim
  * about the orchestrator — the guard sits at the top of `prepare()`, ahead of
- * `meter.checkQuota` and far ahead of `meter.recordConsumption` — so it is asserted
- * here, with a REAL `AiFeatureService` in front of a REAL `AI_USAGE_METER` double,
- * rather than by mocking the gate and taking the ordering on trust.
+ * `meter.checkQuota` — so it is asserted here, with a REAL `AiFeatureService` in front
+ * of a REAL `AI_USAGE_METER` double, rather than by mocking the gate and taking the
+ * ordering on trust. (D5 removed the meter's `recordConsumption` half; the claim now
+ * has one call to disprove instead of two.)
  *
  * Both entry points are covered: `complete()` and `stream()` share `prepare()`, and a
  * gate that only guarded the buffered path would leave streaming as the bypass.
@@ -72,7 +73,6 @@ function build(userAiEnabled: boolean) {
 
   const meter = {
     checkQuota: jest.fn().mockResolvedValue(undefined),
-    recordConsumption: jest.fn().mockResolvedValue(undefined),
   } as unknown as AiUsageMeter;
 
   const adapter = {
@@ -162,17 +162,16 @@ describe('AiCompletionService — a user who turned AI off (B5)', () => {
     });
   });
 
-  it('meters NOTHING on the refusal — neither checkQuota nor recordConsumption fires', async () => {
+  it('meters NOTHING on the refusal — checkQuota never fires', async () => {
     const { service, meter, usage } = build(false);
 
     await expect(service.complete(input)).rejects.toMatchObject({
       code: ERROR_CODES.AI_DISABLED_BY_USER,
     });
 
-    // The AF5 credit/quota ledger: untouched in BOTH directions. A user who switched AI
-    // off must not be able to spend an allowance, or a credit, on being told no.
+    // The AF5 allowance: untouched. A user who switched AI off must not be able to spend
+    // an allowance on being told no.
     expect(meter.checkQuota).not.toHaveBeenCalled();
-    expect(meter.recordConsumption).not.toHaveBeenCalled();
     // The AI module's own raw token log, likewise.
     expect(usage.record).not.toHaveBeenCalled();
   });
@@ -204,7 +203,6 @@ describe('AiCompletionService — a user who turned AI off (B5)', () => {
     expect(events).toEqual([]);
 
     expect(meter.checkQuota).not.toHaveBeenCalled();
-    expect(meter.recordConsumption).not.toHaveBeenCalled();
     expect(usage.record).not.toHaveBeenCalled();
   });
 
@@ -215,7 +213,6 @@ describe('AiCompletionService — a user who turned AI off (B5)', () => {
 
     // The control: B5 removes metering only from the refusal path, not from AI.
     expect(meter.checkQuota).toHaveBeenCalledTimes(1);
-    expect(meter.recordConsumption).toHaveBeenCalledTimes(1);
     expect(usage.record).toHaveBeenCalledTimes(1);
   });
 });

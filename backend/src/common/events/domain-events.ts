@@ -40,7 +40,6 @@ export const DomainEventType = {
   SubscriptionTrialEnding: 'subscription.trial_ending',
   PaymentSucceeded: 'payment.succeeded',
   PaymentFailed: 'payment.failed',
-  CreditsLow: 'credits.low',
   AiQuotaExceeded: 'ai.quota_exceeded',
 } as const;
 export type DomainEventType = (typeof DomainEventType)[keyof typeof DomainEventType];
@@ -165,12 +164,6 @@ export interface PaymentFailedEvent {
   reason: string | null;
 }
 
-/** The user's AI credit balance dropped below the low-credit threshold. */
-export interface CreditsLowEvent {
-  userId: string;
-  balance: number;
-}
-
 /** A per-user AI usage/credit quota was hit (cost alert / upgrade nudge). */
 export interface AiQuotaExceededEvent {
   userId: string;
@@ -195,6 +188,5 @@ export interface DomainEventMap {
   [DomainEventType.SubscriptionTrialEnding]: SubscriptionTrialEndingEvent;
   [DomainEventType.PaymentSucceeded]: PaymentSucceededEvent;
   [DomainEventType.PaymentFailed]: PaymentFailedEvent;
-  [DomainEventType.CreditsLow]: CreditsLowEvent;
   [DomainEventType.AiQuotaExceeded]: AiQuotaExceededEvent;
 }

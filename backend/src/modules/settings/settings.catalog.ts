@@ -626,15 +626,13 @@ export const SETTING_DEFINITIONS: readonly SettingDefinition[] = [
     category: 'monetization',
     dataType: 'json',
     defaultValue: {
-      creditsPerUsd: 100,
       trialDays: 14,
       gracePeriodDays: 7,
-      lowCreditThreshold: 500,
       taxRates: { default: 0, GB: 0.2, DE: 0.19, IN: 0.18, US: 0 },
       currencyRates: { usd: 1, eur: 0.92, gbp: 0.79, inr: 83, pkr: 278 },
       regionCurrency: { US: 'usd', GB: 'gbp', DE: 'eur', IN: 'inr', PK: 'pkr' },
     },
-    description: 'Monetization config: credit rate, trial/grace, tax + currency tables (AF5).',
+    description: 'Monetization config: trial/grace periods, tax + currency tables (AF5).',
     validationRules: {},
   }),
 ];

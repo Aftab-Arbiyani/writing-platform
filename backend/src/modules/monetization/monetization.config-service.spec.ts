@@ -317,7 +317,6 @@ describe('MonetizationConfigService — a config patch persists all seven fields
 
     const next = await service.updateConfig(
       {
-        creditsPerUsd: 1200,
         taxRates: { PK: 0.17 },
         currencyRates: { pkr: 280 },
         regionCurrency: { PK: 'pkr' },
@@ -331,7 +330,6 @@ describe('MonetizationConfigService — a config patch persists all seven fields
     expect(rows[0]?.key).toBe('monetization.config');
     expect(rows[0]?.value).toEqual(next);
 
-    expect(next.creditsPerUsd).toBe(1200);
     // Merged, not replaced: the compiled entries survive alongside the new one.
     expect(next.taxRates).toMatchObject({ default: 0, GB: 0.2, PK: 0.17 });
     expect(next.currencyRates).toMatchObject({ usd: 1, gbp: 0.79, pkr: 280 });

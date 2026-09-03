@@ -2,8 +2,6 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   BillingInterval,
   COUPON_CODE_MAX,
-  CREDIT_MAX_PURCHASE,
-  CREDIT_MIN_PURCHASE,
   OverrideEffect,
   PaymentProvider,
   PlanTier,
@@ -174,22 +172,6 @@ export class CancelSubscriptionDto {
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(255) reason?: string;
 }
 
-/** Buy a credit pack. */
-export class PurchaseCreditsDto {
-  @ApiProperty({ minimum: CREDIT_MIN_PURCHASE, maximum: CREDIT_MAX_PURCHASE })
-  @Type(() => Number)
-  @IsInt()
-  @Min(CREDIT_MIN_PURCHASE)
-  @Max(CREDIT_MAX_PURCHASE)
-  credits!: number;
-
-  @ApiProperty({ enum: Object.values(PaymentProvider) })
-  @IsIn(Object.values(PaymentProvider))
-  provider!: PaymentProvider;
-
-  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(20_000) receipt?: string;
-}
-
 /** Restore purchases from a store receipt. */
 export class RestorePurchasesDto {
   @ApiProperty({ enum: Object.values(PaymentProvider) })
@@ -242,18 +224,6 @@ export class GrantOverrideDto {
   source?: string;
 
   @ApiPropertyOptional() @IsOptional() @Type(() => Number) @IsInt() @Min(0) limit?: number;
-}
-
-/** Adjust a user's credit balance (admin). */
-export class AdjustCreditsDto {
-  @ApiProperty() @IsString() userId!: string;
-
-  @ApiProperty({ description: 'Positive to grant, negative to deduct.' })
-  @Type(() => Number)
-  @IsInt()
-  amount!: number;
-
-  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(255) reason?: string;
 }
 
 /** Create a coupon (admin). */
@@ -319,7 +289,6 @@ export class RefundDto {
  * priced subscription, from a typo, with no error anywhere.
  */
 export class UpdateMonetizationConfigDto {
-  @ApiPropertyOptional() @IsOptional() @Type(() => Number) @IsInt() @Min(1) creditsPerUsd?: number;
   @ApiPropertyOptional() @IsOptional() @Type(() => Number) @IsInt() @Min(0) trialDays?: number;
   @ApiPropertyOptional()
   @IsOptional()
@@ -327,13 +296,6 @@ export class UpdateMonetizationConfigDto {
   @IsInt()
   @Min(0)
   gracePeriodDays?: number;
-  @ApiPropertyOptional()
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(0)
-  lowCreditThreshold?: number;
-
   @ApiPropertyOptional({
     type: Object,
     description:

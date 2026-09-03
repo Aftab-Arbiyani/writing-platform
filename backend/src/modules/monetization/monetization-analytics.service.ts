@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { CreditReason, PaymentStatus, SubscriptionEventType } from '@qalam/shared';
+import { PaymentStatus, SubscriptionEventType } from '@qalam/shared';
 import { Repository } from 'typeorm';
 
-import { CreditTransaction } from './entities/credit-transaction.entity';
+import { UsageService as AiUsageService } from '../ai';
+
 import { Payment } from './entities/payment.entity';
 import { Subscription } from './entities/subscription.entity';
 import { SubscriptionEvent } from './entities/subscription-event.entity';
@@ -48,7 +49,6 @@ export interface SubscriptionAnalytics {
 /** AI usage + cost metrics. */
 export interface UsageAnalytics {
   totalTokens: number;
-  totalCreditsConsumed: number;
   totalCostUsd: number;
   last30dCostUsd: number;
   byFeature: Array<{ feature: string; tokens: number; costUsd: number }>;
@@ -68,8 +68,7 @@ export class MonetizationAnalyticsService {
     @InjectRepository(Subscription) private readonly subscriptionRepo: Repository<Subscription>,
     @InjectRepository(SubscriptionEvent)
     private readonly events: Repository<SubscriptionEvent>,
-    @InjectRepository(CreditTransaction)
-    private readonly ledger: Repository<CreditTransaction>,
+    private readonly aiUsage: AiUsageService,
   ) {}
 
   async revenue(): Promise<RevenueAnalytics> {
@@ -109,40 +108,26 @@ export class MonetizationAnalyticsService {
     };
   }
 
+  /**
+   * Platform AI cost, for the operator.
+   *
+   * Reads `ai_usage_logs` through the AI module's own service since D5. It used to read the
+   * monetization CREDIT ledger, which was a mirror of those rows written by the meter; the
+   * mirror is gone, so this reads the original rather than a table that would now be empty.
+   * Tokens and cost stay an ADMIN concern — D5 removed them from the writer's view, not the
+   * operator's.
+   */
   async usage(): Promise<UsageAnalytics> {
-    const totals = await this.ledger
-      .createQueryBuilder('t')
-      .select('COALESCE(SUM(t.tokens), 0)', 'tokens')
-      .addSelect('COALESCE(SUM(CASE WHEN t.type = :debit THEN -t.delta ELSE 0 END), 0)', 'credits')
-      .addSelect('COALESCE(SUM(t.cost_usd), 0)', 'cost')
-      .where('t.reason = :reason', { reason: CreditReason.AiUsage })
-      .setParameter('debit', 'debit')
-      .getRawOne<{ tokens: string; credits: string; cost: string }>();
-    const recent = await this.ledger
-      .createQueryBuilder('t')
-      .select('COALESCE(SUM(t.cost_usd), 0)', 'cost')
-      .where('t.reason = :reason', { reason: CreditReason.AiUsage })
-      .andWhere('t.created_at >= :since', { since: this.daysAgo(30) })
-      .getRawOne<{ cost: string }>();
-    const byFeature = await this.ledger
-      .createQueryBuilder('t')
-      .select('t.feature', 'feature')
-      .addSelect('COALESCE(SUM(t.tokens), 0)', 'tokens')
-      .addSelect('COALESCE(SUM(t.cost_usd), 0)', 'cost')
-      .where('t.reason = :reason', { reason: CreditReason.AiUsage })
-      .andWhere('t.feature IS NOT NULL')
-      .groupBy('t.feature')
-      .getRawMany<{ feature: string; tokens: string; cost: string }>();
+    const [totals, recent, byFeature] = await Promise.all([
+      this.aiUsage.platformTotals(),
+      this.aiUsage.platformTotals(this.daysAgo(30)),
+      this.aiUsage.platformByFeature(),
+    ]);
     return {
-      totalTokens: Number(totals?.tokens ?? 0),
-      totalCreditsConsumed: Number(totals?.credits ?? 0),
-      totalCostUsd: Number(totals?.cost ?? 0),
-      last30dCostUsd: Number(recent?.cost ?? 0),
-      byFeature: byFeature.map((r) => ({
-        feature: r.feature,
-        tokens: Number(r.tokens),
-        costUsd: Number(r.cost),
-      })),
+      totalTokens: totals.totalTokens,
+      totalCostUsd: totals.totalCostUsd,
+      last30dCostUsd: recent.totalCostUsd,
+      byFeature,
     };
   }
 

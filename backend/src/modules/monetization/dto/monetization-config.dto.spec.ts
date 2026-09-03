@@ -38,16 +38,14 @@ function errorsOn(payload: Record<string, unknown>): string[] {
 
 describe('UpdateMonetizationConfigDto — the three tables are writable (A1-2)', () => {
   const patch = {
-    creditsPerUsd: 1200,
     trialDays: 14,
     gracePeriodDays: 3,
-    lowCreditThreshold: 250,
     taxRates: { default: 0, GB: 0.2, PK: 0.17 },
     currencyRates: { usd: 1, gbp: 0.79, pkr: 278 },
     regionCurrency: { GB: 'gbp', PK: 'pkr' },
   };
 
-  it('carries a patch of all SEVEN fields through the boundary intact', () => {
+  it('carries a patch of all FIVE surviving fields through the boundary intact', () => {
     const dto = received(patch);
 
     expect(validateSync(dto, { whitelist: true, forbidNonWhitelisted: true })).toEqual([]);

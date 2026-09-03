@@ -106,8 +106,8 @@ export class AiCompletionService {
     private readonly usage: UsageService,
     private readonly tokens: TokenCounterService,
     // AF5 metering seam — optional so the AI platform runs standalone (and in unit
-    // tests) with no monetization module. When present it enforces plan quota + credit
-    // balance and debits the credit ledger; the base token-cap check above always runs.
+    // tests) with no monetization module. When present it enforces the feature's premium
+    // code and its per-plan allowance; the base token-cap check above always runs.
     @Optional() @Inject(AI_USAGE_METER) private readonly meter?: AiUsageMeter,
   ) {}
 
@@ -188,11 +188,10 @@ export class AiCompletionService {
      * "turn AI off" preference. It is deliberately the FIRST thing `prepare` does,
      * and specifically ahead of the AF5 meter below:
      *
-     * - `meter.checkQuota` (further down this method) and `meter.recordConsumption`
-     *   (in `recordUsage`) are the only two places an AI request touches the credit
-     *   and quota ledgers. Refusing here means an opted-out user's request costs them
-     *   no allowance and no credits — §4.10 requires that nothing meters, since a user
-     *   who has switched AI off should not be able to be charged for a refusal.
+     * - `meter.checkQuota` (further down this method) is the only place an AI request
+     *   touches a plan's allowance. Refusing here means an opted-out user's request costs
+     *   them nothing — §4.10 requires that nothing meters, since a user who has switched
+     *   AI off should not be able to be charged for a refusal.
      * - It also precedes every provider call, every prompt render and every context
      *   assembly, so a refusal spends no tokens and no upstream request either.
      *
@@ -228,9 +227,9 @@ export class AiCompletionService {
       throw new AiContextTooLargeException(estimatedTokens, modelMeta.contextWindow);
     }
 
-    // AF5: delegate the quota/credit decision to the monetization meter when present.
-    // The base per-user token cap above already ran; this adds plan-quota + credit
-    // enforcement without duplicating any token counting.
+    // AF5: delegate the entitlement + allowance decision to the monetization meter when
+    // present. The base per-user token cap above already ran; this adds the plan's own
+    // per-feature allowance without duplicating any counting.
     if (this.meter !== undefined) {
       await this.meter.checkQuota({
         userId: input.userId,
@@ -320,22 +319,12 @@ export class AiCompletionService {
       conversationId: null,
       requestId: input.requestId ?? null,
     });
-
-    // AF5: mirror the consumption into the monetization Usage/Credit ledger (debit
-    // credits from the cost the AI platform already computed). The AI usage log above
-    // remains the raw provider-token record; this is the credit/quota source of truth.
-    if (this.meter !== undefined) {
-      await this.meter.recordConsumption({
-        userId: input.userId,
-        feature: input.feature,
-        provider: resolved.provider,
-        model: resolved.model,
-        usage,
-        costUsd,
-        conversationId: null,
-        requestId: input.requestId ?? null,
-      });
-    }
+    /*
+     * This row is the whole record. Until D5 it was mirrored into the monetization credit
+     * ledger straight after, which made two write-paths for one fact; now the allowance is
+     * COUNTED from these rows, so the mirror had nothing left to add and has gone with the
+     * credits. The meter is ask-only.
+     */
   }
 
   /** A timed-out call becomes AI_TIMEOUT; domain errors pass through untouched. */

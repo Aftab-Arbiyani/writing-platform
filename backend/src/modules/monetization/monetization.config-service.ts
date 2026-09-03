@@ -3,7 +3,6 @@ import type { OnModuleInit } from '@nestjs/common';
 import {
   AI_FEATURE_PREMIUM_CODE,
   BillingInterval,
-  DEFAULT_CREDITS_PER_USD,
   DEFAULT_CURRENCY,
   DEFAULT_GRACE_PERIOD_DAYS,
   DEFAULT_PLAN_FEATURES,
@@ -77,10 +76,8 @@ export class MonetizationConfigService implements OnModuleInit {
   ): Promise<ResolvedMonetizationConfig> {
     const current = await this.getConfig();
     const next: ResolvedMonetizationConfig = {
-      creditsPerUsd: patch.creditsPerUsd ?? current.creditsPerUsd,
       trialDays: patch.trialDays ?? current.trialDays,
       gracePeriodDays: patch.gracePeriodDays ?? current.gracePeriodDays,
-      lowCreditThreshold: patch.lowCreditThreshold ?? current.lowCreditThreshold,
       taxRates: { ...current.taxRates, ...(patch.taxRates ?? {}) },
       currencyRates: { ...current.currencyRates, ...(patch.currencyRates ?? {}) },
       regionCurrency: { ...current.regionCurrency, ...(patch.regionCurrency ?? {}) },
@@ -186,10 +183,8 @@ export function driftedPaidEntitlements(
 
 /** The compiled default cross-cutting config (also the seeded `monetization.config`). */
 export const DEFAULT_CONFIG: ResolvedMonetizationConfig = {
-  creditsPerUsd: DEFAULT_CREDITS_PER_USD,
   trialDays: DEFAULT_TRIAL_DAYS,
   gracePeriodDays: DEFAULT_GRACE_PERIOD_DAYS,
-  lowCreditThreshold: 500,
   taxRates: { default: 0, GB: 0.2, DE: 0.19, IN: 0.18, US: 0 },
   currencyRates: { usd: 1, eur: 0.92, gbp: 0.79, inr: 83, pkr: 278 },
   regionCurrency: { US: 'usd', GB: 'gbp', DE: 'eur', IN: 'inr', PK: 'pkr' },
@@ -302,10 +297,8 @@ function mergeConfig(raw: unknown): ResolvedMonetizationConfig {
   }
   const r = raw as Record<string, unknown>;
   return {
-    creditsPerUsd: num(r.creditsPerUsd, DEFAULT_CONFIG.creditsPerUsd),
     trialDays: num(r.trialDays, DEFAULT_CONFIG.trialDays),
     gracePeriodDays: num(r.gracePeriodDays, DEFAULT_CONFIG.gracePeriodDays),
-    lowCreditThreshold: num(r.lowCreditThreshold, DEFAULT_CONFIG.lowCreditThreshold),
     taxRates: mergeRecord(r.taxRates, DEFAULT_CONFIG.taxRates),
     currencyRates: mergeRecord(r.currencyRates, DEFAULT_CONFIG.currencyRates),
     regionCurrency: mergeStringRecord(r.regionCurrency, DEFAULT_CONFIG.regionCurrency),
