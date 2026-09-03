@@ -1,5 +1,12 @@
 # 47 — W2 AI Writing Assistant Readiness Report
 
+> ⛔ **SUPERSEDED BY D5, 2026-09-03** ([48 §5.2](./48_PlatformParityRegister.md#d5--the-ai-surface-is-removed-the-tools-stay-owner-2026-09-02)). The surface this report certifies is being
+> dismantled: `continue`, `rewrite`, `expand`, `tone` and `freeform` are removed (they generate
+> prose), and the three that survive — `improve`, `simplify`, `condense` — ship as **Polish** in a
+> **Writing tools** drawer with no conversation binding and no free-form field. Read this for the
+> editor-integration reasoning (selection handling, placement, accept/undo), which D5 keeps
+> wholesale; read nothing here as current about the action shelf, the panel's tabs, or its copy.
+
 **Epic:** W2 — the in-editor AI assistant ([45 §4.2](./45_WebClientRoadmap.md)) ·
 **Status:** ✅ complete, verified against a running stack · **Date:** 2026-07-27
 

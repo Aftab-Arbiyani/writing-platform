@@ -1,5 +1,11 @@
 # 52 — W8 AI Surfaces Readiness Report
 
+> ⛔ **SUPERSEDED BY D5, 2026-09-03** ([48 §5.2](./48_PlatformParityRegister.md#d5--the-ai-surface-is-removed-the-tools-stay-owner-2026-09-02)). Nearly every surface this report certifies is being
+> deleted: the AI hub (`/settings/ai`), AI conversations and their export, the prompt library, and
+> the AI token-usage page. Their backend halves are already gone (`7f3b459`) — the conversation
+> service, its controller and `GET /ai/usage/me`. What replaces the usage page is a per-feature
+> allowance view served by the monetization module. Keep this only as the record of what existed.
+
 **Epic:** W8 — remaining AI surfaces (AF1/AF2) ([45 §4](./45_WebClientRoadmap.md), row W8) ·
 **Status:** ✅ complete, verified against a running stack · **Date:** 2026-08-05
 

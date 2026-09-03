@@ -1,5 +1,22 @@
 # 35 — Story Intelligence Architecture (AF3)
 
+> ⚠️ **AMENDED BY D5, 2026-09-03** ([48 §5.2](./48_PlatformParityRegister.md#d5--the-ai-surface-is-removed-the-tools-stay-owner-2026-09-02)).
+> This is now **Story Map**, user-facing, and it finally has a way to be built. The graph model,
+> the analyses and the ownership rules below are unchanged; what changed is that "clients follow in
+> a follow-up" stopped being true in one direction:
+>
+> - **`POST /story-intelligence/:storyId/map/stream`** runs all five analysis kinds in order and
+>   folds each into the graph, streaming progress over SSE. It is the first client-reachable
+>   `analyze` trigger on any platform — until D5, a Pro subscriber could look at a graph nothing
+>   could populate ([48 §3.22d](./48_PlatformParityRegister.md)).
+> - **Analyses are metered per action**, not per token: one `storyAnalysesPerMonth` each, with a
+>   full map run of five reserved up front so a writer short of allowance is refused before the
+>   first call rather than left with a half-built graph.
+> - **Still deliberately absent:** any client for `resetGraph`, and any way for a writer to confirm
+>   or correct extracted entities. Both remain product-undefined and out of scope.
+> - **Naming:** "Story Intelligence" survives only as the module name and the `story_intelligence`
+>   wire code. Users see **Story Map**.
+
 > **Status:** Backend graph platform **implemented + verified**. Clients (React
 > frontend, admin UI, Flutter) render from the structured graph in a follow-up (this
 > session's scope was the backend single-source-of-truth, per the scope decision).

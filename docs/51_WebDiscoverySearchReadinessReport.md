@@ -1,5 +1,11 @@
 # 51 — W5 Discovery & Search Readiness Report
 
+> ⚠️ **AMENDED BY D5, 2026-09-03** ([48 §5.2](./48_PlatformParityRegister.md#d5--the-ai-surface-is-removed-the-tools-stay-owner-2026-09-02)). The retrieval surface certified here survives; its framing
+> does not. Search is now **public** (no account, no flag, no `ai.use`), there is no keyword-vs-AI
+> mode toggle and no grounded "AI answer" — the engine never called a model except for that one
+> branch, which is gone. Recommendations keep their engine and lose their flag. The scope tabs,
+> filters and paging this report describes are **kept** as refinement over the retrieval results.
+
 **Epic:** W5 — AF4 retrieval-backed discovery / search ([45 §4.6](./45_WebClientRoadmap.md)) ·
 **Status:** ✅ complete, verified against a running stack · **Date:** 2026-08-04
 

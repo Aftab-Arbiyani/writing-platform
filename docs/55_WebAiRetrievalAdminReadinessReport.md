@@ -1,5 +1,11 @@
 # 55 — Admin AI Retrieval Readiness Report (A3)
 
+> ⚠️ **AMENDED BY D5, 2026-09-03** ([48 §5.2](./48_PlatformParityRegister.md#d5--the-ai-surface-is-removed-the-tools-stay-owner-2026-09-02)). The admin config and analytics surfaces survive — they are
+> internal, and D5's rename is user-facing only. One field does not: **`synthesisEnabled` is
+> retired**. Grounded synthesis is gone from the engine, so the server answers that field with a
+> constant `false` and the admin form's Synthesis card is removed in D5's web phase. Everything
+> else here — budgets, sources, ranking weights, the analytics window — is current.
+
 **Status:** ✅ **DONE 2026-08-19** · **Row:** [45 §5](./45_WebClientRoadmap.md#5-track-a--admin-parallel-with-w-independent) A3 —
 retrieval · **Sweep:** [48 §6.20](./48_PlatformParityRegister.md) · **Findings:** [48 §3.20](./48_PlatformParityRegister.md)
 

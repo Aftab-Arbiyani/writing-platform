@@ -1,5 +1,12 @@
 # 48 — Platform Parity Register (web ↔ mobile)
 
+> 🔨 **IN FLIGHT, 2026-09-03 — D5 removes the AI surface.** Three backend phases have landed on
+> `develop` (`9214fc6`, `7f3b459`, `952a790`) and **neither client has moved**, so parts of this
+> register describe surfaces the server no longer serves. The decision, the built-vs-outstanding
+> table, and the one defect that state opens (**D5-clients**, §3.22a) are in
+> [§5.2 → D5](#d5--the-ai-surface-is-removed-the-tools-stay-owner-2026-09-02). Read that before
+> scheduling anything that touches AI, search, or plan limits.
+
 **Status:** 🔒 Binding · **Owner:** every client epic · **Last swept:** 2026-08-20 (**a verification
 sweep — no code**. Every §3 entry still carrying an open label was re-read against the code that owns
 it, because the last two passes each found entries they were scheduling that had already been fixed.
@@ -878,7 +885,14 @@ The static half matters more than the pixel half: it fails on the _rule_, so a w
 reach a browser at all. The pixel half catches a plausible-but-insufficient value, which no static rule
 could.
 
-### T-7 · **medium** · **OPEN — ledger §3.22c** · `assistant.spec.ts` "writes and autosaves" is flaky under parallel load
+### T-7 · **medium** · ~~**OPEN — ledger §3.22c**~~ **MOOT 2026-09-03 — the spec it names is being deleted (D5)** · `assistant.spec.ts` "writes and autosaves" is flaky under parallel load
+
+> **Moot, not fixed, and the distinction matters.** D5 ([§5.2](#d5--the-ai-surface-is-removed-the-tools-stay-owner-2026-09-02))
+> removes the Writing Assistant, so `assistant.spec.ts` is replaced by `writing-tools.spec.ts` in
+> phase F1. Nothing diagnosed the flake and nothing fixed it — the file simply stops existing. The
+> replacement keeps the serial block and the autosave assertion, so **if the same flake reappears
+> there it is the same defect and deserves a NEW row**, not a reopening of this one. Do not read this
+> closure as evidence the underlying race was understood.
 
 **Already recorded by W3c** ([49 §6g](./49_WebCollaborationEpicDesign.md), "One pre-existing E2E failure"),
 which established it by stashing every W3c change. Repeated here only because this pass re-measured it
@@ -3938,10 +3952,26 @@ them (baseline re-mint, five call sites, a measurement loop) is the actual cost.
 
 ### 3.22a Product defects — a user or an operator can hit these
 
-**EMPTY as of 2026-08-31.** No open product defect remains on either platform — the last was
-**C-15** (closed the same day) and before it **B8-2**. This is the first time this table has been
-empty since it was written. The header is deliberately gone rather than left as a stub: an empty
-table reads like data that failed to render, and a sentence cannot be misread that way.
+~~**EMPTY as of 2026-08-31.**~~ It was empty for three days. **One row was opened 2026-09-03 by
+D5's own build**, and it is recorded rather than waved through because it is exactly the kind of
+breakage a phased migration makes easy to leave undocumented: deliberate, known, and invisible to
+every test that passed.
+
+| Row                       | What                                                                                                                                                                                                                                                                                                                                                                      | Opened                   | Closes when                                    |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ | ---------------------------------------------- |
+| **D5-clients** · **high** | Both clients call routes B2 deleted. Web's Ask tab, AI conversation pages and prompt library, and mobile's Ask My Book screen and conversation screens, now hit **404** on `develop`; web's `/settings/ai/usage` reads a `GET /ai/usage/me` that is gone. Nothing 404s in production — nothing has deployed — but any developer running both halves off `develop` sees it | 2026-09-03, by `7f3b459` | F1 (web) and M1 (mobile) delete those surfaces |
+
+**Why this is a row and not a footnote.** The backend phases are green on their own terms — 1413
+tests, every workspace typechecking — and _that is the problem_: the clients compile because the
+deleted things are runtime routes, not types, so nothing in CI can see this. It is the same class as
+the E2E findings in [§3.25](#325-the-browser-suite-was-run-locally-and-it-found-two-defects-143-unit-files-could-not):
+a defect that only exists between two systems, which unit tests are structurally unable to hold.
+Recording it is what stops "the backend is done" from being read as "D5 is done".
+
+**It is not a reason to reorder the work.** Deleting a client surface before its server route is the
+same window pointed the other way, and worse — the client would 404 against a route that still
+exists, which is harder to reason about. The window is the cost of phasing; naming it and closing it
+fast is the mitigation.
 
 > **C-15 is not the web-only row it is filed as — re-verified 2026-08-20.** Its "mobile is unaffected"
 > premise rested on **R-1** (nothing in the app navigated to any AF6 screen), and R-1 has been closed
@@ -4165,6 +4195,21 @@ produced one.
   is now a gated capability (`story_intelligence`), so whichever row eventually ships it ships the
   first client that can spend it. Reviving this needs a product definition first — it is not a port,
   and it should not be sized as one.
+
+  > **PARTIALLY REVIVED 2026-09-03 by D5 ([§5.2](#d5--the-ai-surface-is-removed-the-tools-stay-owner-2026-09-02)) — read this before sizing anything here.**
+  > D5 made Story Map the premium headline, which forced the question this row deferred: a
+  > subscriber cannot be sold a viewer of graphs nothing can build. So **two** of the four
+  > questions are now answered, and only those two. _Who triggers an analysis and when_ — the
+  > writer, from the Story Map surface, via `POST /story-intelligence/:storyId/map/stream`, which
+  > runs all five kinds. _What it costs_ — one `storyAnalysesPerMonth` allowance each, with the
+  > whole run of five **reserved up front**, so a writer three short is refused before the first
+  > call rather than left with a half-built graph that looks finished.
+  >
+  > **Still unanswered, still out of scope, and still not a port:** whether extracted entities are
+  > the writer's to confirm or correct, and what resetting a graph means for anything built on it.
+  > `resetGraph` exists on the server and D5 deliberately gave it no client. Whoever picks those up
+  > is doing product definition, not porting — which is what this row said in the first place, and
+  > it is still the useful part of it.
 
 - **Mobile store billing is an inert seam by design.** `NoopStoreBillingGateway` is the bound default
   (`qalam-mobile/lib/features/monetization/presentation/providers/monetization_providers.dart:47-48`)
@@ -5274,6 +5319,109 @@ subscriber's plan is computed correctly and then ignored on every route but the 
    > data, live on every deployment with no migration. `settings.catalog.ts` was left alone for the
    > same reason: seeding a new default would have helped only fresh databases. Both halves of D4 are
    > now closed.
+
+### D5 — the AI surface is removed; the tools stay (owner, 2026-09-02)
+
+**The decision.** Qalam's audience — literary writers, and poets above all — rejects products that
+lead with "AI", and rejects two things specifically: prose _generation_, and manuscripts being used
+covertly. The product as built led with both. The paid headline was the Writing Assistant's
+`continue` / `rewrite` / `expand` / `tone` / `freeform`; "AI" appeared on the settings nav, the plan
+cards, the search page and the editor toolbar; and the thing a plan limited was a **token budget**.
+
+D5 removes the AI _surface_ without removing the AI _platform_. AF1 stays whole — providers,
+orchestrator, prompts, safety, `ai_usage_logs`, the admin "AI Defaults" page — because Polish,
+Manuscript feedback and Story Map all run on it. What goes is the branding, the generation, and the
+parts that existed only to hold a conversation.
+
+|                                                                 | Before                                                                            | After                                                                     |
+| --------------------------------------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Writing Assistant, 8 actions                                    | `continue` `rewrite` `expand` `tone` `freeform` + `improve` `simplify` `condense` | **Polish** — `improve` `simplify` `condense` only                         |
+| Craft Coach                                                     | "Craft Coach"                                                                     | **Manuscript feedback**                                                   |
+| Story Intelligence + Explorer                                   | a viewer of graphs no client could build                                          | **Story Map**, with a "Map this story" trigger                            |
+| Ask My Book                                                     | shipped, free                                                                     | removed                                                                   |
+| Semantic search                                                 | flag-gated, `ai.use`, optional LLM answer                                         | the product's one search — **public**, no LLM                             |
+| Recommendations                                                 | flag-gated `ai.use`                                                               | ordinary authenticated surface                                            |
+| Conversations, prompt library, AI hub, token page, B5 switch UI | shipped                                                                           | removed                                                                   |
+| Plan limit                                                      | `aiDailyTokens` / `aiMonthlyTokens` / `aiMonthlyCredits`                          | `polishActionsPerDay` · `feedbackReportsPerDay` · `storyAnalysesPerMonth` |
+| Credit economy                                                  | wallet, purchases, `ai_budget`                                                    | removed                                                                   |
+
+**Three findings from the build that changed the shape of the work.**
+
+1. **"Build a non-AI search engine" was not work at all.** The retrieval pipeline — graph + keyword
+   - metadata retrievers, a numeric ranker, explanations — never called a model. The only LLM in the
+     whole search path was the _optional_ grounded answer. Deleting that branch left search
+     deterministic, which is why it could also drop its feature flag, its `ai.use` permission and its
+     login requirement in one move. `retrieval.module.ts` no longer imports `AiModule` at all, and
+     `retrieval-contract.spec` asserts that by reading the module source: every behavioural test in
+     that file could keep passing while someone wired a model back into a retriever, and that one
+     cannot.
+2. **Story Map was hollow, and D5 is what fills it.** [§3.22d](#322d-not-defects--recorded-so-a-future-row-does-not-size-them-as-work)
+   scoped the AF3 analysis lifecycle out on 2026-09-01 as product-undefined: seven routes with no
+   client on any platform. D4 had already made `analyze` a gated capability, so a Pro subscriber
+   could look at a graph they had no way to build. `POST /story-intelligence/:storyId/map/stream`
+   is the first client-reachable trigger. That row is **partially revived, not reopened**: the
+   remaining questions it raised — whether extracted entities are the writer's to confirm or
+   correct, and what resetting a graph means — are still unanswered and still out of scope.
+3. **The two clients disagree about a missing feature flag, and it decides what can be deleted
+   when.** Web's `resolveAvailability` looks a flag up and refuses only when it is
+   present-and-false, so an absent flag reads as _available_; mobile's `AiFeatures.isEnabled` is
+   `features.any(...)`, so an absent flag reads as _off_ and the surface hides itself. Removing
+   `feature.ai.semanticSearch.enabled` — which the server stopped reading in B1 — would therefore be
+   a no-op on web and would take **mobile's search screen dark** against a server perfectly willing
+   to answer it. Only `feature.ai.askBook.enabled` was removed, whose surface is genuinely gone. The
+   warning now sits on `FLAGGED_AI_FEATURES`, where the next person to delete an entry will read it.
+
+**Allowances.** "You have 3,200 tokens left" answers a question nobody asked: nobody knows what a
+token buys, and the number moves when the model does. A count of actions does answer it — _12 of 30
+polishes today_ — and survives a model change. Ordinary `0 = unlimited` sentinel (never
+`maxCollaborators`' inverted one). Free 20/5/5 · Plus 100/20/20 · Pro 300/60/100 · Enterprise
+unlimited. The five story analyses share ONE allowance because a writer spends them as one action;
+counting them apart would mean five limits nobody can reason about and a half-mapped story when one
+runs out. Counts come from `ai_usage_logs` — one row per completed generation — so the unit the
+writer is shown is the unit the server enforces, with no second counter to keep in step. Tokens and
+cost do not disappear; they stop being the writer's problem and stay on the admin dashboards.
+
+**A guard caught a real gap on its first run.** `uncountedPaidAiFeatures` asserts the relationship a
+type cannot: every AI feature a plan _sells_ must be counted by exactly one rule. It failed
+immediately — `grammar`, `rewrite` and `summarization` sit behind `ai_writing` with no allowance.
+Nothing was leaking, because none has a caller; but whoever gave one a caller would have shipped a
+capability plans charge for and nothing ever limits, invisible until a provider bill arrived.
+
+**Disclosure, and what it is not.** Polish, Manuscript feedback and Story Map all send the writer's
+text to a third-party model provider. The B5 switch UI is removed (it was the most AI-branded thing
+in the app, guarding three modest tools), but the `user_settings.ai_enabled` column and its server
+check stay inert, and the honest disclosure moves into the tools: one quiet line — _"Produced by a
+language model. Your text isn't used to train it."_ — plus a privacy-policy clause. Concealment was
+considered and rejected: this audience punishes discovery far harder than disclosure, and GDPR
+processor disclosure and the EU AI Act's transparency article both bind regardless.
+
+**Status — built vs outstanding.** Three backend phases have landed on `develop`; **nothing has
+shipped on either client**, so every client-side claim in the table above is a decision, not a state.
+
+| Phase     | What                                                                                                     | State        |
+| --------- | -------------------------------------------------------------------------------------------------------- | ------------ |
+| **B1**    | Search public + synthesis stripped; recommendations de-flagged; `retrieval_query_logs.user_id` nullable  | ✅ `9214fc6` |
+| **B2**    | Ask My Book, conversations, dead prompts deleted; completions stateless                                  | ✅ `7f3b459` |
+| **B3**    | Per-feature allowances; "Map this story"; E2E seed lifts the new caps                                    | ✅ `952a790` |
+| **B4**    | Credit economy off (`ai_budget`, wallet, purchases, admin credit actions)                                | ⬜           |
+| **F0–F2** | Web + admin: writing-tools drawer, search consolidation, allowance UI                                    | ⬜           |
+| **M1–M4** | Mobile: Polish sheet, `shared/retrieval`, allowance cards, copy sweep                                    | ⬜           |
+| **V**     | Vocabulary contract — delete the deprecated enum values, api-types and wire fields in one coordinated PR | ⬜           |
+| **C**     | DB contract — drop `ai_conversations`, `ai_messages`, `credit_wallets`, `credit_transactions`            | ⬜           |
+
+**Wire compatibility is deliberate until V.** `conversationId`, `synthesize`, `synthesisEnabled` and
+`answer` are all still accepted or returned, inert. That is not laziness: the validation pipe runs
+with `forbidNonWhitelisted` — verified live, an unknown property is rejected — so removing
+`conversationId` from the DTO would have turned every request from an already-shipped client into a
+400 rather than a harmless no-op. The api-types shapes moved to `UNMIRRORED` with an expiry reason
+rather than being dropped, which keeps the completeness check honest while the clients still import
+them.
+
+**Rows this makes moot** (struck where they live, listed here so the ledger stays the one source):
+`T-7` (the `assistant.spec.ts` flake — the spec is replaced by `writing-tools.spec.ts` in F1) and
+D3's "free keeps `ai_budget`" reasoning, which B4 removes entirely.
+
+---
 
 **Ownership.** `premium_content` (a ninth code that does not exist yet) is owned by **B2**, held —
 [45 §4.5](./45_WebClientRoadmap.md#45-b2--premium-content-held-detail). B2 will write the **first real

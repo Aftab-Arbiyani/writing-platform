@@ -1,4 +1,21 @@
-# 36 — AI Discovery / Search / Recommendation — the Retrieval Platform (AF4)
+# 36 — Discovery / Search / Recommendation — the Retrieval Platform (AF4)
+
+> ⚠️ **AMENDED BY D5, 2026-09-03** ([48 §5.2](./48_PlatformParityRegister.md#d5--the-ai-surface-is-removed-the-tools-stay-owner-2026-09-02)).
+> **The design law "the LLM owns explanation, retrieval owns what it sees" no longer holds, because
+> there is no LLM here at all.** The pipeline never called one except for search's optional grounded
+> answer; deleting that branch left the platform deterministic, and that changed what it is:
+>
+> - **Search is public.** `POST /ai/search` and `GET /ai/search/suggestions` are `@Public()` with
+>   an optional viewer, exactly like E8's `/search`. The knowledge-graph source is owner-scoped and
+>   simply contributes nothing for an anonymous caller; a story-scoped query without a user is
+>   refused (422) rather than answered emptily. Saved searches stay authenticated.
+> - **Ask My Book is deleted** — service, controller, DTOs, prompt, `AskScope`, the `Ask` intent.
+> - **No feature flags, no `ai.use`, no synthesis.** `synthesisEnabled` is gone from the internal
+>   config; the admin field is answered with a constant `false` until the client drops it.
+> - **`retrieval.module.ts` no longer imports `AiModule`**, and a spec asserts that by reading the
+>   module source. That import is the thing to watch: re-adding it is how this platform would drift
+>   back into being an AI feature.
+> - **Naming:** users see "Search" and "Recommendations". Nothing here is branded AI.
 
 > **Status:** Backend **implemented + verified**. Clients (React frontend, admin UI, Flutter)
 > render from the seams defined here in a follow-up (this session's scope was the reusable

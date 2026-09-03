@@ -1,5 +1,23 @@
 # 37 — Monetization Platform Architecture (AF5)
 
+> ⚠️ **AMENDED BY D5, 2026-09-03** ([48 §5.2](./48_PlatformParityRegister.md#d5--the-ai-surface-is-removed-the-tools-stay-owner-2026-09-02)).
+> Subscriptions, entitlements, the payment port, coupons, invoices and the seat/history/piece caps
+> are unchanged. **What a plan limits is not.**
+>
+> - **Per-feature action allowances replace the token budget.** `polishActionsPerDay`,
+>   `feedbackReportsPerDay`, `storyAnalysesPerMonth` (ordinary `0 = unlimited` sentinel), counted
+>   from `ai_usage_logs` — one row per completed generation — so the unit a writer is shown is the
+>   unit the server enforces. `aiDailyTokens` / `aiMonthlyTokens` / `aiMonthlyCredits` are
+>   deprecated and enforce nothing.
+> - **The credit economy is being removed**, `ai_budget` with it. The "AI Usage & Credits" chapter
+>   below describes a wallet, credit purchases and a credit ledger that D5's B4 phase deletes;
+>   read it as history. Token and cost accounting survives for the ADMIN dashboards only.
+> - **`MonetizationModule` now imports `AiModule`** — the first dependency in that direction. It is
+>   acyclic and deliberate: monetization is allowed to know what a generation is, while the AI
+>   platform stays ignorant of plans and money behind its optional meter port.
+> - **`uncountedPaidAiFeatures` is a build-time guard**: any AI feature a plan sells must be counted
+>   by exactly one quota rule.
+
 > The reusable monetization architecture: subscriptions, entitlements, AI usage/credits,
 > payments behind a replaceable provider port, purchases, feature gating, promotions,
 > pricing, and analytics. Additive-only over the frozen `v1` contract. Built on AF1 (AI

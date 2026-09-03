@@ -1,5 +1,23 @@
 # 34 — AI Platform Architecture (AF1)
 
+> ⚠️ **AMENDED BY D5, 2026-09-03** ([48 §5.2](./48_PlatformParityRegister.md#d5--the-ai-surface-is-removed-the-tools-stay-owner-2026-09-02)).
+> **The platform below stands — the surface it serves does not.** D5 removed the AI _branding_, not
+> the AI _foundation_: providers, orchestrator, prompts, safety, `ai_usage_logs` and the admin
+> config are all unchanged, and Polish, Manuscript feedback and Story Map run on them exactly as
+> described here. What this document now overstates:
+>
+> - **The conversation layer is gone.** `ConversationService`, its repository, controller and
+>   mappers are deleted, and `assembleMessages` no longer has a history step. Every completion is
+>   stateless — the surviving surfaces each send their operand in full. `ai_conversations` /
+>   `ai_messages` still exist as tables until D5's contract phase drops them.
+> - **`GET /ai/usage/me` is gone.** Users are no longer shown tokens; per-feature allowances are
+>   served by the monetization module (`GET /monetization/usage`). `GET /admin/ai/usage/:userId`
+>   is unchanged — token and cost accounting stays internal.
+> - **Five prompt keys and several `AiFeature` values are gone or going**; the ones that generate
+>   prose were removed on purpose. §13's "how to add a feature" recipe still applies, with one
+>   addition: a new AI feature sold behind a premium code must also be given a quota rule
+>   (`ai-quotas.ts`), or `uncountedPaidAiFeatures` fails the build.
+
 > **Status:** Backend **implemented + verified**; client integrations (React
 > frontend, admin, Flutter) follow the seams defined here. **Scope of AF1:** the
 > reusable AI _foundation_ every future AI capability builds on — **no
