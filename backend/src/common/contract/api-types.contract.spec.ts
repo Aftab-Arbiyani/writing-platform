@@ -7,18 +7,12 @@ import {
   AiCompletionMessageDto,
   AiCompletionRequestDto,
   AiPromptPreviewDto,
-  CreateAiConversationDto,
-  UpdateAiConversationDto,
   UpdateAiOrgDefaultsDto,
   UpdateAiUserOverridesDto,
 } from '../../modules/ai/dto/ai-request.dto';
 import {
   AiCompletionResponseDto,
   AiConfigResponseDto,
-  AiConversationDetailDto,
-  AiConversationExportDto,
-  AiConversationExportMessageDto,
-  AiConversationSummaryDto,
   AiFeatureFlagInfoDto,
   AiFeaturesResponseDto,
   AiMessageDto,
@@ -56,14 +50,12 @@ import {
   UsageWindowDto,
 } from '../../modules/monetization/dto/monetization-response.dto';
 import {
-  AskBookDto,
   RecommendationQueryDto,
   SaveSearchDto,
   SemanticSearchDto,
   UpdateRetrievalConfigDto,
 } from '../../modules/retrieval/dto/retrieval-request.dto';
 import {
-  AskBookResponseDto,
   ExplorerViewResponseDto,
   RecommendationItemDto,
   RecommendationResponseDto,
@@ -265,18 +257,6 @@ const MIRRORS: readonly Mirror[] = [
   { type: 'AiPromptPreviewRequest', dto: AiPromptPreviewDto, direction: 'request' },
   { type: 'AiPromptPreviewResponse', dto: AiPromptPreviewResponseDto, direction: 'response' },
   { type: 'AiMessageDto', dto: AiMessageDto, direction: 'response' },
-  { type: 'AiConversationSummary', dto: AiConversationSummaryDto, direction: 'response' },
-  { type: 'AiConversationDetail', dto: AiConversationDetailDto, direction: 'response' },
-  { type: 'CreateAiConversationRequest', dto: CreateAiConversationDto, direction: 'request' },
-  { type: 'UpdateAiConversationRequest', dto: UpdateAiConversationDto, direction: 'request' },
-  // The export payload's own shapes (W8-3 / W8-4). They were UNMIRRORED until the route was given a
-  // real response DTO on 2026-08-20 — the fix that entry's own excuse named.
-  { type: 'AiConversationExport', dto: AiConversationExportDto, direction: 'response' },
-  {
-    type: 'AiConversationExportMessage',
-    dto: AiConversationExportMessageDto,
-    direction: 'response',
-  },
   { type: 'AiCompletionMessage', dto: AiCompletionMessageDto, direction: 'request' },
   { type: 'AiCompletionRequest', dto: AiCompletionRequestDto, direction: 'request' },
   { type: 'AiCompletionResponse', dto: AiCompletionResponseDto, direction: 'response' },
@@ -301,8 +281,6 @@ const MIRRORS: readonly Mirror[] = [
   { type: 'SearchResultItem', dto: SearchResultItemDto, direction: 'response' },
   { type: 'SemanticSearchResponse', dto: SemanticSearchResponseDto, direction: 'response' },
   { type: 'SearchSuggestionsResponse', dto: SearchSuggestionsResponseDto, direction: 'response' },
-  { type: 'AskBookRequest', dto: AskBookDto, direction: 'request' },
-  { type: 'AskBookResponse', dto: AskBookResponseDto, direction: 'response' },
   { type: 'ExplorerViewResponse', dto: ExplorerViewResponseDto, direction: 'response' },
   { type: 'RecommendationRequest', dto: RecommendationQueryDto, direction: 'request' },
   { type: 'RecommendationItem', dto: RecommendationItemDto, direction: 'response' },
@@ -357,9 +335,25 @@ const UNMIRRORED: Readonly<Record<string, string>> = {
   RelatedEntity: 'Structural sub-block; backend counterpart is retrieval.types.ts, not a DTO.',
   NavigationTarget: 'Structural sub-block; backend counterpart is retrieval.types.ts, not a DTO.',
   RankingExplanation: 'Structural sub-block; backend counterpart is retrieval.types.ts, not a DTO.',
-  AskCitation: 'Structural sub-block; backend counterpart is retrieval.types.ts, not a DTO.',
-  AskBookStreamEvent:
-    'The SSE `data:` payload on /ai/ask/stream, not a body: no DTO documents it (same as AiStreamEvent).',
+
+  // D5 removed these surfaces from the server. The types stay in `@qalam/api-types` only until
+  // the web clients stop importing them — deleting them here first would break the clients'
+  // typecheck in a commit that cannot also fix them. They are exempted with the reason rather
+  // than quietly dropped, so the completeness check still accounts for every export and the
+  // debt has an expiry rather than becoming permanent.
+  AskCitation: 'Removed server-side (D5); type retained until the client half lands.',
+  AskBookRequest: 'Removed server-side (D5); type retained until the client half lands.',
+  AskBookResponse: 'Removed server-side (D5); type retained until the client half lands.',
+  AskBookStreamEvent: 'Removed server-side (D5); type retained until the client half lands.',
+  AiConversationSummary: 'Removed server-side (D5); type retained until the client half lands.',
+  AiConversationDetail: 'Removed server-side (D5); type retained until the client half lands.',
+  AiConversationExport: 'Removed server-side (D5); type retained until the client half lands.',
+  AiConversationExportMessage:
+    'Removed server-side (D5); type retained until the client half lands.',
+  CreateAiConversationRequest:
+    'Removed server-side (D5); type retained until the client half lands.',
+  UpdateAiConversationRequest:
+    'Removed server-side (D5); type retained until the client half lands.',
 
   // AF3 per-kind payloads: `StoryAnalysisResultDto.structured` is `Record<string, unknown>` by design
   // (the shape varies by analysis kind), so there is no per-kind DTO to compare against.

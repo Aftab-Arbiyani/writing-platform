@@ -740,13 +740,6 @@ export const FEATURE_FLAG_DEFINITIONS: readonly FeatureFlagDefinition[] = [
     description: 'AI recommendations (future feature).',
   },
   {
-    key: 'feature.ai.askBook.enabled',
-    enabled: false,
-    rolloutPercentage: 0,
-    environment: 'all',
-    description: 'AI "Ask My Book" — grounded Q&A over the story knowledge graph (AF4).',
-  },
-  {
     key: 'feature.ai.moderation.enabled',
     enabled: false,
     rolloutPercentage: 0,

@@ -38,24 +38,24 @@ describe('AI prompt catalog (AF2)', () => {
     }
   });
 
-  describe('Writing Assistant templates', () => {
+  describe('Polish templates (feature id `writing_assistant`)', () => {
     const keys = AI_PROMPT_CATALOG.filter((e) => e.key.startsWith('writing_assistant.')).map(
       (e) => e.key,
     );
 
-    it('ships the full action shelf', () => {
-      expect(keys).toEqual(
-        expect.arrayContaining([
-          'writing_assistant.continue',
-          'writing_assistant.rewrite',
-          'writing_assistant.expand',
-          'writing_assistant.condense',
-          'writing_assistant.simplify',
-          'writing_assistant.improve',
-          'writing_assistant.tone',
-          'writing_assistant.freeform',
-        ]),
-      );
+    /**
+     * `toEqual`, deliberately — not `arrayContaining`. D5's whole point is what this shelf no
+     * longer offers: `continue`, `rewrite`, `expand`, `tone` and `freeform` were removed
+     * because they GENERATE prose, which is the thing this audience rejects. A containment
+     * assertion would pass while one of them was quietly re-added, so the exact set is the
+     * assertion. The three survivors all edit text the writer already wrote.
+     */
+    it('offers exactly the three editing actions, and nothing that writes prose', () => {
+      expect(keys.sort()).toEqual([
+        'writing_assistant.condense',
+        'writing_assistant.improve',
+        'writing_assistant.simplify',
+      ]);
     });
 
     it('renders the parametrised improve template with an aspect', () => {
@@ -66,10 +66,10 @@ describe('AI prompt catalog (AF2)', () => {
       expect(rendered).not.toContain('{{');
     });
 
-    it('renders the parametrised tone template with a tone', () => {
-      const tone = AI_PROMPT_CATALOG.find((e) => e.key === 'writing_assistant.tone')!;
-      expect(tone.variables).toEqual(['tone']);
-      expect(renderTemplate(tone.body, { tone: 'suspenseful' })).toContain('suspenseful');
+    /** The system prompt is never shown to a writer, but it should not name a retired product. */
+    it('describes the job rather than an "AI assistant"', () => {
+      const condense = AI_PROMPT_CATALOG.find((e) => e.key === 'writing_assistant.condense')!;
+      expect(condense.body).not.toContain('AI writing assistant');
     });
   });
 

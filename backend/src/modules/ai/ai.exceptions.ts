@@ -184,24 +184,6 @@ export class AiOutputBlockedException extends AppException {
   }
 }
 
-/** No such conversation, or it belongs to another user (privacy-preserving). */
-export class AiConversationNotFoundException extends AppException {
-  constructor() {
-    super(ERROR_CODES.AI_CONVERSATION_NOT_FOUND, 'No such conversation.', HttpStatus.NOT_FOUND);
-  }
-}
-
-/** Acting on a conversation that isn't yours. */
-export class AiConversationForbiddenException extends AppException {
-  constructor() {
-    super(
-      ERROR_CODES.AI_CONVERSATION_FORBIDDEN,
-      'You do not have access to this conversation.',
-      HttpStatus.FORBIDDEN,
-    );
-  }
-}
-
 /** A per-user daily/monthly token or request cap was hit. */
 export class AiUsageLimitExceededException extends AppException {
   constructor(window: string) {

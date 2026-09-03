@@ -4,7 +4,6 @@ import type { AiModelMetadata } from '@qalam/shared';
 import type { AiFeatureService } from '../ai-feature.service';
 import type { aiConfig } from '../../../config/ai.config';
 import type { AiConfigService } from '../config/ai-config.service';
-import type { ConversationService } from '../conversations/conversation.service';
 import type { ContextRegistryService } from '../context/context-registry.service';
 import type { PromptRegistryService } from '../prompts/prompt-registry.service';
 import type { AiProviderAdapter } from '../providers/ai-provider.port';
@@ -44,7 +43,15 @@ function build(provider: AiProvider) {
       usage: { inputTokens: 5, outputTokens: 3, totalTokens: 8 },
       model: 'gpt-4o',
     }),
-    stream: jest.fn(),
+    stream: jest.fn().mockImplementation(async function* () {
+      yield { delta: 'he' };
+      yield { delta: 'llo' };
+      yield {
+        delta: '',
+        finishReason: AiFinishReason.Stop,
+        usage: { inputTokens: 5, outputTokens: 3, totalTokens: 8 },
+      };
+    }),
   } as unknown as AiProviderAdapter;
 
   const providers = {
@@ -89,7 +96,6 @@ function build(provider: AiProvider) {
     estimateMessagesTokens: jest.fn().mockReturnValue(10),
     costUsd: jest.fn().mockReturnValue(0.01),
   } as unknown as TokenCounterService;
-  const conversations = {} as unknown as ConversationService;
   const env = { requestTimeoutMs: 60_000 } as unknown as Env;
 
   const service = new AiCompletionService(
@@ -103,7 +109,6 @@ function build(provider: AiProvider) {
     safety,
     usage,
     tokens,
-    conversations,
   );
   return { service, providers, features, usage, adapter };
 }
@@ -133,5 +138,63 @@ describe('AiCompletionService.complete', () => {
     const { service, providers } = build(AiProvider.Anthropic);
     await service.complete(input);
     expect(providers.get).toHaveBeenCalledWith(AiProvider.Anthropic);
+  });
+});
+
+/**
+ * The streamed path is where D5 cut the most — the conversation history step on the way in
+ * and the persistence step on the way out both lived here — so it gets its own coverage
+ * rather than riding on `complete()`'s. What matters is that removing persistence removed
+ * nothing else: the deltas still arrive, usage is still recorded, and the terminal event
+ * still carries the numbers a client bills against.
+ */
+describe('AiCompletionService.stream (stateless since D5)', () => {
+  const input = {
+    userId: 'u1',
+    feature: AiFeature.Playground,
+    messages: [{ role: 'user' as const, content: 'hi' }],
+  };
+
+  it('yields start → deltas → done, and records usage exactly once', async () => {
+    const { service, usage } = build(AiProvider.OpenAI);
+
+    const events = [];
+    for await (const event of service.stream(input)) events.push(event);
+
+    expect(events.map((e) => e.kind)).toEqual(['start', 'delta', 'delta', 'done']);
+    expect(
+      events
+        .filter((e) => e.kind === 'delta')
+        .map((e) => e.text)
+        .join(''),
+    ).toBe('hello');
+    expect(usage.record).toHaveBeenCalledTimes(1);
+
+    const done = events.at(-1);
+    expect(done).toMatchObject({
+      kind: 'done',
+      finishReason: AiFinishReason.Stop,
+      usage: { totalTokens: 8 },
+      costUsd: 0.01,
+    });
+  });
+
+  /**
+   * Both ids are `null` for every request now. They stay on the wire only so a client built
+   * against the old shape keeps compiling; a non-null value would mean the conversation layer
+   * had come back.
+   */
+  it('never hands back a conversation or message id', async () => {
+    const { service } = build(AiProvider.OpenAI);
+
+    const events = [];
+    for await (const event of service.stream(input)) events.push(event);
+
+    expect(events[0]).toMatchObject({ kind: 'start', conversationId: null });
+    expect(events.at(-1)).toMatchObject({ messageId: null });
+    await expect(service.complete(input)).resolves.toMatchObject({
+      conversationId: null,
+      messageId: null,
+    });
   });
 });

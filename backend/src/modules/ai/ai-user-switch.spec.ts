@@ -80,7 +80,7 @@ describe('AiFeatureService — the per-account AI switch (B5)', () => {
       const { service } = build({ userAiEnabled: true });
 
       await expect(
-        service.assertEnabled(AiFeature.AskBook, 'never-opened-settings'),
+        service.assertEnabled(AiFeature.CraftCoach, 'never-opened-settings'),
       ).resolves.toBeUndefined();
     });
 
@@ -129,11 +129,13 @@ describe('AiFeatureService — the per-account AI switch (B5)', () => {
         { isAiEnabledFor } as unknown as UserPreferencesService,
       );
 
-      await expect(service.assertEnabled(AiFeature.AskBook, 'opted-out')).rejects.toMatchObject({
+      await expect(service.assertEnabled(AiFeature.CraftCoach, 'opted-out')).rejects.toMatchObject({
         code: ERROR_CODES.AI_DISABLED_BY_USER,
       });
       // Same story, different author: their switch is theirs alone.
-      await expect(service.assertEnabled(AiFeature.AskBook, 'co-author')).resolves.toBeUndefined();
+      await expect(
+        service.assertEnabled(AiFeature.CraftCoach, 'co-author'),
+      ).resolves.toBeUndefined();
     });
   });
 

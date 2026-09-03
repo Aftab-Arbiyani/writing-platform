@@ -133,6 +133,17 @@ export type AiFeature = (typeof AiFeature)[keyof typeof AiFeature];
  * Features that get a seeded feature flag in AF1 (the brief's named set). The
  * backend seeds `feature.ai.<camel>.enabled` (disabled) for each so they are
  * dark-launchable the moment their code lands — see {@link aiFeatureFlagKey}.
+ *
+ * ⚠️ **Removing an entry here is a BREAKING change for mobile and a no-op for web**, because
+ * the two clients disagree about what an absent flag means. Web's `resolveAvailability`
+ * looks the flag up and only refuses when it is present-and-false, so a missing flag reads
+ * as available; mobile's `AiFeatures.isEnabled` is `features.any(f => f.feature == id &&
+ * f.enabled)`, so a missing flag reads as OFF and the surface hides itself. D5 therefore
+ * dropped only `AskBook` here — its route is gone, so mobile hiding the entry point is the
+ * outcome we want. `SemanticSearch` and `Recommendations` are no longer consulted by the
+ * server (search and recommendations are ordinary product surfaces now), but their rows stay
+ * until the client halves land, or mobile's search screen would go dark against a server
+ * that is perfectly willing to answer it.
  */
 export const FLAGGED_AI_FEATURES: readonly AiFeature[] = [
   AiFeature.Grammar,
@@ -147,7 +158,6 @@ export const FLAGGED_AI_FEATURES: readonly AiFeature[] = [
   AiFeature.StoryTimeline,
   AiFeature.SemanticSearch,
   AiFeature.Recommendations,
-  AiFeature.AskBook,
   AiFeature.Moderation,
 ];
 

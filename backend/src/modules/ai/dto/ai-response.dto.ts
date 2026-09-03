@@ -1,6 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
-  AiConversationStatus,
   AiFeature,
   AiFinishReason,
   AiMessageRole,
@@ -126,61 +125,13 @@ export class AiMessageDto {
   @ApiProperty() createdAt!: string;
 }
 
-/** Conversation list-row. */
-export class AiConversationSummaryDto {
-  @ApiProperty() id!: string;
-  @ApiProperty({ nullable: true }) title!: string | null;
-  @ApiProperty({ enum: AiFeature }) feature!: AiFeature;
-  @ApiProperty({ enum: AiConversationStatus }) status!: AiConversationStatus;
-  @ApiProperty() messageCount!: number;
-  @ApiProperty() createdAt!: string;
-  @ApiProperty() updatedAt!: string;
-}
-
-/** Full conversation with messages. */
-export class AiConversationDetailDto extends AiConversationSummaryDto {
-  @ApiProperty({ type: [AiMessageDto] }) messages!: AiMessageDto[];
-}
-
-/**
- * One message inside an export document — **deliberately not `AiMessageDto`** (docs/48 §3.12, W8-3).
- *
- * The export omits `id` and flattens token usage to a single nullable number, so the same
- * conversation publishes its messages in two shapes depending on the route. That asymmetry is kept,
- * not repaired: the export is a portable document a reader saves, where a server-side message id is
- * noise and `{inputTokens, outputTokens, totalTokens}` is more structure than the document needs;
- * and `GET :id/export` has shipped on both clients, so aligning it would break a payload in the
- * field to satisfy a symmetry nothing asked for. Mobile decodes it as opaque JSON
- * (`ai_remote_data_source.dart:131-135`) and web types it separately.
- *
- * What was actually wrong was that the shape existed **only inside a service method** — the route
- * returned `Record<string, unknown>`, so Swagger recorded nothing, `@qalam/api-types` carried a
- * hand-written mirror, and the §3.11 contract guard had to excuse both as UNMIRRORED. Declared here,
- * the second shape is a contract instead of an accident, and the guard pins it like any other.
- */
-export class AiConversationExportMessageDto {
-  @ApiProperty({ enum: AiMessageRole }) role!: AiMessageRole;
-  @ApiProperty() content!: string;
-  /** Flat and nullable, unlike `AiMessageDto.usage` — see the class note. */
-  @ApiProperty({ nullable: true, type: Number }) totalTokens!: number | null;
-  @ApiProperty() createdAt!: string;
-}
-
-/** `GET /ai/conversations/:id/export` — the portable JSON document (W8-3 / W8-4). */
-export class AiConversationExportDto {
-  @ApiProperty() id!: string;
-  @ApiProperty({ enum: AiFeature }) feature!: AiFeature;
-  @ApiProperty({ nullable: true, type: String }) title!: string | null;
-  @ApiProperty({ enum: AiConversationStatus }) status!: AiConversationStatus;
-  @ApiProperty() createdAt!: string;
-  @ApiProperty() updatedAt!: string;
-  @ApiProperty({ type: [AiConversationExportMessageDto] })
-  messages!: AiConversationExportMessageDto[];
-}
-
 /** `POST /ai/completions` (non-streaming). */
 export class AiCompletionResponseDto {
-  @ApiProperty({ nullable: true }) conversationId!: string | null;
+  /**
+   * @deprecated Always `null` since D5 removed the conversation layer. Kept on the wire for
+   * one release so a client built against the old shape keeps compiling.
+   */
+  @ApiProperty({ nullable: true, deprecated: true }) conversationId!: string | null;
   @ApiProperty({ type: AiMessageDto }) message!: AiMessageDto;
   @ApiProperty() model!: string;
   @ApiProperty({ enum: AiProvider }) provider!: AiProvider;

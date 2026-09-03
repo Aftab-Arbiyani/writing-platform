@@ -8,7 +8,6 @@ import type { SettingsService } from '../../settings/settings.service';
 import type { SettingsService as UserPreferencesService } from '../../users/settings.service';
 import { AI_MASTER_FLAG_KEY, ERROR_CODES, aiFeatureFlagKey } from '@qalam/shared';
 import type { AiConfigService } from '../config/ai-config.service';
-import type { ConversationService } from '../conversations/conversation.service';
 import type { ContextRegistryService } from '../context/context-registry.service';
 import type { PromptRegistryService } from '../prompts/prompt-registry.service';
 import type { AiProviderAdapter } from '../providers/ai-provider.port';
@@ -130,7 +129,6 @@ function build(userAiEnabled: boolean) {
     estimateMessagesTokens: jest.fn().mockReturnValue(10),
     costUsd: jest.fn().mockReturnValue(0.01),
   } as unknown as TokenCounterService;
-  const conversations = {} as unknown as ConversationService;
   const env = { requestTimeoutMs: 60_000 } as unknown as Env;
 
   const service = new AiCompletionService(
@@ -144,7 +142,6 @@ function build(userAiEnabled: boolean) {
     safety,
     usage,
     tokens,
-    conversations,
     meter,
   );
   return { service, meter, usage, adapter, config };

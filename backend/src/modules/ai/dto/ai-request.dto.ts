@@ -1,9 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
-  AI_CONVERSATION_TITLE_MAX,
   AI_MESSAGE_MAX_LENGTH,
   AI_PARAM_BOUNDS,
-  AiConversationStatus,
   AiFeature,
   AiMessageRole,
   AiProvider,
@@ -106,7 +104,13 @@ export class AiCompletionRequestDto {
   @IsEnum(AiFeature)
   feature!: AiFeature;
 
-  @ApiPropertyOptional({ format: 'uuid' })
+  /**
+   * @deprecated Accepted and IGNORED since D5 removed the conversation layer. It stays on the
+   * DTO — not merely unread — because the pipe runs with `forbidNonWhitelisted`, so silently
+   * dropping the property would turn every request from an already-shipped client into a 400.
+   * The response's `conversationId` is always null.
+   */
+  @ApiPropertyOptional({ format: 'uuid', deprecated: true })
   @IsOptional()
   @IsUUID()
   conversationId?: string;
@@ -152,33 +156,6 @@ export class AiCompletionRequestDto {
   @IsOptional()
   @IsBoolean()
   jsonMode?: boolean;
-}
-
-/** `POST /ai/conversations`. */
-export class CreateAiConversationDto {
-  @ApiProperty({ enum: AiFeature })
-  @IsEnum(AiFeature)
-  feature!: AiFeature;
-
-  @ApiPropertyOptional({ maxLength: AI_CONVERSATION_TITLE_MAX })
-  @IsOptional()
-  @IsString()
-  @MaxLength(AI_CONVERSATION_TITLE_MAX)
-  title?: string;
-}
-
-/** `PATCH /ai/conversations/:id`. */
-export class UpdateAiConversationDto {
-  @ApiPropertyOptional({ maxLength: AI_CONVERSATION_TITLE_MAX })
-  @IsOptional()
-  @IsString()
-  @MaxLength(AI_CONVERSATION_TITLE_MAX)
-  title?: string;
-
-  @ApiPropertyOptional({ enum: AiConversationStatus })
-  @IsOptional()
-  @IsEnum(AiConversationStatus)
-  status?: AiConversationStatus;
 }
 
 /** `PATCH /ai/config` — a user's own overrides. */
@@ -230,27 +207,6 @@ export class UpdateAiOrgDefaultsDto {
   @IsOptional()
   @IsObject()
   safety?: Record<string, unknown>;
-}
-
-/** `GET /ai/conversations` query. */
-export class ConversationListQueryDto {
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  cursor?: string;
-
-  @ApiPropertyOptional({ minimum: 1, maximum: 50 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(50)
-  limit?: number;
-
-  @ApiPropertyOptional({ enum: AiConversationStatus })
-  @IsOptional()
-  @IsEnum(AiConversationStatus)
-  status?: AiConversationStatus;
 }
 
 /** `POST /admin/ai/prompts/:key/preview`. */

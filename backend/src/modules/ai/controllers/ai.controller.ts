@@ -17,20 +17,23 @@ import {
   AiConfigResponseDto,
   AiFeaturesResponseDto,
   AiModelDto,
-  AiUsageResponseDto,
 } from '../dto/ai-response.dto';
 import type { CompletionInput } from '../orchestration/ai-completion.service';
 import { AiCompletionService } from '../orchestration/ai-completion.service';
 import { ModelRegistryService } from '../registry/model-registry.service';
 import { initSse, sendSse } from '../streaming/sse.util';
-import { UsageService } from '../tokens/usage.service';
 
 /**
  * User-facing AI surface (AF1). Gated by the global `JwtAuthGuard`; every route
  * needs `ai.use`. Provides feature/flag discovery, effective config + personal
- * overrides, the model list, usage, and the completion endpoints (buffered +
- * SSE streaming). All generation goes through the orchestrator — the client
- * never talks to a provider and never sees an API key.
+ * overrides, the model list, and the completion endpoints (buffered + SSE
+ * streaming). All generation goes through the orchestrator — the client never
+ * talks to a provider and never sees an API key.
+ *
+ * D5 removed `GET /ai/usage/me`: users are no longer shown token counts, and the
+ * per-feature allowances that replace them are served by the monetization module,
+ * which owns plan limits. Token/cost accounting stays internal — the admin route
+ * `GET /admin/ai/usage/:userId` still reads it.
  */
 @ApiTags('ai')
 @ApiBearerAuth()
@@ -42,7 +45,6 @@ export class AiController {
     private readonly config: AiConfigService,
     private readonly features: AiFeatureService,
     private readonly models: ModelRegistryService,
-    private readonly usage: UsageService,
   ) {}
 
   @Get('features')
@@ -91,15 +93,6 @@ export class AiController {
     return this.buildConfigResponse(user.id);
   }
 
-  @Get('usage/me')
-  @Permissions(PERMISSIONS.AiUse)
-  @RateLimit('read')
-  @ApiOperation({ summary: 'Your AI usage (daily/monthly/lifetime + per feature).' })
-  @ApiOkResponse({ type: AiUsageResponseDto })
-  getUsage(@CurrentUser() user: AuthenticatedUser): Promise<AiUsageResponseDto> {
-    return this.usage.getSummary(user.id);
-  }
-
   @Post('completions')
   @Permissions(PERMISSIONS.AiUse)
   @RateLimit('aiCompletion')
@@ -116,7 +109,7 @@ export class AiController {
   ): Promise<AiCompletionResponseDto> {
     const output = await this.completion.complete(this.toInput(user, dto, req));
     return {
-      conversationId: output.conversationId,
+      conversationId: null,
       message: {
         id: output.messageId ?? '',
         role: AiMessageRole.Assistant,
@@ -156,7 +149,7 @@ export class AiController {
           sendSse(res, 'start', {
             provider: event.provider,
             model: event.model,
-            conversationId: event.conversationId,
+            conversationId: null,
           });
         } else if (event.kind === 'delta') {
           sendSse(res, 'delta', { text: event.text });
@@ -198,7 +191,6 @@ export class AiController {
     return {
       userId: user.id,
       feature: dto.feature,
-      conversationId: dto.conversationId,
       promptKey: dto.promptKey,
       promptVersion: dto.promptVersion,
       promptVariables: dto.promptVariables,

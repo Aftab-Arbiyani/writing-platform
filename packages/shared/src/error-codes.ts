@@ -205,9 +205,13 @@ export const ERROR_CODES = {
   AI_INPUT_BLOCKED: 'AI_INPUT_BLOCKED',
   /** Generated output was blocked by an output-validation hook (422). */
   AI_OUTPUT_BLOCKED: 'AI_OUTPUT_BLOCKED',
-  /** No such conversation, or it belongs to another user (privacy-preserving 404). */
+  /**
+   * @deprecated Unreachable since D5 removed the conversation layer. This catalogue is
+   * APPEND-ONLY — a shipped client may still branch on the string, and reusing the slot for
+   * something else would make an old build mis-handle a new error. Kept, not deleted.
+   */
   AI_CONVERSATION_NOT_FOUND: 'AI_CONVERSATION_NOT_FOUND',
-  /** Acting on a conversation that isn't yours (403). */
+  /** @deprecated Unreachable since D5 — see the note above; the catalogue is append-only. */
   AI_CONVERSATION_FORBIDDEN: 'AI_CONVERSATION_FORBIDDEN',
   /** A per-user daily/monthly token or request cap was hit (429). */
   AI_USAGE_LIMIT_EXCEEDED: 'AI_USAGE_LIMIT_EXCEEDED',

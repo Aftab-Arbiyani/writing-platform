@@ -11,9 +11,6 @@ import { AiConfigOverride } from './config/entities/ai-config-override.entity';
 import { AiOrgConfig } from './config/entities/ai-org-config.entity';
 import { AdminAiController } from './controllers/admin-ai.controller';
 import { AiController } from './controllers/ai.controller';
-import { AiConversationsController } from './controllers/ai-conversations.controller';
-import { ConversationRepository } from './conversations/conversation.repository';
-import { ConversationService } from './conversations/conversation.service';
 import { AiConversation } from './conversations/entities/ai-conversation.entity';
 import { AiMessage } from './conversations/entities/ai-message.entity';
 import { AI_CONTEXT_PROVIDERS } from './context/context-builder.port';
@@ -44,8 +41,13 @@ import { UsageService } from './tokens/usage.service';
  * every future AI feature builds on: a provider abstraction (OpenAI/Anthropic/
  * Gemini adapters behind one port, extension points reserved), model + prompt
  * registries, a pluggable context pipeline, token accounting + usage limits,
- * conversations, layered configuration, safety hooks, and the completion
- * orchestrator that composes them all.
+ * layered configuration, safety hooks, and the completion orchestrator that
+ * composes them all.
+ *
+ * D5 removed the conversation layer: with the free-form assistant and Ask My Book
+ * gone, every surviving surface (Polish, Manuscript feedback, story analyses) is a
+ * single stateless request, so completions no longer load or persist history. The
+ * two entities stay registered until their drop migration lands.
  *
  * Additive-only (docs/25 freeze): new tables + new `/api/v1/ai/*` +
  * `/api/v1/admin/ai/*` endpoints, no change to any existing v1 contract. Feature
@@ -71,7 +73,7 @@ import { UsageService } from './tokens/usage.service';
     // imports only `TaxonomyModule`, so this adds no cycle.
     UsersModule,
   ],
-  controllers: [AiController, AiConversationsController, AdminAiController],
+  controllers: [AiController, AdminAiController],
   providers: [
     // Provider adapters (thin HTTP clients) + multi-token registry.
     OpenAiAdapter,
@@ -96,10 +98,8 @@ import { UsageService } from './tokens/usage.service';
     PromptRegistryService,
     TokenCounterService,
     UsageService,
-    // Configuration + conversations.
+    // Configuration.
     AiConfigService,
-    ConversationRepository,
-    ConversationService,
     // Context pipeline (pluggable providers under the multi-token).
     SelectionContextBuilder,
     WritingMetadataContextBuilder,
@@ -132,7 +132,6 @@ import { UsageService } from './tokens/usage.service';
     ModelRegistryService,
     PromptRegistryService,
     ContextRegistryService,
-    ConversationService,
     UsageService,
   ],
 })

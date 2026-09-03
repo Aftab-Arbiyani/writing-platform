@@ -1,15 +1,12 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { AiModule } from '../ai/ai.module';
 import { FeedModule } from '../feed/feed.module';
 import { PiecesModule } from '../pieces/pieces.module';
 import { SearchModule } from '../search/search.module';
 import { SettingsModule } from '../settings/settings.module';
 import { StoryIntelligenceModule } from '../story-intelligence/story-intelligence.module';
 import { AdminRetrievalController } from './admin/admin-retrieval.controller';
-import { AskBookController } from './consumers/ask-book.controller';
-import { AskBookService } from './consumers/ask-book.service';
 import { RecommendationController } from './consumers/recommendation.controller';
 import { RecommendationService } from './consumers/recommendation.service';
 import { SavedSearchRepository } from './consumers/saved-search.repository';
@@ -45,14 +42,19 @@ import { RetrievalConfigService } from './retrieval-config.service';
 import { RetrievalService } from './retrieval.service';
 
 /**
- * AI Discovery / Search / Recommendation (AF4) — the reusable Retrieval Platform + its
- * consumers (Semantic Search, Ask My Book, Story Explorer, Recommendation Engine, saved
- * searches) + the admin config/analytics surface.
+ * Discovery / Search / Recommendation (AF4) — the reusable Retrieval Platform + its
+ * consumers (Search, Story Explorer, Recommendation Engine, saved searches) + the admin
+ * config/analytics surface.
  *
- * Reuse-only, never a parallel stack: imports {@link AiModule} (the AF1 orchestrator +
- * flags for the LLM step and the ContextProvider port), {@link StoryIntelligenceModule}
- * (the AF3 knowledge graph — the SSOT — read via its exported service), {@link SearchModule}
- * (the E8 FTS engine seam), {@link FeedModule} (trending/discovery signals), and
+ * **This module no longer depends on the AI platform at all.** D5 removed Ask My Book and
+ * the optional grounded synthesis, which were its only LLM callers; what remains is
+ * deterministic retrieval over the graph, the FTS engine and metadata. The absent
+ * `AiModule` import is the structural proof of that, and re-adding it would be the first
+ * step back.
+ *
+ * Reuse-only, never a parallel stack: imports {@link StoryIntelligenceModule} (the AF3
+ * knowledge graph — the SSOT — read via its exported service), {@link SearchModule} (the E8
+ * FTS engine seam), {@link FeedModule} (trending/discovery signals), and
  * {@link SettingsModule} (admin-tunable config through the audited settings path). Owns two
  * additive tables (saved searches + append-only telemetry). Placed after all of these in
  * app.module.
@@ -60,7 +62,6 @@ import { RetrievalService } from './retrieval.service';
 @Module({
   imports: [
     TypeOrmModule.forFeature([RetrievalQueryLog, SavedSearch]),
-    AiModule,
     StoryIntelligenceModule,
     SearchModule,
     FeedModule,
@@ -72,7 +73,6 @@ import { RetrievalService } from './retrieval.service';
   ],
   controllers: [
     SemanticSearchController,
-    AskBookController,
     StoryExplorerController,
     RecommendationController,
     AdminRetrievalController,
@@ -117,7 +117,6 @@ import { RetrievalService } from './retrieval.service';
     StoryTimelineContextBuilder,
     // Consumers
     SemanticSearchService,
-    AskBookService,
     StoryExplorerService,
     RecommendationService,
     SavedSearchService,

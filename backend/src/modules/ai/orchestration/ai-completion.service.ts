@@ -18,7 +18,6 @@ import {
 } from '../ai.exceptions';
 import { AppException } from '../../../common/exceptions/app.exception';
 import { AiConfigService } from '../config/ai-config.service';
-import { ConversationService } from '../conversations/conversation.service';
 import type { ContextRequest } from '../context/context-builder.port';
 import { ContextRegistryService } from '../context/context-registry.service';
 import { PromptRegistryService } from '../prompts/prompt-registry.service';
@@ -35,7 +34,6 @@ import type { AiUsageMeter } from '../../../common/metering/ai-usage-meter.port'
 export interface CompletionInput {
   userId: string;
   feature: AiFeature;
-  conversationId?: string;
   promptKey?: string;
   promptVersion?: number;
   promptVariables?: Record<string, unknown>;
@@ -49,6 +47,10 @@ export interface CompletionInput {
 
 /** A finished (non-streamed) completion. */
 export interface CompletionOutput {
+  /**
+   * @deprecated Always `null` since D5 removed the conversation layer. Kept on the wire for
+   * one release so a client built against the old shape keeps compiling.
+   */
   conversationId: string | null;
   content: string;
   model: string;
@@ -56,6 +58,7 @@ export interface CompletionOutput {
   finishReason: AiFinishReason;
   usage: AiTokenUsage;
   costUsd: number;
+  /** @deprecated Always `null` since D5 — nothing is persisted to reference. */
   messageId: string | null;
 }
 
@@ -77,9 +80,13 @@ export type CompletionStreamEvent =
  * re-implements any of it:
  *
  *   gate (feature flag) → usage limit → resolve config → resolve model +
- *   capability check → assemble prompt (template) + context + conversation
- *   history → input safety → context-window check → provider call (via the port)
- *   → output safety → cost + usage accounting → conversation persistence.
+ *   capability check → assemble prompt (template) + context → input safety →
+ *   context-window check → provider call (via the port) → output safety →
+ *   cost + usage accounting.
+ *
+ * Every request is STATELESS since D5: the surviving surfaces (Polish, Manuscript
+ * feedback, story analyses) each send their operand in full, so there is no history
+ * to load and nothing to persist. `ai_usage_logs` remains the record of what ran.
  *
  * It depends only on the provider PORT, so it is entirely provider-agnostic.
  */
@@ -98,7 +105,6 @@ export class AiCompletionService {
     private readonly safety: SafetyService,
     private readonly usage: UsageService,
     private readonly tokens: TokenCounterService,
-    private readonly conversations: ConversationService,
     // AF5 metering seam — optional so the AI platform runs standalone (and in unit
     // tests) with no monetization module. When present it enforces plan quota + credit
     // balance and debits the credit ledger; the base token-cap check above always runs.
@@ -120,21 +126,20 @@ export class AiCompletionService {
     const content = await this.safety.checkOutput(result.text, input.userId, input.feature);
     const costUsd = this.tokens.costUsd(result.usage, prepared.modelMeta);
     await this.recordUsage(input, prepared.resolved, result.usage, costUsd);
-    const messageId = await this.persist(input, prepared.userText, content, result.usage);
 
     return {
-      conversationId: input.conversationId ?? null,
+      conversationId: null,
       content,
       model: result.model,
       provider: prepared.resolved.provider,
       finishReason: result.finishReason,
       usage: result.usage,
       costUsd,
-      messageId,
+      messageId: null,
     };
   }
 
-  /** Streamed completion — yields start → deltas → done; persists at the end. */
+  /** Streamed completion — yields start → deltas → done. */
   async *stream(input: CompletionInput): AsyncGenerator<CompletionStreamEvent> {
     const prepared = await this.prepare(input);
     const adapter = this.providers.get(prepared.resolved.provider);
@@ -143,7 +148,7 @@ export class AiCompletionService {
       kind: 'start',
       provider: prepared.resolved.provider,
       model: prepared.resolved.model,
-      conversationId: input.conversationId ?? null,
+      conversationId: null,
     };
 
     let full = '';
@@ -167,13 +172,12 @@ export class AiCompletionService {
     }
 
     // Output safety runs on the accumulated text (streamed text can't be recalled;
-    // a blocked verdict prevents persistence and surfaces as a stream error).
-    const content = await this.safety.checkOutput(full, input.userId, input.feature);
+    // a blocked verdict surfaces as a stream error).
+    await this.safety.checkOutput(full, input.userId, input.feature);
     const costUsd = this.tokens.costUsd(usage, prepared.modelMeta);
     await this.recordUsage(input, prepared.resolved, usage, costUsd);
-    const messageId = await this.persist(input, prepared.userText, content, usage);
 
-    yield { kind: 'done', finishReason, usage, costUsd, messageId };
+    yield { kind: 'done', finishReason, usage, costUsd, messageId: null };
   }
 
   // ── Pipeline steps ─────────────────────────────────────────────────────────
@@ -206,10 +210,6 @@ export class AiCompletionService {
     }
 
     const messages = await this.assembleMessages(input);
-    const userText = messages
-      .filter((message) => message.role === AiMessageRole.User)
-      .map((message) => message.content)
-      .join('\n');
 
     // Input safety: sanitize/validate the last user message, then reuse the result.
     const safeUserText = await this.safety.checkInput(
@@ -245,7 +245,6 @@ export class AiCompletionService {
       resolved,
       modelMeta,
       messages,
-      userText,
       timeout: AbortSignal.timeout(this.env.requestTimeoutMs),
     };
   }
@@ -273,13 +272,7 @@ export class AiCompletionService {
       }
     }
 
-    // 3. Prior conversation turns (continuation).
-    if (input.conversationId !== undefined) {
-      await this.conversations.getOwnedOrThrow(input.userId, input.conversationId);
-      messages.push(...(await this.conversations.historyFor(input.conversationId)));
-    }
-
-    // 4. This turn's messages (raw messages, or the template `input` variable).
+    // 3. This turn's messages (raw messages, or the template `input` variable).
     if (input.messages !== undefined && input.messages.length > 0) {
       messages.push(...input.messages);
     } else if (typeof input.promptVariables?.input === 'string') {
@@ -324,7 +317,7 @@ export class AiCompletionService {
       model: resolved.model,
       usage,
       costUsd,
-      conversationId: input.conversationId ?? null,
+      conversationId: null,
       requestId: input.requestId ?? null,
     });
 
@@ -339,34 +332,10 @@ export class AiCompletionService {
         model: resolved.model,
         usage,
         costUsd,
-        conversationId: input.conversationId ?? null,
+        conversationId: null,
         requestId: input.requestId ?? null,
       });
     }
-  }
-
-  /** Persist the user turn + assistant reply when this is a conversation. */
-  private async persist(
-    input: CompletionInput,
-    userText: string,
-    assistantText: string,
-    usage: AiTokenUsage,
-  ): Promise<string | null> {
-    if (input.conversationId === undefined) {
-      return null;
-    }
-    if (userText.trim() !== '') {
-      await this.conversations.appendMessage(input.conversationId, {
-        role: AiMessageRole.User,
-        content: userText,
-      });
-    }
-    const assistant = await this.conversations.appendMessage(input.conversationId, {
-      role: AiMessageRole.Assistant,
-      content: assistantText,
-      usage,
-    });
-    return assistant.id;
   }
 
   /** A timed-out call becomes AI_TIMEOUT; domain errors pass through untouched. */
@@ -387,6 +356,5 @@ interface PreparedCall {
   resolved: AiResolvedConfig;
   modelMeta: ReturnType<ModelRegistryService['getModel']>;
   messages: ProviderMessage[];
-  userText: string;
   timeout: AbortSignal;
 }

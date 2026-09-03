@@ -13,8 +13,11 @@ export interface PromptCatalogEntry {
 //    complete standalone string per key). The writer's operand text always
 //    arrives as the latest USER message — a template is only the SYSTEM prompt
 //    (docs/34 §2 assembleMessages), so bodies address "the latest user message".
+// `writing_assistant` remains the internal feature id; the surface it now backs is called
+// **Polish** and offers only improve/simplify/condense (D5). The identity below is a SYSTEM
+// prompt the writer never reads, so it describes the job rather than the product name.
 const WRITING_IDENTITY =
-  "You are Qalam's AI writing assistant for Hindi and Urdu storytellers. Always " +
+  'You are a careful line editor for Hindi and Urdu storytellers. Always ' +
   'respond in the same language and script as the writer’s text, preserving their ' +
   'voice, tense, and point of view.';
 
@@ -93,41 +96,9 @@ export const AI_PROMPT_CATALOG: readonly PromptCatalogEntry[] = [
     variables: ['input'],
   },
 
-  // ── Writing Assistant (AF2, feature `writing_assistant`) ─────────────────────
-  {
-    key: 'writing_assistant.continue',
-    category: PromptCategory.Writing,
-    description: 'Continue the writer’s passage naturally from where it ends.',
-    body:
-      WRITING_IDENTITY +
-      ' Work only with the passage in the latest user message. Continue it naturally from ' +
-      'exactly where it ends; do not repeat or restate the existing text — write only ' +
-      'what comes next, keeping momentum and continuity.' +
-      PROSE_ONLY,
-    variables: [],
-  },
-  {
-    key: 'writing_assistant.rewrite',
-    category: PromptCategory.Writing,
-    description: 'Rewrite the passage to read more strongly while preserving meaning.',
-    body:
-      WRITING_IDENTITY +
-      ' Rewrite the writer’s passage so it reads more strongly and clearly, while ' +
-      'preserving its meaning, facts, and intent.' +
-      PROSE_ONLY,
-    variables: [],
-  },
-  {
-    key: 'writing_assistant.expand',
-    category: PromptCategory.Writing,
-    description: 'Expand the passage with vivid, relevant detail.',
-    body:
-      WRITING_IDENTITY +
-      ' Expand the writer’s passage with vivid, relevant detail and development, without ' +
-      'changing its meaning or introducing contradictions.' +
-      PROSE_ONLY,
-    variables: [],
-  },
+  // ── Polish (AF2, feature `writing_assistant`) ────────────────────────────────
+  // D5 removed continue/rewrite/expand/tone/freeform: the surviving three all EDIT
+  // text the writer already wrote, and none of them generate prose from nothing.
   {
     key: 'writing_assistant.condense',
     category: PromptCategory.Writing,
@@ -163,33 +134,6 @@ export const AI_PROMPT_CATALOG: readonly PromptCatalogEntry[] = [
       PROSE_ONLY,
     variables: ['aspect'],
   },
-  {
-    key: 'writing_assistant.tone',
-    category: PromptCategory.Writing,
-    description:
-      'Adjust the passage to a target tone ({{tone}}: formal, casual, poetic, professional, suspenseful, inspirational).',
-    body:
-      WRITING_IDENTITY +
-      ' Rewrite the writer’s passage so its tone becomes {{tone}}, while preserving the ' +
-      'meaning, content, language, and script. Change the tone only — keep the substance ' +
-      'and structure intact.' +
-      PROSE_ONLY,
-    variables: ['tone'],
-  },
-  {
-    key: 'writing_assistant.freeform',
-    category: PromptCategory.Writing,
-    description:
-      'Conversational assistant: follow the writer’s instruction using attached context.',
-    body:
-      WRITING_IDENTITY +
-      ' Follow the writer’s instruction in the latest user message, using any writing ' +
-      'provided to you as context. When asked to write or transform prose, return only that ' +
-      'prose with no preamble; when asked a question about the writing, answer briefly and ' +
-      'concretely.',
-    variables: [],
-  },
-
   // ── Craft Coach (AF2, feature `craft_coach`) — structured JSON output ─────────
   {
     key: 'craft_coach.chapter_feedback',
@@ -352,50 +296,5 @@ export const AI_PROMPT_CATALOG: readonly PromptCatalogEntry[] = [
       '"characters":[],"location":<string|null>,"evidence":[]}],"summary","recommendations":[],' +
       '"confidence","affectedChapters":[],"affectedCharacters":[]}.',
     variables: ['scope'],
-  },
-
-  // ── AF4 — AI Discovery / Search / Recommendation (grounded synthesis) ──────
-  // These templates NEVER see the raw user question alone. The reusable Retrieval
-  // Platform assembles evidence from the story knowledge graph + library and passes
-  // it in `{{context}}`; the model may use ONLY that context (grounded, cited). The
-  // LLM explains; retrieval decides what it sees.
-  {
-    key: 'ask_book.answer',
-    category: PromptCategory.Conversation,
-    description: 'Answer a question about a story, grounded strictly in retrieved graph evidence.',
-    body:
-      'You are a precise literary assistant answering questions about one specific story, grounded ' +
-      'strictly in retrieved evidence from its knowledge graph. The scope of this question is ' +
-      '{{scope}}. Use ONLY the CONTEXT below — it is the single source of truth. If the CONTEXT does ' +
-      'not contain enough information, say clearly that the story does not provide it; never invent ' +
-      'characters, events, places, or facts. Prefer specific names, and cite the chapter cue in ' +
-      'square brackets (e.g. [ch. 3]) whenever the CONTEXT supplies one. Answer concisely in prose.' +
-      '\n\nCONTEXT:\n{{context}}',
-    variables: ['scope', 'context'],
-  },
-  {
-    key: 'semantic_search.answer',
-    category: PromptCategory.Analysis,
-    description: 'Summarise retrieved search results into a grounded natural-language answer.',
-    body:
-      'You summarise search results for a story-writing platform, grounded strictly in the retrieved ' +
-      'CONTEXT. The user searched for: {{query}}. Using ONLY the CONTEXT below, write a short ' +
-      'natural-language answer that directly addresses the query and points to the most relevant ' +
-      'results by name. Do not introduce any fact absent from the CONTEXT; if nothing relevant was ' +
-      'found, say so plainly.' +
-      '\n\nCONTEXT:\n{{context}}',
-    variables: ['query', 'context'],
-  },
-  {
-    key: 'recommendations.explain',
-    category: PromptCategory.Generation,
-    description: 'Explain, in one grounded sentence, why an item is recommended.',
-    body:
-      'You explain why an item is recommended, grounded in the provided signals. The subject is ' +
-      '{{subject}}. Using ONLY the CONTEXT below (the influencing entities and signals), write one ' +
-      'concise sentence explaining why this recommendation is relevant to the subject. Do not ' +
-      'overstate and do not introduce facts absent from the CONTEXT.' +
-      '\n\nCONTEXT:\n{{context}}',
-    variables: ['subject', 'context'],
   },
 ];
