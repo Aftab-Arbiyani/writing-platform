@@ -50,12 +50,12 @@ describe('decisionFor — the absent case', () => {
 
   it('synthesises a deny when there is no snapshot at all', () => {
     // Loading, errored, offline with no cache, or the client flag off — all arrive here.
-    expect(decisionFor(undefined, PremiumFeature.AiBudget).allowed).toBe(false);
+    expect(decisionFor(undefined, PremiumFeature.AiWriting).allowed).toBe(false);
   });
 
   it('returns the server’s decision verbatim when present', () => {
-    const server = decision({ feature: PremiumFeature.AiBudget, remaining: 42, limit: 100 });
-    const result = decisionFor(snapshot({ features: [server] }), PremiumFeature.AiBudget);
+    const server = decision({ feature: PremiumFeature.AiWriting, remaining: 42, limit: 100 });
+    const result = decisionFor(snapshot({ features: [server] }), PremiumFeature.AiWriting);
     expect(result).toBe(server);
   });
 });
@@ -66,22 +66,22 @@ describe('allows', () => {
     // disagrees with a client-side reading of `status`, the server is right by definition — so this
     // must follow the boolean even when the pair looks contradictory.
     const contradictory = decision({
-      feature: PremiumFeature.AiBudget,
+      feature: PremiumFeature.AiWriting,
       status: EntitlementStatus.Allow,
       allowed: false,
     });
-    expect(allows(snapshot({ features: [contradictory] }), PremiumFeature.AiBudget)).toBe(false);
+    expect(allows(snapshot({ features: [contradictory] }), PremiumFeature.AiWriting)).toBe(false);
   });
 
   it('allows a limited decision — a quota is access, not a denial', () => {
     const limited = decision({
-      feature: PremiumFeature.AiBudget,
+      feature: PremiumFeature.AiWriting,
       status: EntitlementStatus.Limited,
       allowed: true,
       remaining: 5,
       limit: 100,
     });
-    expect(allows(snapshot({ features: [limited] }), PremiumFeature.AiBudget)).toBe(true);
+    expect(allows(snapshot({ features: [limited] }), PremiumFeature.AiWriting)).toBe(true);
   });
 
   it('denies an unknown feature string', () => {

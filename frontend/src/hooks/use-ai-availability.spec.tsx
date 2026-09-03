@@ -21,7 +21,7 @@ function wrapper() {
 
 const FEATURES = {
   aiEnabled: true,
-  features: [{ feature: AiFeature.SemanticSearch, flagKey: 'x', enabled: true }],
+  features: [{ feature: AiFeature.WritingAssistant, flagKey: 'x', enabled: true }],
 };
 const USAGE = { daily: { tokenLimit: 100, usedFraction: 0.1 }, monthly: null, total: null };
 
@@ -41,7 +41,7 @@ describe('useAiAvailability', () => {
   });
 
   it('resolves signed-out WITHOUT touching either endpoint when there is no session', async () => {
-    const { result } = renderHook(() => useAiAvailability(AiFeature.SemanticSearch), {
+    const { result } = renderHook(() => useAiAvailability(AiFeature.WritingAssistant), {
       wrapper: wrapper(),
     });
 
@@ -55,7 +55,7 @@ describe('useAiAvailability', () => {
 
   it('stays signed-out while the session is still unknown (boot refresh in flight)', () => {
     useAuthStore.setState({ status: 'unknown', role: null, isEmailVerified: null });
-    const { result } = renderHook(() => useAiAvailability(AiFeature.SemanticSearch), {
+    const { result } = renderHook(() => useAiAvailability(AiFeature.WritingAssistant), {
       wrapper: wrapper(),
     });
 
@@ -71,7 +71,7 @@ describe('useAiAvailability', () => {
       Promise.resolve(path === '/ai/features' ? FEATURES : USAGE),
     );
 
-    const { result } = renderHook(() => useAiAvailability(AiFeature.SemanticSearch), {
+    const { result } = renderHook(() => useAiAvailability(AiFeature.WritingAssistant), {
       wrapper: wrapper(),
     });
 

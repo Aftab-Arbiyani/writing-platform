@@ -49,9 +49,9 @@ beforeEach(() => {
 
 describe('PremiumGate', () => {
   it('renders its children when the server grants the feature', async () => {
-    entitlements.mockResolvedValue(snapshot(PremiumFeature.AiBudget, { allowed: true }));
+    entitlements.mockResolvedValue(snapshot(PremiumFeature.AiWriting, { allowed: true }));
     renderWithProviders(
-      <PremiumGate feature={PremiumFeature.AiBudget}>
+      <PremiumGate feature={PremiumFeature.AiWriting}>
         <p>Your balance</p>
       </PremiumGate>,
     );
@@ -59,9 +59,9 @@ describe('PremiumGate', () => {
   });
 
   it('withholds its children and explains, when denied for a missing plan', async () => {
-    entitlements.mockResolvedValue(snapshot(PremiumFeature.AiBudget, { allowed: false }));
+    entitlements.mockResolvedValue(snapshot(PremiumFeature.AiWriting, { allowed: false }));
     renderWithProviders(
-      <PremiumGate feature={PremiumFeature.AiBudget}>
+      <PremiumGate feature={PremiumFeature.AiWriting}>
         <p>Your balance</p>
       </PremiumGate>,
     );
@@ -76,14 +76,14 @@ describe('PremiumGate', () => {
     // The distinction the lock exists for. Selling a plan to someone whose allowance resets tomorrow is
     // misleading them into a purchase they don't need.
     entitlements.mockResolvedValue(
-      snapshot(PremiumFeature.AiBudget, {
+      snapshot(PremiumFeature.AiWriting, {
         allowed: false,
         reason: EntitlementReason.QuotaExceeded,
         expiresAt: '2026-08-01T00:00:00.000Z',
       }),
     );
     renderWithProviders(
-      <PremiumGate feature={PremiumFeature.AiBudget}>
+      <PremiumGate feature={PremiumFeature.AiWriting}>
         <p>Your balance</p>
       </PremiumGate>,
     );
@@ -98,7 +98,7 @@ describe('PremiumGate', () => {
     // that then 402s, which reads as a broken app.
     entitlements.mockRejectedValue(new Error('boom'));
     renderWithProviders(
-      <PremiumGate feature={PremiumFeature.AiBudget}>
+      <PremiumGate feature={PremiumFeature.AiWriting}>
         <p>Your balance</p>
       </PremiumGate>,
     );
@@ -111,7 +111,7 @@ describe('PremiumGate', () => {
   it('fails closed while the client flag is off', () => {
     enabled.mockReturnValue(false);
     renderWithProviders(
-      <PremiumGate feature={PremiumFeature.AiBudget}>
+      <PremiumGate feature={PremiumFeature.AiWriting}>
         <p>Your balance</p>
       </PremiumGate>,
     );
@@ -119,9 +119,9 @@ describe('PremiumGate', () => {
   });
 
   it('renders a custom locked slot when given one', async () => {
-    entitlements.mockResolvedValue(snapshot(PremiumFeature.AiBudget, { allowed: false }));
+    entitlements.mockResolvedValue(snapshot(PremiumFeature.AiWriting, { allowed: false }));
     renderWithProviders(
-      <PremiumGate feature={PremiumFeature.AiBudget} locked={<p>Not for you</p>}>
+      <PremiumGate feature={PremiumFeature.AiWriting} locked={<p>Not for you</p>}>
         <p>Your balance</p>
       </PremiumGate>,
     );
@@ -129,9 +129,9 @@ describe('PremiumGate', () => {
   });
 
   it('renders nothing at all when the locked slot is explicitly null', async () => {
-    entitlements.mockResolvedValue(snapshot(PremiumFeature.AiBudget, { allowed: false }));
+    entitlements.mockResolvedValue(snapshot(PremiumFeature.AiWriting, { allowed: false }));
     const { container } = renderWithProviders(
-      <PremiumGate feature={PremiumFeature.AiBudget} locked={null}>
+      <PremiumGate feature={PremiumFeature.AiWriting} locked={null}>
         <p>Your balance</p>
       </PremiumGate>,
     );
@@ -145,7 +145,7 @@ describe('PremiumGate', () => {
     entitlements.mockReturnValue(new Promise(() => {}));
 
     const strict = renderWithProviders(
-      <PremiumGate feature={PremiumFeature.AiBudget}>
+      <PremiumGate feature={PremiumFeature.AiWriting}>
         <p>Strict child</p>
       </PremiumGate>,
     );
@@ -153,7 +153,7 @@ describe('PremiumGate', () => {
     strict.unmount();
 
     renderWithProviders(
-      <PremiumGate feature={PremiumFeature.AiBudget} optimistic>
+      <PremiumGate feature={PremiumFeature.AiWriting} optimistic>
         <p>Optimistic child</p>
       </PremiumGate>,
     );

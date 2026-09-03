@@ -82,7 +82,7 @@ describe('OverrideGrantForm — only real PremiumFeature codes are offered', () 
     renderWithProviders(<OverrideGrantForm userId="user-1" />);
 
     fireEvent.change(screen.getByLabelText('Premium feature'), {
-      target: { value: PremiumFeature.AiBudget },
+      target: { value: PremiumFeature.AiWriting },
     });
 
     expect(screen.queryByText(/No server route asserts this code yet/i)).not.toBeInTheDocument();

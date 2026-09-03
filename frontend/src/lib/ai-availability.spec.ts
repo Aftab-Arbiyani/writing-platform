@@ -247,24 +247,22 @@ describe('AVAILABILITY_COPY', () => {
  */
 describe('D3 — the AI-writing entitlement denial', () => {
   it('reads a denial on a WRITING feature as the writing upgrade', () => {
-    for (const feature of [
-      AiFeature.WritingAssistant,
-      AiFeature.CraftCoach,
-      AiFeature.Grammar,
-      AiFeature.Rewrite,
-      AiFeature.Summarization,
-    ]) {
+    for (const feature of [AiFeature.WritingAssistant, AiFeature.CraftCoach]) {
       expect(availabilityFromErrorCode('ENTITLEMENT_DENIED', feature)).toBe('upgrade-writing');
     }
   });
 
-  it('leaves the AF4 surfaces on the allowance upgrade — their denial is NOT about writing', () => {
-    // D4's scope is deferred and 48 §5.2 forbids gating these. A denial reaching them is an
-    // `ai_budget` denial, whose copy is about the allowance, so it must not be reworded.
+  it('leaves a NON-writing feature on the plain upgrade — its denial is about a different code', () => {
+    // The split is by premium CODE, not by "is this an AI thing". A story analysis is denied under
+    // `story_intelligence`, so the writing copy would name the wrong plan.
+    //
+    // D5: this case used to be arranged on the AF4 surfaces (ask / search / recommendations). Those
+    // are public or gone, so the arrangement moved to the story kinds — the remaining features whose
+    // premium code is not `ai_writing`. The behaviour under test never changed.
     for (const feature of [
-      AiFeature.AskBook,
-      AiFeature.SemanticSearch,
-      AiFeature.Recommendations,
+      AiFeature.CharacterAnalysis,
+      AiFeature.PlotAnalysis,
+      AiFeature.StoryTimeline,
     ]) {
       expect(availabilityFromErrorCode('ENTITLEMENT_DENIED', feature)).toBe('upgrade');
     }

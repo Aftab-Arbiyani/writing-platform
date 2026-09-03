@@ -17,7 +17,7 @@ const SNAPSHOT: EntitlementSnapshot = {
   status: EntitlementStatus.Allow,
   features: [
     {
-      feature: PremiumFeature.AiBudget,
+      feature: PremiumFeature.AiWriting,
       status: EntitlementStatus.Allow,
       allowed: true,
       reason: EntitlementReason.PlanIncludes,

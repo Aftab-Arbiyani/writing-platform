@@ -56,7 +56,6 @@ const FEATURES: AiFeaturesResponse = {
       enabled: true,
     },
     { feature: AiFeature.CraftCoach, flagKey: 'feature.ai.craftCoach.enabled', enabled: true },
-    { feature: AiFeature.AskBook, flagKey: 'feature.ai.askBook.enabled', enabled: true },
   ],
 };
 

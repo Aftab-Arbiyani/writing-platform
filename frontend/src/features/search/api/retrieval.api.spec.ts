@@ -47,7 +47,6 @@ describe('retrievalApi request shapes', () => {
         tags: 'rain,city',
         queryType: RetrievalQueryType.NaturalLanguage,
         limit: 20,
-        synthesize: true,
       });
 
       const body = post.mock.calls[0]?.[1] as Record<string, unknown>;
@@ -59,7 +58,6 @@ describe('retrievalApi request shapes', () => {
         tags: 'rain,city',
         queryType: 'natural_language',
         limit: 20,
-        synthesize: true,
       });
       // The shape api-types used to declare, and the reason this file exists.
       expect(body).not.toHaveProperty('filters');

@@ -30,7 +30,7 @@ function snapshot(over: Partial<EntitlementSnapshot> = {}): EntitlementSnapshot 
     status: EntitlementStatus.Allow,
     features: [
       {
-        feature: PremiumFeature.AiBudget,
+        feature: PremiumFeature.AiWriting,
         status: EntitlementStatus.Allow,
         allowed: true,
         reason: EntitlementReason.PlanIncludes,
@@ -159,7 +159,7 @@ describe('useEntitlement', () => {
   it('reflects the server’s verdict for a granted feature', async () => {
     entitlements.mockResolvedValue(snapshot());
     const { wrapper } = setup();
-    const { result } = renderHook(() => useEntitlement(PremiumFeature.AiBudget), { wrapper });
+    const { result } = renderHook(() => useEntitlement(PremiumFeature.AiWriting), { wrapper });
 
     await waitFor(() => {
       expect(result.current.allowed).toBe(true);
@@ -185,7 +185,7 @@ describe('useEntitlement', () => {
     // which would leave an `optimistic` gate rendering premium content forever.
     enabled.mockReturnValue(false);
     const { wrapper } = setup();
-    const { result } = renderHook(() => useEntitlement(PremiumFeature.AiBudget), { wrapper });
+    const { result } = renderHook(() => useEntitlement(PremiumFeature.AiWriting), { wrapper });
 
     expect(result.current.allowed).toBe(false);
     expect(result.current.isPending).toBe(false);
@@ -195,7 +195,7 @@ describe('useEntitlement', () => {
   it('reports pending while the first read is in flight with no cache', () => {
     entitlements.mockReturnValue(new Promise(() => {}));
     const { wrapper } = setup();
-    const { result } = renderHook(() => useEntitlement(PremiumFeature.AiBudget), { wrapper });
+    const { result } = renderHook(() => useEntitlement(PremiumFeature.AiWriting), { wrapper });
 
     expect(result.current.isPending).toBe(true);
     expect(result.current.allowed).toBe(false);
@@ -206,7 +206,7 @@ describe('useEntitlement', () => {
       snapshot({
         features: [
           {
-            feature: PremiumFeature.AiBudget,
+            feature: PremiumFeature.AiWriting,
             status: EntitlementStatus.Limited,
             allowed: true,
             reason: EntitlementReason.PlanIncludes,
@@ -218,7 +218,7 @@ describe('useEntitlement', () => {
       }),
     );
     const { wrapper } = setup();
-    const { result } = renderHook(() => useEntitlement(PremiumFeature.AiBudget), { wrapper });
+    const { result } = renderHook(() => useEntitlement(PremiumFeature.AiWriting), { wrapper });
 
     await waitFor(() => {
       expect(result.current.allowed).toBe(true);

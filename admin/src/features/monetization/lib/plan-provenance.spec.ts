@@ -143,17 +143,24 @@ describe('featureProvenance — array granularity, because the merge replaces wh
 
   it('calls any difference an override', () => {
     expect(featureProvenance(PlanTier.Free, [])).toBe('override');
+    // A paid code on the free tier is a difference whatever the free tier happens to ship.
     expect(
-      featureProvenance(PlanTier.Free, [PremiumFeature.AiBudget, PremiumFeature.AiWriting]),
+      featureProvenance(PlanTier.Free, [
+        ...DEFAULT_PLAN_FEATURES[PlanTier.Free],
+        PremiumFeature.AiWriting,
+      ]),
     ).toBe('override');
   });
 
   it('reports what was added and removed against the compiled catalogue', () => {
-    // Free ships [ai_budget]; this stored tier swapped it for ai_writing.
-    const delta = featureDelta(PlanTier.Free, [PremiumFeature.AiWriting]);
+    // Arranged on Plus, and on the catalogue rather than on literal codes: D5 is removing codes
+    // from the compiled sets, and a delta test that names one is testing the catalogue's contents
+    // instead of the diff. Plus keeps a non-empty set, so `removed` stays a real assertion.
+    const stored = [PremiumFeature.AdvancedAnalytics];
+    const delta = featureDelta(PlanTier.Plus, stored);
 
-    expect(delta.added).toEqual([PremiumFeature.AiWriting]);
-    expect(delta.removed).toEqual([PremiumFeature.AiBudget]);
+    expect(delta.added).toEqual([PremiumFeature.AdvancedAnalytics]);
+    expect(delta.removed).toEqual([...DEFAULT_PLAN_FEATURES[PlanTier.Plus]]);
   });
 
   it('reports no delta for the compiled set', () => {
@@ -165,9 +172,10 @@ describe('featureProvenance — array granularity, because the merge replaces wh
 });
 
 describe('isEnforcedCode — which grants actually do something', () => {
-  it('names ai_budget and ai_writing as enforced', () => {
-    // `ai_writing` became enforceable on 2026-08-17 (D3); `ai_budget` always was.
-    expect(isEnforcedCode(PremiumFeature.AiBudget)).toBe(true);
+  it('names ai_writing as enforced', () => {
+    // `ai_writing` became enforceable on 2026-08-17 (D3). `ai_budget` was the other enforced code
+    // until D5 removed the credit economy it guarded; `story_intelligence` joins this list when the
+    // admin half of D5 lands.
     expect(isEnforcedCode(PremiumFeature.AiWriting)).toBe(true);
   });
 
