@@ -156,6 +156,34 @@ export class UsageService {
     }));
   }
 
+  /**
+   * How many requests this user has made against a set of features since a moment — the
+   * count behind D5's per-feature allowances (`AI_QUOTA_RULES`).
+   *
+   * It reads `ai_usage_logs`, which holds exactly one row per completed generation, so a
+   * "Polish action" and a "story analysis" are the same countable unit and no second
+   * counter has to be kept in step. Monetization owns the plan limit and calls this for the
+   * number; the AI platform owns the log and answers. Covered by `idx_ai_usage_user_created`.
+   *
+   * An empty `features` array returns 0 rather than counting everything — `IN ()` is not
+   * valid SQL and silently counting the lot would be the wrong failure.
+   */
+  async countRequestsSince(
+    userId: string,
+    features: readonly AiFeature[],
+    since: Date,
+  ): Promise<number> {
+    if (features.length === 0) return 0;
+    const row = await this.repo
+      .createQueryBuilder('u')
+      .select('COUNT(*)', 'count')
+      .where('u.user_id = :userId', { userId })
+      .andWhere('u.feature IN (:...features)', { features: [...features] })
+      .andWhere('u.created_at >= :since', { since })
+      .getRawOne<{ count: string }>();
+    return Number(row?.count ?? 0);
+  }
+
   private async sumTokensSince(userId: string, since: Date): Promise<number> {
     const row = await this.repo
       .createQueryBuilder('u')

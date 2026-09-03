@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { AI_USAGE_METER } from '../../common/metering/ai-usage-meter.port';
 import { AuditModule } from '../audit/audit.module';
+import { AiModule } from '../ai';
 import { AuthModule } from '../auth/auth.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { SettingsModule } from '../settings/settings.module';
@@ -83,6 +84,19 @@ import { UsageService } from './usage.service';
     SettingsModule,
     AuditModule,
     NotificationsModule,
+    /*
+     * The AI platform, for one purpose: D5's per-feature allowances count ACTIONS, and the
+     * record of an action is `ai_usage_logs` — one row per completed generation, owned by the
+     * AI module. `UsageService` reads it through the exported `UsageService` rather than
+     * keeping a second counter here that would have to be kept in step.
+     *
+     * The direction is deliberate and acyclic: `AiModule` imports only Auth/Settings/Users,
+     * and reaches monetization only through the OPTIONAL `AI_USAGE_METER` port, so the AI
+     * platform still runs standalone with no monetization module present. Monetization
+     * knowing what a generation is does not compromise that; the AI platform knowing about
+     * plans and money would.
+     */
+    AiModule,
     /*
      * The user directory, for one purpose only: the four admin per-account reads must be able to
      * tell "this account has no billing" from "this id belongs to nobody" (docs/48 §3.22a, B8-1).

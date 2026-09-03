@@ -46,6 +46,7 @@ import {
   RestoreResultDto,
   SubscriptionDto,
   SubscriptionEventDto,
+  FeatureQuotaDto,
   UsageSummaryDto,
   UsageWindowDto,
 } from '../../modules/monetization/dto/monetization-response.dto';
@@ -302,6 +303,7 @@ const MIRRORS: readonly Mirror[] = [
   { type: 'FeatureEntitlementResponse', dto: EntitlementDecisionDto, direction: 'response' },
   { type: 'UsageWindowResponse', dto: UsageWindowDto, direction: 'response' },
   { type: 'UsageSummaryResponse', dto: UsageSummaryDto, direction: 'response' },
+  { type: 'FeatureQuotaResponse', dto: FeatureQuotaDto, direction: 'response' },
   { type: 'CreditBalanceResponse', dto: CreditBalanceDto, direction: 'response' },
   { type: 'CreditTransactionResponse', dto: CreditTransactionDto, direction: 'response' },
   { type: 'PurchaseCreditsRequest', dto: PurchaseCreditsDto, direction: 'request' },

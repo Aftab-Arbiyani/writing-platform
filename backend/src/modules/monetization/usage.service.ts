@@ -1,11 +1,32 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { CreditReason, QuotaWindow } from '@qalam/shared';
+import {
+  AI_QUOTA_RULES,
+  CreditReason,
+  QuotaWindow,
+  quotaRuleForAiFeature,
+  resolvePlanLimit,
+} from '@qalam/shared';
+import type { AiFeature } from '@qalam/shared';
 import { Repository } from 'typeorm';
 
+import { UsageService as AiUsageService } from '../ai';
 import { CreditTransaction } from './entities/credit-transaction.entity';
 import { EntitlementService } from './entitlement.service';
 import { QuotaExceededException } from './monetization.exceptions';
+
+/** One per-feature allowance and what the user has spent of it (D5). */
+export interface FeatureQuota {
+  limitKey: string;
+  label: string;
+  window: QuotaWindow;
+  used: number;
+  /** `null` when the plan grants this allowance without limit. */
+  limit: number | null;
+  remaining: number | null;
+  unlimited: boolean;
+  resetsAt: string | null;
+}
 
 /** A usage roll-up over one window. */
 export interface UsageWindowSummary {
@@ -31,13 +52,20 @@ export interface UsageSummary {
 }
 
 /**
- * The Usage service (AF5) — the single source of truth for AI usage. Every metered AI
- * request writes one `ai_usage` row to the credit ledger (via the meter → Credit service),
- * so this service derives all AI usage — daily/monthly/lifetime rollups, per-feature
- * breakdown, cost, and a linear forecast — from ONE place (no duplicated token counting;
- * the AI platform still keeps its raw provider-token log). It also owns the QUOTA decision:
- * {@link assertWithinQuota} enforces the plan's daily/monthly token caps (0 = unlimited),
- * which the meter calls before every AI request (soft/hard budget protection).
+ * The Usage service (AF5) — where a plan's limits meet what a user has actually done.
+ *
+ * It owns the QUOTA decision. Since D5 that is a count of ACTIONS against a per-feature
+ * allowance ({@link assertWithinQuota}), not a token budget: the writer is told "12 of 30
+ * polishes today", so that is the unit enforced. The counts come from the AI platform's own
+ * `ai_usage_logs` through its exported `UsageService` — one row per completed generation —
+ * rather than a second counter kept in step here.
+ *
+ * That is also why this module imports the AI module and not the reverse. The AI platform
+ * stays ignorant of plans and money (it reaches monetization only through the optional
+ * `AI_USAGE_METER` port); monetization is allowed to know what a generation is.
+ *
+ * The token/credit rollups below are the pre-D5 surface and are on their way out with the
+ * credit ledger they read.
  */
 @Injectable()
 export class UsageService {
@@ -45,27 +73,73 @@ export class UsageService {
     @InjectRepository(CreditTransaction)
     private readonly ledger: Repository<CreditTransaction>,
     private readonly entitlements: EntitlementService,
+    private readonly aiUsage: AiUsageService,
   ) {}
 
   /**
-   * Throw QUOTA_EXCEEDED if the user has already reached their plan's daily or monthly
-   * AI token cap. Checked BEFORE a generation (the caller may slightly exceed on the final
-   * call — caps bound sustained use, they are not byte-exact gates).
+   * Throw QUOTA_EXCEEDED if this feature's per-plan allowance is already spent (D5).
+   *
+   * Counts ACTIONS, not tokens: the rule for the feature says which AI features share the
+   * allowance and over what window, and the count comes from `ai_usage_logs` — one row per
+   * completed generation — so the unit the writer is told about ("12 of 30 today") is the
+   * unit the server enforces.
+   *
+   * A feature with no rule is uncounted and passes; `uncountedPaidAiFeatures` is the guard
+   * that stops a *sold* feature landing in that bucket by accident.
+   *
+   * Checked BEFORE a generation, so a burst of concurrent requests can overshoot by one or
+   * two. That was true of the token cap too and is the right trade: allowances bound
+   * sustained use, and paying for a serialising lock on every request to make the boundary
+   * exact would cost more than the overshoot.
+   *
+   * `reserve` lets a caller that will spend several in one action — "Map this story" runs
+   * five analyses — check the whole cost up front instead of failing halfway through.
    */
-  async assertWithinQuota(userId: string): Promise<void> {
+  async assertWithinQuota(userId: string, feature: AiFeature, reserve = 1): Promise<void> {
+    const rule = quotaRuleForAiFeature(feature);
+    if (rule === null) return;
+
     const limits = await this.entitlements.getLimits(userId);
-    if (limits.aiDailyTokens > 0) {
-      const daily = await this.sumTokensSince(userId, this.startOfDayUtc());
-      if (daily >= limits.aiDailyTokens) {
-        throw new QuotaExceededException(QuotaWindow.Daily);
-      }
+    // Read through the resolver, never the raw number — it is the one place the two sentinel
+    // conventions are reconciled. These keys are ordinary (`0` = unlimited).
+    const limit = resolvePlanLimit(limits, rule.limitKey);
+    if (limit.unlimited) return;
+
+    const used = await this.aiUsage.countRequestsSince(userId, rule.features, this.since(rule));
+    if (used + reserve > limit.value) {
+      throw new QuotaExceededException(rule.window, {
+        limitKey: rule.limitKey,
+        label: rule.label,
+        used,
+        limit: limit.value,
+        resetsAt: this.resetsAt(rule.window)?.toISOString() ?? '',
+      });
     }
-    if (limits.aiMonthlyTokens > 0) {
-      const monthly = await this.sumTokensSince(userId, this.startOfMonthUtc());
-      if (monthly >= limits.aiMonthlyTokens) {
-        throw new QuotaExceededException(QuotaWindow.Monthly);
-      }
-    }
+  }
+
+  /** Every allowance for a user, with what they have spent — the client's usage surface. */
+  async quotas(userId: string): Promise<FeatureQuota[]> {
+    const limits = await this.entitlements.getLimits(userId);
+    return Promise.all(
+      AI_QUOTA_RULES.map(async (rule): Promise<FeatureQuota> => {
+        const limit = resolvePlanLimit(limits, rule.limitKey);
+        const used = await this.aiUsage.countRequestsSince(userId, rule.features, this.since(rule));
+        return {
+          limitKey: rule.limitKey,
+          label: rule.label,
+          window: rule.window,
+          used,
+          limit: limit.unlimited ? null : limit.value,
+          remaining: limit.unlimited ? null : Math.max(0, limit.value - used),
+          unlimited: limit.unlimited,
+          resetsAt: this.resetsAt(rule.window)?.toISOString() ?? null,
+        };
+      }),
+    );
+  }
+
+  private since(rule: { window: QuotaWindow }): Date {
+    return rule.window === QuotaWindow.Monthly ? this.startOfMonthUtc() : this.startOfDayUtc();
   }
 
   /** The caller's full usage summary (daily/monthly/lifetime + per feature + forecast). */
@@ -161,17 +235,6 @@ export class UsageService {
       credits: Number(r.credits),
       requests: Number(r.requests),
     }));
-  }
-
-  private async sumTokensSince(userId: string, since: Date): Promise<number> {
-    const row = await this.ledger
-      .createQueryBuilder('t')
-      .select('COALESCE(SUM(t.tokens), 0)', 'tokens')
-      .where('t.user_id = :userId', { userId })
-      .andWhere('t.reason = :reason', { reason: CreditReason.AiUsage })
-      .andWhere('t.created_at >= :since', { since })
-      .getRawOne<{ tokens: string }>();
-    return Number(row?.tokens ?? 0);
   }
 
   private resetsAt(window: QuotaWindow): Date | null {

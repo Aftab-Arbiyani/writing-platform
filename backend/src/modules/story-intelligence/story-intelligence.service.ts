@@ -3,6 +3,7 @@ import {
   AiMessageRole,
   PremiumFeature,
   STORY_GRAPH_TITLE_MAX,
+  STORY_MAP_ANALYSIS_COUNT,
   StoryAnalysisKind,
   StoryAnalysisScope,
   storyAnalysisFeature,
@@ -14,6 +15,7 @@ import { decodeCursor, encodeCursor } from '../../common/pagination/cursor.util'
 import { AiCompletionService } from '../ai/orchestration/ai-completion.service';
 import { EntitlementService } from '../monetization/entitlement.service';
 import { MonetizationFeatureService } from '../monetization/monetization.feature-service';
+import { UsageService } from '../monetization/usage.service';
 import { parseStoryAnalysis } from './analysis/story-analysis.parser';
 import type { StoryGraphDto } from './dto/story-response.dto';
 import { toGraphDto } from './story.mappers';
@@ -30,6 +32,26 @@ import {
 
 const PAGE_SIZE_DEFAULT = 20;
 const PAGE_SIZE_MAX = 50;
+
+/** The analyses a full "Map this story" run performs, in the order it performs them. */
+const STORY_MAP_KINDS: readonly StoryAnalysisKind[] = [
+  StoryAnalysisKind.Character,
+  StoryAnalysisKind.Plot,
+  StoryAnalysisKind.World,
+  StoryAnalysisKind.Style,
+  StoryAnalysisKind.Timeline,
+];
+
+/** A request to map a whole story (already DTO-validated at the controller). */
+export interface MapStoryInput {
+  content: string;
+  storyTitle?: string;
+}
+
+/** What a map run reports as it goes. */
+export type MapStoryEvent =
+  | { kind: 'progress'; step: number; total: number; analysis: StoryAnalysisKind }
+  | { kind: 'done'; completed: StoryAnalysisKind[] };
 
 /** A request to run one analysis (already DTO-validated at the controller). */
 export interface AnalyzeInput {
@@ -68,6 +90,7 @@ export class StoryIntelligenceService {
     private readonly repo: StoryIntelligenceRepository,
     private readonly feature: MonetizationFeatureService,
     private readonly entitlements: EntitlementService,
+    private readonly usage: UsageService,
   ) {}
 
   /**
@@ -126,6 +149,61 @@ export class StoryIntelligenceService {
       totalTokens: output.usage.totalTokens,
       costUsd: output.costUsd,
     });
+  }
+
+  /**
+   * Build a story's whole map: run every analysis kind in turn and fold each into the graph.
+   *
+   * This is the action that makes Story Map a feature rather than a viewer. Until D5 the
+   * analyses had no client on any platform (48 §3.22d) — seven routes nobody could reach —
+   * so a Pro subscriber could look at a graph they had no way to build.
+   *
+   * Yields progress rather than returning, because five sequential model calls take long
+   * enough that a buffered response would sit behind a proxy timeout with nothing to show.
+   *
+   * **The whole cost is reserved up front.** Each analysis meters itself as one story
+   * analysis on the way through the orchestrator, so a writer with three left would otherwise
+   * get three analyses, a 429, and a half-built graph that looks like a finished one. Refusing
+   * before the first call is the difference between "not enough allowance" and silent
+   * corruption of the thing they were building.
+   *
+   * Runs SEQUENTIALLY on purpose: the analyses write to one graph, and the repository folds
+   * each result into it. Parallelism here would race those writes for a few seconds' latency.
+   *
+   * A failure mid-run keeps what already landed — a partly-mapped graph is more useful than
+   * none, and re-running folds the rest in — so the caller is told which kinds completed.
+   */
+  async *mapStory(
+    userId: string,
+    storyId: string,
+    input: MapStoryInput,
+  ): AsyncGenerator<MapStoryEvent> {
+    const content = input.content.trim();
+    if (content === '') {
+      throw new StoryContentEmptyException();
+    }
+    await this.assertGraphReadEntitled(userId);
+    if (await this.feature.isEnabled()) {
+      // Any story kind resolves to the same allowance; the reservation is the whole set.
+      await this.usage.assertWithinQuota(
+        userId,
+        storyAnalysisFeature(StoryAnalysisKind.Character),
+        STORY_MAP_ANALYSIS_COUNT,
+      );
+    }
+
+    const completed: StoryAnalysisKind[] = [];
+    for (const [index, kind] of STORY_MAP_KINDS.entries()) {
+      yield { kind: 'progress', step: index + 1, total: STORY_MAP_KINDS.length, analysis: kind };
+      await this.analyze(userId, storyId, {
+        kind,
+        scope: StoryAnalysisScope.Book,
+        content,
+        storyTitle: input.storyTitle,
+      });
+      completed.push(kind);
+    }
+    yield { kind: 'done', completed };
   }
 
   /** The full knowledge graph for a story the caller owns. */

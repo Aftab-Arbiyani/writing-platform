@@ -9,6 +9,8 @@ import {
   ParseUUIDPipe,
   Post,
   Query,
+  Req,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -16,16 +18,20 @@ import {
   ApiNoContentResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiProduces,
   ApiTags,
 } from '@nestjs/swagger';
 import { PERMISSIONS } from '@qalam/shared';
+import type { Request, Response } from 'express';
 
 import { RateLimit } from '../../common/decorators/rate-limit.decorator';
 import { RateLimitGuard } from '../../common/guards/rate-limit.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { Permissions } from '../permissions/permissions.decorator';
-import { AnalyzeStoryDto, StoryAnalysesQueryDto } from './dto/story-request.dto';
+import { AppException } from '../../common/exceptions/app.exception';
+import { initSse, sendSse } from '../ai/streaming/sse.util';
+import { AnalyzeStoryDto, MapStoryDto, StoryAnalysesQueryDto } from './dto/story-request.dto';
 import {
   StoryAnalysisResultDto,
   StoryAnalysisSummaryDto,
@@ -79,6 +85,59 @@ export class StoryIntelligenceController {
       storyTitle: dto.storyTitle,
     });
     return toAnalysisResultDto(run, storyId);
+  }
+
+  /**
+   * Build the story's whole map — every analysis, folded into one graph.
+   *
+   * SSE rather than a buffered POST because five sequential model calls take long enough to
+   * sit behind a proxy timeout, and because a writer watching a five-step job wants to see it
+   * move. The client renders `progress` as a step counter and `done` as a refresh.
+   *
+   * An `error` event carries a real domain code — most usefully QUOTA_EXCEEDED, which the
+   * service raises BEFORE the first call by reserving the whole run, so a writer without
+   * enough allowance is told so instead of getting a half-built graph.
+   */
+  @Post(':storyId/map/stream')
+  @Permissions(PERMISSIONS.AiUse)
+  @RateLimit('aiCompletion')
+  @ApiProduces('text/event-stream')
+  @ApiOperation({
+    summary:
+      'Map a whole story: run every analysis and fold each into its graph (SSE: progress* ' +
+      '→ done | error). Errors: ENTITLEMENT_DENIED, QUOTA_EXCEEDED, AI_DISABLED, ' +
+      'STORY_CONTENT_EMPTY.',
+  })
+  async mapStory(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('storyId', ParseUUIDPipe) storyId: string,
+    @Body() dto: MapStoryDto,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): Promise<void> {
+    let closed = false;
+    req.on('close', () => {
+      closed = true;
+    });
+    initSse(res);
+    try {
+      for await (const event of this.service.mapStory(user.id, storyId, dto)) {
+        // A writer who navigated away should not keep paying for analyses they will never
+        // see. Everything already folded into the graph stays there.
+        if (closed) return;
+        // `sendSse` already stamps the event name onto the payload as `type`; spreading
+        // `kind` as well would hand the client two names for the same discriminator.
+        const { kind, ...payload } = event;
+        sendSse(res, kind, payload);
+      }
+    } catch (error) {
+      sendSse(res, 'error', {
+        code: error instanceof AppException ? error.code : 'STORY_MAP_FAILED',
+        message: error instanceof Error ? error.message : 'mapping failed',
+      });
+    } finally {
+      res.end();
+    }
   }
 
   @Get(':storyId/graph')

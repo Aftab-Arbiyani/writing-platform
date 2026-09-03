@@ -520,6 +520,11 @@ export const SETTING_DEFINITIONS: readonly SettingDefinition[] = [
           // here, so five means five. It reads the story owner's plan the way B6 does, which is
           // the only thing the two rows share — do not copy `maxCollaborators`'s -1 across.
           maxSnapshotHistory: 5,
+          // D5 per-feature allowances (ordinary sentinel: 0 = unlimited). Free is not sold
+          // Polish or feedback, so these bite only under an admin override.
+          polishActionsPerDay: 20,
+          feedbackReportsPerDay: 5,
+          storyAnalysesPerMonth: 5,
         },
         monthlyCredits: 0,
         prices: { none: { usd: 0 } },
@@ -537,6 +542,9 @@ export const SETTING_DEFINITIONS: readonly SettingDefinition[] = [
           maxPieces: 250,
           maxCollaborators: 3,
           maxSnapshotHistory: 25,
+          polishActionsPerDay: 100,
+          feedbackReportsPerDay: 20,
+          storyAnalysesPerMonth: 20,
         },
         monthlyCredits: 5000,
         prices: { monthly: { usd: 499 }, yearly: { usd: 4990 } },
@@ -563,6 +571,9 @@ export const SETTING_DEFINITIONS: readonly SettingDefinition[] = [
           maxPieces: 0,
           maxCollaborators: -1, // UNLIMITED_SEATS. `0` would mean no collaborators at all.
           maxSnapshotHistory: 0, // Unlimited — and `0` IS how this key says so (B7, not B6).
+          polishActionsPerDay: 300,
+          feedbackReportsPerDay: 60,
+          storyAnalysesPerMonth: 100,
         },
         monthlyCredits: 25000,
         prices: { monthly: { usd: 1499 }, yearly: { usd: 14990 } },
@@ -589,6 +600,9 @@ export const SETTING_DEFINITIONS: readonly SettingDefinition[] = [
           maxPieces: 0,
           maxCollaborators: -1, // UNLIMITED_SEATS.
           maxSnapshotHistory: 0, // Unlimited.
+          polishActionsPerDay: 0, // Unlimited.
+          feedbackReportsPerDay: 0,
+          storyAnalysesPerMonth: 0,
         },
         monthlyCredits: 100000,
         prices: { monthly: { usd: 4999 }, yearly: { usd: 49990 } },

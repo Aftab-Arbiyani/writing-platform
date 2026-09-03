@@ -4,6 +4,7 @@
  * Zero runtime dependencies — this package must stay pure vocabulary.
  */
 export * from './ai.js';
+export * from './ai-quotas.js';
 export * from './analytics.js';
 export * from './collaboration.js';
 export * from './enums.js';

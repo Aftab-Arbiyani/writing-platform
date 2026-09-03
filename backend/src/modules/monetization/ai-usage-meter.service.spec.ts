@@ -123,7 +123,8 @@ describe('AiUsageMeterService', () => {
 
         await service.checkQuota(QUOTA_INPUT);
 
-        expect(usage.assertWithinQuota).toHaveBeenCalledWith('u1');
+        // D5: the allowance is per-feature, so the feature and the reservation travel with it.
+        expect(usage.assertWithinQuota).toHaveBeenCalledWith('u1', AiFeature.WritingAssistant, 1);
       });
 
       it('should emit AiQuotaExceeded and re-throw when assertWithinQuota raises QuotaExceededException', async () => {

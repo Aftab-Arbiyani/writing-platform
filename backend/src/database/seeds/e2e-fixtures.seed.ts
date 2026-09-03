@@ -3,7 +3,7 @@ import 'reflect-metadata';
 
 import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import { Role, UNLIMITED_SEATS } from '@qalam/shared';
+import { AI_QUOTA_RULES, Role, UNLIMITED_SEATS } from '@qalam/shared';
 
 import { AppModule } from '../../app.module';
 import { TransactionRunner } from '../../common/database/transaction-runner';
@@ -102,6 +102,9 @@ const SEED_ACTOR = {
  * (the common case — `stack-up` is re-run constantly) picks the fix up without a `--reset`. It is
  * an idempotent settings write.
  */
+/** Derived, never listed: a rule added upstream is lifted here without touching this file. */
+const D5_ALLOWANCE_KEYS: readonly string[] = AI_QUOTA_RULES.map((rule) => rule.limitKey);
+
 async function liftPlanCapsForE2e(
   app: Awaited<ReturnType<typeof NestFactory.createApplicationContext>>,
   logger: Logger,
@@ -115,12 +118,15 @@ async function liftPlanCapsForE2e(
     logger.warn('monetization.plans has no `free` tier; leaving the piece cap alone.');
     return;
   }
-  // BOTH caps, or the second one would never be lifted on a stack that already had the first.
+  const free = current.free;
+  // EVERY cap, or a newly-added one would never be lifted on a stack that already had the
+  // others — the shape of the B4-1 defect, and of B6 after it.
   if (
-    current.free.limits?.maxPieces === 0 &&
-    current.free.limits?.maxCollaborators === UNLIMITED_SEATS
+    free.limits?.maxPieces === 0 &&
+    free.limits?.maxCollaborators === UNLIMITED_SEATS &&
+    D5_ALLOWANCE_KEYS.every((key) => free.limits?.[key] === 0)
   ) {
-    logger.log('E2E plan caps already lifted (free.maxPieces = 0, maxCollaborators = -1).');
+    logger.log('E2E plan caps already lifted.');
     return;
   }
 
@@ -137,17 +143,25 @@ async function liftPlanCapsForE2e(
         // … and `-1` = unlimited HERE, because B6 inverts it for this key alone. Writing `0` would
         // mean "no collaborators at all", i.e. exactly the state being fixed.
         maxCollaborators: UNLIMITED_SEATS,
+        /*
+         * D5's per-feature allowances, all unlimited for the suite (ordinary sentinel: 0).
+         *
+         * Without this the browser suite would pass for a while and then start failing as a
+         * shared stack accumulated runs — a 429 partway through a spec, which reads like a
+         * broken selector rather than a spent allowance. That is exactly how B4-1 and B6
+         * presented, and it is why every new plan-limit key has to be lifted HERE in the same
+         * change that introduces it.
+         */
+        ...Object.fromEntries(D5_ALLOWANCE_KEYS.map((key) => [key, 0])),
       },
     },
   };
   await settings.updateSettings(
     [{ key: 'monetization.plans', value: patched }],
     { ...SEED_ACTOR },
-    'seed:e2e — lift the free-plan piece and collaborator caps so the browser suite can arrange content (48 §3.14 B4-1, §3.22c)',
+    'seed:e2e — lift the free-plan piece, collaborator and allowance caps so the browser suite can arrange content (48 §3.14 B4-1, §3.22c, D5)',
   );
-  logger.log(
-    'E2E plan caps lifted: free.limits.maxPieces = 0, maxCollaborators = -1 (both unlimited).',
-  );
+  logger.log('E2E plan caps lifted: maxPieces = 0, maxCollaborators = -1, every D5 allowance = 0.');
 }
 
 async function seedE2eFixtures(): Promise<void> {

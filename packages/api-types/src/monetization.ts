@@ -174,8 +174,27 @@ export interface UsageWindowResponse {
   resetsAt: string | null;
 }
 
+/**
+ * One per-feature allowance and what the caller has spent of it (D5).
+ *
+ * `limit`/`remaining` are null when the plan grants the allowance without limit, so a client
+ * renders "No limit" instead of inventing a number to fill a progress bar with.
+ */
+export interface FeatureQuotaResponse {
+  limitKey: string;
+  label: string;
+  window: QuotaWindow;
+  used: number;
+  limit: number | null;
+  remaining: number | null;
+  unlimited: boolean;
+  resetsAt: string | null;
+}
+
 /** The full usage picture + a simple forecast. */
 export interface UsageSummaryResponse {
+  /** The D5 surface: per-feature allowances. The token/credit rollups are on the way out. */
+  quotas: FeatureQuotaResponse[];
   daily: UsageWindowResponse;
   monthly: UsageWindowResponse;
   total: UsageWindowResponse;

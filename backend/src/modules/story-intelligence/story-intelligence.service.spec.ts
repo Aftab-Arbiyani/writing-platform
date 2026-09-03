@@ -2,6 +2,7 @@ import { AiFeature, StoryAnalysisKind, StoryAnalysisScope } from '@qalam/shared'
 
 import type { AiCompletionService } from '../ai/orchestration/ai-completion.service';
 import type { EntitlementService } from '../monetization/entitlement.service';
+import type { UsageService } from '../monetization/usage.service';
 import type { MonetizationFeatureService } from '../monetization/monetization.feature-service';
 import type { StoryAnalysis } from './entities/story-analysis.entity';
 import type { StoryGraph } from './entities/story-graph.entity';
@@ -41,12 +42,14 @@ function makeService(overrides: {
   repo?: Partial<Record<keyof StoryIntelligenceRepository, jest.Mock>>;
   paymentsEnabled?: boolean;
   assertAllowed?: jest.Mock;
+  assertWithinQuota?: jest.Mock;
 }): {
   service: StoryIntelligenceService;
   complete: jest.Mock;
   repo: Partial<Record<keyof StoryIntelligenceRepository, jest.Mock>>;
   assertAllowed: jest.Mock;
   isEnabled: jest.Mock;
+  assertWithinQuota: jest.Mock;
 } {
   const complete =
     overrides.complete ?? jest.fn().mockResolvedValue(completionOutput(CHARACTER_JSON));
@@ -68,13 +71,16 @@ function makeService(overrides: {
   const feature = { isEnabled } as unknown as MonetizationFeatureService;
   const assertAllowed = overrides.assertAllowed ?? jest.fn().mockResolvedValue(undefined);
   const entitlements = { assertAllowed } as unknown as EntitlementService;
+  const assertWithinQuota = overrides.assertWithinQuota ?? jest.fn().mockResolvedValue(undefined);
+  const usage = { assertWithinQuota } as unknown as UsageService;
   const service = new StoryIntelligenceService(
     completion,
     repo as unknown as StoryIntelligenceRepository,
     feature,
     entitlements,
+    usage,
   );
-  return { service, complete, repo, assertAllowed, isEnabled };
+  return { service, complete, repo, assertAllowed, isEnabled, assertWithinQuota };
 }
 
 describe('StoryIntelligenceService', () => {
@@ -184,6 +190,107 @@ describe('StoryIntelligenceService', () => {
       await service.getGraphSnapshot('u1', 'piece-1');
 
       expect(assertAllowed).not.toHaveBeenCalled();
+    });
+  });
+
+  /**
+   * "Map this story" is what makes Story Map a feature rather than a viewer — until D5 the
+   * analyses had no client on any platform, so a Pro subscriber could look at a graph they
+   * had no way to build.
+   */
+  describe('mapStory', () => {
+    async function drain(
+      service: StoryIntelligenceService,
+      content = 'Aria walked into the dark forest.',
+    ) {
+      const events = [];
+      for await (const event of service.mapStory('u1', 'piece-1', { content })) {
+        events.push(event);
+      }
+      return events;
+    }
+
+    it('runs every analysis kind once, in order, and reports each step', async () => {
+      const { service, complete } = makeService({});
+
+      const events = await drain(service);
+
+      const analysed = complete.mock.calls.map((call) => (call[0] as { feature: string }).feature);
+      expect(analysed).toEqual([
+        AiFeature.CharacterAnalysis,
+        AiFeature.PlotAnalysis,
+        AiFeature.WorldBuilding,
+        AiFeature.StyleAnalysis,
+        AiFeature.StoryTimeline,
+      ]);
+      expect(events.filter((e) => e.kind === 'progress')).toHaveLength(5);
+      expect(events.at(-1)).toEqual({
+        kind: 'done',
+        completed: [
+          StoryAnalysisKind.Character,
+          StoryAnalysisKind.Plot,
+          StoryAnalysisKind.World,
+          StoryAnalysisKind.Style,
+          StoryAnalysisKind.Timeline,
+        ],
+      });
+    });
+
+    /**
+     * The reservation is the whole point. Each analysis meters itself on the way through the
+     * orchestrator, so a writer with three left would otherwise get three analyses, a 429, and
+     * a half-built graph that looks finished. Refusing before the first call is the difference
+     * between "not enough allowance" and silent corruption of the thing they were building.
+     */
+    it('reserves the whole run up front, and spends nothing when it is refused', async () => {
+      const refuse = jest.fn().mockRejectedValue(new Error('QUOTA_EXCEEDED'));
+      const { service, complete } = makeService({ assertWithinQuota: refuse });
+
+      await expect(drain(service)).rejects.toThrow('QUOTA_EXCEEDED');
+      expect(refuse).toHaveBeenCalledWith('u1', AiFeature.CharacterAnalysis, 5);
+      expect(complete).not.toHaveBeenCalled();
+    });
+
+    it('checks entitlement before the allowance — an upgrade is not a rate limit', async () => {
+      const denied = jest.fn().mockRejectedValue(new Error('ENTITLEMENT_DENIED'));
+      const { service, assertWithinQuota } = makeService({ assertAllowed: denied });
+
+      await expect(drain(service)).rejects.toThrow('ENTITLEMENT_DENIED');
+      expect(assertWithinQuota).not.toHaveBeenCalled();
+    });
+
+    /** Dark launch: with payments off nobody holds a subscription, so nobody has an allowance. */
+    it('skips the allowance entirely while payments are dark', async () => {
+      const { service, assertWithinQuota, complete } = makeService({ paymentsEnabled: false });
+
+      await drain(service);
+
+      expect(assertWithinQuota).not.toHaveBeenCalled();
+      expect(complete).toHaveBeenCalledTimes(5);
+    });
+
+    it('refuses empty content before spending anything', async () => {
+      const { service, complete, assertWithinQuota } = makeService({});
+
+      await expect(drain(service, '   ')).rejects.toBeInstanceOf(StoryContentEmptyException);
+      expect(assertWithinQuota).not.toHaveBeenCalled();
+      expect(complete).not.toHaveBeenCalled();
+    });
+
+    /**
+     * A partly-mapped graph is more useful than none, and re-running folds the rest in — so a
+     * mid-run failure keeps what landed rather than unwinding it.
+     */
+    it('keeps the analyses that already landed when one fails mid-run', async () => {
+      const complete = jest
+        .fn()
+        .mockResolvedValueOnce(completionOutput(CHARACTER_JSON))
+        .mockResolvedValueOnce(completionOutput(CHARACTER_JSON))
+        .mockRejectedValueOnce(new Error('provider exploded'));
+      const { service, repo } = makeService({ complete });
+
+      await expect(drain(service)).rejects.toThrow('provider exploded');
+      expect(repo.applyAnalysis).toHaveBeenCalledTimes(2);
     });
   });
 });

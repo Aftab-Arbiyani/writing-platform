@@ -21,6 +21,14 @@ export interface AiUsageQuotaCheck {
   model: string;
   /** Pre-call token estimate (the reservation the meter may check against a budget). */
   estimatedTokens: number;
+  /**
+   * How many of this feature's allowance the caller is about to spend. Defaults to 1.
+   *
+   * A caller that will make several calls as ONE user action — "Map this story" runs five
+   * analyses — passes the total so the whole thing is refused up front rather than dying
+   * three analyses in, having spent them and left a half-built graph behind.
+   */
+  reserve?: number;
 }
 
 /** A completed AI call's consumption, recorded after the provider responds. */

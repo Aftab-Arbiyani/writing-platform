@@ -3,6 +3,7 @@ import {
   CreditReason,
   PremiumFeature,
   QuotaWindow,
+  quotaRuleForAiFeature,
   creditsForCostUsd,
   premiumCodeForAiFeature,
 } from '@qalam/shared';
@@ -81,12 +82,17 @@ export class AiUsageMeterService implements AiUsageMeter {
       await this.entitlements.assertAllowed(input.userId, premiumCode);
     }
     try {
-      await this.usage.assertWithinQuota(input.userId);
+      // D5: the allowance is per-feature, so the feature decides which one is checked and
+      // over what window. `reserve` lets a caller that spends several in one action say so.
+      await this.usage.assertWithinQuota(input.userId, input.feature, input.reserve ?? 1);
     } catch (error) {
       if (error instanceof QuotaExceededException) {
         await this.events.emit(DomainEventType.AiQuotaExceeded, {
           userId: input.userId,
-          window: QuotaWindow.Monthly,
+          // The window the allowance actually resets on, read off the exception's own detail
+          // rather than hard-coded: `polishActionsPerDay` is daily and reporting it as
+          // monthly would misdescribe the event to every consumer downstream.
+          window: quotaRuleForAiFeature(input.feature)?.window ?? QuotaWindow.Monthly,
           feature: input.feature,
         });
       }

@@ -263,10 +263,16 @@ export class MonetizationController {
   @Get('usage')
   @Permissions(PERMISSIONS.BillingUse)
   @RateLimit('read')
-  @ApiOperation({ summary: 'AI usage rollups (daily/monthly/lifetime) + forecast.' })
+  @ApiOperation({
+    summary: 'Per-feature allowances (what you have used of each), plus the legacy rollups.',
+  })
   @ApiOkResponse({ type: UsageSummaryDto })
   async usageSummary(@CurrentUser() user: AuthenticatedUser): Promise<UsageSummaryDto> {
-    return toUsageSummaryDto(await this.usage.getSummary(user.id));
+    const [summary, quotas] = await Promise.all([
+      this.usage.getSummary(user.id),
+      this.usage.quotas(user.id),
+    ]);
+    return toUsageSummaryDto(summary, quotas);
   }
 
   @Get('credits')

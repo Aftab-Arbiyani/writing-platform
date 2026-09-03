@@ -1,6 +1,7 @@
-import { CreditReason, DEFAULT_PLAN_LIMITS, PlanTier, QuotaWindow } from '@qalam/shared';
+import { AiFeature, DEFAULT_PLAN_LIMITS, PlanTier, QuotaWindow } from '@qalam/shared';
 import type { Repository } from 'typeorm';
 
+import type { UsageService as AiUsageService } from '../ai';
 import type { CreditTransaction } from './entities/credit-transaction.entity';
 import type { EntitlementService } from './entitlement.service';
 import { QuotaExceededException } from './monetization.exceptions';
@@ -34,9 +35,11 @@ function makeQb(opts?: {
 // ── Factory ────────────────────────────────────────────────────────────────────
 
 function build(opts?: {
-  limits?: { aiDailyTokens: number; aiMonthlyTokens: number; aiMonthlyCredits: number };
+  limits?: Record<string, number>;
   /** getRawOne responses, in call order. Each entry is used once. */
   rawOnes?: Array<Record<string, string> | null>;
+  /** What the AI platform reports as this user's request count for the window. */
+  actionCount?: number;
 }) {
   const limits = opts?.limits ?? DEFAULT_PLAN_LIMITS[PlanTier.Free];
 
@@ -58,8 +61,11 @@ function build(opts?: {
     createQueryBuilder: jest.fn().mockReturnValue(qb),
   } as unknown as Repository<CreditTransaction>;
 
-  const service = new UsageService(ledger, entitlements);
-  return { service, entitlements, ledger, qb };
+  const countRequestsSince = jest.fn().mockResolvedValue(opts?.actionCount ?? 0);
+  const aiUsage = { countRequestsSince } as unknown as AiUsageService;
+
+  const service = new UsageService(ledger, entitlements, aiUsage);
+  return { service, entitlements, ledger, qb, countRequestsSince };
 }
 
 // ── Tests ──────────────────────────────────────────────────────────────────────
@@ -67,103 +73,155 @@ function build(opts?: {
 describe('UsageService', () => {
   afterEach(() => jest.clearAllMocks());
 
+  /**
+   * D5: allowances count ACTIONS, not tokens. These tests are the token suite's replacement,
+   * and the difference is the point — a writer is told "12 of 30 polishes today", so that is
+   * what the server counts.
+   */
   describe('assertWithinQuota', () => {
-    it('should resolve without throwing when the user is under both limits', async () => {
+    const PLUS = DEFAULT_PLAN_LIMITS[PlanTier.Plus]; // 100 polishes/day, 20 analyses/month
+
+    it('passes while the allowance has room', async () => {
+      const { service } = build({ limits: PLUS, actionCount: 12 });
+
+      await expect(
+        service.assertWithinQuota('u1', AiFeature.WritingAssistant),
+      ).resolves.toBeUndefined();
+    });
+
+    it('refuses on the request that would exceed it, not the one that reaches it', async () => {
+      const atLimit = build({ limits: PLUS, actionCount: 100 });
+      const oneBelow = build({ limits: PLUS, actionCount: 99 });
+
+      // 99 used + this one = 100, exactly the allowance: still allowed.
+      await expect(
+        oneBelow.service.assertWithinQuota('u1', AiFeature.WritingAssistant),
+      ).resolves.toBeUndefined();
+      await expect(
+        atLimit.service.assertWithinQuota('u1', AiFeature.WritingAssistant),
+      ).rejects.toBeInstanceOf(QuotaExceededException);
+    });
+
+    /**
+     * The message and details are the product surface of this exception — a client renders a
+     * progress bar and a sentence from them without parsing prose. The old message could only
+     * say "your daily AI usage limit", which named neither the thing nor the number.
+     */
+    it('names the thing, the numbers, and when it comes back', async () => {
+      const { service } = build({ limits: PLUS, actionCount: 100 });
+
+      const thrown = await service.assertWithinQuota('u1', AiFeature.WritingAssistant).then(
+        () => {
+          throw new Error('expected the allowance to be refused');
+        },
+        (error: unknown) => error as QuotaExceededException,
+      );
+
+      expect(thrown.message).toBe("You've used today's Polish (100 of 100).");
+      expect(thrown.details[0]).toMatchObject({
+        window: QuotaWindow.Daily,
+        limitKey: 'polishActionsPerDay',
+        label: 'Polish',
+        used: 100,
+        limit: 100,
+      });
+      expect((thrown.details[0] as { resetsAt: string }).resetsAt).not.toBe('');
+    });
+
+    it('counts each allowance over its own window and features', async () => {
+      const { service, countRequestsSince } = build({ limits: PLUS, actionCount: 0 });
+
+      await service.assertWithinQuota('u1', AiFeature.CraftCoach);
+      await service.assertWithinQuota('u1', AiFeature.PlotAnalysis);
+
+      const calls = countRequestsSince.mock.calls as Array<[string, AiFeature[], Date]>;
+      expect(calls).toHaveLength(2);
+      const [coachCall, analysisCall] = calls as [
+        [string, AiFeature[], Date],
+        [string, AiFeature[], Date],
+      ];
+      expect(coachCall[1]).toEqual([AiFeature.CraftCoach]);
+      // All five story analyses share one allowance — a writer runs them as one action.
+      expect(analysisCall[1]).toHaveLength(5);
+      expect(analysisCall[1]).toContain(AiFeature.CharacterAnalysis);
+      // Daily window starts today; monthly starts on the 1st — so the monthly cutoff is older.
+      expect(analysisCall[2].getTime()).toBeLessThanOrEqual(coachCall[2].getTime());
+    });
+
+    /**
+     * "Map this story" spends five analyses in one user action. Reserving the whole cost is
+     * what stops it dying three analyses in, having spent them and left a half-built graph.
+     */
+    it('reserves the full cost of a multi-call action up front', async () => {
+      const { service } = build({ limits: PLUS, actionCount: 17 }); // 3 left of 20
+
+      await expect(
+        service.assertWithinQuota('u1', AiFeature.CharacterAnalysis, 1),
+      ).resolves.toBeUndefined();
+      await expect(
+        service.assertWithinQuota('u1', AiFeature.CharacterAnalysis, 5),
+      ).rejects.toBeInstanceOf(QuotaExceededException);
+    });
+
+    it('skips the count entirely when the plan grants the allowance without limit', async () => {
+      const { service, countRequestsSince } = build({
+        limits: DEFAULT_PLAN_LIMITS[PlanTier.Enterprise],
+        actionCount: 999_999,
+      });
+
+      await expect(
+        service.assertWithinQuota('u1', AiFeature.WritingAssistant),
+      ).resolves.toBeUndefined();
+      expect(countRequestsSince).not.toHaveBeenCalled();
+    });
+
+    it('leaves an uncounted feature alone', async () => {
+      const { service, countRequestsSince } = build({ limits: PLUS });
+
+      await expect(service.assertWithinQuota('u1', AiFeature.Playground)).resolves.toBeUndefined();
+      expect(countRequestsSince).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('quotas', () => {
+    it('reports every allowance with what is left and when it resets', async () => {
+      const { service } = build({ limits: DEFAULT_PLAN_LIMITS[PlanTier.Plus], actionCount: 12 });
+
+      const quotas = await service.quotas('u1');
+
+      expect(quotas.map((q) => q.limitKey)).toEqual([
+        'polishActionsPerDay',
+        'feedbackReportsPerDay',
+        'storyAnalysesPerMonth',
+      ]);
+      expect(quotas[0]).toMatchObject({
+        label: 'Polish',
+        window: QuotaWindow.Daily,
+        used: 12,
+        limit: 100,
+        remaining: 88,
+        unlimited: false,
+      });
+      expect(quotas[0]?.resetsAt).toBeTruthy();
+    });
+
+    it('reports an unlimited allowance as unlimited, not as a huge number', async () => {
       const { service } = build({
-        limits: { aiDailyTokens: 20_000, aiMonthlyTokens: 200_000, aiMonthlyCredits: 0 },
-        rawOnes: [
-          { tokens: '5000' }, // daily usage — under 20k limit
-          { tokens: '50000' }, // monthly usage — under 200k limit
-        ],
+        limits: DEFAULT_PLAN_LIMITS[PlanTier.Enterprise],
+        actionCount: 40,
       });
 
-      await expect(service.assertWithinQuota('u1')).resolves.toBeUndefined();
+      const [polish] = await service.quotas('u1');
+
+      expect(polish).toMatchObject({ used: 40, limit: null, remaining: null, unlimited: true });
     });
 
-    it('should throw QuotaExceededException(Daily) when daily token sum equals the daily limit', async () => {
-      const { service } = build({
-        limits: { aiDailyTokens: 20_000, aiMonthlyTokens: 200_000, aiMonthlyCredits: 0 },
-        rawOnes: [{ tokens: '20000' }], // exactly at the daily cap
-      });
+    it('never reports negative remaining after an overshoot', async () => {
+      const { service } = build({ limits: DEFAULT_PLAN_LIMITS[PlanTier.Plus], actionCount: 105 });
 
-      await expect(service.assertWithinQuota('u1')).rejects.toBeInstanceOf(QuotaExceededException);
-    });
+      const [polish] = await service.quotas('u1');
 
-    it('should throw QuotaExceededException(Daily) when daily usage exceeds the cap', async () => {
-      const { service } = build({
-        limits: { aiDailyTokens: 20_000, aiMonthlyTokens: 200_000, aiMonthlyCredits: 0 },
-        rawOnes: [{ tokens: '25000' }], // over the daily cap
-      });
-
-      let thrown: unknown;
-      try {
-        await service.assertWithinQuota('u1');
-      } catch (err) {
-        thrown = err;
-      }
-
-      expect(thrown).toBeInstanceOf(QuotaExceededException);
-      expect((thrown as QuotaExceededException).message).toContain(QuotaWindow.Daily);
-    });
-
-    it('should throw QuotaExceededException(Monthly) when daily is under cap but monthly hits the cap', async () => {
-      const { service } = build({
-        limits: { aiDailyTokens: 20_000, aiMonthlyTokens: 200_000, aiMonthlyCredits: 0 },
-        rawOnes: [
-          { tokens: '1000' }, // daily — fine
-          { tokens: '200000' }, // monthly — at the cap
-        ],
-      });
-
-      let thrown: unknown;
-      try {
-        await service.assertWithinQuota('u1');
-      } catch (err) {
-        thrown = err;
-      }
-
-      expect(thrown).toBeInstanceOf(QuotaExceededException);
-      expect((thrown as QuotaExceededException).message).toContain(QuotaWindow.Monthly);
-    });
-
-    it('should skip the daily check when aiDailyTokens is 0 (unlimited)', async () => {
-      const { service, qb } = build({
-        limits: { aiDailyTokens: 0, aiMonthlyTokens: 200_000, aiMonthlyCredits: 0 },
-        rawOnes: [{ tokens: '50000' }],
-      });
-
-      await service.assertWithinQuota('u1');
-
-      // Only one getRawOne call — the monthly check (daily was skipped because limit=0)
-      expect(qb.getRawOne).toHaveBeenCalledTimes(1);
-    });
-
-    it('should skip the monthly check when aiMonthlyTokens is 0 (unlimited)', async () => {
-      const { service, qb } = build({
-        limits: { aiDailyTokens: 20_000, aiMonthlyTokens: 0, aiMonthlyCredits: 0 },
-        rawOnes: [{ tokens: '5000' }], // daily — under cap
-      });
-
-      await service.assertWithinQuota('u1');
-
-      // Only one getRawOne call — the daily check (monthly was skipped because limit=0)
-      expect(qb.getRawOne).toHaveBeenCalledTimes(1);
-    });
-
-    it('should query using CreditReason.AiUsage filter', async () => {
-      const { service, qb } = build({
-        limits: { aiDailyTokens: 20_000, aiMonthlyTokens: 200_000, aiMonthlyCredits: 0 },
-        rawOnes: [{ tokens: '100' }, { tokens: '1000' }],
-      });
-
-      await service.assertWithinQuota('u1');
-
-      // Both sumTokensSince calls use andWhere with the AiUsage reason
-      const andWhereCalls = (qb.andWhere as jest.Mock).mock.calls as Array<[string, unknown]>;
-      const reasonCalls = andWhereCalls.filter(([sql]) => sql.includes('reason'));
-      expect(reasonCalls.length).toBeGreaterThanOrEqual(1);
-      const reasonCall = reasonCalls[0] as [string, { reason: string }];
-      expect(reasonCall[1]).toMatchObject({ reason: CreditReason.AiUsage });
+      expect(polish?.remaining).toBe(0);
     });
   });
 

@@ -1,6 +1,6 @@
 import { HttpStatus } from '@nestjs/common';
-import { ERROR_CODES } from '@qalam/shared';
-import type { PremiumFeature, QuotaWindow } from '@qalam/shared';
+import { ERROR_CODES, QuotaWindow } from '@qalam/shared';
+import type { PremiumFeature } from '@qalam/shared';
 
 import { AppException } from '../../common/exceptions/app.exception';
 
@@ -92,14 +92,31 @@ export class EntitlementOverrideNotFoundException extends AppException {
   }
 }
 
-/** A per-user AI usage/credit quota was hit. */
+/**
+ * A per-feature allowance was spent (D5).
+ *
+ * The message names the THING and the NUMBER — "You've used today's Polish (30 of 30)" —
+ * because the budget this replaced could only say "your daily AI usage limit", which told a
+ * writer neither what they had spent it on nor what to expect back. `details` carries the
+ * structured facts so a client can render its own copy and a progress bar without parsing
+ * the sentence.
+ *
+ * The code and 429 status are unchanged, so every remedy already wired to `QUOTA_EXCEEDED`
+ * on both clients keeps routing.
+ */
 export class QuotaExceededException extends AppException {
-  constructor(window: QuotaWindow, feature?: PremiumFeature) {
+  constructor(
+    window: QuotaWindow,
+    detail?: { limitKey: string; label: string; used: number; limit: number; resetsAt: string },
+  ) {
     super(
       ERROR_CODES.QUOTA_EXCEEDED,
-      `You have reached your ${window} AI usage limit.`,
+      detail === undefined
+        ? `You have reached your ${window} usage limit.`
+        : `You've used ${window === QuotaWindow.Daily ? "today's" : "this month's"} ` +
+            `${detail.label} (${detail.used} of ${detail.limit}).`,
       HttpStatus.TOO_MANY_REQUESTS,
-      feature !== undefined ? [{ window, feature }] : [{ window }],
+      detail !== undefined ? [{ window, ...detail }] : [{ window }],
     );
   }
 }

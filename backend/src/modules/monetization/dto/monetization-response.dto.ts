@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { QuotaWindow } from '@qalam/shared';
 
 /** A user's subscription (`GET /monetization/subscription`). */
 export class SubscriptionDto {
@@ -79,7 +80,25 @@ export class UsageFeatureDto {
 }
 
 /** The full usage summary + forecast. */
+/**
+ * One per-feature allowance and what the user has spent of it (D5) — what a client renders
+ * as "12 of 30 today" with a progress bar. `limit`/`remaining` are null when the plan grants
+ * the allowance without limit, so a client shows "No limit" rather than a fabricated number.
+ */
+export class FeatureQuotaDto {
+  @ApiProperty() limitKey!: string;
+  @ApiProperty() label!: string;
+  @ApiProperty({ enum: Object.values(QuotaWindow) }) window!: QuotaWindow;
+  @ApiProperty() used!: number;
+  @ApiProperty({ nullable: true, type: Number }) limit!: number | null;
+  @ApiProperty({ nullable: true, type: Number }) remaining!: number | null;
+  @ApiProperty() unlimited!: boolean;
+  @ApiProperty({ nullable: true, type: String }) resetsAt!: string | null;
+}
+
 export class UsageSummaryDto {
+  /** The D5 surface: per-feature allowances. The token/credit rollups below are on the way out. */
+  @ApiProperty({ type: [FeatureQuotaDto] }) quotas!: FeatureQuotaDto[];
   @ApiProperty({ type: UsageWindowDto }) daily!: UsageWindowDto;
   @ApiProperty({ type: UsageWindowDto }) monthly!: UsageWindowDto;
   @ApiProperty({ type: UsageWindowDto }) total!: UsageWindowDto;

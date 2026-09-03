@@ -365,8 +365,15 @@ export interface PlanDefinition {
 
 /** Per-feature usage limits attached to a plan. */
 export interface PlanLimits {
+  /**
+   * @deprecated D5 replaced the user-facing token budget with per-feature action counts —
+   * see `ai-quotas.ts`. Nothing enforces these three any more; they stay declared until the
+   * clients stop reading them, then go with the credit economy.
+   */
   aiDailyTokens: number;
+  /** @deprecated See `aiDailyTokens`. */
   aiMonthlyTokens: number;
+  /** @deprecated See `aiDailyTokens`. */
   aiMonthlyCredits: number;
   /**
    * Reserved extensible per-feature caps (requests/day etc.). **0 / absent = unlimited**, EXCEPT
@@ -388,6 +395,10 @@ export interface PlanLimits {
    *   needs *zero* seats, and B7's Free tier is 5 versions, not 0. Nothing on this key needs to
    *   express a hard zero, so it stays on the house convention and out of
    *   {@link NEGATIVE_UNLIMITED_LIMIT_KEYS} — which is what stops the exception list growing.
+   * - `polishActionsPerDay`, `feedbackReportsPerDay`, `storyAnalysesPerMonth` — the D5
+   *   per-feature allowances that replaced the token budget, defined in `ai-quotas.ts`
+   *   (`AI_QUOTA_RULES` maps each to the AI features it counts). Ordinary convention:
+   *   `0` = unlimited.
    */
   [key: string]: number;
 }
@@ -623,6 +634,12 @@ export const DEFAULT_PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
     maxCollaborators: 0, // zero seats — solo. NOT "unlimited": this key's sentinel is -1.
     // B7. Ordinary sentinel: this is five visible versions, and `0` here would mean unlimited.
     maxSnapshotHistory: 5,
+    // D5 allowances. Free is not sold Polish or feedback at all (they sit behind
+    // `ai_writing`), so these bite only under an admin override — which is exactly how
+    // support grants and the E2E fixtures reach them, so they are real numbers, never 0.
+    polishActionsPerDay: 20,
+    feedbackReportsPerDay: 5,
+    storyAnalysesPerMonth: 5,
   },
   [PlanTier.Plus]: {
     aiDailyTokens: 100_000,
@@ -631,6 +648,9 @@ export const DEFAULT_PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
     maxPieces: 250,
     maxCollaborators: 3,
     maxSnapshotHistory: 25,
+    polishActionsPerDay: 100,
+    feedbackReportsPerDay: 20,
+    storyAnalysesPerMonth: 20, // = 4 whole stories mapped a month (5 analyses each).
   },
   [PlanTier.Pro]: {
     aiDailyTokens: 500_000,
@@ -639,6 +659,9 @@ export const DEFAULT_PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
     maxPieces: 0,
     maxCollaborators: UNLIMITED_SEATS, // -1, not 0 — 0 would mean "no collaborators" here.
     maxSnapshotHistory: 0, // unlimited — `0` is right on THIS key. Do not copy the -1 above.
+    polishActionsPerDay: 300,
+    feedbackReportsPerDay: 60,
+    storyAnalysesPerMonth: 100, // = 20 whole stories mapped a month.
   },
   [PlanTier.Enterprise]: {
     aiDailyTokens: 0,
@@ -647,6 +670,9 @@ export const DEFAULT_PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
     maxPieces: 0,
     maxCollaborators: UNLIMITED_SEATS,
     maxSnapshotHistory: 0, // unlimited.
+    polishActionsPerDay: 0, // unlimited.
+    feedbackReportsPerDay: 0,
+    storyAnalysesPerMonth: 0,
   },
 };
 
