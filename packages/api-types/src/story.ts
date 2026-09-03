@@ -247,3 +247,26 @@ export interface AnalyzeStoryRequest {
   chapterRef?: string;
   storyTitle?: string;
 }
+
+/** `POST /story-intelligence/:storyId/map/stream` — build the whole map in one run (D5). */
+export interface MapStoryRequest {
+  /** The full story text to map (client-supplied — offline/unsaved safe). */
+  content: string;
+  storyTitle?: string;
+}
+
+/**
+ * The SSE frames a map run emits (D5).
+ *
+ * Discriminated on `type`, not on the server's internal `kind`: `sendSse` stamps the event name onto
+ * the payload as `type`, which is the AF1 wire every other stream on this platform speaks, so a
+ * client parses these with the same transport it already has.
+ *
+ * A failure arrives as an `error` frame carrying a real domain code — most usefully
+ * `QUOTA_EXCEEDED`, which the service raises BEFORE the first call by reserving the whole run, so a
+ * writer without enough allowance is told up front rather than left with a half-built graph.
+ */
+export type StoryMapStreamEvent =
+  | { type: 'progress'; step: number; total: number; analysis: StoryAnalysisKind }
+  | { type: 'done'; completed: StoryAnalysisKind[] }
+  | { type: 'error'; code: string; message: string };

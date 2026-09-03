@@ -29,6 +29,14 @@ export {
 } from './hooks/use-subscription';
 export { usePlans, useValidateCoupon } from './hooks/use-plans';
 export { useMonetizationUsage, isExhausted, isUnlimited, remainingTokens } from './hooks/use-usage';
+export { useFeatureAllowances } from './hooks/use-feature-allowances';
+export {
+  allowanceFor,
+  allowanceLine,
+  normalizeAllowances,
+  windowNoun,
+} from './lib/feature-allowances';
+export type { FeatureAllowance } from './lib/feature-allowances';
 export { useCreditBalance, useCreditLedger } from './hooks/use-credits';
 export {
   useInvoices,

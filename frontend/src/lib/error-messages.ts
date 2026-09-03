@@ -91,7 +91,10 @@ const MESSAGES: Record<string, string> = {
   // (nothing an author removes reveals an older version) and not "it resets" (nothing does).
   [ERROR_CODES.SNAPSHOT_HISTORY_LIMITED]:
     'That version is older than your plan shows. It’s still saved — see plans to open it.',
-  [ERROR_CODES.INSUFFICIENT_CREDITS]: 'You’re out of AI credits.',
+  // D5 removed the credit economy, so nothing raises this any more. The entry stays only until the
+  // code leaves `@qalam/shared` in Phase V: an unmapped code falls through to the generic
+  // "something went wrong", and a server somewhere mid-deploy could still emit it.
+  [ERROR_CODES.INSUFFICIENT_CREDITS]: 'That isn’t available on your plan.',
   [ERROR_CODES.RECEIPT_VALIDATION_FAILED]: 'We couldn’t verify that purchase.',
   [ERROR_CODES.PURCHASE_NOT_FOUND]: 'There was nothing to restore.',
   [ERROR_CODES.INVOICE_NOT_FOUND]: 'We couldn’t find that invoice.',

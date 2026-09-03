@@ -181,7 +181,17 @@ export const qk = {
     // Story Explorer (W9). One key per story + view, because the server PROJECTS a different node
     // set per view rather than filtering one payload — `relationships` drops unconnected characters
     // and `timeline` arrives pre-sorted, so a single cached graph could not reproduce either.
-    explorer: (storyId: string, view: string) => ['retrieval', 'explorer', storyId, view] as const, // GET /ai/explorer/:storyId/:view
+    /**
+     * GET /ai/explorer/:storyId/:view.
+     *
+     * `view` is optional so a caller can name the whole story's projections as a prefix — which is
+     * what "Map this story" invalidates when a run finishes, refreshing every view the writer might
+     * switch to without reaching for `qk.retrieval.all` and discarding unrelated searches.
+     */
+    explorer: (storyId: string, view?: string) =>
+      view === undefined
+        ? (['retrieval', 'explorer', storyId] as const)
+        : (['retrieval', 'explorer', storyId, view] as const),
   },
 
   // Collaboration / publishing / trust (AF6, W3 — docs/49). A "story" IS a piece

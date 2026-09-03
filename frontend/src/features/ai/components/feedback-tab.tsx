@@ -2,11 +2,13 @@ import { QButton, QSelect } from '@qalam/ui';
 import { Gauge } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
 
+import { AllowanceHint } from '@/components/allowance-hint';
 import { getErrorMessage } from '@/lib/errors';
 
 import { COACH_TOOLS } from '../lib/coach-tools';
 import type { CoachReport } from '../lib/coach-report';
 import { useCraftCoach } from '../hooks/use-craft-coach';
+import { ModelDisclosureNote } from './model-disclosure-note';
 
 function Bullets({ title, items }: { title: string; items: string[] }): ReactElement | null {
   if (items.length === 0) return null;
@@ -57,12 +59,15 @@ function ReportView({ report }: { report: CoachReport }): ReactElement {
 }
 
 /**
- * The Craft Coach tab (W2/AF2) — pick a lens, get a structured report on the current draft.
+ * The Manuscript feedback tab (D5, was Craft Coach) — pick a lens, get a structured report on the
+ * current draft.
  *
- * The coach never touches the document: it produces notes the writer acts on themselves. That is
- * why there is no accept/reject here, unlike the assistant tab.
+ * **It never touches the document**, which is why there is no accept/reject here as there is on
+ * Polish: it produces notes, and the writer acts on them or does not. That property is the reason
+ * this tool survived D5 unchanged in everything but its name — a reader's report on a manuscript is
+ * the least objectionable thing in this category, and the closest to what an editor already does.
  */
-export function CoachTab({ disabled }: { disabled: boolean }): ReactElement {
+export function FeedbackTab({ disabled }: { disabled: boolean }): ReactElement {
   const coach = useCraftCoach();
   const [toolValue, setToolValue] = useState(COACH_TOOLS[0].value);
   const tool = COACH_TOOLS.find((t) => t.value === toolValue) ?? COACH_TOOLS[0];
@@ -92,6 +97,8 @@ export function CoachTab({ disabled }: { disabled: boolean }): ReactElement {
         Review my draft
       </QButton>
 
+      <AllowanceHint featureKey="feedbackReportsPerDay" />
+
       {coach.isError ? (
         <p className="text-sm text-danger-text">{getErrorMessage(coach.error)}</p>
       ) : null}
@@ -110,6 +117,7 @@ export function CoachTab({ disabled }: { disabled: boolean }): ReactElement {
           )}
         </div>
       ) : null}
+      <ModelDisclosureNote />
     </div>
   );
 }

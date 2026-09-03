@@ -65,7 +65,10 @@ import {
   SearchSuggestionsResponseDto,
   SemanticSearchResponseDto,
 } from '../../modules/retrieval/dto/retrieval-response.dto';
-import { AnalyzeStoryDto } from '../../modules/story-intelligence/dto/story-request.dto';
+import {
+  AnalyzeStoryDto,
+  MapStoryDto,
+} from '../../modules/story-intelligence/dto/story-request.dto';
 import {
   StoryAnalysisResultDto,
   StoryAnalysisSummaryDto,
@@ -162,7 +165,18 @@ function indexDeclarations(dir: string, into: Map<string, Declaration>): Map<str
       });
     }
 
-    for (const match of source.matchAll(/^export type (\w+) = ([^;]+);/gm)) {
+    /**
+     * `=\s*` rather than `= `, because prettier puts a multi-line union's first member on its own
+     * line. Until D5 added `StoryMapStreamEvent` every alias in the package was single-line, so the
+     * stricter pattern held — and a shape it could not see was **invisible to the completeness
+     * check above**, which is the one assertion here that catches an unpinned new type. A guard with
+     * a blind spot is worse than no guard, because it reports green over the gap.
+     *
+     * The captured rhs still stops at the first `;`, which is inside the union's first member. That
+     * is fine: it fails the `^\w+$` alias test and records `aliasOf: null`, which is the truth — a
+     * union is not an alias of a single name.
+     */
+    for (const match of source.matchAll(/^export type (\w+) =\s*([^;]+);/gm)) {
       const [, name = '', rhs = ''] = match;
       if (into.has(name)) continue;
       const alias = /^(?:Partial|Required|Readonly)<(\w+)>$/.exec(rhs.trim())?.[1] ?? rhs.trim();
@@ -272,6 +286,7 @@ const MIRRORS: readonly Mirror[] = [
   { type: 'StoryTimelineEntry', dto: StoryTimelineEntryDto, direction: 'response' },
   { type: 'StoryTimelineView', dto: StoryTimelineDto, direction: 'response' },
   { type: 'AnalyzeStoryRequest', dto: AnalyzeStoryDto, direction: 'request' },
+  { type: 'MapStoryRequest', dto: MapStoryDto, direction: 'request' },
 
   // AF4 — Retrieval platform.
   { type: 'RetrievalResponseMeta', dto: RetrievalResponseMetaDto, direction: 'response' },
@@ -322,6 +337,8 @@ const UNMIRRORED: Readonly<Record<string, string>> = {
     'Alias of `AiModelMetadata` from @qalam/shared, which `AiModelDto implements` — pinned by tsc, not here.',
   AiStreamEvent:
     'The SSE `data:` payload, not a body: it never passes a ValidationPipe and no DTO documents it.',
+  StoryMapStreamEvent:
+    'The SSE `data:` payload of a map run, not a body — same reason as `AiStreamEvent`. Its REQUEST half, `MapStoryRequest`, is mirrored.',
 
   // AF4 grounding blocks: carried inside response DTOs as `@ApiProperty({ type: Object })`, so Swagger
   // records the containing property and not these fields. The backend counterpart is the interface set

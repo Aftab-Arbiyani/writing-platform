@@ -1,5 +1,5 @@
 import type { AiFeature } from '@qalam/shared';
-import type { AiFeaturesResponse, AiUsageResponse } from '@qalam/api-types';
+import type { AiFeaturesResponse } from '@qalam/api-types';
 import { useQuery } from '@tanstack/react-query';
 
 import { resolveAvailability, type AiAvailability } from '@/lib/ai-availability';
@@ -8,30 +8,28 @@ import { qk } from '@/lib/query-keys';
 import { useAuthStore } from '@/stores/auth.store';
 
 /**
- * Whether an AI feature may be used right now — the ONE gate read, app-level (W5).
+ * Whether a writing tool may be used right now — the ONE gate read, app-level.
  *
- * **Why it lives here.** Three features now need it: `features/ai` (the writing assistant),
- * `features/search` (AF4 search + discover shelves), and `features/reading` ("more like this"). A
- * feature may never import another feature (docs/26 §4), so the alternatives were naming
- * `/ai/features` and `/ai/usage/me` in three api layers or putting the read where all three may
- * legally reach it. This is the second.
+ * **Why it lives here.** It is read from `features/ai` and from `app/routes/write.tsx`, and a feature
+ * may never import another feature (docs/26 §4), so the read sits where every caller may legally
+ * reach it. It shares `qk.ai.features()` with `features/ai`'s own hook, so there is one cache entry
+ * no matter how many surfaces ask.
  *
- * It shares `qk.ai.features()` / `qk.ai.usage()` with `features/ai`'s own hooks, so there is one
- * cache entry per read no matter how many surfaces ask: a reader who opens the assistant and then
- * three piece pages makes one flag request, not four, and every surface gets the same answer.
- *
- * `staleTime` is generous because these change when an admin flips a flag, not per interaction; the
+ * `staleTime` is generous because flags change when an admin flips one, not per interaction; the
  * authoritative answer for a REQUEST always comes back from the request itself
  * ({@link import('@/lib/ai-availability').availabilityFromErrorCode}).
  *
- * **`feature: null` asks the master-switch-only question** — "is AI on for me at all?" — with no
- * per-feature flag and no quota gate (see `resolveAvailability`). B5 needs it: a control that
- * fronts SEVERAL AI features, like the editor's assistant button, must not be hidden by any one
- * feature's flag, but must disappear when the account has AI switched off.
+ * **`feature: null` asks the master-switch-only question** — "is the platform on for me at all?" —
+ * with no per-feature flag. A control that fronts several tools, like the editor's toolbar button,
+ * must not be hidden by any one tool's flag.
+ *
+ * **D5 removed the second read.** This hook also fetched `GET /ai/usage/me` to resolve a token-window
+ * quota up front; B2 deleted that route, so keeping it would have been a 404 on every editor load —
+ * one of the `D5-clients` breakages (48 §3.22a). The allowance is a per-tool count now, reported by
+ * `GET /monetization/usage` and rendered as a hint beside the action, so the gate has nothing to ask
+ * about it.
  */
 export function useAiAvailability(feature: AiFeature | null): AiAvailability {
-  // Both reads require a session, and W5 put this hook on PUBLIC pages (`/search`, `/p/:slug`), so
-  // whether there is one decides whether they may be made at all — see below.
   const authed = useAuthStore((state) => state.status) === 'authenticated';
 
   const features = useQuery({
@@ -41,30 +39,23 @@ export function useAiAvailability(feature: AiFeature | null): AiAvailability {
     staleTime: 60_000,
     retry: false,
   });
-  const usage = useQuery({
-    queryKey: qk.ai.usage(),
-    queryFn: ({ signal }) => get<AiUsageResponse>('/ai/usage/me', { signal }),
-    enabled: authed,
-    staleTime: 30_000,
-    // Advisory: the quota read failing must not hold a surface hostage. Its absence resolves to
-    // "not exhausted", and a real quota wall still arrives on the request.
-    retry: false,
-  });
 
   /**
    * **A signed-out visitor must not ask, and this is a defect the E2E suite caught rather than a
-   * precaution.** Both routes are authenticated, so an anonymous reader's gate reads answered 401 —
-   * and a 401 outside `/auth/*` is a *terminal session failure* to the api client: it attempts one
-   * silent refresh (401 again, there is no cookie), then calls the app's unauthorized handler, which
-   * ends the session and **clears the entire query cache** (`app/providers.tsx`). On `/p/:slug` that
-   * threw away the piece the reader came for — its own read had already succeeded — and the page sat
-   * in its skeleton indefinitely. Live evidence: 35 anonymous `/ai/features` 401s, 35 on
-   * `/ai/usage/me`, and 26 failed refreshes in one run, with every anonymous reader spec red.
+   * precaution.** `/ai/features` is authenticated, so an anonymous read answers 401 — and a 401
+   * outside `/auth/*` is a *terminal session failure* to the api client: it attempts one silent
+   * refresh (401 again, there is no cookie), then calls the app's unauthorized handler, which ends
+   * the session and **clears the entire query cache** (`app/providers.tsx`). On `/p/:slug` that threw
+   * away the piece the reader came for and the page sat in its skeleton indefinitely (48 §3.25).
    *
-   * `enabled: authed` stops the requests; returning `signed-out` (never `unknown`) stops the surfaces
-   * that consume this from waiting for an answer that will never come — `unknown` renders a skeleton.
+   * D5 removed this hook from every public surface, so the case should now be unreachable — which is
+   * exactly why the guard stays. It costs one comparison, and the failure it prevents is silent,
+   * remote from its cause, and was invisible to 143 unit-test files.
+   *
+   * `off` rather than `unknown`: the tools genuinely are not available to a visitor with no session,
+   * and `unknown` renders a skeleton waiting for an answer that will never come.
    */
-  if (!authed) return 'signed-out';
+  if (!authed) return 'off';
 
-  return resolveAvailability({ feature, features: features.data, usage: usage.data });
+  return resolveAvailability({ feature, features: features.data });
 }

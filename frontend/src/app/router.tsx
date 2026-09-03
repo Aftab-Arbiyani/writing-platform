@@ -109,22 +109,13 @@ const router = createBrowserRouter([
                 path: 'billing/history',
                 lazy: () => import('@/app/routes/settings/billing-history'),
               },
-              // W8 — the remaining AI surfaces. `ai` is the hub and the only one in the section nav;
-              // the other four are reached from it, mirroring how Billing above is arranged.
-              // Registered unconditionally and with no premium gate: there is no AI kill switch, the
-              // master flag is the server's (`GET /ai/features`), and per docs/48 §5.2 the backend
-              // enforces exactly one premium feature — gating a route the server serves is a wall.
-              { path: 'ai', lazy: () => import('@/app/routes/settings/ai') },
-              {
-                path: 'ai/conversations',
-                lazy: () => import('@/app/routes/settings/ai-conversations'),
-              },
-              {
-                path: 'ai/conversations/:conversationId',
-                lazy: () => import('@/app/routes/settings/ai-conversation'),
-              },
-              { path: 'ai/prompts', lazy: () => import('@/app/routes/settings/ai-prompts') },
-              { path: 'ai/usage', lazy: () => import('@/app/routes/settings/ai-usage') },
+              // D5 removed the five `/settings/ai/*` routes that sat here — the hub, the
+              // conversations list and detail, the prompt library and the token-usage page. None of
+              // them was about writing; they were about administering an AI account. What a writer
+              // does now happens beside their draft, in the editor's Writing tools drawer.
+              //
+              // Deliberately NOT redirected. A redirect implies a successor, and these have none;
+              // an unmatched path falls through to the app's not-found, which is the honest answer.
             ],
           },
         ],

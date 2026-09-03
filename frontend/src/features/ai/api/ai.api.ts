@@ -1,29 +1,25 @@
 import type {
   AiCompletionRequest,
   AiCompletionResponse,
-  AiConfigResponse,
-  AiConversationDetail,
-  AiConversationExport,
-  AiConversationSummary,
   AiFeaturesResponse,
   AiModelInfo,
   AiStreamEvent,
-  AiUsageResponse,
-  CreateAiConversationRequest,
-  UpdateAiConversationRequest,
-  UpdateAiUserOverridesRequest,
 } from '@qalam/api-types';
 
-import type { AiConversationStatus } from '@qalam/shared';
-
-import { del, get, getPage, patch, post, stream } from '@/lib/api-client';
-import type { CursorPage } from '@/lib/api-client';
-import { buildQueryString } from '@/lib/http';
+import { get, post, stream } from '@/lib/api-client';
 
 /**
- * AI api layer (AF1) — the only place AI endpoints are named. Thin wrappers over
- * the central api-client (auth, envelope, errors, cancellation all handled there).
- * The client never calls a provider; everything routes through the backend.
+ * AI api layer (AF1) — the only place these endpoints are named. Thin wrappers over the central
+ * api-client (auth, envelope, errors, cancellation all handled there). The client never calls a
+ * provider; everything routes through the backend.
+ *
+ * **D5 removed nine methods**, all of which now 404: the six conversation routes (list / get /
+ * create / update / delete / export) with the layer that stored them, `GET /ai/usage/me` with the
+ * token-usage page, and `GET|PATCH /ai/config` with the per-user model overrides — a control that
+ * asked a poet to choose a temperature.
+ *
+ * The paths keep their `/ai/` prefix deliberately (D5 decision 10). Renaming a wire contract to match
+ * user-facing copy would break every shipped client to change a string no writer ever sees.
  */
 export const aiApi = {
   features: (signal?: AbortSignal): Promise<AiFeaturesResponse> =>
@@ -31,62 +27,6 @@ export const aiApi = {
 
   models: (signal?: AbortSignal): Promise<AiModelInfo[]> =>
     get<AiModelInfo[]>('/ai/models', { signal }),
-
-  getConfig: (signal?: AbortSignal): Promise<AiConfigResponse> =>
-    get<AiConfigResponse>('/ai/config', { signal }),
-
-  updateConfig: (payload: UpdateAiUserOverridesRequest): Promise<AiConfigResponse> =>
-    patch<AiConfigResponse>('/ai/config', payload),
-
-  usage: (signal?: AbortSignal): Promise<AiUsageResponse> =>
-    get<AiUsageResponse>('/ai/usage/me', { signal }),
-
-  /**
-   * The caller's conversations. `status` selects which shelf: the route defaults to `active`
-   * (`conversation.service.ts:53`), so archived rows are reachable only by asking for them.
-   */
-  listConversations: (args: {
-    cursor?: string;
-    limit?: number;
-    status?: AiConversationStatus;
-    signal?: AbortSignal;
-  }): Promise<CursorPage<AiConversationSummary>> =>
-    getPage<AiConversationSummary>(
-      `/ai/conversations${buildQueryString({
-        cursor: args.cursor,
-        limit: args.limit,
-        status: args.status,
-      })}`,
-      { signal: args.signal },
-    ),
-
-  getConversation: (id: string, signal?: AbortSignal): Promise<AiConversationDetail> =>
-    get<AiConversationDetail>(`/ai/conversations/${encodeURIComponent(id)}`, { signal }),
-
-  createConversation: (payload: CreateAiConversationRequest): Promise<AiConversationSummary> =>
-    post<AiConversationSummary>('/ai/conversations', payload),
-
-  /**
-   * Rename (and/or restatus) a conversation. Send only the keys being changed: the handler applies
-   * `title` and `status` independently (`ai-conversations.controller.ts:100-107`), and the global
-   * pipe runs `forbidNonWhitelisted`, so an extra key is a 400 rather than a no-op.
-   */
-  updateConversation: (
-    id: string,
-    payload: UpdateAiConversationRequest,
-  ): Promise<AiConversationSummary> =>
-    patch<AiConversationSummary>(`/ai/conversations/${encodeURIComponent(id)}`, payload),
-
-  deleteConversation: (id: string): Promise<void> =>
-    del(`/ai/conversations/${encodeURIComponent(id)}`),
-
-  /**
-   * The portable JSON export document. A normal enveloped GET — the route returns JSON, not a file
-   * (no `Content-Disposition`), so turning it into a download is the client's job
-   * (`lib/conversation-export.ts`). Its message shape is NOT `AiMessageDto` (docs/48 §3.12, W8-3).
-   */
-  exportConversation: (id: string, signal?: AbortSignal): Promise<AiConversationExport> =>
-    get<AiConversationExport>(`/ai/conversations/${encodeURIComponent(id)}/export`, { signal }),
 
   complete: (payload: AiCompletionRequest): Promise<AiCompletionResponse> =>
     post<AiCompletionResponse>('/ai/completions', payload),

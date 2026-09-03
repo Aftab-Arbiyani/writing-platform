@@ -1,42 +1,36 @@
 import { QButton, QEmptyState } from '@qalam/ui';
-import { Ban, Gauge, Lock, LogIn, Settings, Sparkles } from 'lucide-react';
+import { Ban, Gauge, Lock, PenOff } from 'lucide-react';
 import type { ReactElement } from 'react';
-import { useLocation, useNavigate } from 'react-router';
+import { useNavigate } from 'react-router';
 
 import { ROUTES } from '@/lib/routes';
 
 import { AVAILABILITY_COPY, type AiAvailability } from '@/lib/ai-availability';
 
+/**
+ * **No sparkles** (D5 decision 9). The sparkle is the universal "this is AI" mark, and it appeared
+ * on three of these states; a notice explaining that a tool is unavailable is a bad place to brand
+ * the tool. Each icon now says what kind of situation this is: nothing to write with, blocked,
+ * metered, locked.
+ */
 const ICONS = {
-  off: Sparkles,
-  // B5: a settings cog, not the AI sparkle — the reader is being pointed at their own
-  // switch, and the icon should say "this is a setting" rather than "this is AI".
-  'self-off': Settings,
+  off: PenOff,
   'feature-off': Ban,
   quota: Gauge,
-  upgrade: Sparkles,
-  // D3: a lock, not the AI sparkle. The sparkle on `upgrade` says "there is no AI here"; this
-  // state means AI is working and one surface is sold separately, which is a lock.
+  upgrade: Lock,
   'upgrade-writing': Lock,
-  'signed-out': LogIn,
 } as const;
 
 /**
- * The blocked state of an AI surface (W2/AF2) — off, not enabled for this account, out of allowance,
- * or needing a paid plan. Renders nothing when the surface is usable or still resolving.
+ * The blocked state of a writing tool — unavailable, not enabled for this account, out of allowance,
+ * or needing a paid plan. Renders nothing when the tool is usable or still resolving.
  *
- * App-level rather than inside `features/ai` because W5 gives `features/search` AI surfaces too, and
- * a feature may not import another feature (docs/26 §4). It renders the shared copy from
+ * App-level rather than inside `features/ai` because it is read from more than one place and a
+ * feature may not import another feature (docs/26 §4). It renders the shared copy from
  * `@/lib/ai-availability` and knows one route; it holds no feature state.
  *
  * The quota case is the one W2 required from day one: it is a routine outcome of metering, so it
  * reads as information rather than failure, and it says explicitly that the writing is unaffected.
- *
- * **W4 adds the `upgrade` case, and it is the only one of the four that carries an action.** The
- * others end in waiting or in an administrator; an entitlement denial ends in a plan, and the plan
- * comparison is one route away. Navigating there rather than linking to monetization's own components
- * keeps this feature from importing another (docs/26 §4) — the AI panel knows the route, not the
- * billing UI.
  */
 export function AiAvailabilityNotice({
   availability,
@@ -44,18 +38,21 @@ export function AiAvailabilityNotice({
   availability: AiAvailability;
 }): ReactElement | null {
   const navigate = useNavigate();
-  const location = useLocation();
   if (availability === 'available' || availability === 'unknown') return null;
 
   const copy = AVAILABILITY_COPY[availability];
   /**
-   * **W5 adds the second state that carries an action**, and it is the one a reader meets most often:
-   * every AF4 route needs a session, and the public search page is where a signed-out reader lands.
-   * `returnTo` carries the whole location — query string included — because on this page the query,
-   * the engine and the filters all live in the URL, so dropping it would return the reader to an empty
-   * search rather than to the one they were running.
+   * **One state carries an action, and D5 took the other two away.**
+   *
+   * `self-off` pointed at `/settings/ai`, where B5's switch lived — a route that no longer exists,
+   * so the button would have been a link to a 404 offering a remedy the writer cannot perform.
+   * `signed-out` offered a sign-in, and the surfaces that could reach it are public now.
+   *
+   * What remains is the entitlement denial, which is the only one the writer can actually resolve:
+   * the others end in waiting or in an administrator, this one ends in a plan. Navigating rather
+   * than rendering monetization's own components keeps this from importing another feature
+   * (docs/26 §4) — it knows the route, not the billing UI.
    */
-  const signIn = `${ROUTES.login}?returnTo=${encodeURIComponent(`${location.pathname}${location.search}`)}`;
   return (
     <QEmptyState
       icon={ICONS[availability]}
@@ -72,32 +69,6 @@ export function AiAvailabilityNotice({
             }}
           >
             See plans
-          </QButton>
-        ) : /**
-         * B5 (docs/45 §4.10). The third state with an action, and the only one the reader
-         * can undo in one click — so it goes to the AI settings hub where the switch lives,
-         * NOT to plans and NOT to a "try again". Sending them to plans would be the W4
-         * defect (docs/48 §3.6): the right-shaped wall with the wrong remedy attached.
-         */
-        availability === 'self-off' ? (
-          <QButton
-            variant="primary"
-            size="sm"
-            onClick={() => {
-              void navigate(ROUTES.settingsAi);
-            }}
-          >
-            AI settings
-          </QButton>
-        ) : availability === 'signed-out' ? (
-          <QButton
-            variant="primary"
-            size="sm"
-            onClick={() => {
-              void navigate(signIn);
-            }}
-          >
-            Sign in
           </QButton>
         ) : undefined
       }

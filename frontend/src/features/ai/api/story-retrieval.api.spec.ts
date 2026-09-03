@@ -1,4 +1,4 @@
-import { AskScope, ExplorerView } from '@qalam/shared';
+import { ExplorerView } from '@qalam/shared';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as apiClient from '@/lib/api-client';
@@ -8,22 +8,22 @@ import { storyRetrievalApi } from './story-retrieval.api';
 vi.mock('@/lib/api-client');
 
 const get = vi.mocked(apiClient.get);
-const post = vi.mocked(apiClient.post);
 const stream = vi.mocked(apiClient.stream);
 
 /**
- * Request-shape pins for W9's two story-scoped AF4 routes.
+ * Request-shape pins for Story Map's routes.
  *
  * Same level as `features/search/api/retrieval.api.spec.ts` and for the same reason: the wire is
- * where this class of defect lives. `AskBookDto` runs through the global `forbidNonWhitelisted`
- * pipe, so an extra key is a 400 on the whole ask rather than a field that quietly does nothing —
+ * where this class of defect lives. `MapStoryDto` runs through the global `forbidNonWhitelisted`
+ * pipe, so an extra key is a 400 on the whole run rather than a field that quietly does nothing —
  * the exact shape of W5-1 and W4-5.
+ *
+ * D5 replaced the Ask My Book pins here with the map trigger. Both `/ai/ask` routes are gone.
  */
 describe('storyRetrievalApi request shapes', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     get.mockResolvedValue(undefined as never);
-    post.mockResolvedValue(undefined as never);
   });
 
   describe('GET /ai/explorer/:storyId/:view', () => {
@@ -54,42 +54,43 @@ describe('storyRetrievalApi request shapes', () => {
     });
   });
 
-  describe('POST /ai/ask/stream', () => {
-    it('sends storyId, question and scope — and nothing it was not given', () => {
-      storyRetrievalApi.askStream({
-        storyId: 'piece-1',
-        question: 'How does Aria change?',
-        scope: AskScope.Character,
+  describe('POST /story-intelligence/:storyId/map/stream', () => {
+    it('sends the content and the title — and nothing it was not given', () => {
+      storyRetrievalApi.mapStory('piece-1', {
+        content: 'The rain fell over the old city.',
+        storyTitle: 'Barish',
       });
 
+      expect(stream.mock.calls[0]?.[0]).toBe('/story-intelligence/piece-1/map/stream');
       const body = stream.mock.calls[0]?.[1] as Record<string, unknown>;
-      expect(stream.mock.calls[0]?.[0]).toBe('/ai/ask/stream');
       expect(body).toEqual({
-        storyId: 'piece-1',
-        question: 'How does Aria change?',
-        scope: 'character',
+        content: 'The rain fell over the old city.',
+        storyTitle: 'Barish',
       });
-      // `forbidNonWhitelisted` rejects anything the DTO does not declare — an undeclared key here
-      // would 400 the whole ask, not be ignored.
-      expect(Object.keys(body)).toEqual(['storyId', 'question', 'scope']);
+      // `forbidNonWhitelisted` rejects anything `MapStoryDto` does not declare — an undeclared key
+      // here would 400 the whole run, not be ignored.
+      expect(Object.keys(body)).toEqual(['content', 'storyTitle']);
     });
 
-    it('forwards the abort signal, so Stop cancels generation server-side', () => {
+    it('omits the title rather than sending an undefined one', () => {
+      storyRetrievalApi.mapStory('piece-1', { content: 'The rain fell.' });
+
+      expect(stream.mock.calls[0]?.[1]).toEqual({ content: 'The rain fell.' });
+    });
+
+    it('encodes the story id into the path', () => {
+      storyRetrievalApi.mapStory('a/b', { content: 'x' });
+
+      expect(stream.mock.calls[0]?.[0]).toBe('/story-intelligence/a%2Fb/map/stream');
+    });
+
+    it('forwards the abort signal, so Stop cancels the run server-side', () => {
       const controller = new AbortController();
-      storyRetrievalApi.askStream(
-        { storyId: 'piece-1', question: 'Who betrayed the queen?' },
-        { signal: controller.signal },
-      );
+      storyRetrievalApi.mapStory('piece-1', { content: 'x' }, { signal: controller.signal });
+
+      // The server watches the request close and stops between analyses, so a writer who navigates
+      // away is not charged for the ones they will never see.
       expect(stream.mock.calls[0]?.[2]).toEqual({ signal: controller.signal });
     });
-  });
-
-  it('buffers through POST /ai/ask when asked to', async () => {
-    await storyRetrievalApi.ask({ storyId: 'piece-1', question: 'Why?' });
-    expect(post).toHaveBeenCalledWith(
-      '/ai/ask',
-      { storyId: 'piece-1', question: 'Why?' },
-      { signal: undefined },
-    );
   });
 });

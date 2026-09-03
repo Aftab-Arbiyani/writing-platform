@@ -35,6 +35,7 @@ export type {
   PurchaseCreditsRequest,
   PurchaseKind,
   PurchaseResponse,
+  FeatureQuotaResponse,
   PurchaseStatus,
   QuotaWindow,
   RestorePurchasesResponse,

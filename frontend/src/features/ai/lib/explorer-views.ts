@@ -33,8 +33,10 @@ export interface ExplorerViewSpec {
  */
 const MAP_SPEC: ExplorerViewSpec = {
   view: ExplorerView.Map,
-  label: 'Story map',
-  empty: 'Analyse this story to build its knowledge graph.',
+  // "Overview", not "Story map": D5 named the whole FEATURE Story Map, so a view inside it called
+  // the same thing would leave the writer unable to tell the tab from one of its seven siblings.
+  label: 'Overview',
+  empty: 'This story hasn’t been mapped yet.',
 };
 
 export const EXPLORER_VIEWS: readonly ExplorerViewSpec[] = [

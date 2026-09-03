@@ -23,16 +23,21 @@ const FEATURES = {
   aiEnabled: true,
   features: [{ feature: AiFeature.WritingAssistant, flagKey: 'x', enabled: true }],
 };
-const USAGE = { daily: { tokenLimit: 100, usedFraction: 0.1 }, monthly: null, total: null };
-
 /**
- * The one AI gate read, and specifically **what it does without a session** (W5).
+ * The one gate read, and specifically **what it does without a session** (W5).
  *
  * This hook moved to app level in W5 so `features/search` and `features/reading` could share it — and
- * that put it on two PUBLIC pages for the first time. Its two endpoints are authenticated, and a 401
+ * that put it on two PUBLIC pages for the first time. Its endpoints are authenticated, and a 401
  * outside `/auth/*` is terminal to the api client: it ends the session and clears the query cache. On
  * `/p/:slug` that discarded the piece the reader came for, so a signed-out reading page never rendered
  * (docs/48 §3.9). These tests pin the fix at its source — no session, no request.
+ *
+ * **D5 changed both halves of that.** The public surfaces no longer call this at all, so the case
+ * should be unreachable; and the second endpoint, `GET /ai/usage/me`, is gone with the token page.
+ * The guard stays because the failure it prevents is silent, remote from its cause, and was
+ * invisible to 143 unit-test files — and because the returned state changed from `signed-out` to
+ * `off`: there is no sign-in remedy to offer for a tool that needs a plan, and `unknown` would leave
+ * a caller rendering a skeleton forever.
  */
 describe('useAiAvailability', () => {
   beforeEach(() => {
@@ -40,12 +45,12 @@ describe('useAiAvailability', () => {
     useAuthStore.setState({ status: 'anonymous', role: null, isEmailVerified: null });
   });
 
-  it('resolves signed-out WITHOUT touching either endpoint when there is no session', async () => {
+  it('resolves off WITHOUT touching the endpoint when there is no session', async () => {
     const { result } = renderHook(() => useAiAvailability(AiFeature.WritingAssistant), {
       wrapper: wrapper(),
     });
 
-    expect(result.current).toBe('signed-out');
+    expect(result.current).toBe('off');
     // The assertion that matters: not merely the returned state, but that nothing was asked. A gate
     // read here 401s, and the 401 — not the answer — is what broke the public reading page.
     await waitFor(() => {
@@ -53,23 +58,21 @@ describe('useAiAvailability', () => {
     });
   });
 
-  it('stays signed-out while the session is still unknown (boot refresh in flight)', () => {
+  it('stays off while the session is still unknown (boot refresh in flight)', () => {
     useAuthStore.setState({ status: 'unknown', role: null, isEmailVerified: null });
     const { result } = renderHook(() => useAiAvailability(AiFeature.WritingAssistant), {
       wrapper: wrapper(),
     });
 
-    // `unknown` means the boot refresh has not answered yet. Firing the reads then would 401 for
-    // exactly the anonymous visitors this guards, so the requests wait for a real session.
-    expect(result.current).toBe('signed-out');
+    // `unknown` means the boot refresh has not answered yet. Firing the read then would 401 for
+    // exactly the anonymous visitors this guards, so it waits for a real session.
+    expect(result.current).toBe('off');
     expect(get).not.toHaveBeenCalled();
   });
 
-  it('reads both endpoints and resolves the feature once authenticated', async () => {
+  it('reads the flags and resolves the feature once authenticated', async () => {
     useAuthStore.setState({ status: 'authenticated', role: 'user', isEmailVerified: true });
-    vi.mocked(get).mockImplementation((path: string) =>
-      Promise.resolve(path === '/ai/features' ? FEATURES : USAGE),
-    );
+    vi.mocked(get).mockResolvedValue(FEATURES as never);
 
     const { result } = renderHook(() => useAiAvailability(AiFeature.WritingAssistant), {
       wrapper: wrapper(),
@@ -79,6 +82,21 @@ describe('useAiAvailability', () => {
       expect(result.current).toBe('available');
     });
     expect(get).toHaveBeenCalledWith('/ai/features', expect.anything());
-    expect(get).toHaveBeenCalledWith('/ai/usage/me', expect.anything());
+  });
+
+  it('asks for the deleted usage route on no path at all', async () => {
+    // `GET /ai/usage/me` went with the token-usage page (B2). Keeping the read would have been a
+    // 404 on every editor load — one of the `D5-clients` breakages (48 §3.22a) — and the kind that
+    // is invisible in a unit test because nothing renders it.
+    useAuthStore.setState({ status: 'authenticated', role: 'user', isEmailVerified: true });
+    vi.mocked(get).mockResolvedValue(FEATURES as never);
+
+    renderHook(() => useAiAvailability(AiFeature.WritingAssistant), { wrapper: wrapper() });
+
+    await waitFor(() => {
+      expect(get).toHaveBeenCalled();
+    });
+    const paths = vi.mocked(get).mock.calls.map(([path]) => path);
+    expect(paths).toEqual(['/ai/features']);
   });
 });

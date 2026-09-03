@@ -1,138 +1,94 @@
 import { ERROR_CODES, PremiumFeature, premiumCodeForAiFeature } from '@qalam/shared';
-import type { AiFeature, AiFeaturesResponse, AiUsageResponse } from '@qalam/api-types';
+import type { AiFeature, AiFeaturesResponse } from '@qalam/api-types';
 
 /**
- * Whether an AI surface may be used right now, and if not, why (W2/AF2, docs/45 §4.2).
+ * Whether a writing tool may be used right now, and if not, why (W2/AF2, docs/45 §4.2).
  *
- * **Why this is app-level rather than inside `features/ai`.** W5 gives a second feature AI surfaces
- * — retrieval-backed search and discover in `features/search` — and a feature may never import
- * another feature (docs/26 §4). Rather than fork the gate copy or couple the two features, the pure
- * resolver moved down here, which is the same move-down the reader's author card forced in W1. It is
- * pure vocabulary + copy: no hooks, no api calls, nothing feature-specific.
+ * **Why this is app-level rather than inside `features/ai`.** The gate is read from more than one
+ * feature, and a feature may never import another feature (docs/26 §4). Rather than fork the copy or
+ * couple the features, the pure resolver lives here. It is pure vocabulary + copy: no hooks, no api
+ * calls, nothing feature-specific.
  *
- * Three independent gates, deliberately distinguished because they need different copy and
- * different remedies:
+ * The states, deliberately distinguished because they need different copy and different remedies:
  *
- * - **off** — the master `feature.ai.enabled` switch is down. Nothing AI works; say so plainly.
- * - **self-off** — B5 (docs/45 §4.10): the READER turned AI off for their own account. Identical
- *   to **off** in what it blocks and completely different in what to say about it, which is the
- *   whole reason it is its own state: **off** is an administrator's decision and the reader can
- *   only wait, while this one is theirs and one switch away. Merging the two would tell a writer
- *   who turned AI off that "AI isn't enabled on this instance" — the wrong remedy, which is the
- *   W4 defect ([48 §3.6](./48_PlatformParityRegister.md)) repeated.
- * - **feature-off** — AI is on but this feature's flag is down (dark-launched, or disabled for
- *   this account). Neighbouring AI surfaces may still work.
- * - **quota** — the writer has spent their daily or monthly token allowance. This is the state
- *   W2 was required to have "from day one": every AI request meters through the `AI_USAGE_METER`
- *   hook (AF5), so a quota wall is a normal, expected outcome, not an error condition.
- * - **upgrade** — the Entitlement Service denied the writer an AI budget outright (AF5/W4). Added by
- *   W4, and distinct from **quota** for the reason the remedy differs: an allowance resets on its own
- *   and waiting is enough, while a denied entitlement never resets and only a plan changes it.
- * - **upgrade-writing** — D3 (docs/45 §4 row D3, docs/48 §6.13): the writer is on the free tier and
- *   AI WRITING specifically is paid. Split from **upgrade** rather than folded into it because the two
- *   denials name different things and lead to different places: **upgrade** means the account has no
- *   AI allowance at all, so nothing AI works, while this one means the allowance is intact and only
- *   the writing surfaces are sold separately — the writer can still ask their book a question and run
- *   AI search. Telling them "your plan doesn't include an AI allowance" when their allowance is fine
- *   would be the W4 defect (48 §3.6) committed a fourth time, so it gets its own copy.
+ * - **off** — the master `feature.ai.enabled` switch is down. Nothing works; say so plainly. Since
+ *   D5 this also absorbs the writer's own switch (see below).
+ * - **feature-off** — the platform is on but this tool's flag is down (dark-launched, or disabled
+ *   for this account). A neighbouring tool may still work.
+ * - **quota** — the writer has spent this tool's allowance. Normal and expected, not an error: every
+ *   request meters through the `AI_USAGE_METER` hook (AF5), and D5 made the allowance a per-tool
+ *   count, so running out is a thing that happens on a Tuesday.
+ * - **upgrade** — the Entitlement Service denied a premium code that is not `ai_writing`.
+ * - **upgrade-writing** — D3: the writer is on the free tier and the writing tools are paid. Split
+ *   from **upgrade** rather than folded in because the two denials name different things and lead to
+ *   different places.
  *
- * The usage gate is computed from `GET /ai/usage/me` **before** a request, so the writer is told
- * up front instead of composing an instruction and losing it to a rejection. The same states are
- * reachable reactively from a failed request — see {@link availabilityFromErrorCode}.
+ * **D5 removed two states.**
  *
- * **Why `upgrade` is reactive only.** It cannot be resolved up front, because nothing in the AI
- * module's own reads knows about entitlements: the denial is raised by the monetization meter that
- * the AI orchestrator delegates to, and it fires at request time. Resolving it in advance would mean
- * this feature reading `GET /monetization/entitlements`, which is another feature's endpoint
- * (docs/26 §4) — so instead it is recognised from the code the failed request returns, which is the
- * same mechanism the other three already use as their fallback.
+ * `self-off` is gone with B5's switch. It existed because "the reader turned AI off" and "an admin
+ * turned it off" block identically but have opposite remedies — a real distinction, but the UI that
+ * made the first one reachable was removed, and a state whose copy says "you can turn it back on in
+ * settings" is a lie once there is no settings control. Both now read as **off**, whose copy blames
+ * nobody. (The `AI_DISABLED_BY_USER` code still maps here: the column is inert, not deleted, and a
+ * writer who flipped it before D5 must still get an honest answer rather than a generic failure.)
  *
- * **`signed-out` is the fifth, and W5 made it necessary.** Until W5 every AI surface lived behind an
- * authenticated route, so "no session" was not a state any of them could be in. W5 puts AI surfaces on
- * two PUBLIC pages — `/search?mode=ai` and the reader's "More like this" — where the majority of
- * traffic has no session at all. Resolving that case to `unknown` (which is what an unauthenticated
- * gate read produced) was actively harmful: the gate reads 401, and a 401 on a non-`/auth` route is a
- * terminal session failure to the api client, which clears the whole query cache — taking the piece
- * the reader came for with it. Naming the state is what lets the hook skip the requests entirely.
+ * `signed-out` is gone because the surfaces that needed it are public. It existed for search and
+ * "More like this", where an anonymous gate read returns 401 — and a 401 outside `/auth` is a
+ * terminal session failure to the api client, which clears the query cache and takes the piece the
+ * reader came for with it. D5 removed the gate read from those surfaces entirely, so the state has
+ * no caller; the hazard it guarded is now handled where it belongs, by not making the request
+ * (`use-retrieval.ts`, `use-related-pieces.ts`).
+ *
+ * **Why `upgrade` is reactive only.** It cannot be resolved up front: nothing in the AI module's own
+ * reads knows about entitlements. The denial is raised by the monetization meter the orchestrator
+ * delegates to, and it fires at request time. Resolving it in advance would mean this feature
+ * reading `GET /monetization/entitlements`, which is another feature's endpoint (docs/26 §4) — so
+ * instead it is recognised from the code the failed request returns.
  */
 export type AiAvailability =
-  | 'available'
-  | 'off'
-  | 'self-off'
-  | 'feature-off'
-  | 'quota'
-  | 'upgrade'
-  | 'upgrade-writing'
-  | 'signed-out'
-  | 'unknown';
+  'available' | 'off' | 'feature-off' | 'quota' | 'upgrade' | 'upgrade-writing' | 'unknown';
 
 /**
- * A window is exhausted when it has a cap and has reached it. Unlimited windows never are.
+ * `feature: null` means **a surface with no feature flag and no model call** — gated by the master
+ * switch and `ai.use` alone. Story Map's graph reads are the case: they carry `@Permissions(AiUse)`
+ * and nothing else, and project the AF3 graph without reaching a provider.
  *
- * Takes the window as possibly-absent because this now runs on two features' surfaces (W5), and a
- * usage payload missing a window must not be able to take one of them down: this is a pre-flight
- * courtesy read, and the authoritative answer always comes back from the request itself
- * ({@link availabilityFromErrorCode}). An absent window is "not exhausted" — the same posture as an
- * absent `usage` object one level up.
- */
-function windowExhausted(
-  window: { tokenLimit: number | null; usedFraction: number | null } | undefined,
-): boolean {
-  if (!window) return false;
-  return window.tokenLimit !== null && (window.usedFraction ?? 0) >= 1;
-}
-
-/**
- * `feature: null` means **an AI surface with no feature flag and no LLM call** — gated by the master
- * switch and `ai.use` alone. W9's Story Explorer is the first: `GET /ai/explorer/:storyId/:view`
- * carries `@Permissions(AiUse)` and nothing else, and projects the AF3 graph with no model call
- * (`story-explorer.controller.ts`, `story-explorer.service.ts`).
- *
- * Both skips are deliberate and follow the server. Picking a *neighbouring* feature's flag would hide
+ * The skip is deliberate and follows the server. Picking a *neighbouring* feature's flag would hide
  * a surface the server would have served — the mistake mobile's editor calls out by name
- * (`editor_screen.dart:241-244`). Skipping the QUOTA gate follows the same rule from the other side:
- * an allowance is spent by generations, this surface spends none, so a writer who has exhausted
- * their tokens can still read their own story graph. A null feature can therefore never resolve to
- * `feature-off` or `quota`.
+ * (`editor_screen.dart:241-244`). So a null feature can never resolve to `feature-off`.
+ *
+ * **D5 removed the pre-flight quota gate.** It read `GET /ai/usage/me` and resolved `quota` from a
+ * token-window rollup; that route is gone (B2) and tokens are no longer the writer's unit anyway.
+ * The allowance is a per-tool count, and the only authority on it is the 429 the request returns —
+ * which {@link availabilityFromErrorCode} already handled, and which was always the authoritative
+ * half. What is lost is telling the writer *before* they click; what is gained is never telling them
+ * something false, which the old read could do the moment the rollup went stale.
  */
 export function resolveAvailability(args: {
   feature: AiFeature | null;
   features: AiFeaturesResponse | undefined;
-  usage: AiUsageResponse | undefined;
 }): AiAvailability {
-  const { feature, features, usage } = args;
+  const { feature, features } = args;
   // Nothing loaded yet — 'unknown' keeps the panel quiet rather than flashing a wall.
   if (!features) return 'unknown';
-  /**
-   * B5: both causes of "AI is off for you" arrive in the same payload, and the ORDER here
-   * encodes the server's precedence — admin off beats user on. `aiEnabled` is already the
-   * AND of the two, so a false `aiEnabled` with `userAiEnabled: true` is the platform
-   * switch and must read as **off**; only when the reader's own switch is down do we blame
-   * them for it.
-   */
-  if (!features.aiEnabled) return features.userAiEnabled === false ? 'self-off' : 'off';
+  if (!features.aiEnabled) return 'off';
   if (feature === null) return 'available';
 
   const flag = features.features.find((entry) => entry.feature === feature);
   if (flag && !flag.enabled) return 'feature-off';
 
-  if (usage && (windowExhausted(usage.daily) || windowExhausted(usage.monthly))) return 'quota';
   return 'available';
 }
 
 /**
  * Map a failed request's error code onto the same vocabulary, so a wall hit mid-flight renders
- * identically to one detected up front. `QUOTA_EXCEEDED` is the monetization plan's cap and
- * `AI_USAGE_LIMIT_EXCEEDED` the AI module's own token cap — indistinguishable to a writer, who
- * only needs to know they are out of allowance.
+ * identically to one detected up front. `QUOTA_EXCEEDED` is the plan's per-tool allowance and
+ * `AI_USAGE_LIMIT_EXCEEDED` the platform's own token cap — indistinguishable to a writer, who only
+ * needs to know they are out.
  *
- * **`ENTITLEMENT_DENIED` and `INSUFFICIENT_CREDITS` were unmapped until W4**, and an unmapped code
- * returns null, which resolves to the pre-flight answer — "available" — so a writer refused for
- * either reason saw a generic failure and a panel that still invited them to try again. Both are
- * raised by the AF5 meter on the way into a generation (`AiUsageMeterService.checkQuota` asserts the
- * `ai_budget` entitlement, the only premium feature any server route actually enforces), so they are
- * the one place where monetization genuinely gates an AI surface, and they get the state whose remedy
- * is a plan.
+ * **`ENTITLEMENT_DENIED` was unmapped until W4**, and an unmapped code returns null, which resolves
+ * to the pre-flight answer — "available" — so a writer refused saw a generic failure and a panel
+ * that still invited them to try again.
  */
 export function availabilityFromErrorCode(
   code: string | null,
@@ -146,22 +102,23 @@ export function availabilityFromErrorCode(
      * D3 splits this by WHICH code was denied, and it reads the same map the server gated on
      * (`AI_FEATURE_PREMIUM_CODE`) rather than the 402's `details` — the surface already knows
      * its own feature, so the answer needs no extra plumbing through the stream store and
-     * cannot drift from the server's decision. A caller that passes no feature keeps W4's
-     * behaviour exactly, which is what the AF4 surfaces want: their denial IS an allowance
-     * denial.
+     * cannot drift from the server's decision.
      */
     case ERROR_CODES.ENTITLEMENT_DENIED:
       return feature != null && premiumCodeForAiFeature(feature) === PremiumFeature.AiWriting
         ? 'upgrade-writing'
         : 'upgrade';
-    case ERROR_CODES.INSUFFICIENT_CREDITS:
-      return 'upgrade';
     case ERROR_CODES.AI_DISABLED:
       return 'off';
-    // B5. Its own code precisely so the remedy is not the platform switch's ("wait for an
-    // admin") nor the quota family's ("wait for reset") nor the plan's ("see plans").
+    /**
+     * B5's code. It no longer gets its own state: D5 removed the switch that produced it, so there
+     * is no remedy to name and "you turned this off" would point at a control that does not exist.
+     * Still mapped rather than dropped, because the column is inert, not deleted — a writer who
+     * flipped it before D5 would otherwise get an unmapped code, which resolves to "available" and
+     * invites them to retry forever.
+     */
     case ERROR_CODES.AI_DISABLED_BY_USER:
-      return 'self-off';
+      return 'off';
     case ERROR_CODES.AI_FEATURE_DISABLED:
       return 'feature-off';
     default:
@@ -169,53 +126,43 @@ export function availabilityFromErrorCode(
   }
 }
 
-/** Copy for each blocked state. `available`/`unknown` never render a notice. */
+/**
+ * Copy for each blocked state. `available`/`unknown` never render a notice.
+ *
+ * **No occurrence of "AI" anywhere in here** (D5 decision 9). The writer reads these at the moment
+ * something is refused, which is the worst possible place to introduce a word the product does not
+ * otherwise use about itself.
+ */
 export const AVAILABILITY_COPY: Record<
   Exclude<AiAvailability, 'available' | 'unknown'>,
   { title: string; description: string }
 > = {
+  // Covers both the platform switch and a pre-D5 writer's own inert one. Blames nobody and promises
+  // nothing, because from here the two are indistinguishable and neither has an action.
   off: {
-    title: 'AI is turned off',
-    description: 'AI features aren’t enabled on this instance yet.',
-  },
-  // B5. The second state that carries an action (after `upgrade` and `signed-out`), and the
-  // only one where the reader is the one who caused it — so the copy says so plainly and
-  // sends them to the switch rather than implying someone else has to act.
-  'self-off': {
-    title: 'You turned AI off',
-    description:
-      'AI is off for your account. You can turn it back on in settings — your writing is unaffected.',
+    title: 'Writing tools aren’t available',
+    description: 'These tools aren’t enabled on this instance. Your writing is unaffected.',
   },
   'feature-off': {
     title: 'Not available yet',
-    description: 'This assistant isn’t enabled for your account.',
+    description: 'This tool isn’t enabled for your account.',
   },
   quota: {
-    title: 'You’ve used your AI allowance',
+    title: 'You’ve used this tool’s allowance',
     description:
       'Your allowance resets at the start of the next period. Your writing is unaffected.',
   },
-  // W5. Every AF4 route needs `ai.use`, which no anonymous visitor holds — so on the two public
-  // surfaces (AI search, "More like this") this is the honest answer, and unlike the others it is
-  // resolved WITHOUT a request: see the note on `signed-out` above for what asking costs.
-  'signed-out': {
-    title: 'Sign in to use AI search',
-    description: 'AI search runs on your account. Keyword search works without signing in.',
-  },
-  // The only blocked state with an action attached, because it is the only one the writer can resolve
-  // themselves. The others are waiting or an admin; this one is a plan.
+  // The only blocked state with an action attached, because it is the only one the writer can
+  // resolve themselves. The others are waiting or an admin; this one is a plan.
   upgrade: {
     title: 'This needs a paid plan',
     description:
-      'Your plan doesn’t include an AI allowance. Your writing is unaffected — everything else works as usual.',
+      'Your plan doesn’t include this tool. Your writing is unaffected — everything else works as usual.',
   },
-  // D3. Deliberately says AI WRITING rather than "AI" or "an AI allowance": the free tier keeps
-  // its allowance and can still use AI search and Ask My Book, so a message about the allowance
-  // would be both wrong and needlessly alarming. Names the tier because "a paid plan" leaves the
-  // writer to go and find out which one.
+  // D3. Names the tier because "a paid plan" leaves the writer to go and find out which one.
   'upgrade-writing': {
-    title: 'AI writing is on Plus and above',
+    title: 'Polish & feedback is on Plus and above',
     description:
-      'Your plan doesn’t include AI writing. Your drafts are unaffected — the editor, search and Ask My Book all work as usual.',
+      'Your plan doesn’t include these tools. Your drafts are unaffected — the editor and search work as usual.',
   },
 };

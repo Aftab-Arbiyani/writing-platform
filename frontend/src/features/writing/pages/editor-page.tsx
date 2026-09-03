@@ -1,6 +1,6 @@
 import { QButton, QErrorState, QSelect, QSpinner } from '@qalam/ui';
 import { EditorContent, useEditor } from '@tiptap/react';
-import { ArrowLeft, Eye, MoreHorizontal, Send, Sparkles } from 'lucide-react';
+import { ArrowLeft, Eye, MoreHorizontal, NotebookPen, Send } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState, type ReactElement, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router';
 
@@ -215,22 +215,24 @@ export function EditorPage({ assistant }: { assistant?: ReactNode } = {}): React
             }}
           />
           {/*
-            B5 (docs/45 §4.10): the slot alone is not enough to show this. A writer who has
-            turned AI off for their account — or a deployment with the master flag down — would
-            otherwise keep a Sparkles button that opens a drawer of four "AI is off" notices,
+            The slot alone is not enough to show this (docs/45 §4.10). A deployment with the master
+            flag down would otherwise keep a button that opens a drawer of "not available" notices,
             which is exactly the stranded entry point §4.10 forbids.
 
             Gated on the MASTER question (`null` feature), not on `writing_assistant`: the drawer
-            fronts four surfaces (assistant, coach, explorer, ask), so hiding it whenever one
-            feature's flag is down would take the other three with it — the mistake mobile's
-            editor calls out by name. Each tab still resolves its own availability inside.
+            fronts three tools, so hiding it whenever one feature's flag is down would take the
+            other two with it — the mistake mobile's editor calls out by name. Each tab still
+            resolves its own availability inside.
+
+            D5: the icon is a pen, not a sparkle, and the label says what the button opens rather
+            than what technology is behind it.
           */}
-          {assistant && aiAvailability !== 'off' && aiAvailability !== 'self-off' ? (
+          {assistant && aiAvailability !== 'off' ? (
             <QButton
               variant="ghost"
               size="sm"
-              icon={Sparkles}
-              aria-label="AI assistant"
+              icon={NotebookPen}
+              aria-label="Writing tools"
               aria-pressed={assistantOpen}
               onClick={() => {
                 setAssistantOpen(!assistantOpen);

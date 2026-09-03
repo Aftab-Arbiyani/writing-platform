@@ -1,12 +1,10 @@
 import { QCard, QEmptyState, QSpinner } from '@qalam/ui';
-import { ArrowRight, Gauge } from 'lucide-react';
+import { Gauge } from 'lucide-react';
 import type { ReactElement } from 'react';
-import { Link } from 'react-router';
 
 import { ApiError } from '@/lib/api-client';
 import { messageFor } from '@/lib/error-messages';
 import { usePageTitle } from '@/hooks/use-page-title';
-import { ROUTES } from '@/lib/routes';
 
 import { UsageWindowCard } from '../components/usage-window-card';
 import { useMonetizationUsage } from '../hooks/use-usage';
@@ -117,23 +115,10 @@ export function UsagePage(): ReactElement {
           )}
 
           {/*
-           * The other lens on the same requests (W8 C3). Not a duplicate and not a replacement: this
-           * page shows the plan's allowance, that one shows the AI platform's own token ledger with
-           * the input/output split and the config caps. Linked so a reader who wants the second does
-           * not conclude the first is wrong.
+           * D5 removed the cross-link that sat here, to a page showing the AI platform's raw token
+           * ledger. Tokens are an operator's unit, not a writer's — the writer's unit is now an
+           * action count, which is what this page reports — and the page it pointed at is gone.
            */}
-          <QCard as="section" className="flex flex-col gap-1.5">
-            <p className="text-ink-secondary text-sm">
-              Looking for raw token counts rather than your plan’s allowance?
-            </p>
-            <Link
-              to={ROUTES.settingsAiUsage}
-              className="text-accent focus-visible:ring-accent inline-flex w-fit items-center gap-1.5 rounded-md text-sm outline-none focus-visible:ring-2"
-            >
-              AI token usage
-              <ArrowRight size={15} strokeWidth={1.5} aria-hidden />
-            </Link>
-          </QCard>
         </>
       ) : null}
     </div>

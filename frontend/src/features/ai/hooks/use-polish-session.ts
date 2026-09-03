@@ -11,16 +11,15 @@ import {
 import { useAiStreamStore } from '../stores/ai-stream.store';
 import {
   defaultPlacement,
-  isContinuation,
   promptKeyOf,
   promptVariablesOf,
   type WritingAction,
 } from '../lib/writing-actions';
 import { useAiStream } from './use-ai-completion';
-import { useAssistantConversation } from './use-assistant-conversation';
 
 /**
- * One Writing Assistant turn (W2/AF2) — take an action, stream a suggestion, apply or discard it.
+ * One Polish turn (D5, was the Writing Assistant) — take an action, stream a suggestion, apply or
+ * discard it.
  *
  * The **editor owns the document**: this hook reads context from the registered
  * [`AiEditorTarget`](../../../stores/ai-editor-target.store.ts) and hands accepted text back to
@@ -28,13 +27,17 @@ import { useAssistantConversation } from './use-assistant-conversation';
  * understand. Nothing here touches TipTap.
  *
  * Streaming state lives in the AF1 `ai-stream.store` (transient UI state, docs/12) — this hook
- * adds only the AF2 semantics on top: which action produced the text, and where it should land.
+ * adds only the semantics on top: which action produced the text, and where it should land.
+ *
+ * **Stateless since D5.** It used to bind an optional `conversationId` so a writer could opt into
+ * keeping a server-side transcript; the conversation layer is deleted (B2) and the field is pinned
+ * null server-side. Every turn is now a single request that stores no draft text anywhere — which
+ * is the disclosure this tool makes, so it had better be true.
  */
-export function useAssistantSession() {
+export function usePolishSession() {
   const { start, cancel } = useAiStream();
   const target = useAiEditorTarget((s) => s.target);
   const reset = useAiStreamStore((s) => s.reset);
-  const { conversationId } = useAssistantConversation();
 
   /** The live context, read at call time — never cached, the writer keeps typing. */
   const readContext = useCallback(
@@ -43,46 +46,39 @@ export function useAssistantSession() {
   );
 
   /**
-   * Run an action. Quick actions send the operand (selection, else the whole document) as the
-   * message and let the server template do the instructing; free-form "Ask AI" sends the
-   * writer's own instruction and attaches the selection as labelled context instead — the
-   * distinction mobile draws, and the one the `writing_assistant.freeform` template expects.
+   * Run an action. The operand — the selection, else the whole draft — is the message, and the
+   * server template does the instructing.
+   *
+   * The freeform branch is gone with D5's "Ask AI" box: there is no longer a shape where the
+   * writer's own instruction is the message and their prose is mere context. Every action now
+   * operates ON the writer's text, so an empty operand means there is nothing to do.
    */
   const run = useCallback(
-    async (action: WritingAction, instruction?: string): Promise<void> => {
+    async (action: WritingAction): Promise<void> => {
       const context = readContext();
       if (!context) return;
 
       const operand = operandOf(context);
-      const freeform = action.kind === 'freeform';
-      if (!freeform && operand === '') return;
-
-      const metadata = {
-        type: 'writing_metadata',
-        params: {
-          title: context.title,
-          language: context.language,
-          wordCount: context.wordCount,
-        },
-      };
+      if (operand === '') return;
 
       await start({
         feature: AiFeature.WritingAssistant,
-        // Only sent when the writer has opted into keeping history. Omitted, the server answers and
-        // stores nothing (`ai-completion.service.ts:338`); present, it appends the user turn and the
-        // reply to that conversation — which is the only way a conversation ever gains messages
-        // (docs/48 §3.12, W8-1).
-        ...(conversationId === null ? {} : { conversationId }),
         promptKey: promptKeyOf(action),
         promptVariables: promptVariablesOf(action),
-        messages: [{ role: 'user', content: freeform ? (instruction ?? '') : operand }],
-        context:
-          freeform && context.selectionText.trim() !== ''
-            ? [{ type: 'selection', params: { text: context.selectionText } }, metadata]
-            : [metadata],
+        messages: [{ role: 'user', content: operand }],
+        context: [
+          {
+            type: 'writing_metadata',
+            params: {
+              title: context.title,
+              language: context.language,
+              wordCount: context.wordCount,
+            },
+          },
+        ],
       });
     },
-    [readContext, start, conversationId],
+    [readContext, start],
   );
 
   /**
@@ -108,5 +104,5 @@ export function useAssistantSession() {
     [readContext],
   );
 
-  return { run, cancel, apply, placementFor, readContext, reset, isContinuation };
+  return { run, cancel, apply, placementFor, readContext, reset };
 }

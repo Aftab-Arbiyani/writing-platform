@@ -22,11 +22,6 @@ export function useAiModels() {
   });
 }
 
-/** The caller's AI usage (daily/monthly/lifetime + per feature). */
-export function useAiUsage() {
-  return useQuery({
-    queryKey: qk.ai.usage(),
-    queryFn: ({ signal }) => aiApi.usage(signal),
-    staleTime: 30_000,
-  });
-}
+// D5 removed `useAiUsage`. It read `GET /ai/usage/me` for a token rollup — a route that no longer
+// exists (B2) and a unit no writer was ever asked to think in. The allowance a writer actually has
+// is a per-tool action count from `GET /monetization/usage`; see `useFeatureAllowances`.

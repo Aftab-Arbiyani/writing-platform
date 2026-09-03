@@ -1,19 +1,19 @@
 import { PremiumFeature } from '@qalam/shared';
 import { QEmptyState } from '@qalam/ui';
-import { Sparkles } from 'lucide-react';
-import type { ReactElement } from 'react';
+import { Network } from 'lucide-react';
+import type { ReactElement, ReactNode } from 'react';
 
 import { AiAvailabilityNotice } from '@/components/ai-availability-notice';
-import { WritingAssistantPanel } from '@/features/ai';
+import { WritingToolsDrawer } from '@/features/ai';
 import { PremiumGate, isMonetizationEnabled } from '@/features/monetization';
 import { EditorPage } from '@/features/writing';
 
 /**
  * Lazy route module (docs/11 §9) — the distraction-free editor (`/write`, `/write/:draftId`).
  *
- * This is where the editor and the AI assistant are composed (W2, docs/45 §4.2). Only `app/`
+ * This is where the editor and the writing tools are composed (W2, docs/45 §4.2). Only `app/`
  * knows about both features (docs/26 §4): the editor exposes an `assistant` slot and registers
- * itself on the app-level AI-editor-target seam; the panel drives that seam. Neither feature
+ * itself on the app-level AI-editor-target seam; the drawer drives that seam. Neither feature
  * imports the other, and either can be deleted without touching the other's code.
  *
  * **D3 adds a third feature to that composition** (docs/45 §4 row D3, docs/48 §6.13): AI writing is
@@ -24,20 +24,20 @@ import { EditorPage } from '@/features/writing';
  * either feature learning about the other, and without a new endpoint: `PremiumGate` reads the
  * `GET /monetization/entitlements` snapshot both clients already consume.
  *
- * **D4 adds the second gate** (decided 2026-08-21, docs/48 §5.2; backend + mobile built 2026-08-24,
- * web here). `story_intelligence` is the one premium code of the six that D4 chose to enforce, so the
- * Story Explorer gets its own gate — and **Ask My Book deliberately does not**: the same decision
- * declared `ai_discovery` and four others included in every tier, so walling that tab would now
- * contradict a settled call rather than pre-empt an open one. Two props rather than one, because the
- * two gates answer different questions with different remedies and the panel must not be able to
- * confuse them.
+ * **D4 adds the second gate** (decided 2026-08-21, docs/48 §5.2). `story_intelligence` is the one
+ * premium code of the six that D4 chose to enforce, so Story Map gets its own gate. Two props rather
+ * than one, because the two gates answer different questions with different remedies and the drawer
+ * must not be able to confuse them.
+ *
+ * D5 removed the third tab this composed, Ask My Book, which was deliberately ungated — the tabs
+ * remaining are exactly the two the gates cover.
  */
 export function Component(): ReactElement {
   return (
     <EditorPage
       assistant={
-        <WritingAssistantPanel
-          writingGate={(children) => (
+        <WritingToolsDrawer
+          writingGate={(children: ReactNode) => (
             <PremiumGate
               feature={PremiumFeature.AiWriting}
               /**
@@ -50,7 +50,7 @@ export function Component(): ReactElement {
               {children}
             </PremiumGate>
           )}
-          explorerGate={(children) =>
+          storyMapGate={(children: ReactNode) =>
             /**
              * **The dark-launch branch comes BEFORE the gate, and mobile's build is why.**
              * `PremiumGate` fails closed, and that includes the client flag being off — but with
@@ -63,9 +63,9 @@ export function Component(): ReactElement {
               <PremiumGate feature={PremiumFeature.StoryIntelligence}>{children}</PremiumGate>
             ) : (
               <QEmptyState
-                icon={Sparkles}
-                title="Story Explorer isn’t available yet"
-                description="The story knowledge graph arrives with subscriptions."
+                icon={Network}
+                title="Story Map isn’t available yet"
+                description="The story map arrives with subscriptions."
                 minHeight={220}
               />
             )
