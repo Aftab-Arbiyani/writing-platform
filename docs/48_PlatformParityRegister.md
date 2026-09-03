@@ -1,7 +1,8 @@
 # 48 — Platform Parity Register (web ↔ mobile)
 
-> 🔨 **IN FLIGHT, 2026-09-03 — D5 removes the AI surface.** Three backend phases have landed on
-> `develop` (`9214fc6`, `7f3b459`, `952a790`) and **neither client has moved**, so parts of this
+> 🔨 **IN FLIGHT, 2026-09-03 — D5 removes the AI surface.** All four backend phases have landed on
+> `develop` (`9214fc6`, `7f3b459`, `952a790`, `d4d03b6` — the backend is complete) and **neither
+> client has moved**, so parts of this
 > register describe surfaces the server no longer serves. The decision, the built-vs-outstanding
 > table, and the one defect that state opens (**D5-clients**, §3.22a) are in
 > [§5.2 → D5](#d5--the-ai-surface-is-removed-the-tools-stay-owner-2026-09-02). Read that before
@@ -5371,6 +5372,14 @@ parts that existed only to hold a conversation.
    to answer it. Only `feature.ai.askBook.enabled` was removed, whose surface is genuinely gone. The
    warning now sits on `FLAGGED_AI_FEATURES`, where the next person to delete an entry will read it.
 
+4. **Removing a write can break a read that looked unrelated.** The admin cost dashboard read the
+   monetization CREDIT ledger, which was a mirror of `ai_usage_logs` written by the meter. Deleting
+   the writes without moving the read would have left an operator staring at a dashboard reporting
+   **no AI cost at all** while the provider bills kept arriving — and nothing would have failed: no
+   test, no type, no error. A wrong number is worse than a missing one. It now reads the original,
+   and the fix was verified by seeing 34,880 tokens of real history appear where the credit ledger
+   would have shown zero.
+
 **Allowances.** "You have 3,200 tokens left" answers a question nobody asked: nobody knows what a
 token buys, and the number moves when the model does. A count of actions does answer it — _12 of 30
 polishes today_ — and survives a model change. Ordinary `0 = unlimited` sentinel (never
@@ -5395,19 +5404,21 @@ language model. Your text isn't used to train it."_ — plus a privacy-policy cl
 considered and rejected: this audience punishes discovery far harder than disclosure, and GDPR
 processor disclosure and the EU AI Act's transparency article both bind regardless.
 
-**Status — built vs outstanding.** Three backend phases have landed on `develop`; **nothing has
-shipped on either client**, so every client-side claim in the table above is a decision, not a state.
+**Status — built vs outstanding.** The backend is COMPLETE (B1–B4). **Nothing has shipped on
+either client**, so every client-side claim in the table above is a decision, not a state, and
+`D5-clients` in [§3.22a](#322a-product-defects--a-user-or-an-operator-can-hit-these) is open until
+they move.
 
-| Phase     | What                                                                                                     | State        |
-| --------- | -------------------------------------------------------------------------------------------------------- | ------------ |
-| **B1**    | Search public + synthesis stripped; recommendations de-flagged; `retrieval_query_logs.user_id` nullable  | ✅ `9214fc6` |
-| **B2**    | Ask My Book, conversations, dead prompts deleted; completions stateless                                  | ✅ `7f3b459` |
-| **B3**    | Per-feature allowances; "Map this story"; E2E seed lifts the new caps                                    | ✅ `952a790` |
-| **B4**    | Credit economy off (`ai_budget`, wallet, purchases, admin credit actions)                                | ⬜           |
-| **F0–F2** | Web + admin: writing-tools drawer, search consolidation, allowance UI                                    | ⬜           |
-| **M1–M4** | Mobile: Polish sheet, `shared/retrieval`, allowance cards, copy sweep                                    | ⬜           |
-| **V**     | Vocabulary contract — delete the deprecated enum values, api-types and wire fields in one coordinated PR | ⬜           |
-| **C**     | DB contract — drop `ai_conversations`, `ai_messages`, `credit_wallets`, `credit_transactions`            | ⬜           |
+| Phase     | What                                                                                                                          | State        |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| **B1**    | Search public + synthesis stripped; recommendations de-flagged; `retrieval_query_logs.user_id` nullable                       | ✅ `9214fc6` |
+| **B2**    | Ask My Book, conversations, dead prompts deleted; completions stateless                                                       | ✅ `7f3b459` |
+| **B3**    | Per-feature allowances; "Map this story"; E2E seed lifts the new caps                                                         | ✅ `952a790` |
+| **B4**    | Credit economy off (`ai_budget`, wallet, purchases, admin credit actions); admin cost dashboard re-pointed at `ai_usage_logs` | ✅ `d4d03b6` |
+| **F0–F2** | Web + admin: writing-tools drawer, search consolidation, allowance UI                                                         | ⬜           |
+| **M1–M4** | Mobile: Polish sheet, `shared/retrieval`, allowance cards, copy sweep                                                         | ⬜           |
+| **V**     | Vocabulary contract — delete the deprecated enum values, api-types and wire fields in one coordinated PR                      | ⬜           |
+| **C**     | DB contract — drop `ai_conversations`, `ai_messages`, `credit_wallets`, `credit_transactions`                                 | ⬜           |
 
 **Wire compatibility is deliberate until V.** `conversationId`, `synthesize`, `synthesisEnabled` and
 `answer` are all still accepted or returned, inert. That is not laziness: the validation pipe runs
