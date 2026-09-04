@@ -5,8 +5,6 @@ import { buildQueryString } from '@/lib/http';
 
 import type {
   CheckoutResponse,
-  CreditBalanceResponse,
-  CreditTransactionResponse,
   EntitlementSnapshot,
   FeatureEntitlementResponse,
   InvoiceResponse,
@@ -166,43 +164,21 @@ export const monetizationApi = {
       `${BASE}/subscription/history${buildQueryString({ cursor, limit })}`,
     ),
 
-  // ── Usage & credits ─────────────────────────────────────────────────────────────────────
+  // ── Usage ───────────────────────────────────────────────────────────────────────────────
 
   /**
-   * GET /monetization/usage — daily / monthly / lifetime AI rollups + a linear forecast.
+   * GET /monetization/usage — the caller's per-tool allowances (D5), plus the token rollups the
+   * admin dashboards still read.
    *
-   * A window with a null `tokenLimit` is unlimited (the enterprise tier, and the lifetime window
-   * always). `usedFraction` is null in the same case, so a progress bar must check the limit first.
+   * An allowance with `unlimited: true` carries a null `limit`, so anything drawing a progress bar
+   * must check that first rather than dividing by a limit that may be absent — see
+   * `normalizeAllowances`, which makes the guarantee total.
+   *
+   * D5 removed three methods that lived under this heading: `credits`, `creditTransactions` and
+   * `purchaseCredits`. All three now 404 — B4 deleted the wallet, the ledger and the pack purchase.
    */
   usage: (signal?: AbortSignal): Promise<UsageSummaryResponse> =>
     get<UsageSummaryResponse>(`${BASE}/usage`, { signal }),
-
-  /** GET /monetization/credits — the AI credit wallet. Auto-creates the wallet on first read. */
-  credits: (signal?: AbortSignal): Promise<CreditBalanceResponse> =>
-    get<CreditBalanceResponse>(`${BASE}/credits`, { signal }),
-
-  /** GET /monetization/credits/transactions — the credit ledger, newest first, cursor-paginated. */
-  creditTransactions: (
-    cursor?: string,
-    limit?: number,
-  ): Promise<CursorPage<CreditTransactionResponse>> =>
-    getPage<CreditTransactionResponse>(
-      `${BASE}/credits/transactions${buildQueryString({ cursor, limit })}`,
-    ),
-
-  /**
-   * POST /monetization/credits/purchase — buy a credit pack.
-   *
-   * **Store-only by contract.** The controller rejects a missing or empty `receipt` with
-   * `RECEIPT_VALIDATION_FAILED` before it reaches a provider, and a receipt can only come from an
-   * app store on a device. There is no browser path to a credit purchase, so the web UI states that
-   * rather than offering a button that cannot work.
-   */
-  purchaseCredits: (input: {
-    credits: number;
-    provider: PaymentProvider;
-    receipt: string;
-  }): Promise<PurchaseResponse> => post<PurchaseResponse>(`${BASE}/credits/purchase`, input),
 
   // ── Billing history ─────────────────────────────────────────────────────────────────────
 

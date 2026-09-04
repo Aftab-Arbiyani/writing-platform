@@ -66,10 +66,25 @@ describe('PremiumGate', () => {
       </PremiumGate>,
     );
 
-    expect(await screen.findByText(/needs a paid plan/i)).toBeInTheDocument();
+    // D5: the title NAMES the tier when the compiled catalogue knows one — `ai_writing` first
+    // appears on Plus — rather than saying "a paid plan" and leaving the reader to find out which.
+    expect(await screen.findByText('Polish & feedback is on Plus and above')).toBeInTheDocument();
     expect(screen.queryByText('Your balance')).not.toBeInTheDocument();
     // The remedy: an upgrade is the only thing that changes a plan exclusion.
     expect(screen.getByRole('button', { name: 'See plans' })).toBeInTheDocument();
+  });
+
+  it('falls back to "a paid plan" for a code no tier grants', async () => {
+    // Five of the eight premium codes are in no tier's default set. Inventing a tier for one would
+    // send the reader to a plans page that does not sell what they were just refused.
+    entitlements.mockResolvedValue(snapshot(PremiumFeature.Marketplace, { allowed: false }));
+    renderWithProviders(
+      <PremiumGate feature={PremiumFeature.Marketplace}>
+        <p>Your balance</p>
+      </PremiumGate>,
+    );
+
+    expect(await screen.findByText('Marketplace needs a paid plan')).toBeInTheDocument();
   });
 
   it('offers no upgrade button for a QUOTA denial — waiting is enough', async () => {

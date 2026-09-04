@@ -1,6 +1,6 @@
 import { BillingInterval, PlanTier, SubscriptionStatus } from '@qalam/shared';
 import { QButton, QCard, QEmptyState, QSpinner, QTag } from '@qalam/ui';
-import { CreditCard, Gauge, Receipt, Sparkles, Coins } from 'lucide-react';
+import { CreditCard, Gauge, Receipt, Sparkles } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { Link, useNavigate } from 'react-router';
@@ -29,7 +29,7 @@ import type { SubscriptionResponse } from '../types/monetization.types';
  * The monetization hub (`/settings/billing`, AF5 W4) — ported from mobile's `subscription_screen`,
  * which it calls "the monetization home".
  *
- * It is the only monetization entry in the settings nav; usage, credits, history and the plan
+ * It is the only monetization entry in the settings nav; usage, history and the plan
  * comparison are reached from here, exactly as mobile's `_navTiles` do. That keeps the settings nav
  * one-entry-per-section like every other tab, and it matches how the data reads: all four are facts
  * about the subscription this page is about.
@@ -49,7 +49,7 @@ export function SubscriptionPage(): ReactElement {
       <QEmptyState
         icon={CreditCard}
         title="Plans aren’t available yet"
-        description="Subscriptions and AI credits arrive with the next release."
+        description="Subscriptions arrive with the next release."
       />
     );
   }
@@ -114,7 +114,7 @@ function FreePlanCard(): ReactElement {
         You’re on the Free plan
       </h3>
       <p className="text-ink-secondary text-sm">
-        A paid plan raises your AI allowance and adds monthly AI credits.
+        A paid plan raises how much you can use each writing tool.
       </p>
       <div>
         <QButton
@@ -339,15 +339,9 @@ const NAV: readonly { to: string; label: string; description: string; icon: Luci
   },
   {
     to: ROUTES.settingsBillingUsage,
-    label: 'AI usage',
-    description: 'Tokens, requests and allowance',
+    label: 'Usage',
+    description: 'What you’ve used of each tool',
     icon: Gauge,
-  },
-  {
-    to: ROUTES.settingsBillingCredits,
-    label: 'AI credits',
-    description: 'Balance and ledger',
-    icon: Coins,
   },
   {
     to: ROUTES.settingsBillingHistory,

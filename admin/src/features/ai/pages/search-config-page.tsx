@@ -58,7 +58,6 @@ export function SearchConfigPage(): ReactElement {
         timeoutMs: config.timeoutMs,
         sources: config.sources,
         rankingWeights: config.rankingWeights,
-        synthesisEnabled: config.synthesisEnabled,
       });
     }
   }, [configQuery.data, form]);
@@ -238,32 +237,12 @@ export function SearchConfigPage(): ReactElement {
             </div>
           </QCard>
 
-          <QCard as="section" padding="lg" className="flex flex-col gap-4" data-testid="synthesis">
-            <QSectionHeader
-              title="Synthesis"
-              description="Whether search may offer a grounded, cited answer above its results."
-            />
-            <label className="flex items-center gap-3">
-              <Controller
-                control={form.control}
-                name="synthesisEnabled"
-                render={({ field }) => (
-                  <Switch
-                    checked={field.value}
-                    onChange={field.onChange}
-                    aria-label="Synthesis enabled"
-                  />
-                )}
-              />
-              <span className="flex flex-col gap-0.5">
-                <span className="text-sm font-medium text-ink">Allow synthesis on search</span>
-                <span className="text-xs text-ink-muted">
-                  Ask My Book always synthesises; this governs search, and only when the client asks
-                  for it.
-                </span>
-              </span>
-            </label>
-          </QCard>
+          {/*
+            D5 removed the Synthesis card that sat here. It governed whether search could offer a
+            grounded, cited answer above its results — the only part of the retrieval pipeline that
+            ever reached a model. B1 deleted the synthesis step, so the switch governs nothing; an
+            operator toggling it would have been changing a setting with no effect anywhere.
+          */}
 
           <QCard as="section" padding="lg" className="flex flex-col gap-2">
             <QSectionHeader title="Reading these settings" />

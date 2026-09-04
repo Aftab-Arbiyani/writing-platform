@@ -39,13 +39,12 @@ export const ROUTES = {
   // Blocks/mutes + account standing (AF6 W3c) — a settings section, since both are account-scoped.
   settingsBlocks: '/settings/blocks',
   // Monetization (AF5 W4). A settings SECTION for the same reason as Safety: a subscription, its
-  // usage, its credits and its receipts are all account-scoped. `settingsBilling` is the hub (the
+  // usage and its receipts are all account-scoped. `settingsBilling` is the hub (the
   // web analog of mobile's subscription_screen, its "monetization home"); the other four are
   // reached from it and are not separate nav entries.
   settingsBilling: '/settings/billing',
   settingsBillingPlans: '/settings/billing/plans',
   settingsBillingUsage: '/settings/billing/usage',
-  settingsBillingCredits: '/settings/billing/credits',
   settingsBillingHistory: '/settings/billing/history',
   // Auth corridor (docs/11 §10):
   login: '/auth/login',

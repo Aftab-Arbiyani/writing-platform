@@ -1,3 +1,4 @@
+import { PlanTier } from '@qalam/shared';
 import { QButton, QEmptyState } from '@qalam/ui';
 import { Gauge, Lock } from 'lucide-react';
 import type { ReactElement, ReactNode } from 'react';
@@ -8,7 +9,8 @@ import { ROUTES } from '@/lib/routes';
 
 import { useEntitlement } from '../hooks/use-entitlements';
 import { isQuotaDenial, isTimeBounded } from '../lib/entitlement-decisions';
-import { entitlementReasonLabel, featureLabel } from '../lib/monetization-labels';
+import { entitlementReasonLabel, featureLabel, planLabel } from '../lib/monetization-labels';
+import { firstTierIncluding } from '../lib/plan-allowances';
 import type { EntitlementDecision, PremiumFeature } from '../types/monetization.types';
 
 export interface PremiumGateProps {
@@ -76,11 +78,17 @@ export interface FeatureLockCardProps {
  *
  * Says what happened, in the server's own terms, and offers the action that actually helps. A quota
  * denial gets the reset date and no upgrade button; every other denial gets the plan comparison.
+ *
+ * **D5 made the title name the tier when one is knowable.** "Polish & feedback needs a paid plan"
+ * left the writer to go and work out which paid plan; the answer is compiled into
+ * `DEFAULT_PLAN_FEATURES` and costs nothing to say. Codes in no tier's default set — five of the
+ * eight — keep the generic sentence, because inventing a tier for them would be worse than vague.
  */
 export function FeatureLockCard({ decision }: FeatureLockCardProps): ReactElement {
   const navigate = useNavigate();
   const quota = isQuotaDenial(decision);
   const name = featureLabel(decision.feature);
+  const tier = firstTierIncluding(decision.feature);
 
   const description = quota
     ? decision.expiresAt === null
@@ -88,10 +96,15 @@ export function FeatureLockCard({ decision }: FeatureLockCardProps): ReactElemen
       : `Your allowance resets on ${formatDate(decision.expiresAt)}.`
     : `${entitlementReasonLabel(decision.reason)}. A paid plan unlocks it.`;
 
+  const lockedTitle =
+    tier === null || tier === PlanTier.Free
+      ? `${name} needs a paid plan`
+      : `${name} is on ${planLabel(tier)} and above`;
+
   return (
     <QEmptyState
       icon={quota ? Gauge : Lock}
-      title={quota ? `You’ve used your ${name.toLowerCase()}` : `${name} needs a paid plan`}
+      title={quota ? `You’ve used your ${name} allowance` : lockedTitle}
       description={description}
       minHeight={220}
       action={

@@ -1,6 +1,5 @@
 import {
   BillingInterval,
-  CreditReason,
   EntitlementReason,
   EntitlementStatus,
   InvoiceStatus,
@@ -101,21 +100,24 @@ export function subscriptionStatusLabel(status: SubscriptionStatus | string): st
 export function featureLabel(feature: PremiumFeature | string): string {
   switch (feature) {
     case PremiumFeature.AiWriting:
-      return 'AI writing assistant';
-    case PremiumFeature.AiDiscovery:
-      return 'AI discovery';
+      return 'Polish & feedback';
     case PremiumFeature.StoryIntelligence:
-      return 'Story intelligence';
+      return 'Story Map';
+    case PremiumFeature.AiDiscovery:
+      return 'Discovery';
     case PremiumFeature.PremiumSearch:
-      return 'Premium search';
+      return 'Search';
     case PremiumFeature.PremiumRecommendations:
-      return 'Premium recommendations';
+      return 'Recommendations';
     case PremiumFeature.AdvancedAnalytics:
       return 'Advanced analytics';
     case PremiumFeature.PublishingPro:
       return 'Pro publishing';
+    // D5 removed the code this named. Nothing enforces `ai_budget` any more, but it is still in
+    // `DEFAULT_PLAN_FEATURES` until Phase V, so a plan card can still be handed it — and an
+    // unlabelled code falls through to the raw string, which would print `ai_budget` at a reader.
     case PremiumFeature.AiBudget:
-      return 'AI allowance';
+      return 'Writing tools';
     case PremiumFeature.Marketplace:
       return 'Marketplace';
     case PremiumFeature.Collaboration:
@@ -255,8 +257,10 @@ export function purchaseKindLabel(kind: PurchaseKind | string): string {
   switch (kind) {
     case PurchaseKind.Subscription:
       return 'Subscription';
+    // History only. Credit packs cannot be bought since D4/B4, but purchases made before it are
+    // still in the ledger and still have to render as something a reader recognises.
     case PurchaseKind.Credits:
-      return 'AI credits';
+      return 'Credit pack';
     case PurchaseKind.OneTime:
       return 'One-time';
     default:
@@ -281,31 +285,7 @@ export function purchaseStatusLabel(status: PurchaseStatus | string): string {
   }
 }
 
-/** Why a credit-ledger row exists. The ledger is the only place a reader sees these. */
-export function creditReasonLabel(reason: CreditReason | string): string {
-  switch (reason) {
-    case CreditReason.Purchase:
-      return 'Credit purchase';
-    case CreditReason.SubscriptionGrant:
-      return 'Plan allowance';
-    case CreditReason.TrialGrant:
-      return 'Trial allowance';
-    case CreditReason.Promotional:
-      return 'Promotion';
-    case CreditReason.Referral:
-      return 'Referral';
-    case CreditReason.AiUsage:
-      return 'AI usage';
-    case CreditReason.Refund:
-      return 'Refund';
-    case CreditReason.Expiration:
-      return 'Expired';
-    case CreditReason.AdminAdjustment:
-      return 'Adjustment';
-    default:
-      return reason;
-  }
-}
+// D5 removed `creditReasonLabel`. The ledger it labelled is gone (B4), and it was the only caller.
 
 /** A usage window's heading. `total` is lifetime, which is what the reader understands it as. */
 export function usageWindowLabel(window: QuotaWindow | string): string {

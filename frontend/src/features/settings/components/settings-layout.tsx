@@ -15,7 +15,7 @@ interface Section {
    * Whether the link matches its path exactly.
    *
    * Every section is a leaf and so matches exactly — except Billing, which is a hub with four child
-   * routes (`/settings/billing/plans`, `…/usage`, `…/credits`, `…/history`). With `end`, opening one
+   * routes (`/settings/billing/plans`, `…/usage`, `…/history`). With `end`, opening one
    * of those would leave the whole section nav with nothing marked current, which loses the
    * `aria-current="page"` the nav relies on to say where the reader is.
    */
@@ -44,7 +44,7 @@ const SAFETY_SECTION: Section = {
 };
 
 /**
- * Billing (plan, AI usage, credits, receipts) is an AF5 W4 section, so it appears only while
+ * Billing (plan, usage, receipts) is an AF5 W4 section, so it appears only while
  * monetization is on — otherwise the tab would lead to a "Plans aren't available yet" panel.
  *
  * Read from `env` for the same reason as Safety above: features may not import features (docs/26 §4),

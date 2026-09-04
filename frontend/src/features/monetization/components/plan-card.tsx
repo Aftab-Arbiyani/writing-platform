@@ -3,8 +3,9 @@ import { QButton, QCard, QTag } from '@qalam/ui';
 import { Check } from 'lucide-react';
 import type { ReactElement } from 'react';
 
-import { formatMoney, formatTokens } from '../lib/monetization-format';
+import { formatMoney } from '../lib/monetization-format';
 import { featureLabel, intervalSuffix, planLabel } from '../lib/monetization-labels';
+import { planAllowanceLines } from '../lib/plan-allowances';
 import type { BillingInterval as Interval, PlanDefinition } from '../types/monetization.types';
 
 export interface PlanCardProps {
@@ -83,11 +84,19 @@ export function PlanCard({
         ))}
       </ul>
 
-      {plan.monthlyCredits > 0 ? (
-        <p className="text-ink-muted text-sm">
-          {formatTokens(plan.monthlyCredits)} AI credits each month
-        </p>
-      ) : null}
+      {/*
+       * D5 replaced a credit balance with what the plan actually grants. "5,000 AI credits each
+       * month" asked a reader to price their own work in a currency they had no way to convert —
+       * how many credits is tightening a stanza? These lines are the same numbers the server
+       * enforces, in the units the writer acts in.
+       */}
+      <ul className="flex flex-col gap-1.5">
+        {planAllowanceLines(plan).map((line) => (
+          <li key={line} className="text-ink-muted text-sm">
+            {line}
+          </li>
+        ))}
+      </ul>
 
       {/*
        * No control on the current plan and none on free: there is no "downgrade to free" route in the

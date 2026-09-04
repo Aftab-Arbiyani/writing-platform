@@ -36,6 +36,10 @@ const updateSearchConfig = vi.mocked(aiApi.updateSearchConfig);
 const searchAnalytics = vi.mocked(aiApi.searchAnalytics);
 
 const CONFIG: RetrievalAdminConfig = {
+  // Still on the RESPONSE wire until Phase V, pinned to `false` by the server
+  // (`admin-retrieval.controller.ts`) now that D5 retired synthesis. The READ carries it, so a
+  // fixture without it is not the shape this page receives.
+  synthesisEnabled: false,
   topK: 10,
   candidatesPerSource: 40,
   contextTokens: 2000,
@@ -57,7 +61,6 @@ const CONFIG: RetrievalAdminConfig = {
     [RankingSignal.Engagement]: 0.3,
     [RankingSignal.Confidence]: 0.6,
   },
-  synthesisEnabled: true,
 };
 
 /** A young install: a complete response whose every figure is a true zero. */
@@ -96,6 +99,13 @@ const ANALYTICS: SearchAnalytics = {
   avgContextTokens: 1180,
   failureBreakdown: [{ reason: RetrievalFailureReason.Timeout, count: 3 }],
 };
+
+/** What the FORM owns — `CONFIG` minus the field D5 retired from the UI. */
+const EDITABLE: Omit<RetrievalAdminConfig, 'synthesisEnabled'> = (() => {
+  const { synthesisEnabled, ...rest } = CONFIG;
+  void synthesisEnabled;
+  return rest;
+})();
 
 function apiError(): ApiError {
   return new ApiError(500, {
@@ -165,7 +175,12 @@ describe('SearchConfigPage', () => {
 
     await waitFor(() => expect(updateSearchConfig).toHaveBeenCalledTimes(1));
     const payload = updateSearchConfig.mock.calls[0]?.[0];
-    expect(payload).toEqual(CONFIG);
+    // `EDITABLE` rather than `CONFIG`: D5 removed the Synthesis card, so the form no longer owns
+    // `synthesisEnabled` and must not send it back. The request DTO accepts it as optional, and the
+    // service ignores it — but a form echoing a value it stopped rendering is how a retired knob
+    // gets silently rewritten by an operator who never saw it.
+    expect(payload).toEqual(EDITABLE);
+    expect(payload).not.toHaveProperty('synthesisEnabled');
     expect(Object.keys(payload?.rankingWeights ?? {})).toHaveLength(
       Object.values(RankingSignal).length,
     );
@@ -182,7 +197,7 @@ describe('SearchConfigPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Save config' }));
 
     await waitFor(() => expect(updateSearchConfig).toHaveBeenCalledTimes(1));
-    expect(updateSearchConfig.mock.calls[0]?.[0]).toEqual({ ...CONFIG, topK: 25 });
+    expect(updateSearchConfig.mock.calls[0]?.[0]).toEqual({ ...EDITABLE, topK: 25 });
   });
 
   it('shows the house error panel with a retry instead of an empty form', async () => {

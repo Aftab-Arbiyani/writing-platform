@@ -4,7 +4,6 @@ import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
 import { usePageTitle } from '@/hooks/use-page-title';
 
-import { CreditAdjustForm } from '../components/credit-adjust-form';
 import { RefundForm } from '../components/refund-form';
 
 /**
@@ -28,7 +27,6 @@ export function BillingActionsPage(): ReactElement {
       />
 
       <div className="flex flex-col gap-6">
-        <CreditAdjustForm />
         <RefundForm />
       </div>
     </PageContainer>

@@ -6,31 +6,27 @@ import { ApiError } from '@/lib/api-client';
 import { messageFor } from '@/lib/error-messages';
 import { usePageTitle } from '@/hooks/use-page-title';
 
-import { UsageWindowCard } from '../components/usage-window-card';
+import { FeatureAllowanceCard } from '../components/feature-allowance-card';
 import { useMonetizationUsage } from '../hooks/use-usage';
-import { formatTokens, formatUsd } from '../lib/monetization-format';
-import { featureLabel } from '../lib/monetization-labels';
+import { normalizeAllowances } from '../lib/feature-allowances';
 import { isMonetizationEnabled } from '../lib/monetization-enabled';
 
 /**
- * AI usage (`/settings/billing/usage`, AF5 W4) — ported from mobile's `usage_dashboard_screen`.
+ * Usage (`/settings/billing/usage`) — what the writer has used of each tool.
  *
- * Read-only: the server owns these counts, written by the `AI_USAGE_METER` hook as each AI request
- * completes. This is the surface that makes metering visible, which is what makes an allowance feel
- * like a budget rather than a surprise.
+ * Read-only: the server owns these counts, written as each request completes. This is the surface
+ * that makes metering visible, which is what makes an allowance feel like a budget rather than a
+ * surprise.
  *
- * **Note what this is not.** `features/ai` has its own usage read (`GET /ai/usage/me`, the AF1 token
- * telemetry) which it uses to decide whether the assistant may run. This page reads
- * `GET /monetization/usage` — the AF5 rollup, with plan limits and credit cost attached. They count
- * the same requests through different lenses and the numbers can differ while a metering write is in
- * flight; neither is wrong, and neither is derived from the other.
- *
- * As of W8 that AF1 read has a page of its own (`/settings/ai/usage`), so the two are cross-linked:
- * the overlap is visible enough that a reader comparing them needs to be told which is which, and a
- * link is the difference between "these numbers disagree" and "these count different things".
+ * **D5 rewrote what this page is about.** It used to show three token windows, a projected monthly
+ * cost in dollars, and a per-feature token breakdown — plus a cross-link to a second page showing
+ * the AI platform's own token ledger, because the two overlapped enough that a reader comparing them
+ * had to be told which was which. All of that measured the operator's cost, not the writer's use.
+ * A writer needs one number per tool: how many of today's Polish actions are left. Tokens and cost
+ * still exist and still matter — to an operator, on the admin dashboards, where they belong.
  */
 export function UsagePage(): ReactElement {
-  usePageTitle('AI usage');
+  usePageTitle('Usage');
   const enabled = isMonetizationEnabled();
   const usage = useMonetizationUsage();
 
@@ -39,17 +35,19 @@ export function UsagePage(): ReactElement {
       <QEmptyState
         icon={Gauge}
         title="Usage isn’t available yet"
-        description="AI allowances arrive with subscriptions."
+        description="Tool allowances arrive with subscriptions."
       />
     );
   }
 
+  const allowances = normalizeAllowances(usage.data?.quotas);
+
   return (
     <div className="flex flex-col gap-6">
       <section>
-        <h2 className="text-ink mb-1 font-serif text-xl font-semibold">AI usage</h2>
+        <h2 className="text-ink mb-1 font-serif text-xl font-semibold">Usage</h2>
         <p className="text-ink-secondary text-sm">
-          What your AI requests have consumed, and how much allowance is left.
+          What you’ve used of each writing tool, and how much is left.
         </p>
       </section>
 
@@ -63,64 +61,20 @@ export function UsagePage(): ReactElement {
             {messageFor(usage.error instanceof ApiError ? usage.error.code : undefined)}
           </p>
         </QCard>
-      ) : usage.data ? (
-        <>
-          {/* Named so the window cards are addressable as a group — the page renders a second list
-               (the per-feature breakdown) whose items share the `listitem` role. */}
-          <ul aria-label="Usage windows" className="grid gap-4 md:grid-cols-3">
-            <UsageWindowCard window={usage.data.daily} />
-            <UsageWindowCard window={usage.data.monthly} />
-            <UsageWindowCard window={usage.data.total} />
-          </ul>
-
-          <QCard as="section" aria-labelledby="forecast-heading" className="flex flex-col gap-2">
-            <h3 id="forecast-heading" className="text-ink text-base font-semibold">
-              This month, projected
-            </h3>
-            {/*
-             * A linear projection to period end, and labelled as an estimate because that is all it
-             * is — the server extrapolates from spend so far, so it reads high early in a month after
-             * a burst and means nothing on day one.
-             */}
-            <p className="text-ink-secondary text-sm">
-              About {formatTokens(usage.data.forecastMonthlyTokens)} tokens, roughly{' '}
-              {formatUsd(usage.data.forecastMonthlyCostUsd)} of AI cost, if this month continues at
-              its current pace.
-            </p>
-          </QCard>
-
-          {usage.data.byFeature.length > 0 ? (
-            <section aria-labelledby="by-feature-heading" className="flex flex-col gap-3">
-              <h3 id="by-feature-heading" className="text-ink text-base font-semibold">
-                By feature
-              </h3>
-              <ul aria-label="Usage by feature" className="divide-line flex flex-col divide-y">
-                {usage.data.byFeature.map((entry) => (
-                  <li
-                    key={entry.feature}
-                    className="flex items-baseline justify-between gap-3 py-2"
-                  >
-                    <span className="text-ink text-sm">{featureLabel(entry.feature)}</span>
-                    <span className="text-ink-muted text-sm">
-                      {formatTokens(entry.tokens)} tokens · {formatTokens(entry.requests)} requests
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ) : (
-            <p className="text-ink-muted text-sm">
-              No AI requests yet — the breakdown appears once you use an AI feature.
-            </p>
-          )}
-
-          {/*
-           * D5 removed the cross-link that sat here, to a page showing the AI platform's raw token
-           * ledger. Tokens are an operator's unit, not a writer's — the writer's unit is now an
-           * action count, which is what this page reports — and the page it pointed at is gone.
-           */}
-        </>
-      ) : null}
+      ) : allowances.length > 0 ? (
+        <ul aria-label="Tool allowances" className="grid gap-4 md:grid-cols-3">
+          {allowances.map((allowance) => (
+            <FeatureAllowanceCard key={allowance.key} allowance={allowance} />
+          ))}
+        </ul>
+      ) : (
+        /*
+         * Empty is legitimate, not an error. The server reports no allowances when the plan grants
+         * every tool without limit — the enterprise case — and a page that said "0 of 0" there would
+         * invent a wall that does not exist.
+         */
+        <p className="text-ink-muted text-sm">Your plan doesn’t limit any of the writing tools.</p>
+      )}
     </div>
   );
 }

@@ -1,6 +1,8 @@
 import {
+  AI_QUOTA_RULES,
   DEFAULT_PLAN_FEATURES,
   DEFAULT_PLAN_LIMITS,
+  QuotaWindow,
   NEGATIVE_UNLIMITED_LIMIT_KEYS,
   UNLIMITED_SEATS,
   resolvePlanLimit,
@@ -150,14 +152,44 @@ export function featureDelta(
  * Whether a premium code is actually ENFORCED by a server route today, which decides whether
  * granting it changes anything.
  *
- * Exactly two are: `ai_budget` (the usage meter asserts it on every AI request) and `ai_writing`
- * (D3, enforced 2026-08-17 — same meter, per-feature). The remaining six are computed by the
- * Entitlement Service and asserted by nothing, which is D4's deferred scope (docs/48 §5.2
- * consequence 1). An operator granting one of those six should know it will have no effect, because
- * the alternative is a support ticket about a grant that "didn't work".
+ * Exactly two are: `ai_writing` (D3, enforced 2026-08-17 — the usage meter asserts it per feature)
+ * and `story_intelligence` (D4, enforced 2026-08-24 — all six graph reads plus D5's map trigger).
+ * The rest are computed by the Entitlement Service and asserted by nothing, which is D4's deferred
+ * scope (docs/48 §5.2 consequence 1). An operator granting one of those should know it will have no
+ * effect, because the alternative is a support ticket about a grant that "didn't work".
+ *
+ * **`ai_budget` left this set in D5, and its absence is now the truthful answer.** It was the
+ * blanket "may you use AI at all" code, asserted on every request to guard a credit balance; B4
+ * removed the credit economy and the assertion with it. The code still appears in the compiled
+ * catalogue until Phase V, so an operator can still be shown it — and must now be told, correctly,
+ * that granting it does nothing.
  */
-const ENFORCED_CODES = new Set<string>(['ai_budget', 'ai_writing']);
+const ENFORCED_CODES = new Set<string>(['ai_writing', 'story_intelligence']);
 
 export function isEnforcedCode(code: string): boolean {
   return ENFORCED_CODES.has(code);
 }
+
+/**
+ * A plan-limit key as an operator reads it — "Polish actions / day" rather than
+ * `polishActionsPerDay`.
+ *
+ * D5's three allowance keys are named from `AI_QUOTA_RULES`, so a rule's label and its window are
+ * stated once and this follows them. Everything else falls back to the raw key: the set is open by
+ * design (limits are tunable data, added without a type change), and printing the key is honest
+ * where inventing a label would guess at what a new one means.
+ */
+export function limitKeyLabel(key: string): string {
+  const rule = AI_QUOTA_RULES.find((entry) => entry.limitKey === key);
+  if (rule !== undefined) {
+    return `${rule.label} / ${rule.window === QuotaWindow.Monthly ? 'month' : 'day'}`;
+  }
+  return OTHER_LIMIT_LABELS[key] ?? key;
+}
+
+/** The non-allowance keys, which belong to other features and have no rule to read. */
+const OTHER_LIMIT_LABELS: Record<string, string> = {
+  maxPieces: 'Pieces',
+  maxCollaborators: 'Collaborator seats',
+  maxSnapshotHistory: 'Version history depth',
+};

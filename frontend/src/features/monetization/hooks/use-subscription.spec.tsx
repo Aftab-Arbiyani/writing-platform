@@ -121,7 +121,7 @@ describe('useSubscription — no subscription', () => {
  * controls on screen after the plan that granted them ended.
  */
 describe('useSubscriptionActions — cache invalidation', () => {
-  it('invalidates subscription, entitlements, usage and credits on success', async () => {
+  it('invalidates subscription, entitlements and usage on success', async () => {
     cancel.mockResolvedValue(subscription({ cancelAtPeriodEnd: true }));
     const { invalidate, wrapper } = setup();
     const { result } = renderHook(() => useSubscriptionActions(), { wrapper });
@@ -136,7 +136,8 @@ describe('useSubscriptionActions — cache invalidation', () => {
     expect(keys).toContain(JSON.stringify(qk.monetization.subscription()));
     expect(keys).toContain(JSON.stringify(qk.monetization.entitlements()));
     expect(keys).toContain(JSON.stringify(qk.monetization.usage()));
-    expect(keys).toContain(JSON.stringify(qk.monetization.credits()));
+    // D5 dropped the credits key from this set: there is no wallet to refresh, and invalidating a
+    // key nothing reads is a re-fetch of nothing.
   });
 
   it('cancels at period end by default — `immediate` is never sent implicitly', async () => {

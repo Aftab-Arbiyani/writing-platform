@@ -167,7 +167,7 @@ describe('/write — the writing-tools entitlement gate (D3)', () => {
     fireEvent.click(screen.getByRole('tab', { name: 'Story Map' }));
 
     await waitFor(() => {
-      expect(screen.getByText('Story intelligence needs a paid plan')).toBeInTheDocument();
+      expect(screen.getByText('Story Map is on Pro and above')).toBeInTheDocument();
     });
   });
 
@@ -183,14 +183,14 @@ describe('/write — the writing-tools entitlement gate (D3)', () => {
     await waitFor(() => {
       expect(screen.getByRole('group', { name: 'Story Map view' })).toBeInTheDocument();
     });
-    expect(screen.queryByText('Story intelligence needs a paid plan')).not.toBeInTheDocument();
+    expect(screen.queryByText('Story Map is on Pro and above')).not.toBeInTheDocument();
   });
 
   it('does NOT sell a plan while monetization is dark — it says the feature has not shipped', async () => {
     /*
      * The trap mobile hit first (`story_explorer_screen.dart`). `PremiumGate` fails closed and that
      * includes the client flag being off, so without the dark-launch branch every viewer of a
-     * dark-launched deployment would be told a feature that does not exist yet "needs a paid plan"
+     * dark-launched deployment would be told a feature that does not exist yet needs a paid plan
      * — and sent to a plans page that is itself switched off.
      */
     enabled.mockReturnValue(false);
@@ -203,7 +203,7 @@ describe('/write — the writing-tools entitlement gate (D3)', () => {
     await waitFor(() => {
       expect(screen.getByText('Story Map isn’t available yet')).toBeInTheDocument();
     });
-    expect(screen.queryByText('Story intelligence needs a paid plan')).not.toBeInTheDocument();
+    expect(screen.queryByText('Story Map is on Pro and above')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'See plans' })).not.toBeInTheDocument();
   });
 

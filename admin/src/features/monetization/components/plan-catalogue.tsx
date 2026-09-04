@@ -8,6 +8,7 @@ import {
   featureDelta,
   featureProvenance,
   isEnforcedCode,
+  limitKeyLabel,
   limitKeysFor,
   sentinelNote,
   type LimitReading,
@@ -142,7 +143,13 @@ function LimitRow({ reading }: { reading: LimitReading }): ReactElement {
     <li className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-2">
       <div className="flex min-w-0 flex-col gap-0.5">
         <span className="flex items-center gap-2">
-          <code className="font-mono text-sm text-ink">{reading.key}</code>
+          {/*
+            The label first, the raw key beside it. D5 added three allowance keys whose names an
+            operator cannot decode on sight (`polishActionsPerDay`), and the key still has to be
+            visible because it is what they edit in the JSON — so both, rather than choosing.
+          */}
+          <span className="text-sm text-ink">{limitKeyLabel(reading.key)}</span>
+          <code className="font-mono text-xs text-ink-muted">{reading.key}</code>
           <ProvenanceBadge provenance={reading.provenance} />
           {reading.inverted ? (
             <QTag color="warning">

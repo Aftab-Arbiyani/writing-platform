@@ -49,7 +49,7 @@ export function PlansPage(): ReactElement {
       <QEmptyState
         icon={CreditCard}
         title="Plans aren’t available yet"
-        description="Subscriptions and AI credits arrive with the next release."
+        description="Subscriptions arrive with the next release."
       />
     );
   }
@@ -84,7 +84,8 @@ export function PlansPage(): ReactElement {
       <section>
         <h2 className="text-ink mb-1 font-serif text-xl font-semibold">Plans</h2>
         <p className="text-ink-secondary text-sm">
-          Every plan includes the whole writing app. Paid tiers raise your AI allowance.
+          Every plan includes the whole writing app. Paid tiers raise how much you can use each
+          writing tool.
         </p>
       </section>
 

@@ -47,7 +47,6 @@ export const retrievalConfigSchema = z.object({
   timeoutMs: z.number().int().min(bounds.timeoutMs.min).max(bounds.timeoutMs.max),
   sources: sourcesSchema,
   rankingWeights: rankingWeightsSchema,
-  synthesisEnabled: z.boolean(),
 });
 
 export type RetrievalConfigForm = z.infer<typeof retrievalConfigSchema>;

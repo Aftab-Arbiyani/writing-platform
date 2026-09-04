@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
 import { couponValueHint } from './coupon-value';
-import { adjustmentResult, planAdjustment } from './credit-adjustment';
 import { refundOutcome } from './refund-outcome';
 
 /**
@@ -73,69 +72,12 @@ describe('refundOutcome — four failures, four remedies (docs/48 §3.6)', () =>
   });
 });
 
-describe('planAdjustment — a deduction confirms, a grant does not', () => {
-  it('marks a deduction destructive and titles it as a deduction', () => {
-    const plan = planAdjustment(-500, 1200);
-
-    expect(plan.direction).toBe('deduct');
-    expect(plan.destructive).toBe(true);
-    expect(plan.magnitude).toBe(500);
-    expect(plan.title).toBe('Deduct 500 credits?');
-  });
-
-  it('projects the resulting balance now that one can be read', () => {
-    // A1 could state only the delta and the floor rule, because no admin route read another user's
-    // wallet (A1-3). `GET users/:userId/credits` closed that, so the confirmation states the result.
-    const plan = planAdjustment(-500, 1200);
-
-    expect(plan.consequence).toMatch(/from 1,200 to 700 credits/i);
-    expect(plan.consequence).toMatch(/cannot be undone/i);
-  });
-
-  it('says the clamp will bite rather than projecting a negative balance', () => {
-    // DECISION 3: `CreditService.apply` computes `Math.max(0, balance + delta)`
-    // (credit.service.ts:111) and B8 leaves that alone. So the projection mirrors it — "200 → -300"
-    // would be a number the server refuses to honour, and a bare "success" would hide that only 200
-    // of the 500 was actually taken.
-    const plan = planAdjustment(-500, 200);
-
-    expect(plan.consequence).toMatch(/emptied to 0 rather than going negative/i);
-    expect(plan.consequence).toMatch(/only 200 credits are actually removed/i);
-    expect(plan.consequence).not.toMatch(/-300/);
-  });
-
-  it('says an empty wallet will lose nothing, rather than "only 0 credits removed"', () => {
-    // The commonest account state on this screen deserves a sentence that reads like English.
-    const plan = planAdjustment(-500, 0);
-
-    expect(plan.consequence).toMatch(/holds no credits, so the deduction removes nothing/i);
-    expect(plan.consequence).toMatch(/recorded in the audit trail/i);
-  });
-
-  it('falls back to the floor rule when the balance has not been read yet', () => {
-    // `null` is "unknown", not "zero": an unread balance must not be projected from, and an empty
-    // wallet is a real balance of 0. Both are certain statements; only one is a projection.
-    const plan = planAdjustment(-500, null);
-
-    expect(plan.consequence).toMatch(/will not go below zero/i);
-    expect(plan.consequence).not.toMatch(/from .* to .* credits/i);
-  });
-
-  it('leaves a grant non-destructive so the dialog stays meaningful', () => {
-    const plan = planAdjustment(250, 1200);
-
-    expect(plan.direction).toBe('grant');
-    expect(plan.destructive).toBe(false);
-    expect(plan.consequence).toMatch(/from 1,200 to 1,450 credits/i);
-    expect(plan.consequence).toMatch(/immediately spendable/i);
-  });
-
-  it('reports only the server’s post-clamp balance afterwards', () => {
-    expect(adjustmentResult('deduct', 0)).toBe("Deducted. The account's balance is now 0 credits.");
-    expect(adjustmentResult('grant', 1500)).toMatch(/now 1,500 credits/);
-  });
-});
-
+/**
+ * D5 deleted the `planAdjustment` block that sat here — the confirmation copy for an operator
+ * granting or deducting AI credits, including B8's projection of the resulting balance and the
+ * `Math.max(0, …)` clamp it mirrored. B4 removed the wallet, so there is no balance to project and
+ * no route to adjust.
+ */
 describe('couponValueHint — the same integer means six things', () => {
   it('distinguishes a percentage from an amount in minor units', () => {
     expect(couponValueHint('percentage_discount')).toMatch(/20% off/);

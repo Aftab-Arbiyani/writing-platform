@@ -172,19 +172,28 @@ describe('featureProvenance — array granularity, because the merge replaces wh
 });
 
 describe('isEnforcedCode — which grants actually do something', () => {
-  it('names ai_writing as enforced', () => {
-    // `ai_writing` became enforceable on 2026-08-17 (D3). `ai_budget` was the other enforced code
-    // until D5 removed the credit economy it guarded; `story_intelligence` joins this list when the
-    // admin half of D5 lands.
+  it('names ai_writing and story_intelligence as enforced', () => {
+    // `ai_writing` became enforceable on 2026-08-17 (D3); `story_intelligence` on 2026-08-24 (D4).
     expect(isEnforcedCode(PremiumFeature.AiWriting)).toBe(true);
+    expect(isEnforcedCode(PremiumFeature.StoryIntelligence)).toBe(true);
   });
 
-  it('reports D4 codes as unenforced, so a grant is not sold as effective', () => {
+  /**
+   * The point of this whole function: an operator granting an unenforced code should be told it
+   * will have no effect, because the alternative is a support ticket about a grant that "didn't
+   * work".
+   *
+   * **`ai_budget` moved into this list in D5, and that is the assertion worth having.** It was the
+   * one code asserted on every AI request, guarding a credit balance; B4 removed the balance and the
+   * assertion. It still appears in the compiled catalogue until Phase V, so an operator can still be
+   * shown it — and being shown it as ENFORCED would now be a lie.
+   */
+  it('reports the unenforced codes as unenforced, so a grant is not sold as effective', () => {
     for (const code of [
+      PremiumFeature.AiBudget,
       PremiumFeature.AiDiscovery,
       PremiumFeature.PremiumSearch,
       PremiumFeature.PremiumRecommendations,
-      PremiumFeature.StoryIntelligence,
       PremiumFeature.AdvancedAnalytics,
       PremiumFeature.PublishingPro,
     ]) {

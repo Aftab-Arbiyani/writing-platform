@@ -102,10 +102,6 @@ const router = createBrowserRouter([
               { path: 'billing/plans', lazy: () => import('@/app/routes/settings/billing-plans') },
               { path: 'billing/usage', lazy: () => import('@/app/routes/settings/billing-usage') },
               {
-                path: 'billing/credits',
-                lazy: () => import('@/app/routes/settings/billing-credits'),
-              },
-              {
                 path: 'billing/history',
                 lazy: () => import('@/app/routes/settings/billing-history'),
               },

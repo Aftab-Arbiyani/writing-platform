@@ -77,8 +77,8 @@ export function useSubscription() {
  * **Each invalidates the entitlement snapshot as well as the subscription.** The snapshot is what
  * gates read, the server derives it from the subscription, and its own cache is invalidated on the
  * same transition — so a cancel that left a stale snapshot in place would keep premium controls on
- * screen after the plan that granted them ended. Usage and credits go too: a tier change moves the
- * quota limits and the monthly credit grant.
+ * screen after the plan that granted them ended. Usage goes too: a tier change moves the per-tool
+ * allowances.
  */
 export function useSubscriptionActions() {
   const client = useQueryClient();
@@ -88,7 +88,6 @@ export function useSubscriptionActions() {
       client.invalidateQueries({ queryKey: qk.monetization.subscription() }),
       client.invalidateQueries({ queryKey: qk.monetization.entitlements() }),
       client.invalidateQueries({ queryKey: qk.monetization.usage() }),
-      client.invalidateQueries({ queryKey: qk.monetization.credits() }),
     ]);
   };
 

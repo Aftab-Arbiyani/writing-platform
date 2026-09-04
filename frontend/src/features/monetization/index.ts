@@ -13,7 +13,6 @@
 export { SubscriptionPage } from './pages/subscription-page';
 export { PlansPage } from './pages/plans-page';
 export { UsagePage } from './pages/usage-page';
-export { CreditsPage } from './pages/credits-page';
 export { BillingHistoryPage } from './pages/billing-history-page';
 
 export { PremiumGate, FeatureLockCard, EntitlementExpiryNote } from './components/premium-gate';
@@ -37,7 +36,6 @@ export {
   windowNoun,
 } from './lib/feature-allowances';
 export type { FeatureAllowance } from './lib/feature-allowances';
-export { useCreditBalance, useCreditLedger } from './hooks/use-credits';
 export {
   useInvoices,
   usePayments,

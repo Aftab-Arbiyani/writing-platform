@@ -27,18 +27,14 @@ import type {
  * server-side, and that has a consequence the operator has to be told once rather than discover —
  * **clearing a row does not delete the key.** The form says so at the table, not in a tooltip.
  *
- * A patch confirms first, because `creditsPerUsd` re-prices every future AI debit platform-wide,
- * `gracePeriodDays` changes how long a failed renewal keeps access, and a tax or currency rate moves
- * what every future subscription costs. The confirmation lists only what actually changed, with
+ * A patch confirms first, because `gracePeriodDays` changes how long a failed renewal keeps access,
+ * and a tax or currency rate moves what every future subscription costs.
+ *
+ * D5 removed two fields from this form — `creditsPerUsd` and `lowCreditThreshold`. B4 deleted the
+ * credit economy they configured, so both were operator controls over a number nothing reads. The confirmation lists only what actually changed, with
  * before → after, so an operator sees the consequence rather than a generic "are you sure".
  */
 const EDITABLE_FIELDS = [
-  {
-    key: 'creditsPerUsd' as const,
-    label: 'Credits per USD',
-    hint: 'Converts AI cost into credits on every debit. Changing it re-prices all future AI usage.',
-    min: 1,
-  },
   {
     key: 'trialDays' as const,
     label: 'Trial days',
@@ -49,12 +45,6 @@ const EDITABLE_FIELDS = [
     key: 'gracePeriodDays' as const,
     label: 'Grace period (days)',
     hint: 'How long access survives a failed renewal before it ends.',
-    min: 0,
-  },
-  {
-    key: 'lowCreditThreshold' as const,
-    label: 'Low-credit threshold',
-    hint: 'Below this balance the user is warned that credits are running out.',
     min: 0,
   },
 ];
@@ -81,10 +71,8 @@ export function ConfigForm({ config }: ConfigFormProps): ReactElement {
   const toast = useToast();
   const patch = usePatchConfig();
   const [draft, setDraft] = useState<Record<EditableKey, string>>(() => ({
-    creditsPerUsd: String(config.creditsPerUsd),
     trialDays: String(config.trialDays),
     gracePeriodDays: String(config.gracePeriodDays),
-    lowCreditThreshold: String(config.lowCreditThreshold),
   }));
   const [tables, setTables] = useState<TableDraft>(() => initialTableDraft(config));
   const [confirming, setConfirming] = useState(false);
