@@ -1,9 +1,9 @@
 # 48 — Platform Parity Register (web ↔ mobile)
 
 > 🔨 **IN FLIGHT, 2026-09-03 — D5 removes the AI surface.** The backend is complete (`9214fc6`,
-> `7f3b459`, `952a790`, `d4d03b6`) and the **web app half has landed** (`52922b3`, `468e6f3`,
-> `b349798`). **Mobile has not moved**, and neither has the admin/monetization UI, so parts of this
-> register still describe surfaces the server no longer serves. The decision, the
+> `7f3b459`, `952a790`, `d4d03b6`) and **web is done — frontend and admin** (`52922b3`, `468e6f3`,
+> `b349798`, `08862fd`). **Mobile has not moved** and the E2E suite has not been rewritten, so parts
+> of this register still describe surfaces the server no longer serves. The decision, the
 > built-vs-outstanding table, and the defect that state opens (**D5-clients**, §3.22a — now half
 > closed) are in
 > [§5.2 → D5](#d5--the-ai-surface-is-removed-the-tools-stay-owner-2026-09-02). Read that before
@@ -5405,9 +5405,9 @@ language model. Your text isn't used to train it."_ — plus a privacy-policy cl
 considered and rejected: this audience punishes discovery far harder than disclosure, and GDPR
 processor disclosure and the EU AI Act's transparency article both bind regardless.
 
-**Status — built vs outstanding.** The backend is COMPLETE (B1–B4) and the **web app half is done
-(F0, F1)**. Admin and the monetization UI (F2), all of mobile, and the two contract phases remain,
-so the mobile claims in the table above are still decisions rather than states.
+**Status — built vs outstanding.** The backend is COMPLETE (B1–B4) and **web is COMPLETE — frontend
+and admin (F0–F2)**. The E2E suite (F3), all of mobile, and the two contract phases remain, so the
+mobile claims in the table above are still decisions rather than states.
 
 `D5-clients` in [§3.22a](#322a-product-defects--a-user-or-an-operator-can-hit-these) is **half
 closed**: web no longer calls anything B2 deleted, mobile still does.
@@ -5421,7 +5421,7 @@ closed**: web no longer calls anything B2 deleted, mobile still does.
 | **F0**    | Web + admin test fixtures moved off the vocabulary V deletes, so V is one reviewable diff                                     | ✅ `52922b3` |
 | **F1a**   | One search, public: engine toggle gone, `All` is the ranked scope, the three gates become auth gates                          | ✅ `468e6f3` |
 | **F1b**   | Writing tools drawer (Polish · Feedback · Story Map), "Map this story", 5 routes + Ask deleted, availability shrunk           | ✅ `b349798` |
-| **F2**    | Monetization UI: allowance cards, credits pages deleted, plan/labels copy, admin synthesis + credit forms                     | ⬜           |
+| **F2**    | Monetization UI: allowance cards, credits pages deleted, plan/labels copy, admin synthesis + credit forms                     | ✅ `08862fd` |
 | **F3**    | E2E: rewrite `search`/`assistant`/`ai-surfaces` specs, re-mint the visual baselines                                           | ⬜           |
 | **M1–M4** | Mobile: Polish sheet, `shared/retrieval`, allowance cards, copy sweep                                                         | ⬜           |
 | **V**     | Vocabulary contract — delete the deprecated enum values, api-types and wire fields in one coordinated PR                      | ⬜           |
