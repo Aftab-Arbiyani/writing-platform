@@ -2,14 +2,14 @@
 
 > 🔨 **IN FLIGHT, 2026-09-07 — D5 removes the AI surface.** The backend is complete (`9214fc6`,
 > `7f3b459`, `952a790`, `d4d03b6`), **web is done — frontend and admin** (`52922b3`, `468e6f3`,
-> `b349798`, `08862fd`), **mobile is done** (`8e6e302`, `5f410c7`, `efb4aff`, `96fa9a6`), and the
-> **vocabulary contract has landed** (`cd28cfd`, mobile `f7a5891`). **D5-clients is closed**, and no
-> deprecated D5 vocabulary remains in `@qalam/shared` or on the wire.
+> `b349798`, `08862fd`), **mobile is done** (`8e6e302`, `5f410c7`, `efb4aff`, `96fa9a6`), the
+> **vocabulary contract has landed** (`cd28cfd`, mobile `f7a5891`), and the **DB contraction is
+> applied** (`7597e01`). **D5-clients is closed.** No deprecated D5 vocabulary remains in
+> `@qalam/shared` or on the wire, and the four dead tables and two dead columns are gone.
 >
-> **Two things remain.** The E2E suite is rewritten but has **never run against a browser**, and six
-> visual baselines still need a CI re-mint (**F3**); and the DB contraction (**C**) has not started,
-> so four dead tables are still on disk with entity files kept alive expressly to stop a generated
-> migration dropping them by surprise. The decision and the built-vs-outstanding table are in
+> **One thing remains, and it is not code.** The E2E suite is rewritten but has **never run against a
+> browser**, and six visual baselines still need a CI re-mint (**F3**). The decision and the
+> built-vs-outstanding table are in
 > [§5.2 → D5](#d5--the-ai-surface-is-removed-the-tools-stay-owner-2026-09-02). Read that before
 > scheduling anything that touches AI, search, or plan limits.
 
@@ -5438,7 +5438,7 @@ cancels a live push run** — check `gh run list` first (§3.25 records killing 
 | **M3**  | Mobile: allowance cards, plan-limit allowlist, credits deleted, quota copy names the tool                                        | ✅ `efb4aff` |
 | **M4**  | Mobile: copy sweep — the "AI" grep gate returns zero, pinned by a test over every error branch                                   | ✅ (this)    |
 | **V**   | Vocabulary contract — deprecated enum values, api-types and inert wire fields deleted in one coordinated commit                  | ✅ `cd28cfd` |
-| **C**   | DB contract — drop `ai_conversations`, `ai_messages`, `credit_wallets`, `credit_transactions`                                    | ⬜           |
+| **C**   | DB contract — the four tables, `ai_usage_logs.conversation_id`, `purchases.credits_granted`, and the dead catalogue rows         | ✅ `7597e01` |
 
 **Wire compatibility was deliberate until V, and V has now closed it.** `conversationId`,
 `synthesize`, `synthesisEnabled`, `answer` and `creditsGranted` were all accepted or returned inert
@@ -5514,6 +5514,25 @@ remain product-undefined rather than unbuilt.
   in `ai-writing-entitlement.spec.ts` listed five codes; `grammar`, `rewrite` and `summarization` had
   no caller anywhere and existed only so `uncountedPaidAiFeatures` would not flag them. A test can be
   green and still be measuring nothing.
+
+**What phase C taught, including a correction to what V recorded here:**
+
+- **A generator will not drop a table whose entity you deleted, and this register said the
+  opposite.** V's entry claimed the four entity files were kept on disk "expressly to stop a
+  generated migration dropping them by surprise". That is backwards: **TypeORM's schema differ only
+  considers tables that still have an entity**, so deleting the class makes the table _invisible_ to
+  it. The generated Phase C migration contained the two `ALTER … DROP COLUMN`s and **no `DROP TABLE`
+  at all** — all four had to be added by hand, and without that they would have survived every future
+  generation in silence. The sequencing V produced was still correct, for a different reason: a drop
+  should be deliberate and reviewed, which is what writing them out makes it. Corrected here because
+  a register that keeps a plausible wrong mechanism is worse than one that says nothing.
+- **The generator's blind spot is the argument for the drift block.** Every generation here emits
+  ~210 statements of pre-existing drift that must be pruned; the one thing it could not do was the
+  removal actually being asked for. Reviewing what a generator produces is not optional even when the
+  change looks purely subtractive.
+- **`docs/04` needed no edit, which is a scope fact rather than an omission.** Its table catalogue
+  covers the frozen v1 core (Identity → Analytics) and has never had AF1/AF3/AF4/AF5/AF6 sections, so
+  it never described the tables C dropped. The plan listed the update; there was nothing to update.
 
 ---
 
