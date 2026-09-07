@@ -2,14 +2,14 @@
 
 > 🔨 **IN FLIGHT, 2026-09-07 — D5 removes the AI surface.** The backend is complete (`9214fc6`,
 > `7f3b459`, `952a790`, `d4d03b6`), **web is done — frontend and admin** (`52922b3`, `468e6f3`,
-> `b349798`, `08862fd`), and **mobile is done** (`8e6e302`, `5f410c7`, `efb4aff`, M4). **D5-clients
-> is closed**: neither client calls anything B2 deleted.
+> `b349798`, `08862fd`), **mobile is done** (`8e6e302`, `5f410c7`, `efb4aff`, `96fa9a6`), and the
+> **vocabulary contract has landed** (`cd28cfd`, mobile `f7a5891`). **D5-clients is closed**, and no
+> deprecated D5 vocabulary remains in `@qalam/shared` or on the wire.
 >
-> **Two things remain, and neither is a client.** The E2E suite is rewritten but has never run
-> against a browser and six visual baselines still need a CI re-mint (**F3**); and the vocabulary and
-> DB contractions (**V**, **C**) have not started — so parts of this register still name enum values
-> and tables that exist only to keep already-shipped clients from 400ing. The decision and the
-> built-vs-outstanding table are in
+> **Two things remain.** The E2E suite is rewritten but has **never run against a browser**, and six
+> visual baselines still need a CI re-mint (**F3**); and the DB contraction (**C**) has not started,
+> so four dead tables are still on disk with entity files kept alive expressly to stop a generated
+> migration dropping them by surprise. The decision and the built-vs-outstanding table are in
 > [§5.2 → D5](#d5--the-ai-surface-is-removed-the-tools-stay-owner-2026-09-02). Read that before
 > scheduling anything that touches AI, search, or plan limits.
 
@@ -5437,16 +5437,19 @@ cancels a live push run** — check `gh run list` first (§3.25 records killing 
 | **M2**  | Mobile: one search; retrieval lifted to `lib/shared/retrieval/`; recommendation shelves onto `/discover`; saved searches rehomed | ✅ `5f410c7` |
 | **M3**  | Mobile: allowance cards, plan-limit allowlist, credits deleted, quota copy names the tool                                        | ✅ `efb4aff` |
 | **M4**  | Mobile: copy sweep — the "AI" grep gate returns zero, pinned by a test over every error branch                                   | ✅ (this)    |
-| **V**   | Vocabulary contract — delete the deprecated enum values, api-types and wire fields in one coordinated PR                         | ⬜           |
+| **V**   | Vocabulary contract — deprecated enum values, api-types and inert wire fields deleted in one coordinated commit                  | ✅ `cd28cfd` |
 | **C**   | DB contract — drop `ai_conversations`, `ai_messages`, `credit_wallets`, `credit_transactions`                                    | ⬜           |
 
-**Wire compatibility is deliberate until V.** `conversationId`, `synthesize`, `synthesisEnabled` and
-`answer` are all still accepted or returned, inert. That is not laziness: the validation pipe runs
-with `forbidNonWhitelisted` — verified live, an unknown property is rejected — so removing
-`conversationId` from the DTO would have turned every request from an already-shipped client into a
-400 rather than a harmless no-op. The api-types shapes moved to `UNMIRRORED` with an expiry reason
-rather than being dropped, which keeps the completeness check honest while the clients still import
-them.
+**Wire compatibility was deliberate until V, and V has now closed it.** `conversationId`,
+`synthesize`, `synthesisEnabled`, `answer` and `creditsGranted` were all accepted or returned inert
+for several phases. That was not laziness: the validation pipe runs with `forbidNonWhitelisted` —
+verified live, an unknown property is rejected — so removing `conversationId` from the DTO before the
+clients stopped sending it would have turned every request from an already-shipped client into a 400
+rather than a harmless no-op. The api-types shapes sat in `UNMIRRORED` with an **expiry reason**
+rather than being dropped, which kept the completeness check honest meanwhile; when the clients
+landed, the guard's own "lists nothing it no longer needs to" test is what forced the exemptions to
+be cleaned up rather than quietly outliving their reason. **An exemption with a stated end date is a
+debt; one without is a decision nobody made on purpose.**
 
 **Rows this makes moot** (struck where they live, listed here so the ledger stays the one source):
 `T-7` (the `assistant.spec.ts` flake — the spec is replaced by `writing-tools.spec.ts` in F1) and
@@ -5479,6 +5482,38 @@ remain product-undefined rather than unbuilt.
 - **A writer who turned AI off before D5 is stuck.** B5's per-account switch stays live server-side
   and defaults to true, but its screen is deleted, so `AI_DISABLED_BY_USER` now shares the platform-off
   copy: it blames nobody and promises nothing, because the remedy it used to name no longer exists.
+
+**What the vocabulary contract taught, recorded because none of it was in the plan:**
+
+- **Not every retired value may be deleted, and the codebase had already drawn the line.** B4 kept
+  `NotificationType.CreditsLow` "because rows may exist in `notifications`", and F2 kept
+  `PurchaseKind.Credits` so a pack somebody really bought still reads as one. Applying that same test
+  to V's delete-list turned up one symbol the plan got wrong: **`RetrievalIntent.Ask` stays.** It is
+  not only vocabulary — `retrieval_query_logs.intent` is a live column, **Phase C does not drop that
+  table**, and admin's `INTENT_LABELS` is pinned `satisfies Record<RetrievalIntent, string>`, so
+  deleting the value would have deleted the label with it and shown an operator the raw token `ask`
+  for requests that really happened. The rule worth keeping: **a value describing rows in a surviving
+  table outlives the feature that wrote them.** Deleting the mechanism is not the same as deleting the
+  history.
+- **A removal can be inert exactly where it matters.** Taking `ai_budget` out of `PremiumFeature`
+  changes nothing on any seeded deployment, because a stored `monetization.plans` row **replaces** the
+  compiled `features` array wholesale — so every existing database would have kept serving the code
+  forever, putting a credit entitlement back on the plan card D5 had just cleared. This is the same
+  trap D4 hit from the opposite side (§5.2), and it takes the same answer: apply the change at
+  **resolution** (`knownPremiumCodes`), not in the compiled defaults.
+- **One removal could not wait for C.** `UsageService.getSummary` computed the token rollups on
+  `GET /monetization/usage` by aggregating `credit_transactions` — a table B4 stopped writing and C
+  drops. The figures had already begun decaying toward zero while still being presented to a writer as
+  a measurement, and after C the query would have failed outright. The phase boundary was drawn on
+  vocabulary; the actual dependency was on a table.
+- **Cache keys outlive deploys.** A `v1` entitlement snapshot is JSON in Redis listing `ai_budget`, so
+  the first request after release would have handed the new build a premium code it no longer has —
+  for the full 60s TTL, for every user warm in the cache. `MONETIZATION_CACHE.entitlements` is `v2`.
+  Same class as the boot-race cache poisoning in §3.25's neighbourhood: Redis does not redeploy.
+- **Three fifths of D3's gate was being proved against features nothing could invoke.** `GATED_FEATURES`
+  in `ai-writing-entitlement.spec.ts` listed five codes; `grammar`, `rewrite` and `summarization` had
+  no caller anywhere and existed only so `uncountedPaidAiFeatures` would not flag them. A test can be
+  green and still be measuring nothing.
 
 ---
 
