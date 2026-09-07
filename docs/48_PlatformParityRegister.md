@@ -5405,9 +5405,15 @@ language model. Your text isn't used to train it."_ — plus a privacy-policy cl
 considered and rejected: this audience punishes discovery far harder than disclosure, and GDPR
 processor disclosure and the EU AI Act's transparency article both bind regardless.
 
-**Status — built vs outstanding.** The backend is COMPLETE (B1–B4) and **web is COMPLETE — frontend
-and admin (F0–F2)**. The E2E suite (F3), all of mobile, and the two contract phases remain, so the
-mobile claims in the table above are still decisions rather than states.
+**Status — built vs outstanding.** The backend is COMPLETE (B1–B4), **web is COMPLETE — frontend and
+admin (F0–F2)**, and the **E2E suite is rewritten but not yet run against a browser (F3)**. All of
+mobile and the two contract phases remain, so the mobile claims in the table above are still
+decisions rather than states.
+
+**F3's outstanding half is a baseline re-mint**, and it is deliberately not done blind: six shots
+changed content that legitimately changed (editor toolbar, billing hub, billing usage, plan cards,
+admin search config, admin billing actions). Minting is a `workflow_dispatch`, and **a dispatch
+cancels a live push run** — check `gh run list` first (§3.25 records killing run #31 that way).
 
 `D5-clients` in [§3.22a](#322a-product-defects--a-user-or-an-operator-can-hit-these) is **half
 closed**: web no longer calls anything B2 deleted, mobile still does.
