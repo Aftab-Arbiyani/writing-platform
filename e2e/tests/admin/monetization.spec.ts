@@ -85,7 +85,9 @@ test.describe('@phase4 admin monetization — A1a, the levers', () => {
     const monetization = new MonetizationPage(page);
     await monetization.goto(MONETIZATION_ROUTES[0]!);
 
-    // `ai_budget` and, since D3, `ai_writing`. The other six are computed and asserted by nothing.
+    // Since D3 `ai_writing`, and since D4 `story_intelligence`. D5 removed `ai_budget` from the
+    // enforced set: the meter no longer asserts it, because the credit balance it guarded is gone.
+    // The rest are computed by the Entitlement Service and asserted by nothing.
     await expect(page.getByText('enforced', { exact: true }).first()).toBeVisible();
     await expect(page.getByText('not enforced', { exact: true }).first()).toBeVisible();
   });
@@ -150,67 +152,16 @@ test.describe('@phase4 admin monetization — A1b, the money actions', () => {
     await expect(page.getByRole('alert')).toHaveCount(0);
   });
 
-  test('the credit form reads the account’s balance before anything is changed', async ({
-    page,
-    api,
-    data,
-  }) => {
-    // B8's A1-3. An account that has never had a wallet answers `credits: null`, which is a real
-    // balance of zero rather than an error — the screen has to say so calmly, and the read must not
-    // create a wallet for it.
-    //
-    // **Arranges a real account (B8-1).** This used to type a hardcoded all-zeros UUID, which named
-    // nobody; the read answered the same nullable shape either way, so the spec could not tell the
-    // two apart and neither could an operator. The read 404s an unknown id now, so "no wallet yet"
-    // is arranged the only way it means anything: a real user who has never been granted credits.
-    const target = await api.createVerifiedUser({
-      email: data.email(),
-      username: data.username(),
-      password: data.password(),
-    });
-
-    const monetization = new MonetizationPage(page);
-    await monetization.goto(MONETIZATION_ROUTES[3]!);
-
-    await page.getByLabel('User ID').first().fill(target.id);
-
-    await expect(page.getByText(/has no wallet yet/i)).toBeVisible({ timeout: 15_000 });
-    await monetization.expectNoErrorPanel();
-  });
-
-  test('a credit DEDUCTION confirms with the balance it actually read', async ({
-    page,
-    api,
-    data,
-  }) => {
-    // A real account, for the same reason as the balance test above (B8-1): the projected copy is
-    // read off a successful balance read, and an unknown id no longer produces one.
-    const target = await api.createVerifiedUser({
-      email: data.email(),
-      username: data.username(),
-      password: data.password(),
-    });
-
-    const monetization = new MonetizationPage(page);
-    await monetization.goto(MONETIZATION_ROUTES[3]!);
-
-    // Scoped to the credit card rather than `.first()`: the refund card beside it has its own
-    // "User ID" and an "Amount (optional)", so both labels are ambiguous page-wide.
-    const creditForm = monetization.creditForm;
-    await creditForm.getByLabel('User ID').fill(target.id);
-    // Wait for the balance: until it lands the form cannot project, and asserting the projected
-    // copy before the read settles would be asserting the fallback.
-    await expect(creditForm.getByText(/has no wallet yet/i)).toBeVisible({ timeout: 15_000 });
-    await creditForm.getByLabel('Amount').fill('-500');
-    await page.getByRole('button', { name: 'Deduct credits' }).click();
-
-    const dialog = page.getByRole('dialog');
-    await expect(dialog).toContainText('Deduct 500 credits?');
-    // The server clamps at zero and B8 left that alone (DECISION 3), so the confirmation says what
-    // will really happen to an empty wallet rather than promising a negative balance.
-    await expect(dialog).toContainText('holds no credits, so the deduction removes nothing');
-    await page.getByRole('button', { name: 'Cancel' }).click();
-  });
+  /**
+   * D5 deleted the two credit-form tests that sat here — the balance read (B8's A1-3) and the
+   * deduction's projected-balance confirmation (B8's DECISION 3, including the server's clamp at
+   * zero). Both drove `POST /admin/monetization/credits/adjust` and `GET users/:id/credits`, which
+   * B4 removed along with the wallet.
+   *
+   * The refund form beside it keeps both patterns those tests covered — a per-account read that
+   * must degrade calmly, and a destructive action that must confirm — so the coverage moved rather
+   * than disappearing.
+   */
 
   test('the refund form lists the account’s payments instead of demanding an ID', async ({
     page,
@@ -239,19 +190,11 @@ test.describe('@phase4 admin monetization — A1b, the money actions', () => {
     await monetization.expectNoErrorPanel();
   });
 
-  test('a grant does NOT confirm — only the destructive direction does', async ({ page }) => {
-    const monetization = new MonetizationPage(page);
-    await monetization.goto(MONETIZATION_ROUTES[3]!);
-
-    // Same two ambiguous labels as the deduction test above, scoped the same way.
-    const creditForm = monetization.creditForm;
-    await creditForm.getByLabel('User ID').fill('00000000-0000-4000-8000-000000000000');
-    await creditForm.getByLabel('Amount').fill('250');
-
-    // Confirming both would train the operator to click through dialogs.
-    await expect(page.getByRole('button', { name: 'Grant credits' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Deduct credits' })).toHaveCount(0);
-  });
+  /**
+   * D5 deleted "a grant does NOT confirm — only the destructive direction does". Its claim — that
+   * confirming both directions would train an operator to click through dialogs — is still live and
+   * still asserted, on the refund form, which is the only destructive money action left.
+   */
 
   test('a refund on an unknown payment ID blames the input and offers no retry', async ({
     page,

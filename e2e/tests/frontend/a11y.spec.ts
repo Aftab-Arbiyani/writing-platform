@@ -2,21 +2,15 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 import { expectNoSeriousA11yViolations } from '../../fixtures/a11y';
-import { freshLogin, freshLoginAs } from '../../fixtures/auth';
+import { freshLogin } from '../../fixtures/auth';
 import { asEntitledWriter } from '../../fixtures/entitlements';
 import { AI_FLAG_TEST_TIMEOUT_MS, withAiFeatures } from '../../fixtures/feature-flags';
 import { test, expect } from '../../fixtures/test';
 import { EditorPage } from '../../pages/frontend/editor-page';
 import { FeedPage } from '../../pages/frontend/feed-page';
-import { AssistantPanel } from '../../pages/frontend/assistant-panel';
+import { WritingToolsDrawer } from '../../pages/frontend/writing-tools-drawer';
 import { BillingPage } from '../../pages/frontend/billing-page';
 import { BillingHistoryPage, UsagePage } from '../../pages/frontend/billing-detail-pages';
-import {
-  AiConversationsPage,
-  AiHubPage,
-  AiUsagePage,
-  PromptLibraryPage,
-} from '../../pages/frontend/ai-pages';
 import { PlansPage } from '../../pages/frontend/plans-page';
 import { CollaboratorsPage } from '../../pages/frontend/collaborators-page';
 import { InvitationsPage } from '../../pages/frontend/invitations-page';
@@ -230,14 +224,14 @@ test.describe('@phase5 @a11y frontend accessibility (authenticated)', () => {
    *
    * - **B5** hides the editor's AI trigger whenever availability resolves to `off`, and the AI flags
    *   ship dark — so there was nothing to open and nothing to scan (it timed out on both engines).
-   * - **D3** put the assistant behind the `ai_writing` entitlement. With the master flag alone the
-   *   drawer opens, so the scan PASSES — over an upgrade wall. The "drawer full of radio groups"
+   * - **D3** put the writing tools behind the `ai_writing` entitlement. With the master flag alone
+   *   the drawer opens, so the scan PASSES — over an upgrade wall. The "drawer full of radio groups"
    *   this test says it covers is exactly what a free writer never sees, so raising the flag and
    *   granting the entitlement is what makes the label true.
    *
    * Both were found on 2026-08-24 while closing the AI-panel row (48 §3.22c).
    */
-  test('the AI assistant panel has no critical/serious a11y violations', async ({
+  test('the writing tools drawer has no critical/serious a11y violations', async ({
     page,
     api,
     data,
@@ -246,30 +240,33 @@ test.describe('@phase5 @a11y frontend accessibility (authenticated)', () => {
     await asEntitledWriter({ page, api, data }, 'ai_writing', async () => {
       await withAiFeatures(
         ['feature.ai.writingAssistant.enabled'],
-        'a11y: AI assistant panel',
+        'a11y: writing tools drawer',
         async () => {
           // A drawer full of radio groups, tabs and a live region (W2, docs/45 §4.2) — the densest
           // interactive surface in the editor, and the one axe is most likely to have something to
           // say about. Scanned open, over the editor it overlays.
           const editor = new EditorPage(page);
           await editor.goto();
-          await new AssistantPanel(page).open();
-          await expectNoSeriousA11yViolations(page, { label: 'frontend /write + AI panel' });
+          await new WritingToolsDrawer(page).open();
+          await expectNoSeriousA11yViolations(page, { label: 'frontend /write + writing tools' });
         },
       );
     });
   });
 
   /**
-   * W9's two story-scoped AF4 tabs (docs/45 §4, row W9). Both live on the SAME drawer the scan above
-   * covers, and both are absent from it until the draft has autosaved — so they need a draft with a
-   * server id, not a blank `/write`.
+   * Story Map (docs/45 §4, row W9). It lives on the SAME drawer the scan above covers, and is absent
+   * from it until the draft has autosaved — so it needs a draft with a server id, not a blank
+   * `/write`.
+   *
+   * **D5 deleted this block's second scan, Ask My Book.** Its nine scope chips, textarea and live
+   * region are gone with the tab.
    *
    * Registered here rather than in a spec of their own so they run in the `frontend-dark` project
    * too: this file is `UI_QUALITY_ONLY`, which is what makes "both themes" automatic rather than a
    * thing to remember (docs/45 §2).
    *
-   * **Both take the AI-flag lock, and the explorer's reason is the one this pair got wrong first.**
+   * **It takes the AI-flag lock, and its reason is the one this scan got wrong first.**
    * `GET /ai/explorer/:storyId/:view` carries `ai.use` and no PER-FEATURE flag, which is true of the
    * ROUTE and says nothing about the client: the tab resolves through
    * `resolveAvailability({feature: null})`, which still reads `aiEnabled` — the **master** flag, and
@@ -289,9 +286,9 @@ test.describe('@phase5 @a11y frontend accessibility (authenticated)', () => {
     await editor.writePiece({ title, body: 'A door opened onto the rain.' });
     // The tabs appear only once autosave has CREATEd the piece and the URL carries its id.
     await editor.waitForSaved();
-    const panel = new AssistantPanel(page);
-    await panel.open();
-    return panel;
+    const drawer = new WritingToolsDrawer(page);
+    await drawer.open();
+    return drawer;
   }
 
   /**
@@ -305,34 +302,18 @@ test.describe('@phase5 @a11y frontend accessibility (authenticated)', () => {
    * the explorer needs the master switch and no per-feature flag. Availability and entitlement are
    * separate questions, and this scan now arranges both.
    */
-  test('the Story Explorer tab has no critical/serious a11y violations', async ({
-    page,
-    api,
-    data,
-  }) => {
+  test('the Story Map tab has no critical/serious a11y violations', async ({ page, api, data }) => {
     test.setTimeout(AI_FLAG_TEST_TIMEOUT_MS);
     await asEntitledWriter({ page, api, data }, 'story_intelligence', async () => {
-      await withAiFeatures([], 'a11y: Story Explorer', async () => {
+      await withAiFeatures([], 'a11y: Story Map', async () => {
         // A group of eight pressed-state chips over a list of card buttons — two patterns whose
         // accessible state lives entirely in `aria-pressed` and in a name assembled from spans.
-        const panel = await draftWithServerId(page, data.pieceTitle());
-        await panel.selectTab('Explorer');
-        await panel.expectExplorerSettled();
-        await expectNoSeriousA11yViolations(page, { label: 'frontend /write + Story Explorer' });
+        // D5 added a progress line and an allowance hint above them, both scanned here too.
+        const drawer = await draftWithServerId(page, data.pieceTitle());
+        await drawer.selectTab('Story Map');
+        await drawer.expectStoryMapSettled();
+        await expectNoSeriousA11yViolations(page, { label: 'frontend /write + Story Map' });
       });
-    });
-  });
-
-  test('the Ask My Book tab has no critical/serious a11y violations', async ({ page, data }) => {
-    test.setTimeout(AI_FLAG_TEST_TIMEOUT_MS);
-    await withAiFeatures(['feature.ai.askBook.enabled'], 'a11y: Ask My Book', async () => {
-      // Nine scope chips, a labelled textarea, and the live region the answer streams into. Scanned
-      // BEFORE asking: the flag decides whether these controls exist at all, and the streamed answer
-      // is a functional assertion, not an axe subject.
-      const panel = await draftWithServerId(page, data.pieceTitle());
-      await panel.selectTab('Ask');
-      await panel.expectAskSettled();
-      await expectNoSeriousA11yViolations(page, { label: 'frontend /write + Ask My Book' });
     });
   });
 
@@ -668,112 +649,43 @@ test.describe('@phase5 @a11y frontend accessibility (authenticated)', () => {
   });
 
   /**
-   * The four AI surfaces W8 added (docs/45 §4, row W8). All run in the `frontend-dark` project too —
-   * this file is `UI_QUALITY_ONLY`, so registering them here covers both themes at once, which is what
-   * docs/45 §2 requires and what makes deferring dark impossible rather than merely discouraged.
+   * D5 deleted the four scans that sat here — the AI hub, the conversations list (active and
+   * archived shelves), the prompt library and the token-usage page. All four routes are gone, and
+   * with them the patterns they covered: icon-only row controls, an inline rename form, the app's
+   * only `aria-pressed` favourite stars, and a second family of `progressbar`s.
    *
-   * Unlike the AF4 scans above, none of these takes the AI-flag lock: they read routes guarded by the
-   * `ai.use` permission, not by `feature.ai.enabled`.
+   * Two of those patterns still exist elsewhere and are still scanned — the allowance cards below
+   * carry the progressbars, and Story Map's chips carry the pressed state. The rename form and the
+   * favourite stars had no other home, and their coverage went with the feature rather than being
+   * re-homed onto a surface that does not have them.
    */
-  test('the AI hub has no critical/serious a11y violations', async ({ page }) => {
-    // Two-line card links, the same pattern as the billing hub above and the same risk: an accessible
-    // name assembled from two spans is where a link most easily becomes unreadable.
-    const hub = new AiHubPage(page);
-    await hub.goto();
-    await hub.expectResolved();
-    await expectNoSeriousA11yViolations(page, { label: 'frontend /settings/ai' });
-  });
-
-  test('AI conversations has no critical/serious a11y violations', async ({ page, api, data }) => {
-    // Scanned POPULATED, because the parts worth scanning only exist on a row: three icon-only
-    // controls whose entire accessible name comes from `aria-label`, plus the inline rename form that
-    // replaces the row's contents. An empty-state scan would pass while every one of those was broken.
-    //
-    // As a THROWAWAY user, for the reason `ai-surfaces.spec.ts` sets out: every UI-created conversation
-    // is untitled, so on the shared writer this scan would race the functional spec's rows (and could
-    // delete one). A private account also means the scan sees exactly one row, every run.
-    const password = 'ChangeMe!A11yConv1';
-    const user = await api.createVerifiedUser({
-      email: `a11y-conv-${data.username()}@qalam.local`,
-      username: data.username(),
-      password,
-    });
-    // Arranged over the API, not by clicking "New conversation". The original reason was W8-5: that
-    // click leaves the cursor on a `variant="primary"` button whose AntD-derived hover background was
-    // #ab6846, 4.37:1 under white. **W8-5 is fixed** (2026-08-20 — the hover and press fills are
-    // pinned in `packages/ui/src/theme/antd-theme.ts`), so this scan would now pass either way.
-    //
-    // The arrangement stays, for the reason that outlives the defect: this scan's subject is the ROW,
-    // and arranging it over the API measures the row rather than the create flow, which
-    // `ai-surfaces.spec.ts` drives through the real button. Keeping the click out is not
-    // pointer-parking — nothing is hidden, and a hovered primary is now scanned honestly wherever one
-    // is genuinely under the cursor.
-    const token = await api.loginToken(user.email, password);
-    await api.createAiConversationAs(token, { title: 'A11y conversation row' });
-    await freshLoginAs(page, user.email, password);
-
-    const conversations = new AiConversationsPage(page);
-    await conversations.goto();
-    await conversations.expectResolved();
-    await expect(conversations.rows).toHaveCount(1);
-    await expectNoSeriousA11yViolations(page, { label: 'frontend /settings/ai/conversations' });
-
-    // The ARCHIVED shelf is a second composition, not the same one twice (docs/48 §3.21): a selected
-    // tab, a panel labelled by it, and a row whose action is Restore. Scanned with a row on it for the
-    // same reason the active shelf is — an empty archive would scan the tabs and nothing they control.
-    await conversations.archive('A11y conversation row');
-    await conversations.openShelf('Archived');
-    await expect(conversations.rows).toHaveCount(1);
-    await expectNoSeriousA11yViolations(page, {
-      label: 'frontend /settings/ai/conversations (archived)',
-    });
-  });
-
-  test('the prompt library has no critical/serious a11y violations', async ({ page }) => {
-    // Carries the only `aria-pressed` toggles in the app (the favourite stars) and a form whose fields
-    // are labelled by `aria-label` alone, since the design has no visible labels on it.
-    const library = new PromptLibraryPage(page);
-    await library.goto();
-    await library.expectResolved();
-    await expectNoSeriousA11yViolations(page, { label: 'frontend /settings/ai/prompts' });
-  });
-
-  test('AI token usage has no critical/serious a11y violations', async ({ page }) => {
-    // Its own `progressbar`s and `<dl>` grids, distinct from the AF5 usage page's above: this card
-    // shows an input/output split and no reset time, so it is a different DOM with the same risk — a
-    // bar conveying its quantity by width alone is invisible to a screen reader.
-    const usage = new AiUsagePage(page);
-    await usage.goto();
-    await usage.expectResolved();
-    await expectNoSeriousA11yViolations(page, { label: 'frontend /settings/ai/usage' });
-  });
 
   /**
-   * The three AF4 surfaces W5 added (docs/45 §4). Each is scanned **populated**, because the parts
-   * worth scanning only exist once the retrieval platform has answered: the ranking line states its
-   * relevance in sr-only text beside a bar that conveys nothing on its own, the related-entity and
-   * evidence lists are labelled `ul`s, and the type tags are tinted `QTag`s — the class of defect
+   * The three retrieval surfaces W5 added (docs/45 §4). Each is scanned **populated**, because the
+   * parts worth scanning only exist once the retrieval platform has answered: the ranking line states
+   * its relevance in sr-only text beside a bar that conveys nothing on its own, the related-entity
+   * and evidence lists are labelled `ul`s, and the type tags are tinted `QTag`s — the class of defect
    * [10 §8.4] exists for, and the reason these run in the `frontend-dark` project too.
    *
-   * They hold the AI feature-flag lock ([fixtures/feature-flags.ts]) because the flags are global rows
-   * that `assistant.spec.ts` asserts are down.
+   * **D5 removed the AI-flag lock from the search scan**, and that is a claim rather than a
+   * simplification: search is public and reaches no flag, so a scan that still had to queue on the
+   * global rows would mean the merge had regressed. The two recommendation scans keep it — for now
+   * their flags are gone too, but they still need a SESSION, which the `freshLogin` above provides.
    */
-  test('AI search results have no critical/serious a11y violations', async ({
+  test('ranked search results have no critical/serious a11y violations', async ({
     page,
     api,
     data,
   }) => {
-    // Queues on the AI feature-flag lock, and that wait counts against this test's budget.
-    test.setTimeout(AI_FLAG_TEST_TIMEOUT_MS);
     const token = data.username();
     const title = `Lantern ${token} at the harbour`;
     await api.createPublishedPiece({ title, body: 'The lantern swung over black water.' });
 
     const search = new SearchPage(page);
-    await withAiFeatures(['feature.ai.semanticSearch.enabled'], 'a11y: AI search', async () => {
-      await search.gotoQuery(`Lantern ${token}`, 'ai');
+    {
+      await search.gotoQuery(`Lantern ${token}`);
       await search.expectGroundedResult(title);
-      await expectNoSeriousA11yViolations(page, { label: 'frontend /search?mode=ai' });
+      await expectNoSeriousA11yViolations(page, { label: 'frontend /search' });
 
       // The save dialog, scanned OPEN — it carries the feature's only text input, and a modal is
       // where a missing label or a focus trap actually costs a reader the flow.
@@ -787,7 +699,7 @@ test.describe('@phase5 @a11y frontend accessibility (authenticated)', () => {
       await expectNoSeriousA11yViolations(page, { label: 'frontend /search save dialog' });
 
       // The saved LIST is a different surface, and its row is arranged over REST for the same reason
-      // — the dialog is not the subject here, and `ai-search.spec.ts` already drives it end to end.
+      // — the dialog is not the subject here, and `search.spec.ts` already drives it end to end.
       const saved = await api.saveAiSearch({
         name: `Lanterns ${token}`,
         query: `Lantern ${token}`,
@@ -797,7 +709,7 @@ test.describe('@phase5 @a11y frontend accessibility (authenticated)', () => {
       await expectNoSeriousA11yViolations(page, { label: 'frontend /search saved list' });
       // Leave the account as it was found: saved searches are per-user, server-side and capped at 50.
       await api.deleteAiSearch(saved.id);
-    });
+    }
   });
 
   test('the discover recommendation shelves have no critical/serious a11y violations', async ({
@@ -805,23 +717,17 @@ test.describe('@phase5 @a11y frontend accessibility (authenticated)', () => {
     api,
     data,
   }) => {
-    // Queues on the AI feature-flag lock, and that wait counts against this test's budget.
-    test.setTimeout(AI_FLAG_TEST_TIMEOUT_MS);
+    // D5 removed the flag these shelves were gated on — the recommender calls no model, so there
+    // was nothing for one to protect. A SESSION is still required, and `freshLogin` provides it.
     await api.createPublishedPiece({ title: data.pieceTitle() });
 
     const discover = new DiscoverPage(page);
-    await withAiFeatures(
-      ['feature.ai.recommendations.enabled'],
-      'a11y: discover shelves',
-      async () => {
-        await discover.goto();
-        await discover.expectRecommendationShelf(
-          'Recommended for you',
-          'Recommended for you from across Qalam',
-        );
-        await expectNoSeriousA11yViolations(page, { label: 'frontend /discover + AF4 shelves' });
-      },
+    await discover.goto();
+    await discover.expectRecommendationShelf(
+      'Recommended for you',
+      'Recommended for you from across Qalam',
     );
+    await expectNoSeriousA11yViolations(page, { label: 'frontend /discover + shelves' });
   });
 
   test('the reader’s recommended related section has no critical/serious a11y violations', async ({
@@ -829,10 +735,12 @@ test.describe('@phase5 @a11y frontend accessibility (authenticated)', () => {
     api,
     data,
   }) => {
-    // Queues on the AI feature-flag lock, and that wait counts against this test's budget.
-    test.setTimeout(AI_FLAG_TEST_TIMEOUT_MS);
     // The reader page is already scanned above, but on an untagged piece — which renders no related
     // section at all. This scans the state W5 introduced: suggestions that carry an explanation.
+    //
+    // D5 removed the flag lock: the recommender calls no model, so the flag protected nothing. The
+    // section still needs a SESSION (an anonymous reader gets the tag fallback, which explains
+    // nothing and is a different DOM), and `freshLogin` in this file's `beforeEach` provides it.
     const tag = `lantern${data.username()}`;
     const seedTitle = data.pieceTitle();
     const seed = await api.createPublishedPiece({ title: seedTitle, tags: [tag] });
@@ -840,16 +748,10 @@ test.describe('@phase5 @a11y frontend accessibility (authenticated)', () => {
     await api.createPublishedPiece({ title: siblingTitle, tags: [tag] });
 
     const reader = new ReaderPage(page);
-    await withAiFeatures(
-      ['feature.ai.recommendations.enabled'],
-      'a11y: reader related',
-      async () => {
-        await reader.gotoSlug(seed.slug as string);
-        await reader.expectRendered(seedTitle);
-        await reader.expectRecommendedRelated(seedTitle);
-        await expectNoSeriousA11yViolations(page, { label: 'frontend /p/:slug + More like this' });
-      },
-    );
+    await reader.gotoSlug(seed.slug as string);
+    await reader.expectRendered(seedTitle);
+    await reader.expectRecommendedRelated(seedTitle);
+    await expectNoSeriousA11yViolations(page, { label: 'frontend /p/:slug + More like this' });
   });
 
   test('the not-found page has no critical/serious a11y violations', async ({ page, data }) => {

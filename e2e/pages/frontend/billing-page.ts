@@ -75,17 +75,25 @@ export class BillingPage {
     ).toBeVisible();
   }
 
-  /** Follow one of the four hub links, by its visible label. */
-  async openSection(label: 'Plans' | 'AI usage' | 'AI credits' | 'Billing history'): Promise<void> {
+  /**
+   * Follow one of the hub links, by its visible label.
+   *
+   * D5 removed "AI credits" — the wallet is gone — and renamed "AI usage" to "Usage", which now
+   * reports per-tool allowances rather than token windows. Three links, not four.
+   */
+  async openSection(label: 'Plans' | 'Usage' | 'Billing history'): Promise<void> {
     await this.billingNav.getByRole('link', { name: new RegExp(`^${label}`) }).click();
   }
 
-  /** Every hub link is present — the four sub-surfaces are only reachable from here. */
+  /** Every hub link is present — the sub-surfaces are only reachable from here. */
   async expectAllSectionsLinked(): Promise<void> {
-    for (const label of ['Plans', 'AI usage', 'AI credits', 'Billing history']) {
+    for (const label of ['Plans', 'Usage', 'Billing history']) {
       await expect(
         this.billingNav.getByRole('link', { name: new RegExp(`^${label}`) }),
       ).toBeVisible();
     }
+    // The one D5 deleted, asserted as an absence: a hub link to a route that 404s is worse than a
+    // missing feature, because it looks like the feature is there.
+    await expect(this.billingNav.getByRole('link', { name: /^AI credits/ })).toHaveCount(0);
   }
 }

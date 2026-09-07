@@ -1,11 +1,10 @@
 import { freshLogin, freshLoginAs } from '../../fixtures/auth';
+import { AI_FLAG_TEST_TIMEOUT_MS, withAiFeatures } from '../../fixtures/feature-flags';
 import { test, expect } from '../../fixtures/test';
 import { BillingPage } from '../../pages/frontend/billing-page';
-import {
-  BillingHistoryPage,
-  CreditsPage,
-  UsagePage,
-} from '../../pages/frontend/billing-detail-pages';
+import { EditorPage } from '../../pages/frontend/editor-page';
+import { WritingToolsDrawer } from '../../pages/frontend/writing-tools-drawer';
+import { BillingHistoryPage, UsagePage } from '../../pages/frontend/billing-detail-pages';
 import { PlansPage } from '../../pages/frontend/plans-page';
 
 /**
@@ -25,7 +24,7 @@ import { PlansPage } from '../../pages/frontend/plans-page';
  *
  * 1. **Subscribe** is driven for real, through the real button, to the real endpoint — and the
  *    assertion is the honest refusal the server gives, with nothing charged. That IS this deployment's
- *    contract, and it is the same shape as the assistant spec asserting "AI is turned off".
+ *    contract, and it is the same shape as the writing-tools spec asserting the unavailable notice.
  * 2. **Entitlement granted → the gate opens** is proven end to end through the Entitlement Service, via
  *    an admin override. Same service, same snapshot the client gates on, same cache invalidation as a
  *    subscription transition — just reached without a card. This is the half that proves the pipeline.
@@ -66,7 +65,7 @@ test.describe('@phase4 frontend monetization', () => {
     await billing.goto();
     await billing.expectResolved();
 
-    await billing.openSection('AI usage');
+    await billing.openSection('Usage');
     await expect(page).toHaveURL(/\/settings\/billing\/usage$/);
 
     await billing.goto();
@@ -234,11 +233,16 @@ test.describe('@phase4 frontend monetization', () => {
   /**
    * **The row's real payoff: an entitlement granted server-side opens the client's gate.**
    *
-   * `ai_budget` is the only premium feature any server route enforces (`AiUsageMeterService.checkQuota`
-   * is the backend's single `assertAllowed` call), which is why the credits balance card is gated on it
-   * and why this is the one gate whose client and server cannot disagree. A `deny` override closes it; a
-   * revoke reopens it. Both directions are asserted, through the real Entitlement Service, so this
-   * proves the whole path — admin write → decision cache invalidation → snapshot read → rendered gate.
+   * **D5 moved this test's subject from `ai_budget` to `ai_writing`.** `ai_budget` was the blanket
+   * "may you use AI at all" code the meter asserted on every request to guard a credit balance; B4
+   * removed the balance and the assertion, so a deny override on it now closes nothing and this test
+   * would have passed against a gate that no longer exists. `ai_writing` is enforced
+   * (`AiUsageMeterService.checkQuota` asserts the feature's own code) and gates the writing tools,
+   * so it is the gate whose client and server cannot disagree.
+   *
+   * A `deny` override closes it; a revoke reopens it. Both directions are asserted, through the real
+   * Entitlement Service, so this proves the whole path — admin write → decision cache invalidation →
+   * snapshot read → rendered gate.
    *
    * **On a THROWAWAY account, not the shared seeded writer.** It used to use the writer, and the
    * serial block above excused it from serialization on the grounds that it "scopes its change to
@@ -263,56 +267,81 @@ test.describe('@phase4 frontend monetization', () => {
     const subject = await api.createVerifiedUser(creds);
     await freshLoginAs(page, creds.email, creds.password);
 
-    const credits = new CreditsPage(page);
-    await credits.goto();
-    await credits.expectResolved();
+    /**
+     * The subject is the editor's Polish tab, because that is what `ai_writing` actually gates. A
+     * granted account sees the action; a denied one sees the lock naming the tier.
+     *
+     * The master AI flag has to be up for the drawer to be reachable at all — the editor hides its
+     * trigger while the platform is off — and the writer needs something written before Polish
+     * enables its actions.
+     */
+    const drawer = new WritingToolsDrawer(page);
+    const openPolish = async (): Promise<void> => {
+      const editor = new EditorPage(page);
+      await editor.goto();
+      await editor.writePiece({ title: data.pieceTitle(), body: 'A door, and then a lamp.' });
+      await editor.waitForSaved();
+      await drawer.open();
+    };
 
-    const override = await api.grantEntitlementOverride({
-      userId: subject.id,
-      feature: 'ai_budget',
-      effect: 'deny',
-      reason: 'e2e af5 gate',
-    });
+    test.setTimeout(AI_FLAG_TEST_TIMEOUT_MS);
+    await withAiFeatures(
+      ['feature.ai.writingAssistant.enabled'],
+      'monetization: ai_writing gate',
+      async () => {
+        const granted = await api.grantEntitlementOverride({
+          userId: subject.id,
+          feature: 'ai_writing',
+          reason: 'e2e af5 gate (allow)',
+        });
+        try {
+          await openPolish();
+          await drawer.expectAvailable();
+        } finally {
+          await api.revokeEntitlementOverride(granted.id);
+        }
 
-    try {
-      // The server side, asserted directly — so a failure here is unambiguously the grant, not the UI.
-      const token = await api.loginToken(creds.email, creds.password);
-      const snapshot = await api.entitlements(token);
-      expect(
-        snapshot.features.find((f) => f.feature === 'ai_budget')?.allowed,
-        'the override did not reach the entitlement snapshot',
-      ).toBe(false);
+        const denied = await api.grantEntitlementOverride({
+          userId: subject.id,
+          feature: 'ai_writing',
+          effect: 'deny',
+          reason: 'e2e af5 gate (deny)',
+        });
+        try {
+          // The server side, asserted directly — so a failure here is unambiguously the grant, not
+          // the UI.
+          const token = await api.loginToken(creds.email, creds.password);
+          const snapshot = await api.entitlements(token);
+          expect(
+            snapshot.features.find((f) => f.feature === 'ai_writing')?.allowed,
+            'the override did not reach the entitlement snapshot',
+          ).toBe(false);
 
-      // The client side: a full reload, because the snapshot is cached for 60s in step with the
-      // server's own TTL and this test must not depend on that window elapsing.
-      await credits.goto();
-      await credits.expectBalanceGated();
-    } finally {
-      await api.revokeEntitlementOverride(override.id);
-    }
-
-    await credits.goto();
-    await credits.expectResolved();
+          // The client side: a full reload, because the snapshot is cached for 60s in step with the
+          // server's own TTL and this test must not depend on that window elapsing.
+          await openPolish();
+          // D5's copy names the TIER, derived from `DEFAULT_PLAN_FEATURES` — "a paid plan" left the
+          // writer to go and find out which one.
+          await expect(page.getByText('Polish & feedback is on Plus and above')).toBeVisible({
+            timeout: 30_000,
+          });
+          await expect(drawer.activePanel.getByRole('button', { name: 'Condense' })).toHaveCount(0);
+        } finally {
+          await api.revokeEntitlementOverride(denied.id);
+        }
+      },
+    );
   });
 
-  test('AI usage renders three windows with an accessible allowance bar', async ({ page }) => {
+  test('usage renders one allowance card per tool, with an accessible bar', async ({ page }) => {
+    // D5 replaced three token windows with one card per writing tool. The labels are the SERVER's
+    // (`AI_QUOTA_RULES`), which is why they are asserted by name rather than by position.
     const usage = new UsagePage(page);
     await usage.goto();
     await usage.expectResolved();
-    await usage.expectAllowanceBar('Today');
-    await usage.expectAllowanceBar('This month');
-    // Lifetime has no cap by definition, so it must draw no bar rather than an empty one.
-    await usage.expectLifetimeUncapped();
-  });
-
-  test('credits shows a balance and no dead purchase button', async ({ page }) => {
-    // `POST /credits/purchase` rejects an empty receipt before it reaches a provider, and a browser has
-    // no receipt to send — so the web must explain where credits come from instead of offering three
-    // packs that cannot work. Mobile offers the packs because a phone can produce a receipt.
-    const credits = new CreditsPage(page);
-    await credits.goto();
-    await credits.expectResolved();
-    await credits.expectNoBrowserPurchasePath();
+    await usage.expectAllowanceBar('Polish');
+    await usage.expectAllowanceBar('Manuscript feedback');
+    await usage.expectAllowanceBar('Story analyses');
   });
 
   test('billing history opens all four ledgers, empty rather than errored', async ({ page }) => {

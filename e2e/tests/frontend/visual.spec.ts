@@ -3,10 +3,9 @@ import type { Page } from '@playwright/test';
 import { freshLogin, freshLoginAs } from '../../fixtures/auth';
 import { AI_FLAG_TEST_TIMEOUT_MS, withAiFlags } from '../../fixtures/feature-flags';
 import { test, expect } from '../../fixtures/test';
-import { AssistantPanel } from '../../pages/frontend/assistant-panel';
+import { WritingToolsDrawer } from '../../pages/frontend/writing-tools-drawer';
 import { BillingPage } from '../../pages/frontend/billing-page';
 import { UsagePage } from '../../pages/frontend/billing-detail-pages';
-import { AiConversationsPage, AiUsagePage, PromptLibraryPage } from '../../pages/frontend/ai-pages';
 import { PlansPage } from '../../pages/frontend/plans-page';
 import { CollaboratorsPage } from '../../pages/frontend/collaborators-page';
 import { CollectionsPage } from '../../pages/frontend/collections-page';
@@ -14,7 +13,6 @@ import { PieceConversation } from '../../pages/frontend/conversation';
 import { EngagementBar, ReportDialog } from '../../pages/frontend/engagement';
 import { ReaderPage } from '../../pages/frontend/reader-page';
 import { ReadingStatsPage } from '../../pages/frontend/reading-stats-page';
-import { SearchPage } from '../../pages/frontend/search-page';
 import { SettingsBlocksPage } from '../../pages/frontend/settings-blocks-page';
 import { StoryCommentsPage } from '../../pages/frontend/story-comments-page';
 import { StoryPublishingPage } from '../../pages/frontend/story-publishing-page';
@@ -122,65 +120,59 @@ test.describe('@phase5 @visual frontend (authenticated)', () => {
     });
   });
 
-  // FIXME(AI-panel-visual, 48 §3.25a/§3.25f) — blocked on a PRODUCT decision, not on this test.
+  // FIXME(AI-panel-visual, 48 §3.25a/§3.25f) — still blocked on a PRODUCT decision, not on this test.
   //
-  // The four baselines here pin the panel's flag-DOWN "AI is turned off" state, but **B5** made the
-  // editor's AI trigger conditional on `aiAvailability !== 'off' && !== 'self-off'`
-  // (`editor-page.tsx:228`), so in exactly that state no trigger is rendered and `panel.open()` times
-  // out. It is the same false premise §3.23a found in `assistant.spec.ts` — which was fixed by
-  // RAISING the flags, a fix unavailable here because flags-down IS this test's subject.
+  // The premise: this baseline pins the drawer's flag-DOWN state, but the editor's trigger is
+  // conditional on `aiAvailability !== 'off'` (`editor-page.tsx`) — so in exactly that state no
+  // trigger is rendered and `drawer.open()` times out. Same false premise §3.23a found in
+  // `writing-tools.spec.ts`, which was fixed by RAISING the flags; that fix is unavailable here
+  // because flags-down IS this test's subject.
   //
-  // `fixme` rather than left failing: it cannot reach `toHaveScreenshot`, so it mints nothing, and a
-  // permanently-red test is indistinguishable from a regression. It accounted for 19 of run #26's 37
-  // error contexts and was drowning the three real failures underneath it.
+  // **D5 changed half of this and did NOT unblock it.** The condition lost its `&& !== 'self-off'`
+  // clause — that state is merged into `off` — so the code reads differently and behaves the same,
+  // which is worth saying plainly: a comment that still described a two-clause guard would look
+  // stale and invite someone to "fix" the test against a condition that no longer exists.
   //
-  // Unblocks when someone answers: what SHOULD a flags-down editor offer as an AI entry point, if
-  // anything? B5 deliberately removed the stranded one. The baseline follows that answer.
-  test.fixme('the AI assistant panel matches its visual baseline', async ({ page }) => {
-    // W2/AF2. Viewport, not fullPage: the drawer is fixed to the viewport and the editor behind
-    // it is empty here, so a full-page shot would add nothing but height.
+  // D5 also DELETED this test's four baselines, along with the `frontend-ai-panel` name they were
+  // stored under. That costs nothing while the test is `fixme` (it mints nothing and compares
+  // nothing) and is the honest state: the drawer it photographed had four tabs, an "AI assistant"
+  // title and a Continue-writing button, none of which exist. Un-fixme-ing this means minting fresh.
+  //
+  // `fixme` rather than left failing: a permanently-red test is indistinguishable from a regression.
+  // It accounted for 19 of run #26's 37 error contexts and was drowning three real failures.
+  //
+  // Unblocks when someone answers: what SHOULD a flags-down editor offer as an entry point, if
+  // anything? B5 deliberately removed the stranded one, and D5 kept that call. The baseline follows.
+  test.fixme('the writing tools drawer matches its visual baseline', async ({ page }) => {
+    // Viewport, not fullPage: the drawer is fixed to the viewport and the editor behind it is empty
+    // here, so a full-page shot would add nothing but height.
     //
-    // **Under the AI feature-flag lock, which is new in W5.** These four baselines contain the
-    // panel's flag-DOWN "AI is turned off" state, and that is a property of the seeded flags rather
-    // than of this test — [06 §6] note (a) records the consequence: a local whole-suite run that
-    // mixed @visual with the one flag-raising test could produce a spurious diff. W5 adds three more
-    // flag-raising tests, so "rare race" became "likely"; holding the lock makes the state this
-    // baseline was minted in true for the duration instead of merely usual.
-    // Queues on the AI feature-flag lock, and that wait counts against this test's budget.
+    // **Under the AI feature-flag lock.** The baseline would contain the drawer's flag-DOWN state,
+    // which is a property of the seeded flags rather than of this test — [06 §6] note (a) records
+    // the consequence: a local whole-suite run mixing @visual with a flag-raising test could produce
+    // a spurious diff. Holding the lock makes the state true for the duration rather than usual.
     test.setTimeout(AI_FLAG_TEST_TIMEOUT_MS);
-    await withAiFlags('visual: AI panel (flags down)', async () => {
+    await withAiFlags('visual: writing tools (flags down)', async () => {
       await page.goto('/write');
       await expect(page.getByLabel('Title')).toBeVisible({ timeout: 30_000 });
-      await new AssistantPanel(page).open();
-      await expect(page).toHaveScreenshot('frontend-ai-panel.png');
+      await new WritingToolsDrawer(page).open();
+      await expect(page).toHaveScreenshot('frontend-writing-tools.png');
     });
   });
 
   /**
-   * The AF4 search surface in the state every deployment ships in (W5, docs/45 §4).
+   * D5 deleted the baseline that sat here, `frontend-search-ai-off`.
    *
-   * **Why the refusal and not a result set.** The populated AI panel is the wrong visual subject: its
-   * content is a live ranking over whatever the database holds — candidate counts, scores, other
-   * specs' pieces — so every run would differ in content and in height, and masking enough to stabilise
-   * it would leave nothing but the toggle. The same reasoning already governs `frontend-ai-panel`,
-   * which is deliberately a flag-down baseline ([06 §6]). What IS deterministic and worth pinning here
-   * is the chrome W5 added plus the notice behind it: the engine switch with `AI search` pressed, and
-   * the "AI is turned off" empty state that every un-flagged reader meets.
+   * It pinned the engine switch with "AI search" pressed above the "AI is turned off" notice — the
+   * state every un-flagged deployment shipped in, and the only deterministic thing about that page,
+   * since a populated ranking varies in content and height with whatever the database holds.
    *
-   * The query is a fixed string, not `data.pieceTitle()` — a per-run token changes the field's
-   * rendered width and, on a marginal page height, its wrap point (the reader/comments/suggestions
-   * baselines all drifted that way).
+   * Both halves of its subject are gone: there is no engine switch, and search reaches no flag, so
+   * there is no refusal to photograph. It is NOT replaced by a populated shot for the same reason it
+   * was a refusal in the first place — masking a live ranking enough to stabilise it would leave the
+   * chrome and nothing else. `search.spec.ts` asserts the results functionally, which is the right
+   * tool for content that legitimately moves.
    */
-  test('the AI search refusal matches its visual baseline', async ({ page }) => {
-    // Queues on the AI feature-flag lock, and that wait counts against this test's budget.
-    test.setTimeout(AI_FLAG_TEST_TIMEOUT_MS);
-    const search = new SearchPage(page);
-    await withAiFlags('visual: AI search off', async () => {
-      await search.gotoQuery('lantern harbour', 'ai');
-      await search.expectAiOff();
-      await expect(page).toHaveScreenshot('frontend-search-ai-off.png', { fullPage: true });
-    });
-  });
 
   test('the settings profile page matches its visual baseline', async ({ page }) => {
     await page.goto('/settings/profile');
@@ -566,70 +558,14 @@ test.describe('@phase5 @visual frontend (authenticated)', () => {
   });
 
   /**
-   * The three AI surfaces W8 added (docs/45 §4, row W8).
+   * D5 deleted the three W8 AI baselines that sat here — `frontend-ai-conversations`,
+   * `frontend-ai-prompts` and `frontend-ai-usage`. All three photographed routes that no longer
+   * exist.
    *
-   * **These baselines do not exist yet, and this run must not create them.** `updateSnapshots: 'none'`
-   * is set in `playwright.config.ts` precisely so a local run cannot mint a host-rendered baseline —
-   * docs/48 §3.5 T-8, where exactly that silently happened. So these three tests are EXPECTED to fail
-   * until baselines are minted in the pinned CI image, in both the `frontend` and `frontend-dark`
-   * projects. That red is correct and is reported as such in the W8 readiness report; it is not a
-   * defect in the surfaces and must not be "fixed" by weakening the setting.
+   * The token-usage baseline's subject — a card of progress bars — survives on
+   * `frontend-billing-usage`, which now shows per-tool allowances instead of token windows and is
+   * re-minted for it. The prompt library's `aria-pressed` icon toggles had no other home.
    */
-  test('the AI conversations list matches its visual baseline', async ({ page, api, data }) => {
-    // Snapshotted POPULATED: the row is the design — a two-line link, a status tag slot, and three
-    // icon-only controls whose spacing at the row's right edge is the thing worth reviewing.
-    //
-    // As a THROWAWAY user, which a baseline needs even more than a functional test does: on the shared
-    // writer the row COUNT varies with whatever else is mid-flight, and a baseline of a list whose
-    // length changes per run can never be stable. A private account gives exactly one row, always.
-    //
-    // The row's timestamp still moves every run, so the row is masked; the page chrome, the search
-    // field and the overall arrangement are the subject.
-    const password = 'ChangeMe!VisualConv1';
-    const user = await api.createVerifiedUser({
-      email: `visual-conv-${data.username()}@qalam.local`,
-      username: data.username(),
-      password,
-    });
-    // Arranged over the API for the same reason as the a11y scan: clicking "New conversation" would
-    // bake that button's HOVER state into the baseline, so every future comparison would be against a
-    // hovered primary button rather than the page at rest.
-    const token = await api.loginToken(user.email, password);
-    await api.createAiConversationAs(token, { title: 'Visual baseline conversation' });
-    await freshLoginAs(page, user.email, password);
-
-    const conversations = new AiConversationsPage(page);
-    await conversations.goto();
-    await conversations.expectResolved();
-    await expect(conversations.rows).toHaveCount(1);
-    await expect(page).toHaveScreenshot('frontend-ai-conversations.png', {
-      fullPage: true,
-      mask: [page.getByRole('list', { name: 'Conversations' }).getByRole('listitem')],
-    });
-  });
-
-  test('the prompt library matches its visual baseline', async ({ page }) => {
-    // Fully deterministic — the built-in shelf ships in code and this scan adds no custom presets — so
-    // nothing needs masking. It carries the only `aria-pressed` icon toggles in the app, and their
-    // pressed/unpressed treatment is reviewed here in both themes.
-    const library = new PromptLibraryPage(page);
-    await library.goto();
-    await library.expectResolved();
-    await expect(page).toHaveScreenshot('frontend-ai-prompts.png', { fullPage: true });
-  });
-
-  test('the AI token usage page matches its visual baseline', async ({ page }) => {
-    // The AF1 twin of the billing usage baseline above, and worth its own: this card shows an
-    // input/output split and no reset time, so it is a different layout with the same progress bars.
-    // Counts are the shared writer's real usage and move as the AI specs run, so the cards are masked.
-    const usage = new AiUsagePage(page);
-    await usage.goto();
-    await usage.expectResolved();
-    await expect(page).toHaveScreenshot('frontend-ai-usage.png', {
-      fullPage: true,
-      mask: [page.getByRole('list', { name: 'Token usage windows' }).getByRole('listitem')],
-    });
-  });
 
   test('the feed chrome matches its visual baseline', async ({ page, api, data }) => {
     await api.createPublishedPiece({ title: data.pieceTitle() });

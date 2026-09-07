@@ -1,18 +1,19 @@
 import { type Locator, type Page, expect } from '@playwright/test';
 
 /**
- * The full Search & Discovery screen `/search` (`features/search`), including the **AF4 half W5
- * added**: the engine toggle, retrieval-backed results with their grounding, query suggestions, and
- * saved searches (docs/45 §4, docs/36).
+ * The full Search & Discovery screen `/search` (`features/search`) — ranked results with their
+ * grounding, query suggestions, scope tabs and saved searches.
  *
  * All state is in the URL, so navigation is by URL rather than by driving the field — a shared
- * `/search?q=…&mode=ai` link is what a reader actually arrives on, and it is the contract W5 chose
- * the URL for. The field is still exercised where the point IS the field (a suggestion re-running the
- * query).
+ * `/search?q=…` link is what a reader actually arrives on. The field is still exercised where the
+ * point IS the field (a suggestion re-running the query).
  *
- * Selectors are role/label based per [05 §3]: the results are a labelled `region`, the engine switch
- * a labelled `group` of `aria-pressed` buttons, the suggestions a labelled `nav`, and every action a
- * named button — no test-ids were needed.
+ * **D5 merged the two engines**, so this file lost the whole engine-switch section, the synthesis
+ * toggle and the signed-out notice. What replaced them is the `All` scope: it holds the ranked
+ * results, and every narrower tab is that entity's keyword list.
+ *
+ * Selectors are role/label based per [05 §3]: the results are a labelled `region`, the suggestions a
+ * labelled `nav`, and every action a named button — no test-ids were needed.
  */
 export class SearchPage {
   constructor(private readonly page: Page) {}
@@ -25,11 +26,28 @@ export class SearchPage {
     await expect(this.field).toBeVisible({ timeout: 30_000 });
   }
 
-  /** A committed search, engine included — the shape of a shared link. */
-  async gotoQuery(query: string, mode: 'keyword' | 'ai' = 'keyword'): Promise<void> {
+  /**
+   * A committed search — the shape of a shared link.
+   *
+   * `scope` narrows to one entity's keyword list; omitted, the reader lands on `All`, which is the
+   * ranked answer and the page's default.
+   */
+  async gotoQuery(query: string, scope?: 'pieces' | 'writers' | 'tags'): Promise<void> {
     const params = new URLSearchParams({ q: query });
-    if (mode === 'ai') params.set('mode', 'ai');
+    if (scope !== undefined) params.set('type', scope);
     await this.page.goto(`/search?${params.toString()}`);
+    await expect(this.field).toBeVisible({ timeout: 30_000 });
+  }
+
+  /**
+   * A link carrying the retired `mode=ai` parameter.
+   *
+   * Kept as its own method because the compatibility claim is worth naming: those links are in
+   * readers' bookmarks and in their saved searches, and they must still land on the results that
+   * parameter used to select — which they do by being ignored.
+   */
+  async gotoLegacyAiLink(query: string): Promise<void> {
+    await this.page.goto(`/search?q=${encodeURIComponent(query)}&mode=ai`);
     await expect(this.field).toBeVisible({ timeout: 30_000 });
   }
 
@@ -37,56 +55,45 @@ export class SearchPage {
     return this.page.getByLabel('Search writers, pieces, tags, genres, and languages');
   }
 
-  // ── the engine switch ─────────────────────────────────────────────────────
+  // ── scope tabs ────────────────────────────────────────────────────────────
 
-  private get engineGroup(): Locator {
-    return this.page.getByRole('group', { name: 'Search engine' });
+  private scopeTab(name: string): Locator {
+    return this.page.getByRole('button', { name, exact: true });
   }
 
-  private engineButton(mode: 'keyword' | 'ai'): Locator {
-    return this.engineGroup.getByRole('button', {
-      name: mode === 'ai' ? 'AI search' : 'Keyword',
-      exact: true,
+  /**
+   * The scope tabs, on every search.
+   *
+   * They used to be hidden in AI mode — the engine answers mixed entity types, so a scope tab there
+   * would have done nothing. D5 made `All` the ranked scope instead of a separate engine, so the
+   * tabs are one list again and always present.
+   */
+  async expectScopesOffered(active: string): Promise<void> {
+    await expect(this.scopeTab('All')).toBeVisible({ timeout: 30_000 });
+    await expect(this.scopeTab('Pieces')).toBeVisible();
+    await expect(this.scopeTab('Writers')).toBeVisible();
+    await expect(this.scopeTab(active)).toHaveAttribute('aria-current', 'page');
+  }
+
+  /** Narrow to one scope by clicking its tab, and wait for the URL to carry it. */
+  async selectScope(name: 'Pieces' | 'Writers' | 'Tags'): Promise<void> {
+    await this.scopeTab(name).click();
+    await expect(this.page).toHaveURL(new RegExp(`type=${name.toLowerCase()}`), {
+      timeout: 30_000,
     });
   }
 
   /**
-   * Both engines are offered, whatever AI's availability — the control renders unconditionally so a
-   * dark-launched deployment does not look like a build without the feature, and `aria-pressed`
-   * (not styling) carries which one is running.
-   */
-  async expectEngineOffered(active: 'keyword' | 'ai'): Promise<void> {
-    await expect(this.engineButton('keyword')).toBeVisible({ timeout: 30_000 });
-    await expect(this.engineButton('ai')).toBeVisible();
-    await expect(this.engineButton(active)).toHaveAttribute('aria-pressed', 'true');
-  }
-
-  /**
-   * Switch engines by clicking. `mode=ai` is carried in the URL and `keyword` is the default, which
-   * is *omitted* from it — so the state is asserted through the pressed control either way, and
-   * through the URL only for the value that appears there.
-   */
-  async selectEngine(mode: 'keyword' | 'ai'): Promise<void> {
-    await this.engineButton(mode).click();
-    await expect(this.engineButton(mode)).toHaveAttribute('aria-pressed', 'true');
-    if (mode === 'ai') await expect(this.page).toHaveURL(/mode=ai/);
-  }
-
-  /** Scope tabs belong to keyword search only: AF4 returns mixed entity types by design. */
-  async expectScopeTabsHidden(): Promise<void> {
-    await expect(this.page.getByRole('tab', { name: 'Pieces' })).toHaveCount(0);
-  }
-
-  /**
-   * AI mode offers exactly the filters the engine accepts — language and genre — and none of the
-   * keyword-only ones.
+   * The `All` scope offers exactly the filters the ranked engine accepts — language and genre — and
+   * none of the pieces-only ones.
    *
-   * Both halves were wrong until the W5 parity sweep (48 §3.9 W5-11): the bar was gated on a scope tab
-   * that AI mode does not have, so on a normal AI search it rendered nothing at all, and on a URL
-   * carrying `type=pieces` it rendered three controls `SemanticSearchDto` ignores. Asserted at desktop
-   * width, where the bar is inline rather than behind the mobile "Filters" sheet.
+   * Both halves were wrong until the W5 parity sweep (48 §3.9 W5-11): the bar was gated on a scope
+   * tab the ranked engine did not have, so on a normal ranked search it rendered nothing at all, and
+   * on a URL carrying `type=pieces` it rendered three controls `SemanticSearchDto` ignores. D5's
+   * merge fixed the first half by construction. Asserted at desktop width, where the bar is inline
+   * rather than behind the mobile "Filters" sheet.
    */
-  async expectAiFiltersOffered(): Promise<void> {
+  async expectRankedFiltersOffered(): Promise<void> {
     // By ROLE, not by label: AntD puts the `aria-label` on both the wrapper and the inner input, so a
     // label lookup is ambiguous in strict mode. The combobox is the control a reader actually operates.
     await expect(this.filterControl('Filter by language')).toBeVisible({ timeout: 30_000 });
@@ -99,10 +106,10 @@ export class SearchPage {
     return this.page.getByRole('combobox', { name });
   }
 
-  // ── AI results + grounding ────────────────────────────────────────────────
+  // ── ranked results + grounding ────────────────────────────────────────────
 
-  get aiResults(): Locator {
-    return this.page.getByRole('region', { name: 'AI search results' });
+  get rankedResults(): Locator {
+    return this.page.getByRole('region', { name: 'Search results' });
   }
 
   /**
@@ -112,11 +119,11 @@ export class SearchPage {
    * result set legitimately also contains tags and authors; this addresses the piece cards only.
    */
   resultCard(title: string): Locator {
-    return this.aiResults.getByRole('link', { name: `Story: ${title}` });
+    return this.rankedResults.getByRole('link', { name: `Story: ${title}` });
   }
 
   /**
-   * The AF4 result set resolved: a card for `title`, and the platform's design law satisfied —
+   * The ranked result set resolved: a card for `title`, and the platform's design law satisfied —
    * the card states WHY it surfaced and HOW strongly, with the score in the accessible name rather
    * than only as a bar.
    *
@@ -132,75 +139,28 @@ export class SearchPage {
 
   /** The server's own account of the run: how much it considered, and whether it degraded. */
   async expectCandidateMeta(): Promise<void> {
-    await expect(this.aiResults.getByText(/\d+ of \d+ candidates/)).toBeVisible({
+    await expect(this.rankedResults.getByText(/\d+ of \d+ candidates/)).toBeVisible({
       timeout: 30_000,
     });
   }
 
-  /** The blocked state of the AI engine — off / not enabled / out of allowance / needs a plan. */
-  async expectAiUnavailable(): Promise<void> {
-    await expect(
-      this.page
-        .getByText('AI is turned off')
-        .or(this.page.getByText('Not available yet'))
-        .or(this.page.getByText('You’ve used your AI allowance'))
-        .or(this.page.getByText('This needs a paid plan')),
-    ).toBeVisible({ timeout: 30_000 });
-    await expect(this.aiResults).toHaveCount(0);
-  }
-
-  /** Specifically the master-switch state, which is what AF1 seeds every deployment into. */
-  async expectAiOff(): Promise<void> {
-    await expect(this.page.getByText('AI is turned off')).toBeVisible({ timeout: 30_000 });
-  }
-
   /**
-   * The signed-out state, and the one control it offers.
+   * The ranked results are reachable WITHOUT a session.
    *
-   * Every AF4 route needs a session, so this is what the majority of a public search page's traffic
-   * meets. It exists because the alternative was not "a skeleton" but a broken page: an anonymous gate
-   * read 401s, and the api client treats a 401 outside `/auth/*` as a terminal session failure and
-   * clears the query cache (docs/48 §3.9 W5-6).
+   * D5's largest behavioural claim on this page, and asserted as a presence plus an absence: the
+   * results render, and the four "not available" notices that used to gate them are gone. Search is
+   * public now — the route needs no session and the pipeline calls no model.
    */
-  async expectSignedOut(): Promise<void> {
-    await expect(this.page.getByText('Sign in to use AI search')).toBeVisible({ timeout: 30_000 });
-    await expect(this.noticeSignIn).toBeVisible();
-  }
-
-  /** Follow the notice's sign-in action; it must carry the whole search URL as `returnTo`. */
-  async followSignIn(): Promise<void> {
-    await this.noticeSignIn.click();
-  }
-
-  /**
-   * The notice's own sign-in button, scoped to `main`.
-   *
-   * The top bar offers a "Sign in" of its own to every anonymous visitor, so an unscoped lookup is
-   * ambiguous — and the two are not interchangeable: only this one carries the search URL as
-   * `returnTo`.
-   */
-  private get noticeSignIn(): Locator {
-    return this.page.locator('#main').getByRole('button', { name: 'Sign in', exact: true });
-  }
-
-  // ── synthesis (opt-in, the only part that spends tokens) ───────────────────
-
-  private get synthesizeToggle(): Locator {
-    return this.page.getByRole('button', { name: /^(Explain these results|AI answer on)$/ });
-  }
-
-  async explainResults(): Promise<void> {
-    const toggle = this.synthesizeToggle;
-    await expect(toggle).toHaveAttribute('aria-pressed', 'false');
-    await toggle.click();
-    await expect(toggle).toHaveAttribute('aria-pressed', 'true');
-  }
-
-  /** The grounded answer block. `contains`, because synthesis is prose, not a fixed string. */
-  async expectAnswer(contains: string): Promise<void> {
-    const answer = this.aiResults.getByText('AI answer', { exact: true });
-    await expect(answer).toBeVisible({ timeout: 60_000 });
-    await expect(this.aiResults).toContainText(contains, { timeout: 60_000 });
+  async expectPublicResults(): Promise<void> {
+    await expect(this.rankedResults).toBeVisible({ timeout: 30_000 });
+    for (const gone of [
+      'AI is turned off',
+      'Not available yet',
+      'Sign in to use AI search',
+      'Writing tools aren’t available',
+    ]) {
+      await expect(this.page.getByText(gone)).toHaveCount(0);
+    }
   }
 
   // ── query suggestions ─────────────────────────────────────────────────────
@@ -229,10 +189,6 @@ export class SearchPage {
     return this.savedSection.getByRole('button', { name: new RegExp(escapeRegExp(name)) }).first();
   }
 
-  /**
-   * Save the current AI search under `name`. The dialog pre-fills the query, so this replaces it —
-   * a saved search is named by its owner, and the test needs a name it can find again.
-   */
   /**
    * Open the save dialog and leave it open — for a scan that wants the modal itself.
    *
@@ -274,12 +230,15 @@ export class SearchPage {
   }
 
   /**
-   * Re-run a saved search. It switches to the AI engine as well as setting the query: restoring an
-   * AF4 search into keyword mode would answer the reader's saved question with a different engine.
+   * Re-run a saved search.
+   *
+   * It used to have to restore the AI engine as well as the query — running a saved search in
+   * keyword mode answered the reader's saved question with a different engine (48 §3.9 W5-7). With
+   * one engine there is nothing to restore, so this asserts only that the query committed.
    */
   async runSaved(name: string): Promise<void> {
     await this.savedEntry(name).click();
-    await expect(this.page).toHaveURL(/mode=ai/, { timeout: 30_000 });
+    await expect(this.page).toHaveURL(/[?&]q=/, { timeout: 30_000 });
   }
 
   async removeSaved(name: string): Promise<void> {
@@ -287,7 +246,7 @@ export class SearchPage {
     await expect(this.savedEntry(name)).toHaveCount(0, { timeout: 30_000 });
   }
 
-  /** The section is silent when there is nothing to show or AI is unavailable — never a hollow heading. */
+  /** The section is silent for a signed-out reader or an empty list — never a hollow heading. */
   async expectNoSavedSection(): Promise<void> {
     await expect(this.savedSection).toHaveCount(0);
   }

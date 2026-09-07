@@ -11,8 +11,8 @@ import type { DataFactory } from './data';
  * surfaces behind the `ai_writing` entitlement, which the free tier does not include — so the seeded
  * writer every AF2 spec was written for now gets "AI writing is on Plus and above" where the
  * assistant's controls used to be, and every assertion about those controls fails on an element that
- * is not rendered. Two files need the same arrangement (`assistant.spec.ts` and the AI-panel a11y
- * scan), and the next premium-gated surface will need a third.
+ * is not rendered. Three files need the same arrangement (`writing-tools.spec.ts`, the drawer's
+ * a11y scan, and `monetization.spec.ts`'s gate test), and the next premium-gated surface a fourth.
  *
  * **The suite had not run between D3 landing and 2026-08-20**, so nothing failed at the time. That
  * is the third instance of one pattern — B4's piece cap, B6's seat cap, now D3's entitlement gate —
@@ -26,7 +26,14 @@ export interface EntitledWriterContext {
 }
 
 /**
- * Run `body` as a throwaway, verified writer holding an `allow` override for `feature`.
+ * Run `body` as a throwaway, verified writer holding an `allow` override for `feature` — or for
+ * every code in a list.
+ *
+ * **The list form is not a convenience.** D5's Story Map tab sits behind `story_intelligence` (D4)
+ * inside a drawer whose other tabs sit behind `ai_writing` (D3), so reaching it needs both: with
+ * only the second, the drawer opens on an upgrade wall and the tab under test is never selected.
+ * Granting them one at a time would mean nesting this fixture in itself, which creates two throwaway
+ * accounts and logs in as the inner one — so the outer grant lands on a user who never navigates.
  *
  * An admin OVERRIDE rather than a subscription: it drives the same Entitlement Service and the same
  * snapshot the client gates on, invalidates the server's decision cache on write, and carries no
@@ -40,25 +47,33 @@ export interface EntitledWriterContext {
  */
 export async function asEntitledWriter(
   ctx: EntitledWriterContext,
-  feature: string,
+  feature: string | readonly string[],
   body: () => Promise<void>,
 ): Promise<void> {
+  const features = typeof feature === 'string' ? [feature] : feature;
   const password = 'ChangeMe!E2EEntitled1';
   const writer = await ctx.api.createVerifiedUser({
     email: `entitled-${ctx.data.username()}@qalam.local`,
     username: ctx.data.username(),
     password,
   });
-  const grant = await ctx.api.grantEntitlementOverride({
-    userId: writer.id,
-    feature,
-    reason: `e2e: ${feature} is entitlement-gated`,
-  });
+  const grants = [];
+  for (const code of features) {
+    grants.push(
+      await ctx.api.grantEntitlementOverride({
+        userId: writer.id,
+        feature: code,
+        reason: `e2e: ${code} is entitlement-gated`,
+      }),
+    );
+  }
   try {
     // Before the first navigation, per `freshLoginAs` — the cookie is what the app boots on.
     await freshLoginAs(ctx.page, writer.email, password);
     await body();
   } finally {
-    await ctx.api.revokeEntitlementOverride(grant.id);
+    // Every grant is revoked even if one revoke fails: a leaked `allow` on a throwaway account is
+    // harmless, but a leaked one that ALSO skipped its siblings leaves the next run guessing which.
+    await Promise.allSettled(grants.map((grant) => ctx.api.revokeEntitlementOverride(grant.id)));
   }
 }

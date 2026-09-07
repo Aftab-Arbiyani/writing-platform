@@ -8,6 +8,23 @@
 > has explicit **exit criteria** that must be met before the next begins. Workflows map to the real
 > frontend features (`frontend/src/features/*`) and admin screens.
 
+> ⚠️ **AMENDED BY D5, 2026-09-03 — the AI surface was removed.** Names below that no longer exist:
+>
+> | Was                                                 | Now                                                    |
+> | --------------------------------------------------- | ------------------------------------------------------ |
+> | `assistant.spec.ts` · `AssistantPanel`              | `writing-tools.spec.ts` · `WritingToolsDrawer`         |
+> | `ai-search.spec.ts`                                 | absorbed into `search.spec.ts` (one engine, public)    |
+> | `ai-surfaces.spec.ts` · `ai-pages.ts`               | deleted — the routes are gone                          |
+> | `frontend-ai-panel` baselines                       | deleted; the test stays `fixme` (see `visual.spec.ts`) |
+> | `frontend-search-ai-off`                            | deleted — there is no refusal to photograph            |
+> | `frontend-ai-conversations` · `-prompts` · `-usage` | deleted — the routes are gone                          |
+>
+> Everything else in this document — the phase structure, the engine matrix, the invariants, the
+> reasoning about WHY a baseline is a refusal rather than a result set — stands unchanged. The
+> reasoning is what outlives the names: the search baseline was a refusal because a live ranking's
+> content and height differ every run, and that is still true, which is why nothing replaced it.
+> Status lives in `docs/48 §5.2`, never here.
+
 ---
 
 ## 1. Phasing principles

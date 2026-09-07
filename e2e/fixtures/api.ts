@@ -563,7 +563,7 @@ export class ApiHelper {
    *   4.37:1 under white, the same colour W3c-3 pinned for the *default* variant's label and never
    *   addressed for the primary variant's background (docs/48 §3.12). Both fills are now pinned in
    *   `packages/ui/src/theme/antd-theme.ts` and guarded by its spec.
-   * - **The scan's subject is the ROW, not the create flow** — `ai-surfaces.spec.ts` drives creation
+   * - **The scan's subject is the ROW, not the create flow** — the functional spec drives creation
    *   through the real button — so arranging over the API measures what the scan is for. That reason
    *   is independent of the defect, which is why this fixture stays.
    *
@@ -633,7 +633,7 @@ export class ApiHelper {
    *
    * **Why a per-test toggle rather than a seeded default.** AF1 dark-launches every AI flag
    * (`feature.ai.enabled` and each `feature.ai.<camelCase>.enabled` seed disabled) and that IS the
-   * contract every deployment starts from — `assistant.spec.ts` asserts the flag-down surface, so a
+   * contract every deployment starts from — `writing-tools.spec.ts` asserts the flag-down surface, so a
    * suite-wide enable would delete that assertion and quietly change what the AI panel's committed
    * visual baselines contain. Same posture as `setPaymentsEnabled`: flip server-side state for the
    * one test that needs it, restore it in `finally`.
@@ -809,7 +809,7 @@ export class ApiHelper {
    * Arranging over REST rather than through the dialog, where the dialog is not the subject: the a11y
    * scan needs a saved ROW to render, and driving the dialog there means closing an animated AntD modal
    * after `expectNoSeriousA11yViolations` has stopped every animation on the page — which never
-   * completes ([fixtures/a11y.ts]). The dialog's own behaviour is asserted in `ai-search.spec.ts`.
+   * completes ([fixtures/a11y.ts]). The dialog's own behaviour is asserted in `search.spec.ts`.
    *
    * Requires the AF4 flags raised (every route here is gated on them), so call it inside
    * `withAiFeatures`. Idempotent by name on the server.

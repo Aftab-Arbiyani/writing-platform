@@ -11,11 +11,11 @@ import { ApiHelper } from './api';
  *
  * **Why a lock and not `test.describe.serial`.** The AI flags are single GLOBAL rows
  * (`feature.ai.enabled` + one per feature) and the suite runs `fullyParallel` across 8 workers.
- * `describe.serial` orders tests *within one file*, which was enough while `assistant.spec.ts` was
+ * `describe.serial` orders tests *within one file*, which was enough while `writing-tools.spec.ts` was
  * the only file that touched them. W5 adds three more surfaces gated on the same master row — AI
  * search, the discover shelves, and the reader's recommender — so the contenders now span files, and
  * no `describe` modifier can order across them. Run unlocked, the failure is the confusing kind the
- * assistant spec warns about: "AI is turned off" appearing in a test that just enabled it, or a
+ * writing-tools spec warns about: an "unavailable" notice in a test that just enabled it, or a
  * flag-down assertion failing because a neighbour raised the master flag mid-flight.
  *
  * Two kinds of test must participate, and both take the SAME lock:
@@ -138,7 +138,7 @@ export async function withAiFlags<T>(label: string, body: () => Promise<T>): Pro
  * run of this row proved why: the AI-search test exceeded the default 30 s test timeout, Playwright
  * tore its context down, and the `finally` then failed with "Target page, context or browser has been
  * closed" — leaving `feature.ai.enabled` **raised**. Every flag-down assertion after it (this file's,
- * discover's, and `assistant.spec.ts`'s two) then failed for a reason that had nothing to do with the
+ * discover's, and `writing-tools.spec.ts`'s) then failed for a reason that had nothing to do with the
  * code under test: the search page really did render AI results. A context of our own outlives the
  * fixture, so a timeout costs one test rather than the run.
  *
