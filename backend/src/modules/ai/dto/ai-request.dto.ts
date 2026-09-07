@@ -16,7 +16,6 @@ import {
   IsObject,
   IsOptional,
   IsString,
-  IsUUID,
   Max,
   MaxLength,
   Min,
@@ -103,17 +102,6 @@ export class AiCompletionRequestDto {
   @ApiProperty({ enum: AiFeature })
   @IsEnum(AiFeature)
   feature!: AiFeature;
-
-  /**
-   * @deprecated Accepted and IGNORED since D5 removed the conversation layer. It stays on the
-   * DTO — not merely unread — because the pipe runs with `forbidNonWhitelisted`, so silently
-   * dropping the property would turn every request from an already-shipped client into a 400.
-   * The response's `conversationId` is always null.
-   */
-  @ApiPropertyOptional({ format: 'uuid', deprecated: true })
-  @IsOptional()
-  @IsUUID()
-  conversationId?: string;
 
   @ApiPropertyOptional()
   @IsOptional()

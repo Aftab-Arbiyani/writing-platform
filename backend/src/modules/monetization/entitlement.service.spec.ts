@@ -7,6 +7,7 @@ import {
   PlanTier,
   PremiumFeature,
   SubscriptionStatus,
+  UNIVERSAL_PLAN_FEATURES,
 } from '@qalam/shared';
 import type { PlanDefinition } from '@qalam/shared';
 import type { Repository } from 'typeorm';
@@ -20,13 +21,26 @@ import { EntitlementDeniedException } from './monetization.exceptions';
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
+/**
+ * What `MonetizationConfigService.getPlan` actually hands back: the tier's own codes unioned
+ * with the universal ones (`withUniversalFeatures`). The fixture used to spread
+ * `DEFAULT_PLAN_FEATURES` alone, which was already a shade unfaithful — and became
+ * load-bearing when D5 emptied Free's own array, because these tests need a code a free
+ * account genuinely holds.
+ */
+function resolvedFeatures(tier: PlanTier): PremiumFeature[] {
+  return [...new Set([...UNIVERSAL_PLAN_FEATURES, ...DEFAULT_PLAN_FEATURES[tier]])];
+}
+
+/** A code every tier holds, free included — the vehicle for "the plan includes it" tests. */
+const FREE_CODE = PremiumFeature.AiDiscovery;
+
 const FREE_PLAN: PlanDefinition = {
   tier: PlanTier.Free,
   name: 'Free',
   description: 'Free plan',
-  features: [...DEFAULT_PLAN_FEATURES[PlanTier.Free]] as PremiumFeature[],
+  features: resolvedFeatures(PlanTier.Free),
   limits: { ...DEFAULT_PLAN_LIMITS[PlanTier.Free] },
-  monthlyCredits: 0,
   prices: {},
   trialDays: 0,
 };
@@ -35,9 +49,8 @@ const PLUS_PLAN: PlanDefinition = {
   tier: PlanTier.Plus,
   name: 'Plus',
   description: 'Plus plan',
-  features: [...DEFAULT_PLAN_FEATURES[PlanTier.Plus]] as PremiumFeature[],
+  features: resolvedFeatures(PlanTier.Plus),
   limits: { ...DEFAULT_PLAN_LIMITS[PlanTier.Plus] },
-  monthlyCredits: 5_000,
   prices: {},
   trialDays: 14,
 };
@@ -117,10 +130,10 @@ describe('EntitlementService', () => {
   afterEach(() => jest.clearAllMocks());
 
   describe('decide', () => {
-    it('should allow AiBudget for a free user (no subscription)', async () => {
+    it('should allow a universal code for a free user (no subscription)', async () => {
       const { service } = build({ subscription: null });
 
-      const decision = await service.decide('u1', PremiumFeature.AiBudget);
+      const decision = await service.decide('u1', FREE_CODE);
 
       expect(decision.allowed).toBe(true);
       expect(decision.status).toBe(EntitlementStatus.Allow);
@@ -221,9 +234,9 @@ describe('EntitlementService', () => {
         }),
       });
 
-      const decision = await service.decide('u1', PremiumFeature.AiBudget);
+      const decision = await service.decide('u1', FREE_CODE);
 
-      // Free plan includes AiBudget, but the expired grace window marks it denied
+      // The free plan includes the code, but the expired grace window marks it denied
       expect(decision.allowed).toBe(false);
       expect(decision.status).toBe(EntitlementStatus.Expired);
     });

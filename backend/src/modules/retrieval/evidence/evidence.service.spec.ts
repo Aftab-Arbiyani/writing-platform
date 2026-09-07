@@ -37,19 +37,6 @@ describe('EvidenceService', () => {
     expect(collected).toHaveLength(2); // 'same' deduped
   });
 
-  it('maps evidence to citations', () => {
-    const citations = svc.toCitations([
-      {
-        source: RetrievalSource.KnowledgeGraph,
-        ref: 'n1',
-        label: 'Aria',
-        quote: 'brave',
-        score: 1,
-      },
-    ]);
-    expect(citations[0]).toEqual({ ref: 'n1', label: 'Aria', quote: 'brave' });
-  });
-
   it('damps aggregate confidence when there are few results', () => {
     const one = svc.aggregateConfidence([ranked('a', 0.9, ['q'])]);
     const many = svc.aggregateConfidence([

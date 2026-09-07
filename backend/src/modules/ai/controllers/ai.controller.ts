@@ -109,7 +109,6 @@ export class AiController {
   ): Promise<AiCompletionResponseDto> {
     const output = await this.completion.complete(this.toInput(user, dto, req));
     return {
-      conversationId: null,
       message: {
         id: output.messageId ?? '',
         role: AiMessageRole.Assistant,

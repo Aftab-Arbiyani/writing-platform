@@ -43,26 +43,42 @@ describe('AF4 shared contract (post-D5: retrieval calls no LLM)', () => {
   });
 
   describe('feature flags', () => {
-    it('drops the Ask My Book flag — the surface it dark-launched no longer exists', () => {
-      expect(FEATURE_FLAG_DEFINITIONS.find((f) => f.key === 'feature.ai.askBook.enabled')).toBe(
-        undefined,
-      );
-      expect(FLAGGED_AI_FEATURES).not.toContain(AiFeature.AskBook);
+    /**
+     * D5 retired six per-feature AI flags, in two steps that were forced apart.
+     *
+     * `askBook` went in B2 with its routes. `semanticSearch` and `recommendations` had to
+     * WAIT, even though the server had already stopped consulting them: mobile's
+     * `AiFeatures.isEnabled` reads an ABSENT flag as OFF, so deleting the rows while mobile
+     * still read them would have taken its search screen dark against a server answering
+     * happily. The client halves landed first (web F1, mobile M2), and the vocabulary
+     * contract then removed the rows — along with `grammar`, `rewrite` and `summarization`,
+     * which were never built at all. See the warning on `FLAGGED_AI_FEATURES`.
+     */
+    it.each([
+      'feature.ai.askBook.enabled',
+      'feature.ai.semanticSearch.enabled',
+      'feature.ai.recommendations.enabled',
+      'feature.ai.grammar.enabled',
+      'feature.ai.rewrite.enabled',
+      'feature.ai.summarization.enabled',
+    ])('no longer defines %s', (key) => {
+      expect(FEATURE_FLAG_DEFINITIONS.find((f) => f.key === key)).toBeUndefined();
     });
 
-    /**
-     * Search and recommendations are ordinary product surfaces now: the server stopped
-     * consulting these flags in D5's first phase. Their rows survive on purpose — mobile's
-     * `AiFeatures.isEnabled` treats an ABSENT flag as off, so deleting them here would take
-     * mobile's search screen dark against a server that answers it happily. They go when the
-     * client halves land. See the warning on `FLAGGED_AI_FEATURES`.
-     */
-    it.each(['feature.ai.semanticSearch.enabled', 'feature.ai.recommendations.enabled'])(
-      'keeps %s seeded for the clients, though the server no longer reads it',
-      (key) => {
-        expect(FEATURE_FLAG_DEFINITIONS.find((f) => f.key === key)).toBeDefined();
-      },
-    );
+    it('still flags every AI feature that survived', () => {
+      expect([...FLAGGED_AI_FEATURES].sort()).toEqual(
+        [
+          AiFeature.WritingAssistant,
+          AiFeature.CraftCoach,
+          AiFeature.CharacterAnalysis,
+          AiFeature.PlotAnalysis,
+          AiFeature.WorldBuilding,
+          AiFeature.StyleAnalysis,
+          AiFeature.StoryTimeline,
+          AiFeature.Moderation,
+        ].sort(),
+      );
+    });
   });
 
   /**

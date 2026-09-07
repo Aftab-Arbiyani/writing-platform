@@ -18,7 +18,7 @@ import type {
   SubscriptionEventDto,
   UsageSummaryDto,
 } from './dto/monetization-response.dto';
-import type { FeatureQuota, UsageSummary } from './usage.service';
+import type { FeatureQuota } from './usage.service';
 
 /** Entity → response DTO mappers (AF5). Controllers never return entities raw. */
 
@@ -72,16 +72,8 @@ export function toEntitlementSnapshotDto(snapshot: EntitlementSnapshot): Entitle
   };
 }
 
-export function toUsageSummaryDto(summary: UsageSummary, quotas: FeatureQuota[]): UsageSummaryDto {
-  return {
-    quotas,
-    daily: summary.daily,
-    monthly: summary.monthly,
-    total: summary.total,
-    byFeature: summary.byFeature,
-    forecastMonthlyTokens: summary.forecastMonthlyTokens,
-    forecastMonthlyCostUsd: summary.forecastMonthlyCostUsd,
-  };
+export function toUsageSummaryDto(quotas: FeatureQuota[]): UsageSummaryDto {
+  return { quotas };
 }
 
 export function toInvoiceDto(i: Invoice): InvoiceDto {
@@ -123,7 +115,6 @@ export function toPurchaseDto(p: Purchase): PurchaseDto {
     provider: p.provider,
     amount: p.amount,
     currency: p.currency,
-    creditsGranted: p.creditsGranted,
     createdAt: p.createdAt.toISOString(),
   };
 }

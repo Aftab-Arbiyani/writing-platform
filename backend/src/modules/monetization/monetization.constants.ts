@@ -43,7 +43,19 @@ export const MONETIZATION_AUDIT_TARGET = {
   Config: 'monetization_config',
 } as const;
 
-/** Redis cache-key builders for entitlement/usage caching (namespace:purpose:v1:id). */
+/**
+ * Redis cache-key builders for entitlement/usage caching (namespace:purpose:version:id).
+ *
+ * **The version segment is a deploy-safety device, not decoration.** A snapshot is cached
+ * as JSON, so it outlives the process that wrote it: after a deploy, the new build reads
+ * rows the old build serialised. Bump the version whenever the SHAPE or the MEANING of a
+ * snapshot changes, or the first request after release is answered from a stale one.
+ *
+ * `v2` (D5): `v1` snapshots list `ai_budget` in their features. That code no longer exists
+ * in `PremiumFeature`, so a cached `v1` entry would hand the new build a premium code it
+ * cannot interpret — for the full 60s TTL, on every user warm in the cache at deploy time.
+ * Bumping strands those entries instead, which is the cheap half of the trade.
+ */
 export const MONETIZATION_CACHE = {
-  entitlements: (userId: string): string => `entitlement:snapshot:v1:${userId}`,
+  entitlements: (userId: string): string => `entitlement:snapshot:v2:${userId}`,
 } as const;

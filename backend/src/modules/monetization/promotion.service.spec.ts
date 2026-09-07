@@ -151,9 +151,9 @@ describe('PromotionService', () => {
       expect(result.discountedAmount).toBe(100); // 20% of 500
     });
 
-    it('should return discountedAmount=null for a promotional-credits coupon (no discount)', async () => {
+    it('should return discountedAmount=null for a non-discount coupon', async () => {
       const { service } = build({
-        coupon: makeCoupon({ type: PromotionType.PromotionalCredits, value: 200 }),
+        coupon: makeCoupon({ type: PromotionType.FreePeriod, value: 200 }),
       });
 
       const result = await service.validate('CREDITS200', 500);
@@ -199,12 +199,12 @@ describe('PromotionService', () => {
       expect(discount).toBe(200); // clamped
     });
 
-    it('should return null for promotional-credits and free-trial types', () => {
+    it('should return null for the non-discount types', () => {
       const { service } = build();
-      const creditsCoupon = makeCoupon({ type: PromotionType.PromotionalCredits, value: 100 });
+      const periodCoupon = makeCoupon({ type: PromotionType.FreePeriod, value: 100 });
       const trialCoupon = makeCoupon({ type: PromotionType.FreeTrial, value: 14 });
 
-      expect(service.discountFor(creditsCoupon, 500)).toBeNull();
+      expect(service.discountFor(periodCoupon, 500)).toBeNull();
       expect(service.discountFor(trialCoupon, 500)).toBeNull();
     });
   });
@@ -235,7 +235,7 @@ describe('PromotionService', () => {
     });
 
     it('should succeed and return the coupon + benefit when redemption is allowed', async () => {
-      const coupon = makeCoupon({ type: PromotionType.PromotionalCredits, value: 500 });
+      const coupon = makeCoupon({ type: PromotionType.FreePeriod, value: 500 });
       const { service } = build({ coupon, redemptionCount: 0 });
 
       const result = await service.redeem('u1', normalizeCouponCode('save20'));

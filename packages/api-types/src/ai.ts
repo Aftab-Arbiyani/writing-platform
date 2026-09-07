@@ -10,7 +10,6 @@
  * and the generated types supersede them (same policy as `./manual`).
  */
 export type {
-  AiConversationStatus,
   AiFeature,
   AiFinishReason,
   AiGenerationParams,
@@ -29,7 +28,6 @@ export type {
 } from '@qalam/shared';
 
 import type {
-  AiConversationStatus,
   AiFeature,
   AiFinishReason,
   AiGenerationParams,
@@ -155,77 +153,6 @@ export interface AiMessageDto {
   createdAt: string;
 }
 
-/** Conversation list-row (no messages). */
-export interface AiConversationSummary {
-  id: string;
-  title: string | null;
-  feature: AiFeature;
-  status: AiConversationStatus;
-  messageCount: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-/** Full conversation with its message history. */
-export interface AiConversationDetail extends AiConversationSummary {
-  messages: AiMessageDto[];
-}
-
-/** `POST /ai/conversations` — start a conversation. */
-export interface CreateAiConversationRequest {
-  feature: AiFeature;
-  title?: string;
-}
-
-/**
- * `PATCH /ai/conversations/:id` — rename and/or set lifecycle status.
- *
- * Added by W8 (docs/48 §3.12, W8-4): `UpdateAiConversationDto` has accepted both keys since AF1, but
- * no interface here declared them, so no typed client had a type for the body. Same direction as
- * `CreateSubscriptionRequest.region` and `jsonMode` — a shipped capability invisible to consumers
- * rather than a break.
- *
- * Note what `status: 'archived'` does and does not do: it persists, and it does **not** hide the
- * conversation, because the list query has no status predicate (W8-2). Do not build an archive
- * affordance on this until that is fixed.
- */
-export interface UpdateAiConversationRequest {
-  title?: string;
-  status?: AiConversationStatus;
-}
-
-/**
- * One message inside an export document. NOT `AiMessageDto`: the export publishes no `id` and
- * flattens token usage to one nullable number (docs/48 §3.12, W8-3).
- *
- * That asymmetry is deliberate and now DECLARED — `AiConversationExportMessageDto` (2026-08-20) says
- * why it is kept rather than repaired, and the §3.11 guard pins this interface against it. Until then
- * the shape existed only inside a service method body and this mirror was excused as unpinnable.
- */
-export interface AiConversationExportMessage {
-  role: AiMessageRole;
-  content: string;
-  totalTokens: number | null;
-  createdAt: string;
-}
-
-/**
- * `GET /ai/conversations/:id/export` — the portable JSON document.
- *
- * Was hand-written from the service body because the handler returned
- * `Promise<Record<string, unknown>>`. It now mirrors `AiConversationExportDto` and is **pinned by the
- * §3.11 guard** like every other response type here (W8-4, closed 2026-08-20).
- */
-export interface AiConversationExport {
-  id: string;
-  feature: AiFeature;
-  title: string | null;
-  status: AiConversationStatus;
-  createdAt: string;
-  updatedAt: string;
-  messages: AiConversationExportMessage[];
-}
-
 // ── Completion / streaming ────────────────────────────────────────────────────
 
 /** A caller-supplied message on a completion request. */
@@ -242,8 +169,6 @@ export interface AiCompletionMessage {
  */
 export interface AiCompletionRequest {
   feature: AiFeature;
-  /** Continue an existing conversation (optional). */
-  conversationId?: string;
   /** Prompt template to render as the system/instruction prompt (optional). */
   promptKey?: string;
   promptVersion?: number;
@@ -270,7 +195,6 @@ export interface AiCompletionRequest {
 
 /** Non-streaming completion result. */
 export interface AiCompletionResponse {
-  conversationId: string | null;
   message: AiMessageDto;
   model: string;
   provider: AiProvider;
@@ -294,12 +218,10 @@ export interface AiStreamEvent {
   /** Present on `start`. */
   model?: string;
   provider?: AiProvider;
-  conversationId?: string | null;
   /** Present on `done`. */
   finishReason?: AiFinishReason;
   usage?: AiTokenUsage;
   estimatedCostUsd?: number;
-  messageId?: string;
   /** Present on `error` — a stable ERROR_CODES string. */
   code?: string;
   message_?: string;

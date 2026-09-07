@@ -26,7 +26,6 @@ function tier(name: PlanTier, over: Partial<PlanDefinition> = {}): PlanDefinitio
     description: `${name} plan`,
     features: [...DEFAULT_PLAN_FEATURES[name]],
     limits: { ...DEFAULT_PLAN_LIMITS[name] },
-    monthlyCredits: 0,
     prices: {},
     trialDays: 0,
     ...over,
@@ -105,25 +104,41 @@ describe('PlanCatalogue — default vs admin override', () => {
     expect(screen.getByText(`default ${compiledMaxPieces.toLocaleString()}`)).toBeInTheDocument();
   });
 
+  /**
+   * Arranged on Plus, not Free. D5 emptied Free's compiled feature array — everything a free
+   * account holds is universal now — so a stored list on Free can only ever ADD, and the
+   * `removed` half of the delta would be untestable there. Plus still ships one code of its
+   * own, which keeps both directions real.
+   */
   it('says a feature list differs, and that a stored list replaces the default wholesale', () => {
     render(
       catalogue({
-        [PlanTier.Free]: tier(PlanTier.Free, { features: [PremiumFeature.AiWriting] }),
+        [PlanTier.Plus]: tier(PlanTier.Plus, { features: [PremiumFeature.AdvancedAnalytics] }),
       }),
     );
 
     expect(screen.getByText(/Differs from the compiled default/)).toBeInTheDocument();
-    expect(screen.getByText(/added ai_writing/)).toBeInTheDocument();
-    expect(screen.getByText(/removed ai_budget/)).toBeInTheDocument();
+    expect(screen.getByText(/added advanced_analytics/)).toBeInTheDocument();
+    expect(screen.getByText(/removed ai_writing/)).toBeInTheDocument();
     expect(screen.getByText(/replaces the default outright/)).toBeInTheDocument();
   });
 });
 
 describe('PlanCatalogue — which codes actually do something', () => {
-  it('marks ai_budget and ai_writing enforced, and D4’s codes not', () => {
-    render();
+  /**
+   * The unenforced code has to be arranged now rather than picked up from the compiled
+   * catalogue. Both codes the default sets still contain — `ai_writing` and
+   * `story_intelligence` — are enforced, and `ai_budget`, which used to supply the
+   * unenforced case here, no longer exists. So Free is given a stored universal code: real
+   * (an operator can grant one), and correctly reported as changing nothing.
+   */
+  it('marks the enforced codes enforced, and an unenforced grant as doing nothing', () => {
+    render(
+      catalogue({
+        [PlanTier.Free]: tier(PlanTier.Free, { features: [PremiumFeature.AdvancedAnalytics] }),
+      }),
+    );
 
-    // Free ships ai_budget only; Plus adds ai_writing plus two of D4's codes.
     expect(screen.getAllByText('enforced').length).toBeGreaterThan(0);
     expect(screen.getAllByText('not enforced').length).toBeGreaterThan(0);
     expect(screen.getAllByText(PremiumFeature.AiWriting).length).toBeGreaterThan(0);

@@ -44,7 +44,6 @@ export const useAiStreamStore = create<AiStreamState>((set) => ({
     set({
       provider: event.provider ?? null,
       model: event.model ?? null,
-      conversationId: event.conversationId ?? null,
     }),
   appendDelta: (text) => set((state) => ({ text: state.text + text })),
   onDone: (event) =>

@@ -113,11 +113,6 @@ export function featureLabel(feature: PremiumFeature | string): string {
       return 'Advanced analytics';
     case PremiumFeature.PublishingPro:
       return 'Pro publishing';
-    // D5 removed the code this named. Nothing enforces `ai_budget` any more, but it is still in
-    // `DEFAULT_PLAN_FEATURES` until Phase V, so a plan card can still be handed it — and an
-    // unlabelled code falls through to the raw string, which would print `ai_budget` at a reader.
-    case PremiumFeature.AiBudget:
-      return 'Writing tools';
     case PremiumFeature.Marketplace:
       return 'Marketplace';
     case PremiumFeature.Collaboration:

@@ -29,7 +29,9 @@ function build(opts?: { enabled?: boolean }) {
   } as unknown as MonetizationFeatureService;
 
   const entitlements = {
-    assertAllowed: jest.fn().mockResolvedValue({ allowed: true, feature: PremiumFeature.AiBudget }),
+    assertAllowed: jest
+      .fn()
+      .mockResolvedValue({ allowed: true, feature: PremiumFeature.AiWriting }),
   } as unknown as EntitlementService;
 
   const usage = {

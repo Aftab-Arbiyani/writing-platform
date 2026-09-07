@@ -38,9 +38,20 @@ describe('UpdateRetrievalConfigDto', () => {
           candidatesPerSource: 40,
           contextTokens: 2000,
           timeoutMs: 8000,
-          synthesisEnabled: true,
         }),
       ).toEqual([]);
+    });
+
+    /**
+     * `synthesisEnabled` was the knob that turned grounded LLM answers on for search. B1
+     * stopped reading it but the DTO kept ACCEPTING it, deliberately: the pipe runs with
+     * `forbidNonWhitelisted`, so dropping the property while the admin form still sent it
+     * would have turned a config save into a 422. The admin half landed, and the vocabulary
+     * contract removed the field — so it is now rejected, which is the correct end state and
+     * the reason the two steps could not be one.
+     */
+    it('rejects synthesisEnabled — the knob is gone, not merely ignored', () => {
+      expect(errorsOn({ topK: 10, synthesisEnabled: true })).toEqual(['synthesisEnabled']);
     });
 
     it('accepts an empty patch — every field is optional', () => {

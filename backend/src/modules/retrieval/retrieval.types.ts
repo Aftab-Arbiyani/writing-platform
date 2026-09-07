@@ -8,7 +8,6 @@
  * source of truth; the response DTOs (dto/) and the `@qalam/api-types` mirror match them.
  */
 import type {
-  AskScope,
   RankingSignal,
   RetrievalFailureReason,
   RetrievalIntent,
@@ -49,14 +48,6 @@ export interface RankingExplanation {
   summary: string;
 }
 
-/** A citation for an Ask answer — the evidence it is grounded in. */
-export interface AskCitation {
-  ref: string;
-  label: string;
-  quote: string;
-  nodeType?: string;
-}
-
 // ── Config (resolved, admin-tunable) ────────────────────────────────────────────
 
 /** The effective retrieval config (defaults ⊕ admin overrides). Mirrors the wire shape. */
@@ -93,7 +84,16 @@ export interface RetrievalRequest {
   intent: RetrievalIntent;
   storyId?: string;
   queryType?: RetrievalQueryType;
-  scope?: AskScope;
+  /**
+   * A named entity to bias a story-scoped retrieval toward — the graph retriever seeds its
+   * distance scoring from it, so results near that character/place rank higher.
+   *
+   * **No caller sets this today.** Ask My Book was its only producer and D5 removed it. The
+   * capability behind it is live and general (it is not Ask vocabulary — `AskScope`, which
+   * was, is gone), and with it unset the retriever simply scores an empty distance map,
+   * exactly as it already did for every search request. Kept rather than deleted because
+   * removing it would mean deleting working ranking code to no effect.
+   */
   subject?: string;
   limit: number;
   filters?: { language?: string; genre?: string; tags?: string[] };

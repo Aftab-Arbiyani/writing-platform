@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-import type { AskCitation, RankedCandidate, RetrievalEvidence } from '../retrieval.types';
+import type { RankedCandidate, RetrievalEvidence } from '../retrieval.types';
 import { clamp01 } from '../retrieval.text.util';
 
 const DEFAULT_CAP = 12;
@@ -26,11 +26,6 @@ export class EvidenceService {
       }
     }
     return all.sort((a, b) => b.score - a.score).slice(0, cap);
-  }
-
-  /** Citations for an Ask answer — the evidence the answer is grounded in. */
-  toCitations(evidence: RetrievalEvidence[]): AskCitation[] {
-    return evidence.map((e) => ({ ref: e.ref, label: e.label, quote: e.quote }));
   }
 
   /**

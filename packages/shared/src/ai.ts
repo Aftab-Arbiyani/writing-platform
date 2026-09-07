@@ -84,47 +84,47 @@ export const AiModelAvailability = {
 export type AiModelAvailability = (typeof AiModelAvailability)[keyof typeof AiModelAvailability];
 
 /**
- * The catalogue of AI FEATURES the platform will eventually expose. AF1 builds
- * NONE of them — this enum exists so (a) usage is attributed per feature from
- * day one, (b) feature flags are keyed off it, and (c) future features slot in
- * without a contract change. `playground` is the infra's own generic surface
- * (prompt testing / preview) so the foundation is usable without any product
- * feature turned on.
+ * The AI features the platform actually runs. Usage is attributed per feature
+ * (`ai_usage_logs.feature`), feature flags are keyed off it, and `playground` is the
+ * infra's own generic surface (prompt testing / preview) so the foundation is usable
+ * without any product feature turned on.
+ *
+ * **D5 shrank this list from twenty values to nine**, and the shape of what went is
+ * worth keeping in view. Three kinds of value were removed:
+ *
+ * - **Never-built reservations** (`expand`, `shorten`, `title_suggestions`, `synopsis`,
+ *   `voice_dictation`, `image_generation`) — no caller, no flag, no prompt, no usage row,
+ *   in the tree since AF1. They cost a `AI_FEATURE_PREMIUM_CODE` row each and bought
+ *   nothing; a feature that does not exist does not need vocabulary.
+ * - **Vestigial AF1 codes** (`grammar`, `rewrite`, `summarization`) — mapped to
+ *   `ai_writing` for totality but never called. Their real cost was that `ai-quotas.ts`
+ *   had to list all three in the Polish rule purely to satisfy `uncountedPaidAiFeatures`.
+ * - **The AF4 surfaces** (`semantic_search`, `recommendations`, `ask_book`) — retired as
+ *   *AI features* by D5, which is not the same as retired as products. Search and
+ *   recommendations still work; they are ordinary product surfaces now, gated by auth
+ *   rather than by an AI flag, and they call no model. `ask_book` alone is gone entirely.
+ *
+ * ⚠️ Historical `ai_usage_logs` rows still carry the removed strings. Nothing renders
+ * them through a totality-pinned label map (admin reads the column raw), so a stale row
+ * displays its own value rather than breaking — but do not add such a map without
+ * deciding what an unrecognised feature should say.
  */
 export const AiFeature = {
-  Grammar: 'grammar',
-  Rewrite: 'rewrite',
-  Summarization: 'summarization',
-  CraftCoach: 'craft_coach',
-  // AF2 — the first user-facing writing surface. One flag/feature for the whole
-  // in-editor assistant (continue/rewrite/expand/condense/simplify/improve/tone);
-  // the specific action is a prompt-template key, never a distinct feature/flag.
+  // AF2 — the two user-facing writing tools, sold together under `ai_writing`.
+  // One flag/feature per tool; a specific action (simplify/condense/improve·aspect)
+  // is a prompt-template key, never a distinct feature or flag.
   WritingAssistant: 'writing_assistant',
+  CraftCoach: 'craft_coach',
+  // AF3 — Story Map analyses. Each maps to a prompt template and folds into the
+  // structured story knowledge graph (never plain text). One "Map this story" run
+  // spends all five; they share one allowance (see `ai-quotas.ts`).
   CharacterAnalysis: 'character_analysis',
   PlotAnalysis: 'plot_analysis',
-  // AF3 — Story Intelligence analyses. Each maps to a prompt template and feeds the
-  // structured story knowledge graph (never plain text). Character/Plot reuse the
-  // features above; these are the remaining analysis lenses.
   WorldBuilding: 'world_building',
   StyleAnalysis: 'style_analysis',
   StoryTimeline: 'story_timeline',
-  // AF4 — AI Discovery / Search / Recommendation. `semantic_search` and
-  // `recommendations` were reserved in AF1; `ask_book` (grounded Q&A over the
-  // story knowledge graph) is the one net-new feature. Each is one flag + prompt
-  // template(s) consumed through the reusable Retrieval Platform — never a
-  // parallel search/LLM stack.
-  SemanticSearch: 'semantic_search',
-  Recommendations: 'recommendations',
-  AskBook: 'ask_book',
+  // Infrastructure, not a sold capability.
   Moderation: 'moderation',
-  // Reserved future features (no flag seeded until scoped; here for usage + config).
-  Expand: 'expand',
-  Shorten: 'shorten',
-  TitleSuggestions: 'title_suggestions',
-  Synopsis: 'synopsis',
-  VoiceDictation: 'voice_dictation',
-  ImageGeneration: 'image_generation',
-  // Infra-level generic surface (prompt testing / preview / raw completion).
   Playground: 'playground',
 } as const;
 export type AiFeature = (typeof AiFeature)[keyof typeof AiFeature];
@@ -138,26 +138,25 @@ export type AiFeature = (typeof AiFeature)[keyof typeof AiFeature];
  * the two clients disagree about what an absent flag means. Web's `resolveAvailability`
  * looks the flag up and only refuses when it is present-and-false, so a missing flag reads
  * as available; mobile's `AiFeatures.isEnabled` is `features.any(f => f.feature == id &&
- * f.enabled)`, so a missing flag reads as OFF and the surface hides itself. D5 therefore
- * dropped only `AskBook` here — its route is gone, so mobile hiding the entry point is the
- * outcome we want. `SemanticSearch` and `Recommendations` are no longer consulted by the
- * server (search and recommendations are ordinary product surfaces now), but their rows stay
- * until the client halves land, or mobile's search screen would go dark against a server
- * that is perfectly willing to answer it.
+ * f.enabled)`, so a missing flag reads as OFF and the surface hides itself.
+ *
+ * That asymmetry is why D5 removed `SemanticSearch` and `Recommendations` from this list in
+ * two steps rather than one. B2 could not drop them: the server had already stopped
+ * consulting them, but mobile's search screen still read the flags, so deleting the rows
+ * would have taken search dark against a server perfectly willing to answer it — a failure
+ * visible only on one client. The client halves closed that door first (web F1 deleted its
+ * `useAiAvailability` calls, mobile M2 deleted the ids from `AiFeatureIds` outright), and
+ * only then could the rows go. **A flag may leave this list only after every client has
+ * stopped reading it — not merely after the server has stopped writing it.**
  */
 export const FLAGGED_AI_FEATURES: readonly AiFeature[] = [
-  AiFeature.Grammar,
-  AiFeature.Rewrite,
-  AiFeature.Summarization,
-  AiFeature.CraftCoach,
   AiFeature.WritingAssistant,
+  AiFeature.CraftCoach,
   AiFeature.CharacterAnalysis,
   AiFeature.PlotAnalysis,
   AiFeature.WorldBuilding,
   AiFeature.StyleAnalysis,
   AiFeature.StoryTimeline,
-  AiFeature.SemanticSearch,
-  AiFeature.Recommendations,
   AiFeature.Moderation,
 ];
 
@@ -172,60 +171,40 @@ export const FLAGGED_AI_FEATURES: readonly AiFeature[] = [
  * AI feature shipping ungated because nobody remembered a gate existed. A new feature
  * must *declare* that it is free; it can never default to free by omission.
  *
- * **Where the map stops, and why.** Five features map to `ai_writing` — the AF2
- * in-editor assistant (`writing_assistant`, whose eight actions are prompt-template
- * keys, not distinct features), the AF2 Craft Coach, and the three vestigial AF1 codes
- * (`grammar`/`rewrite`/`summarization`) which have no caller but are mapped for
- * totality. Five more map to `story_intelligence` — **D4, decided 2026-08-21** (48
- * §5.2): the AF3 story analyses (`character_analysis`, `plot_analysis`,
- * `world_building`, `style_analysis`, `story_timeline`) that fold into a story's
- * knowledge graph. Everything else maps to `null` — **deliberately**, and each for
- * its own reason:
+ * **Where the map stops, and why.** Two features map to `ai_writing` — Polish
+ * (`writing_assistant`, whose actions are prompt-template keys, not distinct features)
+ * and Manuscript feedback (`craft_coach`). Five map to `story_intelligence` — **D4,
+ * decided 2026-08-21** (48 §5.2): the story analyses that fold into a story's knowledge
+ * graph, sold as Story Map. `moderation` and `playground` map to `null` because they are
+ * infrastructure, not a sold capability.
  *
- * - The AF4 surfaces (`semantic_search`, `recommendations`, `ask_book`) were
- *   confirmed **already live and free on both clients** in the same D4 decision —
- *   gating them now would repeat the `ai_writing` regression without sign-off, so
- *   they stay `null` on purpose, not by omission. 48 §5.2 consequence 1 ("a client
- *   must not gate on" these) still binds for them specifically.
- * - `moderation` and `playground` are infrastructure, not a sold capability.
- * - The reserved codes (`expand`, `shorten`, `title_suggestions`, `synopsis`,
- *   `voice_dictation`, `image_generation`) have no caller, no seeded flag, and no
- *   product scope. ⚠️ `expand`/`shorten` in particular READ like writing and are not
- *   mapped to it: the assistant's own expand/condense actions are prompt keys under
- *   `writing_assistant` and are already gated. Whoever gives one of these codes a real
- *   caller must revisit this row rather than inherit `null` by default.
+ * **D5 removed every other row**, and one class of removal is worth naming: the AF4
+ * surfaces (`semantic_search`, `recommendations`, `ask_book`) used to sit here as
+ * deliberate `null`s, carrying a warning that a client must not gate on them. That
+ * warning is now enforced by construction rather than by comment — search and
+ * recommendations are no longer AI features at all, so there is no flag and no premium
+ * code left for a client to gate on by mistake.
  *
  * A `null` here means "no premium code", NOT "no gating" — the AI feature flag
- * (`aiFeatureFlagKey`) and the AI budget (`ai_budget`, asserted by the usage meter)
- * both still apply to every feature regardless of this map.
+ * (`aiFeatureFlagKey`) still applies to every feature regardless of this map, and every
+ * sold feature additionally spends a per-feature allowance (`ai-quotas.ts`). The old
+ * third gate, the `ai_budget` credit balance asserted by the usage meter, is gone: D5
+ * removed the credit economy, so a generation now asserts only the code its feature is
+ * sold behind.
  */
 export const AI_FEATURE_PREMIUM_CODE = {
-  // ── Paid: AI writing (D3) ────────────────────────────────────────────────────
+  // ── Paid: Polish & feedback (D3) ─────────────────────────────────────────────
   [AiFeature.WritingAssistant]: PremiumFeature.AiWriting,
   [AiFeature.CraftCoach]: PremiumFeature.AiWriting,
-  [AiFeature.Grammar]: PremiumFeature.AiWriting,
-  [AiFeature.Rewrite]: PremiumFeature.AiWriting,
-  [AiFeature.Summarization]: PremiumFeature.AiWriting,
-  // ── Paid: story intelligence (D4, decided 2026-08-21) ────────────────────────
+  // ── Paid: Story Map (D4, decided 2026-08-21) ─────────────────────────────────
   [AiFeature.CharacterAnalysis]: PremiumFeature.StoryIntelligence,
   [AiFeature.PlotAnalysis]: PremiumFeature.StoryIntelligence,
   [AiFeature.WorldBuilding]: PremiumFeature.StoryIntelligence,
   [AiFeature.StyleAnalysis]: PremiumFeature.StoryIntelligence,
   [AiFeature.StoryTimeline]: PremiumFeature.StoryIntelligence,
-  // ── D4's codes — confirmed free, not gated (decided 2026-08-21) ──────────────
-  [AiFeature.SemanticSearch]: null,
-  [AiFeature.Recommendations]: null,
-  [AiFeature.AskBook]: null,
   // ── Infrastructure ───────────────────────────────────────────────────────────
   [AiFeature.Moderation]: null,
   [AiFeature.Playground]: null,
-  // ── Reserved, no caller — see the ⚠️ above before giving one of these a caller ─
-  [AiFeature.Expand]: null,
-  [AiFeature.Shorten]: null,
-  [AiFeature.TitleSuggestions]: null,
-  [AiFeature.Synopsis]: null,
-  [AiFeature.VoiceDictation]: null,
-  [AiFeature.ImageGeneration]: null,
 } satisfies Record<AiFeature, PremiumFeature | null>;
 
 /**
@@ -285,13 +264,6 @@ export const AiMessageRole = {
   Tool: 'tool',
 } as const;
 export type AiMessageRole = (typeof AiMessageRole)[keyof typeof AiMessageRole];
-
-/** Conversation lifecycle (soft-delete tombstone = excluded, never returned). */
-export const AiConversationStatus = {
-  Active: 'active',
-  Archived: 'archived',
-} as const;
-export type AiConversationStatus = (typeof AiConversationStatus)[keyof typeof AiConversationStatus];
 
 /**
  * Server-sent stream event kinds (the provider-independent streaming protocol).

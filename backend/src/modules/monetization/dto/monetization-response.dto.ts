@@ -58,28 +58,7 @@ export class EntitlementSnapshotDto {
   @ApiProperty({ nullable: true, type: String }) refreshAt!: string | null;
 }
 
-/** A usage roll-up over one window. */
-export class UsageWindowDto {
-  @ApiProperty() window!: string;
-  @ApiProperty() tokens!: number;
-  @ApiProperty() credits!: number;
-  @ApiProperty() requests!: number;
-  @ApiProperty() costUsd!: number;
-  @ApiProperty({ nullable: true, type: Number }) tokenLimit!: number | null;
-  @ApiProperty({ nullable: true, type: Number }) creditLimit!: number | null;
-  @ApiProperty({ nullable: true, type: Number }) usedFraction!: number | null;
-  @ApiProperty({ nullable: true, type: String }) resetsAt!: string | null;
-}
-
 /** Per-feature usage line. */
-export class UsageFeatureDto {
-  @ApiProperty() feature!: string;
-  @ApiProperty() tokens!: number;
-  @ApiProperty() credits!: number;
-  @ApiProperty() requests!: number;
-}
-
-/** The full usage summary + forecast. */
 /**
  * One per-feature allowance and what the user has spent of it (D5) — what a client renders
  * as "12 of 30 today" with a progress bar. `limit`/`remaining` are null when the plan grants
@@ -96,15 +75,15 @@ export class FeatureQuotaDto {
   @ApiProperty({ nullable: true, type: String }) resetsAt!: string | null;
 }
 
+/**
+ * `GET /monetization/usage` — the writer's allowances, and nothing else.
+ *
+ * It used to also carry daily/monthly/lifetime token rollups, a per-feature token
+ * breakdown and a monthly spend forecast. All of it was computed from the credit ledger
+ * that D5 deleted, and none of it was a fact a writer could act on.
+ */
 export class UsageSummaryDto {
-  /** The D5 surface: per-feature allowances. The token/credit rollups below are on the way out. */
   @ApiProperty({ type: [FeatureQuotaDto] }) quotas!: FeatureQuotaDto[];
-  @ApiProperty({ type: UsageWindowDto }) daily!: UsageWindowDto;
-  @ApiProperty({ type: UsageWindowDto }) monthly!: UsageWindowDto;
-  @ApiProperty({ type: UsageWindowDto }) total!: UsageWindowDto;
-  @ApiProperty({ type: [UsageFeatureDto] }) byFeature!: UsageFeatureDto[];
-  @ApiProperty() forecastMonthlyTokens!: number;
-  @ApiProperty() forecastMonthlyCostUsd!: number;
 }
 
 /** A billing document. */
@@ -144,7 +123,6 @@ export class PurchaseDto {
   @ApiProperty() provider!: string;
   @ApiProperty() amount!: number;
   @ApiProperty() currency!: string;
-  @ApiProperty() creditsGranted!: number;
   @ApiProperty() createdAt!: string;
 }
 

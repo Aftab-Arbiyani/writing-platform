@@ -1,43 +1,14 @@
 import { AiFeature, DEFAULT_PLAN_LIMITS, PlanTier, QuotaWindow } from '@qalam/shared';
-import type { Repository } from 'typeorm';
 
 import type { UsageService as AiUsageService } from '../ai';
-import type { CreditTransaction } from './entities/credit-transaction.entity';
 import type { EntitlementService } from './entitlement.service';
 import { QuotaExceededException } from './monetization.exceptions';
 import { UsageService } from './usage.service';
-
-// ── QB mock helpers ───────────────────────────────────────────────────────────
-
-/** A reusable chainable QueryBuilder mock whose terminal methods are configurable. */
-function makeQb(opts?: {
-  rawOne?: Record<string, string> | null;
-  rawMany?: Array<Record<string, string>>;
-}) {
-  return {
-    select: jest.fn().mockReturnThis(),
-    addSelect: jest.fn().mockReturnThis(),
-    where: jest.fn().mockReturnThis(),
-    andWhere: jest.fn().mockReturnThis(),
-    setParameter: jest.fn().mockReturnThis(),
-    groupBy: jest.fn().mockReturnThis(),
-    orderBy: jest.fn().mockReturnThis(),
-    addOrderBy: jest.fn().mockReturnThis(),
-    limit: jest.fn().mockReturnThis(),
-    getRawOne: jest
-      .fn()
-      .mockResolvedValue(opts?.rawOne ?? { tokens: '0', credits: '0', cost: '0', requests: '0' }),
-    getRawMany: jest.fn().mockResolvedValue(opts?.rawMany ?? []),
-    getMany: jest.fn().mockResolvedValue([]),
-  };
-}
 
 // ── Factory ────────────────────────────────────────────────────────────────────
 
 function build(opts?: {
   limits?: Record<string, number>;
-  /** getRawOne responses, in call order. Each entry is used once. */
-  rawOnes?: Array<Record<string, string> | null>;
   /** What the AI platform reports as this user's request count for the window. */
   actionCount?: number;
 }) {
@@ -47,25 +18,11 @@ function build(opts?: {
     getLimits: jest.fn().mockResolvedValue(limits),
   } as unknown as EntitlementService;
 
-  const rawOnes = opts?.rawOnes ?? [];
-  let callCount = 0;
-  const qb = makeQb();
-  // Allow sequential getRawOne return values via mockImplementation
-  (qb.getRawOne as jest.Mock).mockImplementation(() => {
-    const value = rawOnes[callCount] ?? { tokens: '0', credits: '0', cost: '0', requests: '0' };
-    callCount += 1;
-    return Promise.resolve(value);
-  });
-
-  const ledger = {
-    createQueryBuilder: jest.fn().mockReturnValue(qb),
-  } as unknown as Repository<CreditTransaction>;
-
   const countRequestsSince = jest.fn().mockResolvedValue(opts?.actionCount ?? 0);
   const aiUsage = { countRequestsSince } as unknown as AiUsageService;
 
-  const service = new UsageService(ledger, entitlements, aiUsage);
-  return { service, entitlements, ledger, qb, countRequestsSince };
+  const service = new UsageService(entitlements, aiUsage);
+  return { service, entitlements, countRequestsSince };
 }
 
 // ── Tests ──────────────────────────────────────────────────────────────────────
@@ -222,80 +179,6 @@ describe('UsageService', () => {
       const [polish] = await service.quotas('u1');
 
       expect(polish?.remaining).toBe(0);
-    });
-  });
-
-  describe('getSummary', () => {
-    it('should return a summary with all required window fields', async () => {
-      const { service } = build({
-        limits: DEFAULT_PLAN_LIMITS[PlanTier.Plus],
-        rawOnes: [
-          { tokens: '1000', credits: '10', cost: '0.01', requests: '5' }, // daily
-          { tokens: '15000', credits: '150', cost: '0.15', requests: '50' }, // monthly
-          { tokens: '20000', credits: '200', cost: '0.20', requests: '70' }, // total
-        ],
-      });
-
-      const summary = await service.getSummary('u1');
-
-      expect(summary.daily.window).toBe(QuotaWindow.Daily);
-      expect(summary.monthly.window).toBe(QuotaWindow.Monthly);
-      expect(summary.total.window).toBe(QuotaWindow.Total);
-      expect(summary.daily.tokens).toBe(1000);
-      expect(summary.monthly.tokens).toBe(15_000);
-    });
-
-    it('should compute a linear monthly token forecast', async () => {
-      const { service } = build({
-        limits: DEFAULT_PLAN_LIMITS[PlanTier.Plus],
-        rawOnes: [
-          { tokens: '1000', credits: '10', cost: '0.01', requests: '5' }, // daily
-          { tokens: '10000', credits: '100', cost: '0.10', requests: '20' }, // monthly
-          { tokens: '10000', credits: '100', cost: '0.10', requests: '20' }, // total
-        ],
-      });
-
-      const summary = await service.getSummary('u1');
-
-      // forecast = monthly.tokens * (daysInMonth / daysElapsed) >= monthly.tokens
-      expect(summary.forecastMonthlyTokens).toBeGreaterThanOrEqual(summary.monthly.tokens);
-      expect(typeof summary.forecastMonthlyTokens).toBe('number');
-      expect(typeof summary.forecastMonthlyCostUsd).toBe('number');
-    });
-
-    it('should include the token limit and usedFraction in the daily window', async () => {
-      const { service } = build({
-        limits: { aiDailyTokens: 20_000, aiMonthlyTokens: 200_000, aiMonthlyCredits: 5_000 },
-        rawOnes: [
-          { tokens: '10000', credits: '100', cost: '0.10', requests: '10' },
-          { tokens: '100000', credits: '1000', cost: '1.00', requests: '100' },
-          { tokens: '150000', credits: '1500', cost: '1.50', requests: '150' },
-        ],
-      });
-
-      const summary = await service.getSummary('u1');
-
-      expect(summary.daily.tokenLimit).toBe(20_000);
-      expect(summary.daily.usedFraction).toBe(0.5); // 10000 / 20000
-      expect(summary.monthly.creditLimit).toBe(5_000);
-    });
-
-    it('should include a byFeature breakdown', async () => {
-      const featureRows = [{ feature: 'ai_writing', tokens: '500', credits: '5', requests: '3' }];
-      const { service, qb } = build({
-        limits: DEFAULT_PLAN_LIMITS[PlanTier.Free],
-        rawOnes: [
-          { tokens: '500', credits: '5', cost: '0.005', requests: '3' },
-          { tokens: '500', credits: '5', cost: '0.005', requests: '3' },
-          { tokens: '500', credits: '5', cost: '0.005', requests: '3' },
-        ],
-      });
-      (qb.getRawMany as jest.Mock).mockResolvedValue(featureRows);
-
-      const summary = await service.getSummary('u1');
-
-      expect(summary.byFeature).toHaveLength(1);
-      expect(summary.byFeature[0]).toMatchObject({ feature: 'ai_writing', tokens: 500 });
     });
   });
 });

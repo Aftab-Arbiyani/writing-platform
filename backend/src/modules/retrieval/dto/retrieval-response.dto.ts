@@ -1,6 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
 import type {
-  AskScope,
   RankingSignal,
   RecommendationKind,
   RetrievalFailureReason,
@@ -11,7 +10,6 @@ import type {
 
 import type { StoryEdgeDto, StoryNodeDto } from '../../story-intelligence/dto/story-response.dto';
 import type {
-  AskCitation,
   NavigationTarget,
   RankingExplanation,
   RelatedEntity,
@@ -49,7 +47,6 @@ export class SemanticSearchResponseDto {
   @ApiProperty() query!: string;
   @ApiProperty() intent!: RetrievalIntent;
   @ApiProperty() queryType!: RetrievalQueryType;
-  @ApiProperty({ nullable: true }) answer!: string | null;
   @ApiProperty({ type: [SearchResultItemDto] }) results!: SearchResultItemDto[];
   @ApiProperty({ type: [Object] }) evidence!: RetrievalEvidence[];
   @ApiProperty({ type: RetrievalResponseMetaDto }) meta!: RetrievalResponseMetaDto;
@@ -57,21 +54,6 @@ export class SemanticSearchResponseDto {
 
 export class SearchSuggestionsResponseDto {
   @ApiProperty({ type: [String] }) suggestions!: string[];
-}
-
-export class AskBookResponseDto {
-  @ApiProperty() storyId!: string;
-  @ApiProperty() scope!: AskScope;
-  @ApiProperty() answer!: string;
-  @ApiProperty({ type: [Object] }) citations!: AskCitation[];
-  @ApiProperty() confidence!: number;
-  @ApiProperty({ type: Object }) usage!: {
-    inputTokens: number;
-    outputTokens: number;
-    totalTokens: number;
-  };
-  @ApiProperty() estimatedCostUsd!: number;
-  @ApiProperty({ nullable: true }) conversationId!: string | null;
 }
 
 export class ExplorerViewResponseDto {
@@ -119,13 +101,6 @@ export class RetrievalConfigDto {
   @ApiProperty() timeoutMs!: number;
   @ApiProperty({ type: Object }) sources!: Record<RetrievalSource, boolean>;
   @ApiProperty({ type: Object }) rankingWeights!: Record<RankingSignal, number>;
-  /**
-   * @deprecated Always `false` since D5 removed grounded synthesis — retrieval calls no LLM.
-   * Kept on the wire only until the admin client stops reading it; do not reintroduce a
-   * knob for it.
-   */
-  @ApiProperty({ deprecated: true, description: 'Always false — synthesis was removed (D5).' })
-  synthesisEnabled!: boolean;
 }
 
 export class SearchAnalyticsDto {

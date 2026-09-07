@@ -1,4 +1,4 @@
-import { AskScope, RetrievalIntent, RetrievalQueryType, RetrievalSource } from '@qalam/shared';
+import { RetrievalIntent, RetrievalQueryType, RetrievalSource } from '@qalam/shared';
 
 import { DEFAULT_RETRIEVAL_CONFIG } from '../retrieval.constants';
 import type { RetrievalRequest } from '../retrieval.types';
@@ -33,14 +33,6 @@ describe('RetrievalPlannerService', () => {
       DEFAULT_RETRIEVAL_CONFIG,
     );
     expect(plan.nodeTypes).toEqual(['character']);
-  });
-
-  it('an ask uses its scope node types', () => {
-    const plan = planner.plan(
-      { ...base, intent: RetrievalIntent.Ask, storyId: 's', scope: AskScope.Timeline },
-      DEFAULT_RETRIEVAL_CONFIG,
-    );
-    expect(plan.nodeTypes).toEqual(['event']);
   });
 
   /**

@@ -1,17 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
 import {
   AI_QUOTA_RULES,
-  CreditReason,
   QuotaWindow,
   quotaRuleForAiFeature,
   resolvePlanLimit,
 } from '@qalam/shared';
 import type { AiFeature } from '@qalam/shared';
-import { Repository } from 'typeorm';
 
 import { UsageService as AiUsageService } from '../ai';
-import { CreditTransaction } from './entities/credit-transaction.entity';
 import { EntitlementService } from './entitlement.service';
 import { QuotaExceededException } from './monetization.exceptions';
 
@@ -28,29 +24,6 @@ export interface FeatureQuota {
   resetsAt: string | null;
 }
 
-/** A usage roll-up over one window. */
-export interface UsageWindowSummary {
-  window: QuotaWindow;
-  tokens: number;
-  credits: number;
-  requests: number;
-  costUsd: number;
-  tokenLimit: number | null;
-  creditLimit: number | null;
-  usedFraction: number | null;
-  resetsAt: string | null;
-}
-
-/** The full usage picture + a simple linear forecast to period end. */
-export interface UsageSummary {
-  daily: UsageWindowSummary;
-  monthly: UsageWindowSummary;
-  total: UsageWindowSummary;
-  byFeature: Array<{ feature: string; tokens: number; credits: number; requests: number }>;
-  forecastMonthlyTokens: number;
-  forecastMonthlyCostUsd: number;
-}
-
 /**
  * The Usage service (AF5) — where a plan's limits meet what a user has actually done.
  *
@@ -64,14 +37,18 @@ export interface UsageSummary {
  * stays ignorant of plans and money (it reaches monetization only through the optional
  * `AI_USAGE_METER` port); monetization is allowed to know what a generation is.
  *
- * The token/credit rollups below are the pre-D5 surface and are on their way out with the
- * credit ledger they read.
+ * **This service no longer touches `credit_transactions`.** It used to also serve
+ * daily/monthly/lifetime token rollups and a spend forecast, computed by aggregating the
+ * credit ledger. Those went with the vocabulary contract, and the ledger was the reason they
+ * had to: B4 stopped writing that table, so the figures had already begun decaying toward
+ * zero while still being presented as a measurement, and Phase C drops the table outright —
+ * at which point the query would have failed rather than merely misled. Cost and token
+ * accounting live in `ai_usage_logs` and are read by the admin dashboards, which is where a
+ * business signal belongs; a writer is shown actions, not tokens.
  */
 @Injectable()
 export class UsageService {
   constructor(
-    @InjectRepository(CreditTransaction)
-    private readonly ledger: Repository<CreditTransaction>,
     private readonly entitlements: EntitlementService,
     private readonly aiUsage: AiUsageService,
   ) {}
@@ -140,101 +117,6 @@ export class UsageService {
 
   private since(rule: { window: QuotaWindow }): Date {
     return rule.window === QuotaWindow.Monthly ? this.startOfMonthUtc() : this.startOfDayUtc();
-  }
-
-  /** The caller's full usage summary (daily/monthly/lifetime + per feature + forecast). */
-  async getSummary(userId: string): Promise<UsageSummary> {
-    const limits = await this.entitlements.getLimits(userId);
-    const [daily, monthly, total, byFeature] = await Promise.all([
-      this.windowSummary(userId, QuotaWindow.Daily, this.startOfDayUtc(), limits),
-      this.windowSummary(userId, QuotaWindow.Monthly, this.startOfMonthUtc(), limits),
-      this.windowSummary(userId, QuotaWindow.Total, null, limits),
-      this.featureBreakdown(userId),
-    ]);
-
-    // Linear projection: monthly-so-far scaled by (days in month / days elapsed).
-    const now = new Date();
-    const daysElapsed = Math.max(1, now.getUTCDate());
-    const daysInMonth = new Date(
-      Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0),
-    ).getUTCDate();
-    const factor = daysInMonth / daysElapsed;
-    return {
-      daily,
-      monthly,
-      total,
-      byFeature,
-      forecastMonthlyTokens: Math.round(monthly.tokens * factor),
-      forecastMonthlyCostUsd: Number((monthly.costUsd * factor).toFixed(4)),
-    };
-  }
-
-  private async windowSummary(
-    userId: string,
-    window: QuotaWindow,
-    since: Date | null,
-    limits: { aiDailyTokens: number; aiMonthlyTokens: number; aiMonthlyCredits: number },
-  ): Promise<UsageWindowSummary> {
-    const qb = this.ledger
-      .createQueryBuilder('t')
-      .select('COALESCE(SUM(t.tokens), 0)', 'tokens')
-      .addSelect('COALESCE(SUM(CASE WHEN t.type = :debit THEN -t.delta ELSE 0 END), 0)', 'credits')
-      .addSelect('COALESCE(SUM(t.cost_usd), 0)', 'cost')
-      .addSelect('COUNT(*)', 'requests')
-      .where('t.user_id = :userId', { userId })
-      .andWhere('t.reason = :reason', { reason: CreditReason.AiUsage })
-      .setParameter('debit', 'debit');
-    if (since !== null) {
-      qb.andWhere('t.created_at >= :since', { since });
-    }
-    const row = await qb.getRawOne<{
-      tokens: string;
-      credits: string;
-      cost: string;
-      requests: string;
-    }>();
-    const tokens = Number(row?.tokens ?? 0);
-    const tokenLimit =
-      window === QuotaWindow.Daily
-        ? limits.aiDailyTokens || null
-        : window === QuotaWindow.Monthly
-          ? limits.aiMonthlyTokens || null
-          : null;
-    const creditLimit = window === QuotaWindow.Monthly ? limits.aiMonthlyCredits || null : null;
-    return {
-      window,
-      tokens,
-      credits: Number(row?.credits ?? 0),
-      requests: Number(row?.requests ?? 0),
-      costUsd: Number(row?.cost ?? 0),
-      tokenLimit,
-      creditLimit,
-      usedFraction: tokenLimit !== null ? Math.min(1, tokens / tokenLimit) : null,
-      resetsAt: this.resetsAt(window)?.toISOString() ?? null,
-    };
-  }
-
-  private async featureBreakdown(
-    userId: string,
-  ): Promise<Array<{ feature: string; tokens: number; credits: number; requests: number }>> {
-    const rows = await this.ledger
-      .createQueryBuilder('t')
-      .select('t.feature', 'feature')
-      .addSelect('COALESCE(SUM(t.tokens), 0)', 'tokens')
-      .addSelect('COALESCE(SUM(CASE WHEN t.type = :debit THEN -t.delta ELSE 0 END), 0)', 'credits')
-      .addSelect('COUNT(*)', 'requests')
-      .where('t.user_id = :userId', { userId })
-      .andWhere('t.reason = :reason', { reason: CreditReason.AiUsage })
-      .andWhere('t.feature IS NOT NULL')
-      .setParameter('debit', 'debit')
-      .groupBy('t.feature')
-      .getRawMany<{ feature: string; tokens: string; credits: string; requests: string }>();
-    return rows.map((r) => ({
-      feature: r.feature,
-      tokens: Number(r.tokens),
-      credits: Number(r.credits),
-      requests: Number(r.requests),
-    }));
   }
 
   private resetsAt(window: QuotaWindow): Date | null {

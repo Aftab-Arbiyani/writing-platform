@@ -1,18 +1,24 @@
 import { Column, Entity, Index } from 'typeorm';
-import type { CreditEntryType, CreditReason } from '@qalam/shared';
 
 import { QalamAppendOnlyEntity } from '../../../common/base/append-only.entity';
 
 /**
- * One entry in the AI credit ledger (AF5) — append-only (never mutated). Every credit
- * grant (purchase/subscription/promo/refund) and every debit (AI usage/expiration) is
- * one row; the wallet balance is derived from and kept consistent with this ledger.
+ * One entry in the retired AI credit ledger (AF5).
  *
- * This is ALSO the monetization Usage ledger for AI: every metered AI request writes a
- * `debit`/`ai_usage` row carrying `feature`, `tokens`, and `costUsd` (delta = credits
- * spent, which is 0 for free-tier calls that only record telemetry). The Usage service
- * aggregates daily/monthly/per-feature spend + forecasts from these rows, so AI usage
- * has ONE source of truth here (the raw provider token log stays in `ai_usage_logs`).
+ * **Nothing reads or writes this table any more.** B4 removed the credit economy and the
+ * vocabulary contract removed the last reader — the monetization Usage service used to
+ * aggregate its daily/monthly/per-feature rollups from these rows, which is why they went
+ * together. AI token and cost accounting lives in `ai_usage_logs` and always did.
+ *
+ * The file survives only until **Phase C**, and only for a mechanical reason worth knowing
+ * before "tidying" it away: the TypeORM data source discovers entities by globbing
+ * `*.entity.ts`, so deleting this class before the migration that drops the table makes the
+ * next generated migration emit its own `DROP TABLE` — an unreviewed schema change riding
+ * inside an unrelated diff. Delete the file and the table in the same commit, not before.
+ *
+ * `type` and `reason` are plain `string` rather than the old `CreditEntryType` /
+ * `CreditReason` unions, which no longer exist. That is the honest declaration for a dead
+ * table: whatever strings the rows happen to hold, nothing narrows them any more.
  */
 @Entity('credit_transactions')
 @Index('idx_credit_txn_user_created', ['userId', 'createdAt'])
@@ -25,10 +31,10 @@ export class CreditTransaction extends QalamAppendOnlyEntity {
   walletId!: string;
 
   @Column({ type: 'varchar', length: 20 })
-  type!: CreditEntryType;
+  type!: string;
 
   @Column({ type: 'varchar', length: 40 })
-  reason!: CreditReason;
+  reason!: string;
 
   /** Signed change to the balance: positive for a grant, negative for a debit. */
   @Column({ type: 'int' })

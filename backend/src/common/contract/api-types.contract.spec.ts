@@ -45,7 +45,6 @@ import {
   SubscriptionEventDto,
   FeatureQuotaDto,
   UsageSummaryDto,
-  UsageWindowDto,
 } from '../../modules/monetization/dto/monetization-response.dto';
 import {
   RecommendationQueryDto,
@@ -313,7 +312,6 @@ const MIRRORS: readonly Mirror[] = [
   { type: 'SubscriptionEventResponse', dto: SubscriptionEventDto, direction: 'response' },
   { type: 'EntitlementsResponse', dto: EntitlementSnapshotDto, direction: 'response' },
   { type: 'FeatureEntitlementResponse', dto: EntitlementDecisionDto, direction: 'response' },
-  { type: 'UsageWindowResponse', dto: UsageWindowDto, direction: 'response' },
   { type: 'UsageSummaryResponse', dto: UsageSummaryDto, direction: 'response' },
   { type: 'FeatureQuotaResponse', dto: FeatureQuotaDto, direction: 'response' },
   { type: 'InvoiceResponse', dto: InvoiceDto, direction: 'response' },
@@ -349,27 +347,17 @@ const UNMIRRORED: Readonly<Record<string, string>> = {
   NavigationTarget: 'Structural sub-block; backend counterpart is retrieval.types.ts, not a DTO.',
   RankingExplanation: 'Structural sub-block; backend counterpart is retrieval.types.ts, not a DTO.',
 
-  // D5 removed these surfaces from the server. The types stay in `@qalam/api-types` only until
-  // the web clients stop importing them — deleting them here first would break the clients'
-  // typecheck in a commit that cannot also fix them. They are exempted with the reason rather
-  // than quietly dropped, so the completeness check still accounts for every export and the
-  // debt has an expiry rather than becoming permanent.
-  CreditBalanceResponse: 'Removed server-side (D5); type retained until the client half lands.',
-  CreditTransactionResponse: 'Removed server-side (D5); type retained until the client half lands.',
-  PurchaseCreditsRequest: 'Removed server-side (D5); type retained until the client half lands.',
-  AskCitation: 'Removed server-side (D5); type retained until the client half lands.',
-  AskBookRequest: 'Removed server-side (D5); type retained until the client half lands.',
-  AskBookResponse: 'Removed server-side (D5); type retained until the client half lands.',
-  AskBookStreamEvent: 'Removed server-side (D5); type retained until the client half lands.',
-  AiConversationSummary: 'Removed server-side (D5); type retained until the client half lands.',
-  AiConversationDetail: 'Removed server-side (D5); type retained until the client half lands.',
-  AiConversationExport: 'Removed server-side (D5); type retained until the client half lands.',
-  AiConversationExportMessage:
-    'Removed server-side (D5); type retained until the client half lands.',
-  CreateAiConversationRequest:
-    'Removed server-side (D5); type retained until the client half lands.',
-  UpdateAiConversationRequest:
-    'Removed server-side (D5); type retained until the client half lands.',
+  // A block of D5 exemptions stood here — credit, Ask My Book and AI-conversation types that
+  // the server had already removed but `@qalam/api-types` still exported, because deleting an
+  // exported type before the clients stop importing it breaks their typecheck in a commit that
+  // cannot also fix them. Every row carried the same reason and the same expiry: "retained
+  // until the client half lands."
+  //
+  // The client halves landed (web F1/F2, mobile M1–M3) and the vocabulary contract deleted the
+  // types, so the exemptions went with them. That is what the expiry was for — an exemption
+  // with a stated end date is a debt; one without is a decision nobody made on purpose. The
+  // "lists nothing it no longer needs to" test below is what forced this cleanup rather than
+  // letting the block quietly outlive its reason.
 
   // AF3 per-kind payloads: `StoryAnalysisResultDto.structured` is `Record<string, unknown>` by design
   // (the shape varies by analysis kind), so there is no per-kind DTO to compare against.

@@ -52,21 +52,7 @@ export const AI_QUOTA_RULES: readonly AiQuotaRule[] = [
     limitKey: AI_QUOTA_LIMIT_KEYS.PolishActionsPerDay,
     window: QuotaWindow.Daily,
     label: 'Polish',
-    features: [
-      AiFeature.WritingAssistant,
-      /*
-       * `grammar`, `rewrite` and `summarization` are the vestigial AF1 codes: sold behind
-       * `ai_writing` but with no caller anywhere, so today they count nothing. They are listed
-       * anyway because `uncountedPaidAiFeatures` refuses to let a SOLD feature go uncounted,
-       * and it is right to — whoever gives one of them a caller would otherwise ship a
-       * capability a plan charges for and no allowance ever limits. They are all edits to
-       * text the writer already wrote, so Polish is where they belong. (They go entirely when
-       * the client halves stop importing them.)
-       */
-      AiFeature.Grammar,
-      AiFeature.Rewrite,
-      AiFeature.Summarization,
-    ],
+    features: [AiFeature.WritingAssistant],
   },
   {
     limitKey: AI_QUOTA_LIMIT_KEYS.FeedbackReportsPerDay,

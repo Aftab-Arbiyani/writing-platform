@@ -14,7 +14,6 @@
  * `openapi.json` (same policy as `./ai` and `./story`).
  */
 export type {
-  AskScope,
   ExplorerView,
   RankingSignal,
   RecommendationKind,
@@ -25,8 +24,6 @@ export type {
 } from '@qalam/shared';
 
 import type {
-  AiTokenUsage,
-  AskScope,
   ExplorerView,
   RankingSignal,
   RecommendationKind,
@@ -119,8 +116,6 @@ export interface SemanticSearchRequest {
   /** Optional facet hint; the server classifies when absent. */
   queryType?: RetrievalQueryType;
   limit?: number;
-  /** Ask for a grounded natural-language synthesis of the results (an LLM call). */
-  synthesize?: boolean;
   /** Language code filter (library scope). */
   language?: string;
   /** Genre slug filter (library scope). */
@@ -153,8 +148,6 @@ export interface SemanticSearchResponse {
   query: string;
   intent: RetrievalIntent;
   queryType: RetrievalQueryType;
-  /** Grounded NL synthesis when `synthesize` was requested; otherwise null. */
-  answer: string | null;
   results: SearchResultItem[];
   evidence: RetrievalEvidence[];
   meta: RetrievalResponseMeta;
@@ -163,70 +156,6 @@ export interface SemanticSearchResponse {
 /** `GET /ai/search/suggestions?q=` — lightweight query suggestions. */
 export interface SearchSuggestionsResponse {
   suggestions: string[];
-}
-
-// ── Ask My Book ─────────────────────────────────────────────────────────────────
-
-/** `POST /ai/ask` and `POST /ai/ask/stream`. */
-export interface AskBookRequest {
-  storyId: string;
-  question: string;
-  /** Defaults to `book`. */
-  scope?: AskScope;
-  /** A named subject to focus scope on (a character/relationship/location name). */
-  subject?: string;
-  /** Reuse AF1 conversation persistence for multi-turn asks. */
-  conversationId?: string;
-}
-
-/** One piece of evidence an answer is grounded in. */
-export interface AskCitation {
-  ref: string;
-  label: string;
-  quote: string;
-  nodeType?: string;
-}
-
-/**
- * One Server-Sent Event on `POST /ai/ask/stream` — the `data:` JSON payload, whose `type` repeats
- * the SSE `event:` name (`ai/streaming/sse.util.ts`).
- *
- * It is the AF1 stream protocol plus ONE leading frame: `sources` carries the citations and the
- * aggregate confidence BEFORE any token, so a client can show what an answer will be grounded in
- * while it is still being written. After that the sequence is the ordinary
- * `start` → `delta`* → `done` | `error` (`ask-book.service.ts:13-23`).
- *
- * `progress` never appears here, and `provider`/`model`/`finishReason` are not forwarded — which is
- * why this is its own type rather than a widened `AiStreamEvent`.
- */
-export interface AskBookStreamEvent {
-  type: 'sources' | 'start' | 'delta' | 'done' | 'error';
-  /** Present on `sources`. */
-  citations?: AskCitation[];
-  /** Present on `sources` — the retrieval's aggregate confidence (0..1). */
-  confidence?: number;
-  /** Present on `start` and `done`. */
-  conversationId?: string | null;
-  /** Present on `delta`. */
-  text?: string;
-  /** Present on `done`. */
-  usage?: AiTokenUsage;
-  estimatedCostUsd?: number;
-  /** Present on `error` — a stable ERROR_CODES string. */
-  code?: string;
-  message?: string;
-}
-
-/** `POST /ai/ask` (non-streaming). Streaming reuses the AF1 SSE protocol. */
-export interface AskBookResponse {
-  storyId: string;
-  scope: AskScope;
-  answer: string;
-  citations: AskCitation[];
-  confidence: number;
-  usage: AiTokenUsage;
-  estimatedCostUsd: number;
-  conversationId: string | null;
 }
 
 // ── Story Explorer (renders from graph objects) ─────────────────────────────────
@@ -312,8 +241,6 @@ export interface RetrievalAdminConfig {
   sources: Record<RetrievalSource, boolean>;
   /** Ranking weights per signal (0..1). */
   rankingWeights: Record<RankingSignal, number>;
-  /** Whether grounded LLM synthesis is offered on search. */
-  synthesisEnabled: boolean;
 }
 
 export type UpdateRetrievalAdminConfig = Partial<RetrievalAdminConfig>;

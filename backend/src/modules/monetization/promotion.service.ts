@@ -213,8 +213,6 @@ function describe(coupon: Coupon): string {
       return `${coupon.value}% off`;
     case PromotionType.FixedDiscount:
       return `${coupon.value} off`;
-    case PromotionType.PromotionalCredits:
-      return `${coupon.value} bonus credits`;
     case PromotionType.FreeTrial:
     case PromotionType.TrialExtension:
       return `${coupon.value} extra trial days`;

@@ -2,19 +2,23 @@
  * Retrieval Platform vocabulary (AF4 — AI Discovery / Search / Recommendation).
  *
  * The provider-agnostic domain language for the reusable **Retrieval Platform**: the
- * single entry point every AI feature routes through (intent → classification →
- * planning → retrieval → context assembly → LLM → grounded response). Like the rest of
- * `@qalam/shared` this is zero-dependency pure vocabulary — `as const` objects + derived
- * union types (JSON-safe wire strings) + pure helpers + guardrail constants.
+ * single entry point every retrieval feature routes through (intent → classification →
+ * planning → retrieval → context assembly → response). Like the rest of `@qalam/shared`
+ * this is zero-dependency pure vocabulary — `as const` objects + derived union types
+ * (JSON-safe wire strings) + guardrail constants.
  *
  * Design law (docs/36): the Knowledge Graph owns structured knowledge, Retrieval owns
- * context, the LLM owns explanation, presentation owns rendering. Sets are deliberately
- * OPEN (varchar + this catalogue) so a new query type / source / ranking signal never
- * needs a migration, and future sources (vectors, cross-book, federated) slot in behind
- * the same vocabulary.
+ * context, presentation owns rendering. Sets are deliberately OPEN (varchar + this
+ * catalogue) so a new query type / source / ranking signal never needs a migration, and
+ * future sources (vectors, cross-book, federated) slot in behind the same vocabulary.
+ *
+ * **D5 took the model out of this pipeline.** The law used to read "…Retrieval owns
+ * context, **the LLM owns explanation**, presentation owns rendering", and that clause is
+ * now false: the only stage that called a model was the optional grounded synthesis at the
+ * end, and B1 removed it. What remains — graph, keyword and metadata retrievers, the
+ * ranker, the explanation strings — was always ordinary code. Search calls no model, which
+ * is precisely why it could become a public, anonymous-readable surface.
  */
-
-import { AiFeature } from './ai.js';
 
 // ── Intent & classification (the front of the pipeline) ─────────────────────────
 
@@ -22,7 +26,18 @@ import { AiFeature } from './ai.js';
 export const RetrievalIntent = {
   /** Find matching entities/passages ("semantic search"). */
   Search: 'search',
-  /** Ask a grounded question and get a cited answer ("Ask My Book"). */
+  /**
+   * Ask a grounded question and get a cited answer ("Ask My Book").
+   *
+   * **Retired as a product by D5 — nothing produces this value any more.** It is kept
+   * because it is not only vocabulary: `retrieval_query_logs.intent` is a live column,
+   * Phase C does not drop that table, and admin's search-analytics page renders those
+   * historical rows through `INTENT_LABELS`, which is pinned `satisfies
+   * Record<RetrievalIntent, string>`. Deleting this value would delete the label with it
+   * and show an operator the raw token `ask` for requests that really happened. Same
+   * reasoning as `NotificationType.CreditsLow` and `PurchaseKind.Credits`: **a value that
+   * describes rows in a surviving table outlives the feature that wrote them.**
+   */
   Ask: 'ask',
   /** Browse structured graph views ("Story Explorer"). */
   Explore: 'explore',
@@ -98,22 +113,6 @@ export const RankingSignal = {
 } as const;
 export type RankingSignal = (typeof RankingSignal)[keyof typeof RankingSignal];
 
-// ── Ask My Book (grounded Q&A scopes) ───────────────────────────────────────────
-
-/** What slice of the story an "Ask" is grounded against. */
-export const AskScope = {
-  Book: 'book',
-  Chapter: 'chapter',
-  Scene: 'scene',
-  Character: 'character',
-  Timeline: 'timeline',
-  Relationship: 'relationship',
-  World: 'world',
-  Theme: 'theme',
-  Lore: 'lore',
-} as const;
-export type AskScope = (typeof AskScope)[keyof typeof AskScope];
-
 // ── Story Explorer (structured graph views) ─────────────────────────────────────
 
 /** A structured view over the story knowledge graph. Every view renders from graph objects. */
@@ -161,50 +160,6 @@ export const RetrievalFailureReason = {
 } as const;
 export type RetrievalFailureReason =
   (typeof RetrievalFailureReason)[keyof typeof RetrievalFailureReason];
-
-// ── Pure helpers ────────────────────────────────────────────────────────────────
-
-/** Which AiFeature (and therefore which flag) gates a retrieval intent that hits the LLM. */
-export function retrievalIntentFeature(intent: RetrievalIntent): AiFeature {
-  switch (intent) {
-    case RetrievalIntent.Ask:
-      return AiFeature.AskBook;
-    case RetrievalIntent.Recommend:
-      return AiFeature.Recommendations;
-    default:
-      return AiFeature.SemanticSearch;
-  }
-}
-
-/** The server prompt-template key for an intent's grounded synthesis (body lives server-side). */
-export function retrievalPromptKey(intent: RetrievalIntent): string {
-  switch (intent) {
-    case RetrievalIntent.Ask:
-      return 'ask_book.answer';
-    case RetrievalIntent.Recommend:
-      return 'recommendations.explain';
-    default:
-      return 'semantic_search.answer';
-  }
-}
-
-/** Map an Ask scope to the graph node types most relevant to grounding it. */
-export function askScopeNodeTypes(scope: AskScope): readonly string[] {
-  switch (scope) {
-    case AskScope.Character:
-    case AskScope.Relationship:
-      return ['character'];
-    case AskScope.Timeline:
-      return ['event'];
-    case AskScope.World:
-    case AskScope.Lore:
-      return ['location', 'organization', 'object', 'concept'];
-    case AskScope.Theme:
-      return ['concept'];
-    default:
-      return ['character', 'location', 'organization', 'object', 'event', 'concept'];
-  }
-}
 
 // ── Guardrails (server clamps to these; also the shared contract for clients) ────
 

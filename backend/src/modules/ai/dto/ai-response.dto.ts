@@ -131,7 +131,6 @@ export class AiCompletionResponseDto {
    * @deprecated Always `null` since D5 removed the conversation layer. Kept on the wire for
    * one release so a client built against the old shape keeps compiling.
    */
-  @ApiProperty({ nullable: true, deprecated: true }) conversationId!: string | null;
   @ApiProperty({ type: AiMessageDto }) message!: AiMessageDto;
   @ApiProperty() model!: string;
   @ApiProperty({ enum: AiProvider }) provider!: AiProvider;

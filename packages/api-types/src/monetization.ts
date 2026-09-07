@@ -15,8 +15,6 @@
  */
 export type {
   BillingInterval,
-  CreditEntryType,
-  CreditReason,
   EntitlementDecision,
   EntitlementReason,
   EntitlementSnapshot,
@@ -41,7 +39,6 @@ export type {
 
 import type {
   BillingInterval,
-  CreditReason,
   EntitlementSnapshot,
   InvoiceStatus,
   PaymentMethodType,
@@ -159,20 +156,7 @@ export interface FeatureEntitlementResponse {
   limit: number | null;
 }
 
-// ── Usage & credits ──────────────────────────────────────────────────────────
-
-/** A usage roll-up over one window (`GET /monetization/usage`). */
-export interface UsageWindowResponse {
-  window: QuotaWindow;
-  tokens: number;
-  credits: number;
-  requests: number;
-  costUsd: number;
-  tokenLimit: number | null;
-  creditLimit: number | null;
-  usedFraction: number | null;
-  resetsAt: string | null;
-}
+// ── Usage & allowances ───────────────────────────────────────────────────────
 
 /**
  * One per-feature allowance and what the caller has spent of it (D5).
@@ -191,46 +175,9 @@ export interface FeatureQuotaResponse {
   resetsAt: string | null;
 }
 
-/** The full usage picture + a simple forecast. */
+/** `GET /monetization/usage` — the writer's allowances, and nothing else. */
 export interface UsageSummaryResponse {
-  /** The D5 surface: per-feature allowances. The token/credit rollups are on the way out. */
   quotas: FeatureQuotaResponse[];
-  daily: UsageWindowResponse;
-  monthly: UsageWindowResponse;
-  total: UsageWindowResponse;
-  byFeature: Array<{ feature: string; tokens: number; credits: number; requests: number }>;
-  /** Linear projection of monthly token spend to period end. */
-  forecastMonthlyTokens: number;
-  forecastMonthlyCostUsd: number;
-}
-
-/** Credit wallet balance (`GET /monetization/credits`). */
-export interface CreditBalanceResponse {
-  balance: number;
-  lifetimeGranted: number;
-  lifetimeConsumed: number;
-  creditsPerUsd: number;
-  updatedAt: string;
-}
-
-/** One credit-ledger entry (`GET /monetization/credits/transactions`). */
-export interface CreditTransactionResponse {
-  id: string;
-  type: string;
-  reason: CreditReason;
-  delta: number;
-  balanceAfter: number;
-  feature: string | null;
-  tokens: number;
-  costUsd: number;
-  createdAt: string;
-}
-
-/** `POST /monetization/credits/purchase` — buy a credit pack. */
-export interface PurchaseCreditsRequest {
-  credits: number;
-  provider: PaymentProvider;
-  receipt?: string;
 }
 
 // ── Payments / invoices / purchases ─────────────────────────────────────────────
@@ -287,7 +234,14 @@ export interface RestorePurchasesResponse {
   expiresAt: string | null;
 }
 
-/** One purchase record. */
+/**
+ * One purchase record.
+ *
+ * `kind` can still be `credits` — a pack somebody really bought before D5 removed the
+ * economy, and billing history is meant to describe what happened rather than what the
+ * product currently sells. The `creditsGranted` count is gone, though: the number was only
+ * meaningful against a balance that no longer exists, and Phase C drops the column.
+ */
 export interface PurchaseResponse {
   id: string;
   kind: PurchaseKind;
@@ -295,7 +249,6 @@ export interface PurchaseResponse {
   provider: PaymentProvider;
   amount: number;
   currency: string;
-  creditsGranted: number;
   createdAt: string;
 }
 

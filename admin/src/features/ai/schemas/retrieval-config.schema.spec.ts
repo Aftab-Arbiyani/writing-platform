@@ -27,7 +27,6 @@ function form(overrides: Partial<RetrievalConfigForm> = {}): Record<string, unkn
       [RetrievalSource.Vector]: true,
     },
     rankingWeights: Object.fromEntries(Object.values(RankingSignal).map((signal) => [signal, 0.5])),
-    synthesisEnabled: true,
     ...overrides,
   };
 }

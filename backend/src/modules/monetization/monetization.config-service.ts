@@ -152,15 +152,18 @@ export class MonetizationConfigService implements OnModuleInit {
 }
 
 /**
- * The premium codes the server ASSERTS today: the AI budget (checked by the usage meter on
- * every AI request) plus every code the AI feature map sells a feature behind (D3 —
- * `ai_writing`). Derived rather than listed, so when D4 finally enforces its six codes the
- * audit above widens with it instead of quietly going stale.
+ * The premium codes the server ASSERTS today: every code the AI feature map sells a feature
+ * behind — `ai_writing` (D3) and `story_intelligence` (D4). Derived from that map rather
+ * than listed here, so the audit above widens with it instead of quietly going stale.
+ *
+ * `ai_budget` used to head this set: the usage meter asserted it on every AI request, as the
+ * blanket "may you use AI at all" gate in front of a credit balance. D5 removed the balance
+ * and with it the gate, so the only entitlement a generation asserts now is the code its own
+ * feature is sold behind.
  */
-const ENFORCED_PREMIUM_FEATURES: ReadonlySet<PremiumFeature> = new Set<PremiumFeature>([
-  PremiumFeature.AiBudget,
-  ...Object.values(AI_FEATURE_PREMIUM_CODE).flatMap((code) => (code === null ? [] : [code])),
-]);
+const ENFORCED_PREMIUM_FEATURES: ReadonlySet<PremiumFeature> = new Set<PremiumFeature>(
+  Object.values(AI_FEATURE_PREMIUM_CODE).flatMap((code) => (code === null ? [] : [code])),
+);
 
 /** Pure core of {@link MonetizationConfigService.auditEnforcedPaidFeatures}. */
 export function driftedPaidEntitlements(
@@ -202,6 +205,31 @@ function withUniversalFeatures(features: readonly PremiumFeature[] = []): Premiu
   return [...new Set<PremiumFeature>([...features, ...UNIVERSAL_PLAN_FEATURES])];
 }
 
+/** Every premium code this build understands — the allowlist {@link knownPremiumCodes} reads. */
+const PREMIUM_FEATURE_VALUES: ReadonlySet<string> = new Set<string>(Object.values(PremiumFeature));
+
+/**
+ * Drop stored codes this build no longer has a meaning for.
+ *
+ * A stored `features` array is admin data that outlives the code that wrote it, so retiring a
+ * premium code from `PremiumFeature` does NOT retire it from any deployment whose catalogue
+ * already lists it — the stored array replaces the compiled one wholesale. Without this
+ * filter, D5's removal of `ai_budget` would have been inert exactly where it matters: every
+ * existing database would keep serving `ai_budget` on `/monetization/plans` forever, putting
+ * a credit entitlement back on the plan card D5 cleared, and `PlanDefinition.features` would
+ * carry a string no longer in its own union.
+ *
+ * This is the same trap D4 hit from the other side (see the note in `mergePlans`), and it
+ * takes the same answer: apply the decision at RESOLUTION, because a code-only edit to the
+ * compiled defaults never reaches a seeded deployment.
+ *
+ * It only removes codes that no longer exist. An operator can still add, remove and curate
+ * every code this build does know about — unknown is not the same as unwanted.
+ */
+function knownPremiumCodes(features: readonly PremiumFeature[] = []): PremiumFeature[] {
+  return features.filter((code) => PREMIUM_FEATURE_VALUES.has(code));
+}
+
 export function compiledPlans(): ResolvedPlanCatalogue {
   const priceByTier: Record<PlanTier, Partial<Record<BillingInterval, number>>> = {
     [PlanTier.Free]: { [BillingInterval.None]: 0 },
@@ -227,7 +255,6 @@ export function compiledPlans(): ResolvedPlanCatalogue {
       description: `${names[tier]} plan`,
       features: withUniversalFeatures(DEFAULT_PLAN_FEATURES[tier]),
       limits: { ...DEFAULT_PLAN_LIMITS[tier] },
-      monthlyCredits: DEFAULT_PLAN_LIMITS[tier].aiMonthlyCredits,
       prices,
       trialDays: tier === PlanTier.Free ? 0 : DEFAULT_TRIAL_DAYS,
     };
@@ -284,7 +311,9 @@ function mergePlans(raw: unknown): ResolvedPlanCatalogue {
        * curate the three enforced ones, but cannot subtract a code the owner declared free — which
        * is the correct asymmetry for a decision rather than a configuration.
        */
-      features: withUniversalFeatures(storedTier.features ?? defaults[tier].features),
+      features: withUniversalFeatures(
+        knownPremiumCodes(storedTier.features ?? defaults[tier].features),
+      ),
       tier,
     };
   }

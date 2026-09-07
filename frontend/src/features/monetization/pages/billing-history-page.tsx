@@ -13,7 +13,7 @@ import {
   usePurchases,
   useSubscriptionHistory,
 } from '../hooks/use-billing-history';
-import { formatMoney, formatTokens } from '../lib/monetization-format';
+import { formatMoney } from '../lib/monetization-format';
 import {
   invoiceStatusLabel,
   paymentStatusLabel,
@@ -257,9 +257,6 @@ function PurchasesTab(): ReactElement {
               </span>
               <span className="text-ink-muted text-xs">
                 {formatDateTime(purchase.createdAt)} · {providerLabel(purchase.provider)}
-                {purchase.creditsGranted > 0
-                  ? ` · ${formatTokens(purchase.creditsGranted)} credits`
-                  : null}
               </span>
               <QTag color={purchase.status === 'completed' ? 'success' : 'neutral'} size="sm">
                 {purchaseStatusLabel(purchase.status)}

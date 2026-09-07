@@ -51,7 +51,6 @@ function planFor(tier: PlanTier): PlanDefinition {
     description: `${tier} plan`,
     features: [...DEFAULT_PLAN_FEATURES[tier]] as PremiumFeature[],
     limits: { ...DEFAULT_PLAN_LIMITS[tier] },
-    monthlyCredits: 0,
     prices: {},
     trialDays: 0,
   };
@@ -152,14 +151,15 @@ function build(opts?: {
   return { service, usage };
 }
 
-/** Every AI feature D3 sells behind `ai_writing` — the five IN rows of the map. */
-const GATED_FEATURES = [
-  AiFeature.WritingAssistant,
-  AiFeature.CraftCoach,
-  AiFeature.Grammar,
-  AiFeature.Rewrite,
-  AiFeature.Summarization,
-] as const;
+/**
+ * Every AI feature D3 sells behind `ai_writing` — the two IN rows of the map.
+ *
+ * This list was five until the vocabulary contract: `grammar`, `rewrite` and
+ * `summarization` were mapped to `ai_writing` for totality but had no caller anywhere, so
+ * three fifths of D3's gate was being proved against features nothing could invoke. The two
+ * that remain are the two a writer can actually reach.
+ */
+const GATED_FEATURES = [AiFeature.WritingAssistant, AiFeature.CraftCoach] as const;
 
 /** Every AI feature D4 sells behind `story_intelligence` (decided 2026-08-21). */
 const GATED_STORY_INTELLIGENCE_FEATURES = [
@@ -227,27 +227,20 @@ describe('D3 — AI writing is a paid capability', () => {
     );
   });
 
-  describe('scope — the AF4 codes D4 confirmed free stay NOT gated', () => {
-    /**
-     * The regression test for scope creep. `ask_book`, `semantic_search` and
-     * `recommendations` (AF4) were confirmed already live and free on both clients when
-     * D4 was decided (2026-08-21, docs/48 §5.2) — gating them now would be an
-     * unsanctioned repeat of the `ai_writing` regression. They meter against
-     * `ai_budget`, which free DOES hold — which is the whole reason free keeps that
-     * allowance (it is spendable, contrary to what §5.2 assumed when it was written).
-     *
-     * The five AF3 story analyses used to sit in this block too — D4 decided the
-     * opposite for them (see `describe('D4 — story intelligence...')` below).
-     */
-    it.each([AiFeature.AskBook, AiFeature.SemanticSearch, AiFeature.Recommendations])(
-      'should allow %s for a FREE user',
-      async (aiFeature) => {
-        const { service } = build({ subscription: null });
-
-        await expect(service.checkQuota(quotaInput(aiFeature))).resolves.toBeUndefined();
-      },
-    );
-  });
+  /*
+   * A `describe('scope — the AF4 codes D4 confirmed free stay NOT gated')` block stood here.
+   * It asserted that `ask_book`, `semantic_search` and `recommendations` stayed usable by a
+   * FREE user, because D4 (2026-08-21, docs/48 §5.2) had confirmed all three already live
+   * and free on both clients — gating them would have repeated the `ai_writing` regression
+   * without sign-off.
+   *
+   * D5 made that test unwritable, in the good way. Those three are no longer AI features at
+   * all: `ask_book` is gone, and search and recommendations are ordinary product surfaces
+   * that call no model, carry no premium code and consult no flag. The creep this guarded
+   * against is foreclosed by construction now rather than by assertion — there is nothing
+   * left to gate. `AI_FEATURE_PREMIUM_CODE_IS_TOTAL` still fails the build if a new feature
+   * appears without someone deciding what it is sold behind.
+   */
 
   describe('D4 — story intelligence is a paid capability (decided 2026-08-21)', () => {
     /**

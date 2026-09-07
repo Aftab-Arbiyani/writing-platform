@@ -72,7 +72,7 @@ describe('MonetizationConfigService — plan catalogue merge', () => {
     expect(plans[PlanTier.Free].limits.maxPieces).toBe(5);
     expect(plans[PlanTier.Plus].limits.maxPieces).toBe(0);
     // A partial `limits` still inherits the keys it does not mention.
-    expect(plans[PlanTier.Free].limits.aiMonthlyTokens).toBe(200_000);
+    expect(plans[PlanTier.Free].limits.polishActionsPerDay).toBe(20);
   });
 
   it('falls back to compiled defaults when the setting cannot be read', async () => {
@@ -215,15 +215,20 @@ describe('MonetizationConfigService — D3, AI writing is enforced', () => {
       expect(plans[PlanTier.Free].features).not.toContain(PremiumFeature.AiWriting);
     });
 
-    it('KEEPS ai_budget, because free can still spend it (DECISION 2a)', async () => {
-      // 48 §5.2 called free's allowance "unspendable" and asked for it to be removed or
-      // zeroed. That premise predates AF4 going live: `ask_book` and semantic-search
-      // synthesis both meter against `ai_budget` and are shipped on BOTH clients, so the
-      // allowance is spendable. Removing it would deny free users every metered AI
-      // feature — far wider than D3 decided, and it would pre-empt D4.
+    it('DROPS a stored ai_budget, because the code no longer exists (D5)', async () => {
+      // This assertion used to be the opposite one, and the reversal is the whole story of
+      // the row. D3 kept `ai_budget` on free because the allowance was genuinely spendable —
+      // `ask_book` and search synthesis metered against it on both clients. D5 deleted the
+      // credit economy those fed, so the code means nothing now.
+      //
+      // The fixture still STORES it, deliberately: that is what every seeded database looks
+      // like, and a stored `features` array replaces the compiled one wholesale. Removing
+      // the code from `PremiumFeature` alone would therefore have changed nothing where it
+      // matters — `ai_budget` would keep arriving on plan cards forever. `knownPremiumCodes`
+      // is what actually retires it, at resolution.
       const plans = await serviceReading(STORED_OLD_CATALOGUE).getPlans();
 
-      expect(plans[PlanTier.Free].features).toContain(PremiumFeature.AiBudget);
+      expect(plans[PlanTier.Free].features).not.toContain('ai_budget');
     });
 
     it('needs no catalogue migration at all — the compiled default already matches', () => {
@@ -233,7 +238,9 @@ describe('MonetizationConfigService — D3, AI writing is enforced', () => {
       // regression is carried entirely by the gate in the usage meter, which is CODE and is
       // therefore live everywhere the moment it deploys — stored catalogue or not.
       expect(DEFAULT_PLAN_FEATURES[PlanTier.Free]).not.toContain(PremiumFeature.AiWriting);
-      expect(DEFAULT_PLAN_FEATURES[PlanTier.Free]).toContain(PremiumFeature.AiBudget);
+      // Since D5 free's own array is empty — everything a free account holds is universal,
+      // and the two paid codes are exactly what a subscription buys.
+      expect(DEFAULT_PLAN_FEATURES[PlanTier.Free]).toEqual([]);
     });
   });
 
@@ -288,8 +295,11 @@ describe('MonetizationConfigService — D3, AI writing is enforced', () => {
       // "does not repair" means is exactly this: the removed code stays removed, and the two the
       // admin kept are still there.
       expect(features).not.toContain(PremiumFeature.AiWriting);
-      expect(features).toContain(PremiumFeature.AiBudget);
       expect(features).toContain(PremiumFeature.PremiumSearch);
+      // `ai_budget` was in the hand-edited array too, and is absent for a different reason:
+      // not the audit repairing anything, but D5 retiring the code. Distinguishing the two
+      // is the point of asserting on `premium_search` rather than on the whole array.
+      expect(features).not.toContain('ai_budget');
     });
   });
 });

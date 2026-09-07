@@ -36,10 +36,6 @@ const updateSearchConfig = vi.mocked(aiApi.updateSearchConfig);
 const searchAnalytics = vi.mocked(aiApi.searchAnalytics);
 
 const CONFIG: RetrievalAdminConfig = {
-  // Still on the RESPONSE wire until Phase V, pinned to `false` by the server
-  // (`admin-retrieval.controller.ts`) now that D5 retired synthesis. The READ carries it, so a
-  // fixture without it is not the shape this page receives.
-  synthesisEnabled: false,
   topK: 10,
   candidatesPerSource: 40,
   contextTokens: 2000,
@@ -100,12 +96,15 @@ const ANALYTICS: SearchAnalytics = {
   failureBreakdown: [{ reason: RetrievalFailureReason.Timeout, count: 3 }],
 };
 
-/** What the FORM owns — `CONFIG` minus the field D5 retired from the UI. */
-const EDITABLE: Omit<RetrievalAdminConfig, 'synthesisEnabled'> = (() => {
-  const { synthesisEnabled, ...rest } = CONFIG;
-  void synthesisEnabled;
-  return rest;
-})();
+/**
+ * What the FORM owns.
+ *
+ * This used to be `CONFIG` minus `synthesisEnabled`: D5 took the synthesis toggle out of the
+ * UI while the field was still on the response, so the fixture had to carry a key the form
+ * did not. The vocabulary contract removed the field from the wire too, and the two are the
+ * same object again.
+ */
+const EDITABLE: RetrievalAdminConfig = CONFIG;
 
 function apiError(): ApiError {
   return new ApiError(500, {

@@ -1,11 +1,17 @@
 /**
  * Monetization Platform vocabulary (AF5 — Subscriptions, Entitlements, AI Usage,
- * Payments, Credits, Promotions, Pricing).
+ * Payments, Promotions, Pricing).
  *
  * The provider-agnostic domain language for the reusable **Monetization Platform**:
  * the Entitlement Service is the single source of truth for premium access, the
- * Usage/Credit services own AI metering, the Subscription service owns lifecycle,
- * and the Billing service owns payment processing behind a replaceable provider port.
+ * Usage service owns AI metering, the Subscription service owns lifecycle, and the
+ * Billing service owns payment processing behind a replaceable provider port.
+ *
+ * **D5 removed the credit economy from this vocabulary.** A writer's allowance is now a
+ * count of actions per feature (`ai-quotas.ts`), not a balance of a synthetic currency.
+ * What survives is what describes rows that still exist: `PurchaseKind.Credits` still
+ * labels a pack somebody really bought, and `NotificationType.CreditsLow` still labels a
+ * notification really sent. Neither can be produced any more.
  *
  * Like the rest of `@qalam/shared` this is zero-dependency pure vocabulary — `as const`
  * objects + derived union types (JSON-safe wire strings) + pure helpers + guardrail
@@ -15,9 +21,9 @@
  * providers) slot in behind this same vocabulary with zero architectural change.
  *
  * Design law (docs/37): the Entitlement Service owns access decisions, the Subscription
- * service owns lifecycle, Billing owns payment, Usage owns AI consumption, Credit owns
- * AI credits — never scatter feature checks; never trust client-side billing validation;
- * all monetization decisions remain server-authoritative.
+ * service owns lifecycle, Billing owns payment, Usage owns AI consumption — never scatter
+ * feature checks; never trust client-side billing validation; all monetization decisions
+ * remain server-authoritative.
  */
 
 // ── Plans & billing cadence ─────────────────────────────────────────────────────
@@ -113,13 +119,6 @@ export const PremiumFeature = {
   PremiumRecommendations: 'premium_recommendations',
   AdvancedAnalytics: 'advanced_analytics',
   PublishingPro: 'publishing_pro',
-  /**
-   * @deprecated Retired by D5. It was the blanket "may you use AI at all" gate that guarded a
-   * credit balance; with credits gone, the only entitlement a generation asserts is the code
-   * its FEATURE is sold behind. Nothing enforces this any more. Kept until the clients stop
-   * importing it — a plan may still LIST it, which is harmless and stops mid-migration.
-   */
-  AiBudget: 'ai_budget',
   // ── Reserved future capabilities (no plan grants them yet). ────────────────
   Marketplace: 'marketplace',
   Collaboration: 'collaboration',
@@ -195,7 +194,6 @@ export type QuotaWindow = (typeof QuotaWindow)[keyof typeof QuotaWindow];
 /** What a usage/quota limit is measured in. */
 export const UsageMetric = {
   Tokens: 'tokens',
-  Credits: 'credits',
   Requests: 'requests',
   CostUsd: 'cost_usd',
 } as const;
@@ -207,31 +205,6 @@ export const LimitEnforcement = {
   Hard: 'hard',
 } as const;
 export type LimitEnforcement = (typeof LimitEnforcement)[keyof typeof LimitEnforcement];
-
-// ── Credits (the AI credit ledger) ───────────────────────────────────────────────
-
-/** Direction of a credit-ledger entry. */
-/** @deprecated Retired by D5 — the credit economy is gone. Kept only until the web and mobile clients stop importing it; delete with the vocabulary contract. */
-export const CreditEntryType = {
-  Grant: 'grant',
-  Debit: 'debit',
-} as const;
-export type CreditEntryType = (typeof CreditEntryType)[keyof typeof CreditEntryType];
-
-/** Why a credit-ledger entry was written (source of a grant / reason for a debit). */
-/** @deprecated Retired by D5 — the credit economy is gone. Kept only until the web and mobile clients stop importing it; delete with the vocabulary contract. */
-export const CreditReason = {
-  Purchase: 'purchase',
-  SubscriptionGrant: 'subscription_grant',
-  TrialGrant: 'trial_grant',
-  Promotional: 'promotional',
-  Referral: 'referral',
-  AiUsage: 'ai_usage',
-  Refund: 'refund',
-  Expiration: 'expiration',
-  AdminAdjustment: 'admin_adjustment',
-} as const;
-export type CreditReason = (typeof CreditReason)[keyof typeof CreditReason];
 
 // ── Payments & billing ───────────────────────────────────────────────────────────
 
@@ -344,7 +317,6 @@ export const PromotionType = {
   FixedDiscount: 'fixed_discount',
   FreeTrial: 'free_trial',
   TrialExtension: 'trial_extension',
-  PromotionalCredits: 'promotional_credits',
   FreePeriod: 'free_period',
 } as const;
 export type PromotionType = (typeof PromotionType)[keyof typeof PromotionType];
@@ -360,9 +332,6 @@ export interface PlanDefinition {
   features: PremiumFeature[];
   /** Per-feature quota limits (0 / absent = unlimited). */
   limits: PlanLimits;
-  /** AI credits granted per billing period (0 = none). */
-  /** @deprecated Retired by D5 — the credit economy is gone. Kept only until the web and mobile clients stop importing it; delete with the vocabulary contract. Always 0 on the wire. */
-  monthlyCredits: number;
   /** Price per interval in minor units (cents), keyed by interval then currency. */
   prices: Partial<Record<BillingInterval, Record<string, number>>>;
   /** Free-trial length in days (0 = no trial). */
@@ -373,16 +342,6 @@ export interface PlanDefinition {
 
 /** Per-feature usage limits attached to a plan. */
 export interface PlanLimits {
-  /**
-   * @deprecated D5 replaced the user-facing token budget with per-feature action counts —
-   * see `ai-quotas.ts`. Nothing enforces these three any more; they stay declared until the
-   * clients stop reading them, then go with the credit economy.
-   */
-  aiDailyTokens: number;
-  /** @deprecated See `aiDailyTokens`. */
-  aiMonthlyTokens: number;
-  /** @deprecated See `aiDailyTokens`. */
-  aiMonthlyCredits: number;
   /**
    * Reserved extensible per-feature caps (requests/day etc.). **0 / absent = unlimited**, EXCEPT
    * for the keys listed in {@link NEGATIVE_UNLIMITED_LIMIT_KEYS} — read that list before adding a
@@ -560,13 +519,6 @@ export function subscriptionStatusToEntitlement(status: SubscriptionStatus): Ent
   }
 }
 
-/** Credits consumed for a USD cost, at a credits-per-USD rate (ceil so free never rounds away). */
-/** @deprecated Retired by D5 — the credit economy is gone. Kept only until the web and mobile clients stop importing it; delete with the vocabulary contract. */
-export function creditsForCostUsd(costUsd: number, creditsPerUsd: number): number {
-  if (costUsd <= 0 || creditsPerUsd <= 0) return 0;
-  return Math.max(1, Math.ceil(costUsd * creditsPerUsd));
-}
-
 /** Normalize a coupon code for lookup (upper-case, trimmed). */
 export function normalizeCouponCode(code: string): string {
   return code.trim().toUpperCase();
@@ -601,15 +553,6 @@ export const COUPON_CODE_MIN = 3;
 export const COUPON_CODE_MAX = 40;
 export const COUPON_CODE_REGEX = /^[A-Z0-9][A-Z0-9-]{1,38}[A-Z0-9]$/;
 
-/** Default credits granted per USD of AI spend converted to credits (100 = $0.01/credit). */
-/** @deprecated Retired by D5 — the credit economy is gone. Kept only until the web and mobile clients stop importing it; delete with the vocabulary contract. */
-export const DEFAULT_CREDITS_PER_USD = 100;
-
-/** Minimum credits a user may buy in one credit purchase. */
-/** @deprecated Retired by D5 — the credit economy is gone. Kept only until the web and mobile clients stop importing it; delete with the vocabulary contract. */
-export const CREDIT_MIN_PURCHASE = 100;
-export const CREDIT_MAX_PURCHASE = 1_000_000;
-
 /** Default free-trial length (days) when a plan does not override it. */
 export const DEFAULT_TRIAL_DAYS = 14;
 
@@ -638,9 +581,6 @@ export const ENTITLEMENT_CACHE_TTL_SECONDS = 60;
  */
 export const DEFAULT_PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
   [PlanTier.Free]: {
-    aiDailyTokens: 20_000,
-    aiMonthlyTokens: 200_000,
-    aiMonthlyCredits: 0,
     maxPieces: 25,
     maxCollaborators: 0, // zero seats — solo. NOT "unlimited": this key's sentinel is -1.
     // B7. Ordinary sentinel: this is five visible versions, and `0` here would mean unlimited.
@@ -653,9 +593,6 @@ export const DEFAULT_PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
     storyAnalysesPerMonth: 5,
   },
   [PlanTier.Plus]: {
-    aiDailyTokens: 100_000,
-    aiMonthlyTokens: 2_000_000,
-    aiMonthlyCredits: 5_000,
     maxPieces: 250,
     maxCollaborators: 3,
     maxSnapshotHistory: 25,
@@ -664,9 +601,6 @@ export const DEFAULT_PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
     storyAnalysesPerMonth: 20, // = 4 whole stories mapped a month (5 analyses each).
   },
   [PlanTier.Pro]: {
-    aiDailyTokens: 500_000,
-    aiMonthlyTokens: 10_000_000,
-    aiMonthlyCredits: 25_000,
     maxPieces: 0,
     maxCollaborators: UNLIMITED_SEATS, // -1, not 0 — 0 would mean "no collaborators" here.
     maxSnapshotHistory: 0, // unlimited — `0` is right on THIS key. Do not copy the -1 above.
@@ -675,9 +609,6 @@ export const DEFAULT_PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
     storyAnalysesPerMonth: 100, // = 20 whole stories mapped a month.
   },
   [PlanTier.Enterprise]: {
-    aiDailyTokens: 0,
-    aiMonthlyTokens: 0,
-    aiMonthlyCredits: 100_000,
     maxPieces: 0,
     maxCollaborators: UNLIMITED_SEATS,
     maxSnapshotHistory: 0, // unlimited.
@@ -706,9 +637,9 @@ export const DEFAULT_PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
  * INERT. `MonetizationConfigService` unions these into every resolved tier instead, which is code
  * and therefore live on every deployment the moment it ships, with no data migration.
  *
- * Not in this list, deliberately: `ai_budget` (metered and asserted since AF5), `ai_writing` (gated
- * by D3) and `story_intelligence` (gated by D4 — its single exception). Those three are real
- * differentiators and stay per-tier.
+ * Not in this list, deliberately: `ai_writing` (gated by D3) and `story_intelligence` (gated by D4 —
+ * its single exception). Those two are real differentiators and stay per-tier. `ai_budget` used to be
+ * a third; D5 retired it with the credit economy it gated.
  */
 export const UNIVERSAL_PLAN_FEATURES: readonly PremiumFeature[] = [
   PremiumFeature.AiDiscovery,
@@ -720,22 +651,17 @@ export const UNIVERSAL_PLAN_FEATURES: readonly PremiumFeature[] = [
 
 /**
  * Which premium features each tier includes **beyond {@link UNIVERSAL_PLAN_FEATURES}** (admin config
- * may override). Only the three enforced codes appear here now; the resolved catalogue every client
+ * may override). Only the two enforced codes appear here now; the resolved catalogue every client
  * and the entitlement service read is this unioned with the universal list.
+ *
+ * Free's array is legitimately empty: everything a free account is entitled to is universal, and
+ * the two paid codes are exactly what a subscription buys.
  */
 export const DEFAULT_PLAN_FEATURES: Record<PlanTier, readonly PremiumFeature[]> = {
-  [PlanTier.Free]: [PremiumFeature.AiBudget],
-  [PlanTier.Plus]: [PremiumFeature.AiBudget, PremiumFeature.AiWriting],
-  [PlanTier.Pro]: [
-    PremiumFeature.AiBudget,
-    PremiumFeature.AiWriting,
-    PremiumFeature.StoryIntelligence,
-  ],
-  [PlanTier.Enterprise]: [
-    PremiumFeature.AiBudget,
-    PremiumFeature.AiWriting,
-    PremiumFeature.StoryIntelligence,
-  ],
+  [PlanTier.Free]: [],
+  [PlanTier.Plus]: [PremiumFeature.AiWriting],
+  [PlanTier.Pro]: [PremiumFeature.AiWriting, PremiumFeature.StoryIntelligence],
+  [PlanTier.Enterprise]: [PremiumFeature.AiWriting, PremiumFeature.StoryIntelligence],
 };
 
 /** Default supported billing/display currencies (ISO-4217, lower-cased on the wire). */

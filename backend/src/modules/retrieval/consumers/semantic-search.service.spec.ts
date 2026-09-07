@@ -100,15 +100,16 @@ describe('SemanticSearchService', () => {
   });
 
   /**
-   * D5: the engine calls no LLM at all. `answer` survives on the wire for one release so a
-   * client built against the old shape keeps compiling, but nothing can populate it — and no
-   * LLM latency or token cost is ever attributed to a search.
+   * D5: the engine calls no LLM at all. `answer` and the `synthesize` flag that asked for it
+   * are both off the wire now — the vocabulary contract removed them once every client had
+   * stopped sending and reading them. What is still worth asserting is the consequence: no
+   * LLM latency and no token cost is ever attributed to a search, whatever it is asked.
    */
-  it('never answers in prose, whatever the caller asks for', async () => {
+  it('never answers in prose, and costs no tokens', async () => {
     const { service, record } = makeService(resultFixture());
-    const res = await service.search('u1', { query: 'who is aria', synthesize: true });
+    const res = await service.search('u1', { query: 'who is aria' });
 
-    expect(res.answer).toBeNull();
+    expect(res).not.toHaveProperty('answer');
     const recorded = (record.mock.calls[0] as unknown[])[0] as {
       llmLatencyMs: number;
       tokenUsage: number;

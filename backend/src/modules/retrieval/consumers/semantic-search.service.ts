@@ -84,12 +84,6 @@ export class SemanticSearchService {
       query: dto.query,
       intent: result.plan.intent,
       queryType: result.plan.queryType,
-      /**
-       * Always `null` since D5 removed synthesis. The field stays on the wire until the
-       * coordinated vocabulary contract so a client built against the old shape keeps
-       * compiling; nothing populates it.
-       */
-      answer: null,
       results: result.candidates.map(toSearchResultItem),
       evidence: result.context.evidence,
       meta: toResponseMeta(result),

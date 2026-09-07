@@ -27,7 +27,7 @@ export {
   isPaymentsUnavailable,
 } from './hooks/use-subscription';
 export { usePlans, useValidateCoupon } from './hooks/use-plans';
-export { useMonetizationUsage, isExhausted, isUnlimited, remainingTokens } from './hooks/use-usage';
+export { useMonetizationUsage } from './hooks/use-usage';
 export { useFeatureAllowances } from './hooks/use-feature-allowances';
 export {
   allowanceFor,
@@ -50,8 +50,6 @@ export { formatMoney, formatTokens, formatUsd } from './lib/monetization-format'
 export { featureLabel, planLabel } from './lib/monetization-labels';
 
 export type {
-  CreditBalanceResponse,
-  CreditTransactionResponse,
   EntitlementDecision,
   EntitlementSnapshot,
   InvoiceResponse,
@@ -63,5 +61,4 @@ export type {
   SubscriptionEventResponse,
   SubscriptionResponse,
   UsageSummaryResponse,
-  UsageWindowResponse,
 } from './types/monetization.types';

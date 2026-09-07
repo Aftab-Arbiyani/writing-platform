@@ -142,7 +142,10 @@ describe('featureProvenance — array granularity, because the merge replaces wh
   });
 
   it('calls any difference an override', () => {
-    expect(featureProvenance(PlanTier.Free, [])).toBe('override');
+    // Emptying a tier that ships something is an override. Arranged on Plus because D5 left
+    // Free's compiled array empty, so `[]` there is the DEFAULT and asserting otherwise would
+    // be testing the catalogue's contents rather than the comparison.
+    expect(featureProvenance(PlanTier.Plus, [])).toBe('override');
     // A paid code on the free tier is a difference whatever the free tier happens to ship.
     expect(
       featureProvenance(PlanTier.Free, [
@@ -183,14 +186,15 @@ describe('isEnforcedCode — which grants actually do something', () => {
    * will have no effect, because the alternative is a support ticket about a grant that "didn't
    * work".
    *
-   * **`ai_budget` moved into this list in D5, and that is the assertion worth having.** It was the
-   * one code asserted on every AI request, guarding a credit balance; B4 removed the balance and the
-   * assertion. It still appears in the compiled catalogue until Phase V, so an operator can still be
-   * shown it — and being shown it as ENFORCED would now be a lie.
+   * `ai_budget` spent one phase in this list and is now gone from it entirely. It was the one
+   * code asserted on every AI request, guarding a credit balance; B4 removed the balance and the
+   * assertion, which made it unenforced-but-still-listed — visible to an operator, and a lie if
+   * shown as enforced. The vocabulary contract removed the code, so there is nothing left to
+   * mislabel. A stored catalogue can still contain the string, but `knownPremiumCodes` filters
+   * it at resolution before any admin surface sees it.
    */
   it('reports the unenforced codes as unenforced, so a grant is not sold as effective', () => {
     for (const code of [
-      PremiumFeature.AiBudget,
       PremiumFeature.AiDiscovery,
       PremiumFeature.PremiumSearch,
       PremiumFeature.PremiumRecommendations,

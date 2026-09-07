@@ -1,8 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import {
-  askScopeNodeTypes,
   RankingSignal,
-  RetrievalIntent,
   RetrievalQueryType,
   RetrievalSource,
   RETRIEVAL_MAX_TOP_K,
@@ -31,8 +29,8 @@ const QUERY_TYPE_NODE_TYPES: Record<RetrievalQueryType, string[]> = {
  * admin config it decides: WHICH sources to run (story-scoped → knowledge graph;
  * library-scoped → keyword + metadata; vector always considered but inert until available),
  * their order, parallel vs sequential execution, per-source + context-token budgets, the
- * ranking signal emphasis, which graph node types to prioritise, and whether to synthesise
- * a grounded LLM answer. Every AI feature routes through a plan — nothing bypasses it.
+ * ranking signal emphasis, and which graph node types to prioritise. Every retrieval
+ * request routes through a plan — nothing bypasses it.
  */
 @Injectable()
 export class RetrievalPlannerService {
@@ -48,10 +46,7 @@ export class RetrievalPlannerService {
       : [RetrievalSource.Keyword, RetrievalSource.Metadata, RetrievalSource.Vector];
     const sources = wanted.filter((s) => config.sources[s] !== false);
 
-    const nodeTypes =
-      request.intent === RetrievalIntent.Ask && request.scope !== undefined
-        ? [...askScopeNodeTypes(request.scope)]
-        : QUERY_TYPE_NODE_TYPES[queryType];
+    const nodeTypes = QUERY_TYPE_NODE_TYPES[queryType];
 
     const topK = Math.min(
       Math.max(1, request.limit > 0 ? request.limit : config.topK),

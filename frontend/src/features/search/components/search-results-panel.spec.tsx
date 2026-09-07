@@ -63,7 +63,6 @@ function response(over: Partial<SemanticSearchResponse> = {}): SemanticSearchRes
     query: 'rain',
     intent: RetrievalIntent.Search,
     queryType: RetrievalQueryType.NaturalLanguage,
-    answer: null,
     results: [result()],
     evidence: [],
     meta: {
@@ -162,7 +161,11 @@ describe('SearchResultsPanel', () => {
 
   it('renders no answer block even if the server still sends one', async () => {
     vi.mocked(retrievalApi.search).mockResolvedValue(
-      response({ answer: 'Three pieces touch on monsoon grief.' }),
+      // `answer` left the wire in the vocabulary contract, so it is no longer on the type —
+      // which is exactly why this cast is the honest way to write the test. It simulates a
+      // server that still sends the field (an older build, or a rollback), and asserts the
+      // client ignores it rather than resurrecting the one model-authored thing on this page.
+      response({ answer: 'Three pieces touch on monsoon grief.' } as Record<string, unknown>),
     );
     renderWithProviders(<SearchResultsPanel params={params()} />);
 

@@ -78,10 +78,6 @@ export class AiRetrievalPage {
     return this.page.getByTestId('ranking');
   }
 
-  get synthesis(): Locator {
-    return this.page.getByTestId('synthesis');
-  }
-
   /** The banner shown only when the server reports its aggregation was capped. */
   get truncationNotice(): Locator {
     return this.page.getByTestId('truncation-notice');

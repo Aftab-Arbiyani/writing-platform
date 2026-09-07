@@ -666,41 +666,28 @@ export const FEATURE_FLAG_DEFINITIONS: readonly FeatureFlagDefinition[] = [
   // Per-feature AI flags (AF1). Each rides the master `feature.ai.enabled` AND
   // its own switch, so a single feature can be dark-launched independently. All
   // disabled at seed; keys match `aiFeatureFlagKey()` in @qalam/shared.
-  {
-    key: 'feature.ai.grammar.enabled',
-    enabled: false,
-    rolloutPercentage: 0,
-    environment: 'all',
-    description: 'AI grammar assistance (future feature).',
-  },
-  {
-    key: 'feature.ai.rewrite.enabled',
-    enabled: false,
-    rolloutPercentage: 0,
-    environment: 'all',
-    description: 'AI rewrite assistance (future feature).',
-  },
-  {
-    key: 'feature.ai.summarization.enabled',
-    enabled: false,
-    rolloutPercentage: 0,
-    environment: 'all',
-    description: 'AI summarization (future feature).',
-  },
+  //
+  // D5 removed five rows here: `grammar`, `rewrite` and `summarization` (never built), and
+  // `semanticSearch` and `recommendations` (no longer AI features — search and
+  // recommendations call no model and consult no flag). `askBook` went in B2.
+  //
+  // Flag rows are seeded INSERT-ONLY, so removing a definition does not delete the row from
+  // `feature_flags` on any deployment that already has it — Phase C's migration does that.
+  // Until then an orphan row renders in the admin flag table and gates nothing.
   {
     key: 'feature.ai.craftCoach.enabled',
     enabled: false,
     rolloutPercentage: 0,
     environment: 'all',
-    description: 'AI craft coach — chapter/scene/pacing/readability/consistency feedback (AF2).',
+    description:
+      'Manuscript feedback — chapter/scene/pacing/readability/consistency reports (AF2).',
   },
   {
     key: 'feature.ai.writingAssistant.enabled',
     enabled: false,
     rolloutPercentage: 0,
     environment: 'all',
-    description:
-      'AI writing assistant — in-editor continue/rewrite/expand/condense/simplify/improve/tone (AF2).',
+    description: 'Polish — in-editor simplify/condense/improve (AF2).',
   },
   {
     key: 'feature.ai.characterAnalysis.enabled',
@@ -736,20 +723,6 @@ export const FEATURE_FLAG_DEFINITIONS: readonly FeatureFlagDefinition[] = [
     rolloutPercentage: 0,
     environment: 'all',
     description: 'AI timeline analysis — Story Intelligence chronological graph (AF3).',
-  },
-  {
-    key: 'feature.ai.semanticSearch.enabled',
-    enabled: false,
-    rolloutPercentage: 0,
-    environment: 'all',
-    description: 'AI semantic search (future feature).',
-  },
-  {
-    key: 'feature.ai.recommendations.enabled',
-    enabled: false,
-    rolloutPercentage: 0,
-    environment: 'all',
-    description: 'AI recommendations (future feature).',
   },
   {
     key: 'feature.ai.moderation.enabled',

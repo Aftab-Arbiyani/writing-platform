@@ -1,6 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
-  AskScope,
   RankingSignal,
   RecommendationKind,
   RetrievalQueryType,
@@ -13,7 +12,6 @@ import {
 } from '@qalam/shared';
 import { Type } from 'class-transformer';
 import {
-  IsBoolean,
   IsIn,
   IsInt,
   IsObject,
@@ -55,16 +53,6 @@ export class SemanticSearchDto {
   @Max(RETRIEVAL_MAX_TOP_K)
   limit?: number;
 
-  /**
-   * @deprecated Accepted and IGNORED since D5 removed grounded synthesis. Kept so a client
-   * built against the old shape still validates; the response's `answer` is always null.
-   */
-  @ApiPropertyOptional({ deprecated: true, description: 'Ignored — synthesis was removed (D5).' })
-  @IsOptional()
-  @Type(() => Boolean)
-  @IsBoolean()
-  synthesize?: boolean;
-
   @ApiPropertyOptional({ description: 'Language code filter (library scope).' })
   @IsOptional()
   @IsString()
@@ -84,38 +72,6 @@ export class SemanticSearchDto {
   tags?: string;
 }
 
-/** `POST /ai/ask` and `POST /ai/ask/stream` — grounded Q&A over a story. */
-export class AskBookDto {
-  @ApiProperty({ description: "The story's opaque key (piece id or local draft id)." })
-  @IsString()
-  @MaxLength(120)
-  storyId!: string;
-
-  @ApiProperty({ example: 'What is the relationship between Aria and the mentor?' })
-  @IsString()
-  @MinLength(1)
-  @MaxLength(RETRIEVAL_QUERY_MAX_CHARS)
-  question!: string;
-
-  @ApiPropertyOptional({ enum: Object.values(AskScope), default: AskScope.Book })
-  @IsOptional()
-  @IsIn(Object.values(AskScope))
-  scope?: AskScope;
-
-  @ApiPropertyOptional({ description: 'A named subject to focus scope on (character/place/…).' })
-  @IsOptional()
-  @IsString()
-  @MaxLength(200)
-  subject?: string;
-
-  @ApiPropertyOptional({ description: 'Reuse an AF1 conversation for a multi-turn ask.' })
-  @IsOptional()
-  @IsString()
-  @MaxLength(64)
-  conversationId?: string;
-}
-
-/** `GET /ai/recommendations` — explainable recommendations across surfaces. */
 export class RecommendationQueryDto {
   @ApiProperty({ enum: Object.values(RecommendationKind) })
   @IsIn(Object.values(RecommendationKind))
@@ -306,15 +262,6 @@ export class UpdateRetrievalConfigDto {
   @IsObject()
   @Validate(IsRankingWeightTable)
   rankingWeights?: Partial<Record<RankingSignal, number>>;
-
-  /**
-   * @deprecated Accepted and IGNORED since D5 — there is no synthesis to enable. Kept so the
-   * admin client's existing form does not 422 before it drops the field.
-   */
-  @ApiPropertyOptional({ deprecated: true, description: 'Ignored — synthesis was removed (D5).' })
-  @IsOptional()
-  @IsBoolean()
-  synthesisEnabled?: boolean;
 }
 
 /** `GET /admin/ai/search-analytics` — window selection. */
