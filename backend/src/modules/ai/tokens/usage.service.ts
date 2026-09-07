@@ -36,7 +36,6 @@ export interface RecordUsageInput {
   model: string;
   usage: AiTokenUsage;
   costUsd: number;
-  conversationId?: string | null;
   requestId?: string | null;
 }
 
@@ -65,7 +64,6 @@ export class UsageService {
         outputTokens: input.usage.outputTokens,
         totalTokens: input.usage.totalTokens,
         costUsd: input.costUsd,
-        conversationId: input.conversationId ?? null,
         requestId: input.requestId ?? null,
       }),
     );

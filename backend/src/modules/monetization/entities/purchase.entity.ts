@@ -45,9 +45,6 @@ export class Purchase extends QalamAppendOnlyEntity {
   @Column({ type: 'varchar', length: 8, default: 'usd' })
   currency!: string;
 
-  @Column({ type: 'int', default: 0 })
-  creditsGranted!: number;
-
   @Column({ type: 'uuid', nullable: true })
   subscriptionId!: string | null;
 

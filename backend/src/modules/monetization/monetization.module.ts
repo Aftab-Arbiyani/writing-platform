@@ -13,8 +13,6 @@ import { AiUsageMeterService } from './ai-usage-meter.service';
 import { BillingWebhookController } from './billing-webhook.controller';
 import { BillingService } from './billing.service';
 import { Coupon } from './entities/coupon.entity';
-import { CreditTransaction } from './entities/credit-transaction.entity';
-import { CreditWallet } from './entities/credit-wallet.entity';
 import { EntitlementOverride } from './entities/entitlement-override.entity';
 import { Invoice } from './entities/invoice.entity';
 import { MonetizationCustomer } from './entities/monetization-customer.entity';
@@ -69,8 +67,6 @@ import { UsageService } from './usage.service';
       Subscription,
       SubscriptionEvent,
       MonetizationCustomer,
-      CreditWallet,
-      CreditTransaction,
       Coupon,
       PromotionRedemption,
       Payment,

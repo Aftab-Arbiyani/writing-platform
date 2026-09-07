@@ -37,10 +37,6 @@ export class AiUsageLog extends QalamAppendOnlyEntity {
   @Column({ type: 'double precision', default: 0 })
   costUsd!: number;
 
-  /** The conversation this call belonged to, if any. */
-  @Column({ type: 'uuid', nullable: true })
-  conversationId!: string | null;
-
   /** Correlation id of the originating request (ADR §9). */
   @Column({ type: 'varchar', length: 64, nullable: true })
   requestId!: string | null;

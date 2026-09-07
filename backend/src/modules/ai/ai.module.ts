@@ -11,8 +11,6 @@ import { AiConfigOverride } from './config/entities/ai-config-override.entity';
 import { AiOrgConfig } from './config/entities/ai-org-config.entity';
 import { AdminAiController } from './controllers/admin-ai.controller';
 import { AiController } from './controllers/ai.controller';
-import { AiConversation } from './conversations/entities/ai-conversation.entity';
-import { AiMessage } from './conversations/entities/ai-message.entity';
 import { AI_CONTEXT_PROVIDERS } from './context/context-builder.port';
 import { ContextRegistryService } from './context/context-registry.service';
 import { SelectionContextBuilder } from './context/builders/selection-context.builder';
@@ -62,8 +60,6 @@ import { UsageService } from './tokens/usage.service';
       AiPromptTemplate,
       AiOrgConfig,
       AiConfigOverride,
-      AiConversation,
-      AiMessage,
       AiUsageLog,
     ]),
     AuthModule,

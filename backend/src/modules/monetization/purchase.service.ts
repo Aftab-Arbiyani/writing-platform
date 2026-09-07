@@ -65,9 +65,6 @@ export class PurchaseService {
         productId: input.productId ?? null,
         amount: input.amount ?? 0,
         currency: input.currency ?? 'usd',
-        // Always 0 since D5 retired credits. The column survives until the contract phase
-        // so existing purchase history keeps its recorded grant.
-        creditsGranted: 0,
         subscriptionId: input.subscriptionId ?? null,
         receiptHash: input.receiptHash ?? null,
         metadata: {},

@@ -316,7 +316,6 @@ export class AiCompletionService {
       model: resolved.model,
       usage,
       costUsd,
-      conversationId: null,
       requestId: input.requestId ?? null,
     });
     /*
