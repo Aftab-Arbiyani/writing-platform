@@ -1,11 +1,15 @@
 # 48 — Platform Parity Register (web ↔ mobile)
 
-> 🔨 **IN FLIGHT, 2026-09-03 — D5 removes the AI surface.** The backend is complete (`9214fc6`,
-> `7f3b459`, `952a790`, `d4d03b6`) and **web is done — frontend and admin** (`52922b3`, `468e6f3`,
-> `b349798`, `08862fd`). **Mobile has not moved** and the E2E suite has not been rewritten, so parts
-> of this register still describe surfaces the server no longer serves. The decision, the
-> built-vs-outstanding table, and the defect that state opens (**D5-clients**, §3.22a — now half
-> closed) are in
+> 🔨 **IN FLIGHT, 2026-09-07 — D5 removes the AI surface.** The backend is complete (`9214fc6`,
+> `7f3b459`, `952a790`, `d4d03b6`), **web is done — frontend and admin** (`52922b3`, `468e6f3`,
+> `b349798`, `08862fd`), and **mobile is done** (`8e6e302`, `5f410c7`, `efb4aff`, M4). **D5-clients
+> is closed**: neither client calls anything B2 deleted.
+>
+> **Two things remain, and neither is a client.** The E2E suite is rewritten but has never run
+> against a browser and six visual baselines still need a CI re-mint (**F3**); and the vocabulary and
+> DB contractions (**V**, **C**) have not started — so parts of this register still name enum values
+> and tables that exist only to keep already-shipped clients from 400ing. The decision and the
+> built-vs-outstanding table are in
 > [§5.2 → D5](#d5--the-ai-surface-is-removed-the-tools-stay-owner-2026-09-02). Read that before
 > scheduling anything that touches AI, search, or plan limits.
 
@@ -3959,9 +3963,9 @@ D5's own build**, and it is recorded rather than waved through because it is exa
 breakage a phased migration makes easy to leave undocumented: deliberate, known, and invisible to
 every test that passed.
 
-| Row                       | What                                                                                                                                                                                                                                                                                                                                                                                                                          | Opened                                               | Closes when                    |
-| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- | ------------------------------ |
-| **D5-clients** · **high** | ~~Both clients~~ **Mobile** calls routes B2 deleted: its Ask My Book screen and conversation screens hit **404** on `develop`. **Web half CLOSED by `b349798`** — the Ask tab, conversation pages, prompt library and `/settings/ai/usage` are deleted, and `useAiAvailability` no longer reads the removed `GET /ai/usage/me`, which had been 404ing on every editor load. Nothing 404s in production — nothing has deployed | 2026-09-03, by `7f3b459`; web half closed 2026-09-03 | M1 deletes the mobile surfaces |
+| Row                                                 | What                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Opened                                                                | Closes when |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | ----------- |
+| ~~**D5-clients** · **high**~~ **CLOSED 2026-09-07** | ~~Both clients call routes B2 deleted.~~ **Web half closed by `b349798`** — the Ask tab, conversation pages, prompt library and `/settings/ai/usage` deleted, and `useAiAvailability` no longer reads the removed `GET /ai/usage/me`, which had been 404ing on every editor load. **Mobile half closed by `8e6e302` (M1)** — Ask My Book, both conversation screens, the prompt library and the AI-usage screen deleted with their routes; `AiRepository` is down to five methods, none of which touches a removed endpoint. Nothing 404'd in production — nothing had deployed | 2026-09-03, by `7f3b459`; web half 2026-09-03, mobile half 2026-09-07 | —           |
 
 **Why this is a row and not a footnote.** The backend phases are green on their own terms — 1413
 tests, every workspace typechecking — and _that is the problem_: the clients compile because the
@@ -5415,23 +5419,26 @@ changed content that legitimately changed (editor toolbar, billing hub, billing 
 admin search config, admin billing actions). Minting is a `workflow_dispatch`, and **a dispatch
 cancels a live push run** — check `gh run list` first (§3.25 records killing run #31 that way).
 
-`D5-clients` in [§3.22a](#322a-product-defects--a-user-or-an-operator-can-hit-these) is **half
-closed**: web no longer calls anything B2 deleted, mobile still does.
+`D5-clients` in [§3.22a](#322a-product-defects--a-user-or-an-operator-can-hit-these) is **CLOSED**
+(2026-09-07): both clients are off everything B2 deleted. Mobile's half landed as M1–M4.
 
-| Phase     | What                                                                                                                          | State        |
-| --------- | ----------------------------------------------------------------------------------------------------------------------------- | ------------ |
-| **B1**    | Search public + synthesis stripped; recommendations de-flagged; `retrieval_query_logs.user_id` nullable                       | ✅ `9214fc6` |
-| **B2**    | Ask My Book, conversations, dead prompts deleted; completions stateless                                                       | ✅ `7f3b459` |
-| **B3**    | Per-feature allowances; "Map this story"; E2E seed lifts the new caps                                                         | ✅ `952a790` |
-| **B4**    | Credit economy off (`ai_budget`, wallet, purchases, admin credit actions); admin cost dashboard re-pointed at `ai_usage_logs` | ✅ `d4d03b6` |
-| **F0**    | Web + admin test fixtures moved off the vocabulary V deletes, so V is one reviewable diff                                     | ✅ `52922b3` |
-| **F1a**   | One search, public: engine toggle gone, `All` is the ranked scope, the three gates become auth gates                          | ✅ `468e6f3` |
-| **F1b**   | Writing tools drawer (Polish · Feedback · Story Map), "Map this story", 5 routes + Ask deleted, availability shrunk           | ✅ `b349798` |
-| **F2**    | Monetization UI: allowance cards, credits pages deleted, plan/labels copy, admin synthesis + credit forms                     | ✅ `08862fd` |
-| **F3**    | E2E: rewrite `search`/`assistant`/`ai-surfaces` specs, re-mint the visual baselines                                           | ⬜           |
-| **M1–M4** | Mobile: Polish sheet, `shared/retrieval`, allowance cards, copy sweep                                                         | ⬜           |
-| **V**     | Vocabulary contract — delete the deprecated enum values, api-types and wire fields in one coordinated PR                      | ⬜           |
-| **C**     | DB contract — drop `ai_conversations`, `ai_messages`, `credit_wallets`, `credit_transactions`                                 | ⬜           |
+| Phase   | What                                                                                                                             | State        |
+| ------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| **B1**  | Search public + synthesis stripped; recommendations de-flagged; `retrieval_query_logs.user_id` nullable                          | ✅ `9214fc6` |
+| **B2**  | Ask My Book, conversations, dead prompts deleted; completions stateless                                                          | ✅ `7f3b459` |
+| **B3**  | Per-feature allowances; "Map this story"; E2E seed lifts the new caps                                                            | ✅ `952a790` |
+| **B4**  | Credit economy off (`ai_budget`, wallet, purchases, admin credit actions); admin cost dashboard re-pointed at `ai_usage_logs`    | ✅ `d4d03b6` |
+| **F0**  | Web + admin test fixtures moved off the vocabulary V deletes, so V is one reviewable diff                                        | ✅ `52922b3` |
+| **F1a** | One search, public: engine toggle gone, `All` is the ranked scope, the three gates become auth gates                             | ✅ `468e6f3` |
+| **F1b** | Writing tools drawer (Polish · Feedback · Story Map), "Map this story", 5 routes + Ask deleted, availability shrunk              | ✅ `b349798` |
+| **F2**  | Monetization UI: allowance cards, credits pages deleted, plan/labels copy, admin synthesis + credit forms                        | ✅ `08862fd` |
+| **F3**  | E2E: rewrite `search`/`assistant`/`ai-surfaces` specs, re-mint the visual baselines                                              | ⬜           |
+| **M1**  | Mobile: Polish sheet, Manuscript feedback, Story Map + "Map this story"; conversations/prompts/usage/Ask + the B5 screen gone    | ✅ `8e6e302` |
+| **M2**  | Mobile: one search; retrieval lifted to `lib/shared/retrieval/`; recommendation shelves onto `/discover`; saved searches rehomed | ✅ `5f410c7` |
+| **M3**  | Mobile: allowance cards, plan-limit allowlist, credits deleted, quota copy names the tool                                        | ✅ `efb4aff` |
+| **M4**  | Mobile: copy sweep — the "AI" grep gate returns zero, pinned by a test over every error branch                                   | ✅ (this)    |
+| **V**   | Vocabulary contract — delete the deprecated enum values, api-types and wire fields in one coordinated PR                         | ⬜           |
+| **C**   | DB contract — drop `ai_conversations`, `ai_messages`, `credit_wallets`, `credit_transactions`                                    | ⬜           |
 
 **Wire compatibility is deliberate until V.** `conversationId`, `synthesize`, `synthesisEnabled` and
 `answer` are all still accepted or returned, inert. That is not laziness: the validation pipe runs
@@ -5444,6 +5451,34 @@ them.
 **Rows this makes moot** (struck where they live, listed here so the ledger stays the one source):
 `T-7` (the `assistant.spec.ts` flake — the spec is replaced by `writing-tools.spec.ts` in F1) and
 D3's "free keeps `ai_budget`" reasoning, which B4 removes entirely.
+
+**Rows this CLOSES by building, not by striking.** The AF3 analysis-lifecycle row in
+[§3.22d](#322d-accepted-not-fixed) recorded that the graph platform shipped with **no client able to
+spend `analyze`** — so every Story Map view said "nothing here yet", permanently. Both clients now
+have "Map this story" (F1b, M1), which is the first thing anywhere that can fill a graph. The rest of
+that row stands: there is still no reset/rebuild and no confirm/correct for entities, and those
+remain product-undefined rather than unbuilt.
+
+**What mobile's half taught, recorded because it was not in the plan:**
+
+- **A latent lifetime bug in the Polish session controller** (M1). It only ever `read` the
+  autoDispose stream controller, so between starting a stream and the sheet's first rebuild the
+  provider could be swept — cancelling the subscription, hanging the run in `streaming` forever, and
+  mounting a _second_ instance for the view. Invisible against a real network; wide open against a
+  fake answering in microtasks, which is how a widget test found it. Now `listen`ed.
+- **Mobile's auth split was enforced by accident**, exactly as web's was (§3.25). Two retrieval calls
+  are public and four need a session; what had been keeping the authenticated ones off public pages
+  was a feature flag. Mobile is the worse case, because `AiFeatures.isEnabled` answers **false for a
+  flag it cannot find** — so Phase V deleting a flag row would have taken mobile's search dark while
+  web carried on. It is stated at the request now, and `search_anonymous_test.dart` arranges
+  `aiFeaturesProvider` to **throw**, because a render-only check cannot tell "not shown" from
+  "requested and 401'd".
+- **The retrieval engine has no offline replay.** Deleting the grouped `GET /search` preview took its
+  object cache with it, so a mobile reader offline on the `All` scope now sees an error where the
+  per-type tabs still show their last results. Real gap, recorded rather than papered over.
+- **A writer who turned AI off before D5 is stuck.** B5's per-account switch stays live server-side
+  and defaults to true, but its screen is deleted, so `AI_DISABLED_BY_USER` now shares the platform-off
+  copy: it blames nobody and promises nothing, because the remedy it used to name no longer exists.
 
 ---
 
