@@ -15,21 +15,6 @@ import { ReaderPage } from '../../pages/frontend/reader-page';
  * deep link produces.
  */
 test.describe('@phase2 frontend reader', () => {
-  test('a published piece is readable by its slug on a cold load (anonymous)', async ({
-    page,
-    api,
-    data,
-  }) => {
-    const title = data.pieceTitle();
-    const piece = await api.createPublishedPiece({ title });
-    expect(piece.slug, 'publishing must mint a slug').toBeTruthy();
-
-    // No login: reading is public, and the cold load exercises GET /pieces/by-slug/:slug.
-    const reader = new ReaderPage(page);
-    await reader.gotoSlug(piece.slug as string);
-    await reader.expectRendered(title);
-  });
-
   test('the feed links through to a rendered piece (the deferred half of Phase 2)', async ({
     page,
     api,
@@ -125,45 +110,6 @@ test.describe('@phase2 frontend reader', () => {
     await reader.expectRecommendedRelated(seedTitle);
   });
 
-  test('“More like this” degrades to the tag search for an anonymous reader', async ({
-    page,
-    api,
-    data,
-  }) => {
-    // No lock and no flags: the recommender needs a session, so an anonymous reader can never
-    // reach it — which is the majority of a public reading page's
-    // traffic, and the reason the fallback still exists.
-    const tag = `lantern${data.username()}`;
-    const seedTitle = data.pieceTitle();
-    const siblingTitle = data.pieceTitle();
-    const seed = await api.createPublishedPiece({ title: seedTitle, tags: [tag] });
-    await api.createPublishedPiece({ title: siblingTitle, tags: [tag] });
-
-    const reader = new ReaderPage(page);
-    await reader.gotoSlug(seed.slug as string);
-    await reader.expectRendered(seedTitle);
-    await reader.expectFallbackRelated(siblingTitle);
-  });
-
-  test('an anonymous reader is sent to sign-in before a like is written', async ({
-    page,
-    api,
-    data,
-  }) => {
-    const title = data.pieceTitle();
-    const piece = await api.createPublishedPiece({ title });
-
-    const reader = new ReaderPage(page);
-    await reader.gotoSlug(piece.slug as string);
-    await reader.expectRendered(title);
-
-    await expect(reader.likeButton).toBeVisible({ timeout: 30_000 });
-    await reader.likeButton.click();
-
-    // Sharing is public, but liking is not — the reader lands on sign-in carrying this piece.
-    await expect(page).toHaveURL(/\/auth\/login\?returnTo=/);
-  });
-
   test('a signed-in reader can like the piece and the count sticks', async ({
     page,
     api,
@@ -188,5 +134,75 @@ test.describe('@phase2 frontend reader', () => {
     await page.reload();
     await reader.expectRendered(title);
     await expect(reader.likeButton).toHaveAttribute('aria-pressed', 'true', { timeout: 30_000 });
+  });
+  /**
+   * The genuinely signed-out reader.
+   *
+   * **`test.use` is what makes these tests true, and they were not true before.** The
+   * `frontend-*` projects all carry the seeded writer's `storageState`
+   * (`playwright.config.ts`), so a default context boots AUTHENTICATED — three tests in this
+   * file said "anonymous" in their names and ran as the writer. Two of them passed anyway,
+   * for reasons unrelated to what they claimed to prove; the third could not pass at all,
+   * because the recommender answers a signed-in reader and it was asserting the fallback's
+   * silence. Clearing the state is the suite's existing idiom for this (`discover.spec.ts`,
+   * `search.spec.ts`, `keyboard.spec.ts`, `onboarding.spec.ts`, `visual.spec.ts`); this file
+   * simply never adopted it. Found by the first browser run of the D5 suite, 2026-09-08.
+   */
+  test.describe('signed out', () => {
+    test.use({ storageState: { cookies: [], origins: [] } });
+
+    test('a published piece is readable by its slug on a cold load (anonymous)', async ({
+      page,
+      api,
+      data,
+    }) => {
+      const title = data.pieceTitle();
+      const piece = await api.createPublishedPiece({ title });
+      expect(piece.slug, 'publishing must mint a slug').toBeTruthy();
+
+      // No login: reading is public, and the cold load exercises GET /pieces/by-slug/:slug.
+      const reader = new ReaderPage(page);
+      await reader.gotoSlug(piece.slug as string);
+      await reader.expectRendered(title);
+    });
+
+    test('“More like this” degrades to the tag search for an anonymous reader', async ({
+      page,
+      api,
+      data,
+    }) => {
+      // No lock and no flags: the recommender needs a session, so an anonymous reader can never
+      // reach it — which is the majority of a public reading page's
+      // traffic, and the reason the fallback still exists.
+      const tag = `lantern${data.username()}`;
+      const seedTitle = data.pieceTitle();
+      const siblingTitle = data.pieceTitle();
+      const seed = await api.createPublishedPiece({ title: seedTitle, tags: [tag] });
+      await api.createPublishedPiece({ title: siblingTitle, tags: [tag] });
+
+      const reader = new ReaderPage(page);
+      await reader.gotoSlug(seed.slug as string);
+      await reader.expectRendered(seedTitle);
+      await reader.expectFallbackRelated(siblingTitle);
+    });
+
+    test('an anonymous reader is sent to sign-in before a like is written', async ({
+      page,
+      api,
+      data,
+    }) => {
+      const title = data.pieceTitle();
+      const piece = await api.createPublishedPiece({ title });
+
+      const reader = new ReaderPage(page);
+      await reader.gotoSlug(piece.slug as string);
+      await reader.expectRendered(title);
+
+      await expect(reader.likeButton).toBeVisible({ timeout: 30_000 });
+      await reader.likeButton.click();
+
+      // Sharing is public, but liking is not — the reader lands on sign-in carrying this piece.
+      await expect(page).toHaveURL(/\/auth\/login\?returnTo=/);
+    });
   });
 });
