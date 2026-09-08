@@ -350,8 +350,24 @@ test.describe('@phase5 @visual frontend (authenticated)', () => {
     // in dark, which is the failure mode [10 §8.4] was written about.
     const story = await api.createPiece({ title: data.pieceTitle() });
     const collaborators = new CollaboratorsPage(page);
+    // The presence bar ("In this story") renders only when the roster is non-empty, and whether it
+    // is depends on a RACE between two requests fired in the same tick on mount: the presence GET
+    // and the viewer's first heartbeat POST. If the GET wins, the server has not yet heard from
+    // this viewer, `PresenceBar` returns null, and the whole page sits ~40 px higher — which is why
+    // this baseline came back different on two consecutive mints of the same commit, once with the
+    // bar and once without. Nothing is masked into stability here: the bar's ABSENCE moves layout.
+    //
+    // Waiting it out is not an option — `use-presence.ts` refetches at PRESENCE_TTL_SECONDS / 2,
+    // i.e. 22.5 s. So: load once to register the beat, wait for the POST to actually land, then
+    // reload. On the second load the presence GET can only answer non-empty, and the shot matches
+    // the committed baseline (which has the bar) every time rather than half the time.
     await collaborators.goto(story.id);
+    await page.waitForResponse(
+      (r) => r.url().includes(`/stories/${story.id}/presence`) && r.request().method() === 'POST',
+    );
+    await page.reload();
     await collaborators.expectResolved();
+    await expect(page.getByRole('heading', { name: 'In this story' })).toBeVisible();
     // The THIRD W5-12 baseline, and the only one left on `fullPage` — which is why it was still
     // drifting (0.10, 87,604 px in CI run #29) after comments and suggestions were fixed. Same
     // treatment as those two, for the same measured reason: viewport captures one paint with no
