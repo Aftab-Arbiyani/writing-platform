@@ -366,28 +366,40 @@ test.describe('@phase5 @visual frontend (authenticated)', () => {
   });
 
   test('the publishing page matches its visual baseline', async ({ page, api, data }) => {
-    // 60 s, because 30 s is genuinely not enough for what this test does on a CI runner: create a
-    // piece, load the page, request a review, capture a version, settle two toasts, then take a
-    // fullPage shot with a mask. It failed in CI runs #26 AND #28 with "Test timeout of 30000ms
-    // exceeded" reported *alongside* `toHaveCount` still seeing 2 notices — i.e. the assertion was
-    // cut off by the budget, not by stuck toasts (48 §3.25f/§3.25g).
+    // 60 s. This test drove its own arrange through the UI — request a review, capture a version,
+    // then settle two toasts — and paid for it three times: "Test timeout of 30000ms exceeded" in
+    // CI runs #26 and #28 (48 §3.25f/§3.25g), then a HARD failure in the D5 baseline re-mint, where
+    // webkit's `POST /stories/:id/review` hung ~20 s and answered 500. The page then sat on "Draft"
+    // and `expectReviewState('In review')` burned its 30 s.
     //
-    // Closing the toasts (see `settleToasts`) was necessary but not sufficient, and the reason it
-    // looked sufficient is worth recording: it PASSED on a 16-core dev box in the pinned image and
-    // failed on a 2-vCPU runner. A budget fix cannot be verified on faster hardware than the one
-    // that failed — the same lesson as [[e2e-local-workers-oversubscribe]] in the other direction.
+    // The re-mint failure was NOT webkit-specific, and the diagnosis is the reusable part: a 500
+    // comes from the server, which cannot see which engine sent the request. webkit was simply the
+    // slowest of eight projects sharing a 2-vCPU runner at --workers=2, so it lost a contention race
+    // that existed for all of them — the same shape as the axe mid-fade race in the a11y fixture,
+    // where "webkit is different" was also the wrong answer. It does not reproduce on a 16-core box
+    // at --workers=1 OR --workers=2, with no 5xx anywhere in the backend log.
+    //
+    // So the arrange now goes through the API, and only the RENDER is measured here. That is the
+    // right split regardless of flakiness: `publishing.spec.ts` is what proves the buttons work, and
+    // a visual baseline should assert what the populated cards look like, not re-test the mutations
+    // that populate them. It also removes every toast this test used to raise, which is why
+    // `settleToasts` is gone from it — no UI mutation, nothing to settle, ~9 s of dead time saved.
     test.setTimeout(60_000);
     // AF6/W3c (docs/49 §5). Arranged with a review in flight and one version captured, so the four
     // cards are all in a populated state rather than empty — the review chip, the gated publication
     // controls, the version row and the history timeline are exactly the tinted, state-carrying
     // chrome that dark mode breaks ([10 §8.4]).
     const story = await api.createPiece({ title: data.pieceTitle() });
+    await api.requestReview(story.id);
+    await api.captureSnapshot(story.id);
     const publishing = new StoryPublishingPage(page);
     await publishing.goto(story.id);
     await publishing.expectResolved();
-    await publishing.requestReview();
-    await publishing.captureVersion();
-    await settleToasts(page);
+    // Assert the arranged state is actually rendered before shooting: a screenshot of a card that
+    // silently failed to load is a baseline of the wrong thing, and the page reads `Draft` for both
+    // "no review" and "review request failed".
+    await publishing.expectReviewState('In review');
+    await publishing.expectVersionCount(1);
     await expect(page).toHaveScreenshot('frontend-story-publishing.png', {
       fullPage: true,
       // Height is deterministic — a fresh story, and every history/version row in the shot is one

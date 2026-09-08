@@ -191,7 +191,12 @@ jobs:
           pnpm --filter backend migration:run
           pnpm --filter backend seed
           pnpm --filter backend seed:e2e
-          node backend/dist/main.js &
+          # Tee rather than plain `&`: a backgrounded process's stdout stops reaching the job log
+          # once its start step completes, so everything the server said DURING the test run was
+          # lost. That is not hypothetical — a 500 answered to `POST /stories/:id/review` in the D5
+          # baseline re-mint could not be diagnosed at all, because the only backend lines in the
+          # whole job log were two printed during seeding. `backend.log` is uploaded on failure.
+          node backend/dist/main.js 2>&1 | tee backend.log &
           e2e/scripts/wait-health.sh http://localhost:4000/health 120
 
       # `chromium` is installed ALONGSIDE the matrix browser, always. Both setup projects
@@ -231,6 +236,7 @@ jobs:
           path: |
             e2e/playwright-report/
             e2e/test-results/
+            backend.log
           retention-days: 14
 
   # Visual regression — runs the @visual specs INSIDE the pinned Playwright image so the
@@ -385,7 +391,9 @@ jobs:
           pnpm --filter backend migration:run
           pnpm --filter backend seed
           pnpm --filter backend seed:e2e
-          node backend/dist/main.js &
+          # See the functional job's note: a backgrounded server's output stops reaching the job log
+          # when its step ends, which is exactly why the webkit publishing 500 was undiagnosable.
+          node backend/dist/main.js 2>&1 | tee backend.log &
           e2e/scripts/wait-health.sh http://localhost:4000/health 120
 
       - name: Start app preview servers (host)
@@ -443,4 +451,5 @@ jobs:
           path: |
             e2e/playwright-report/
             e2e/test-results/
+            backend.log
           retention-days: 14
