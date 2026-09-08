@@ -1,5 +1,6 @@
 import type { DomainEventBus } from '../../common/events/domain-event-bus';
 import { DomainEventType } from '../../common/events/domain-events';
+import { assertValidJobId } from '../../common/queue/job-id';
 import { JOB } from '../../common/queue/queue.constants';
 import type { QueueProducer } from '../queue/queue-producer.service';
 import { EventBridgeService } from './event-bridge.service';
@@ -35,7 +36,11 @@ describe('EventBridgeService', () => {
     expect(job).toBe(JOB.CacheInvalidate);
     expect(Array.isArray((data as { keys: string[] }).keys)).toBe(true);
     // Stable jobId + delay coalesces a burst into a single invalidation.
-    expect(opts).toMatchObject({ jobId: 'cache-invalidate:discovery', delayMs: 2_000 });
+    expect(opts).toMatchObject({ jobId: 'cache-invalidate-discovery', delayMs: 2_000 });
+    // This spec mocks the producer, so the producer's own guard cannot run here —
+    // and the previous id (`cache-invalidate:discovery`) was pinned by this very
+    // assertion while BullMQ rejected it at enqueue. Validate the id itself.
+    expect(() => assertValidJobId((opts as { jobId: string }).jobId)).not.toThrow();
   });
 
   it('also invalidates on archive', async () => {

@@ -61,6 +61,28 @@ describe('QueueProducer', () => {
     expect(opts).toMatchObject({ attempts: 2, priority: 9, jobId: 'x', delay: 2_000 });
   });
 
+  // BullMQ validates a custom id inside `Queue.add`, which `build()` mocks — so
+  // an id it would reject used to pass every spec here and throw only against a
+  // real Redis. The producer asserts the rule itself so these mocked specs see it.
+  it('rejects a custom job id containing the reserved ":"', () => {
+    const { producer } = build();
+    expect(() => producer.buildJobOptions(JOB.Broadcast, { jobId: 'publish:abc' })).toThrow(
+      /reserved as the Redis key separator/,
+    );
+  });
+
+  it('rejects a custom job id that is a plain integer', () => {
+    const { producer } = build();
+    expect(() => producer.buildJobOptions(JOB.Broadcast, { jobId: '42' })).toThrow(
+      /may not be a plain integer/,
+    );
+  });
+
+  it('does not reject an absent job id', () => {
+    const { producer } = build();
+    expect(() => producer.buildJobOptions(JOB.Broadcast, {})).not.toThrow();
+  });
+
   it('enqueues on the queue derived from the job, with a stamped requestId', async () => {
     const { producer, registry, add } = build();
     await producer.enqueue(JOB.Broadcast, { recordId: 'r1' }, { requestId: 'req-123' });

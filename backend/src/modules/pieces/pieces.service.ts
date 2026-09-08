@@ -8,6 +8,7 @@ import { TransactionRunner } from '../../common/database/transaction-runner';
 import { DomainEventBus } from '../../common/events/domain-event-bus';
 import { DomainEventType } from '../../common/events/domain-events';
 import { JOB_ENQUEUER, type JobEnqueuer } from '../../common/queue/job-enqueuer.port';
+import { jobId } from '../../common/queue/job-id';
 import { JOB } from '../../common/queue/queue.constants';
 import { decodeCursor } from '../../common/pagination/cursor.util';
 import { buildCursorPage } from '../../common/pagination/pagination.helper';
@@ -337,16 +338,24 @@ export class PiecesService {
     await this.pieces.update(id, { status: PieceStatus.Scheduled, scheduledAt, slug });
 
     // Enqueue a delayed publish job (docs 02 §6.2): the low-latency path that
-    // fires at publishAt. jobId = pieceId so a reschedule replaces the pending
-    // job rather than stacking a second one. Best-effort — the per-minute
-    // reconciliation sweep is the durable guarantee, so a failed enqueue is
-    // logged and swallowed, never failing the schedule request.
+    // fires at publishAt. The id is derived from the piece so a reschedule cannot
+    // stack a second job. It does NOT reschedule the pending one: BullMQ treats
+    // `add` with an existing id as a no-op and keeps the ORIGINAL delay (verified
+    // against 5.79.2 — an earlier comment here claimed it replaced the job). That
+    // is safe rather than merely tolerable, because a job firing at the old,
+    // earlier time finds `scheduledAt` in the future and {@link
+    // publishScheduledById} no-ops; the per-minute reconciliation sweep then
+    // publishes at the new time. The sweep is the durable guarantee either way,
+    // so a failed enqueue is logged and swallowed, never failing the request.
     if (this.jobs !== undefined) {
       try {
         await this.jobs.enqueue(
           JOB.PublishOne,
           { pieceId: id },
-          { jobId: `publish:${id}`, delayMs: Math.max(0, scheduledAt.getTime() - Date.now()) },
+          {
+            jobId: jobId(JOB.PublishOne, id),
+            delayMs: Math.max(0, scheduledAt.getTime() - Date.now()),
+          },
         );
       } catch (error) {
         this.logger.warn(

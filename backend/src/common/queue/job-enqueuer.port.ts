@@ -8,9 +8,16 @@ import type { JobPayloads } from './job-payloads';
  */
 export interface EnqueueOptions {
   /**
-   * Deterministic job id for idempotent enqueue (BullMQ de-dupes by id while a
-   * job with that id exists). `scheduled-publish` uses `pieceId` so a reschedule
-   * replaces the pending job instead of stacking a second one (docs 02 §6.2).
+   * Deterministic job id for idempotent enqueue: while a job with this id exists,
+   * BullMQ ignores further `add`s for it — it returns the existing job and keeps
+   * the original payload and delay, so this de-duplicates but never *updates* a
+   * pending job. `scheduled-publish` derives it from the piece id so a reschedule
+   * cannot stack a second job (docs 02 §6.2).
+   *
+   * **Build it with `jobId()` from `common/queue/job-id`, never by hand** — BullMQ
+   * rejects ids containing `:` or consisting only of digits, and it does so inside
+   * `Queue.add`, which every producer spec mocks. Two hand-built ids shipped that
+   * way and threw only in production.
    */
   jobId?: string;
   /** Delay before the job becomes eligible to run (delayed jobs). */

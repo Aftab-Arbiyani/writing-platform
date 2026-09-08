@@ -7,6 +7,7 @@ import {
   type PieceArchivedEvent,
   type PiecePublishedEvent,
 } from '../../common/events/domain-events';
+import { jobId } from '../../common/queue/job-id';
 import { JOB } from '../../common/queue/queue.constants';
 import { FEED_CACHE_KEYS } from '../../modules/feed/feed-cache.service';
 import { QueueProducer } from '../queue/queue-producer.service';
@@ -55,7 +56,7 @@ export class EventBridgeService implements OnModuleInit {
       JOB.CacheInvalidate,
       { keys: DISCOVERY_TRENDING_KEYS },
       // Stable id + short delay coalesces a publish burst into one invalidation.
-      { jobId: 'cache-invalidate:discovery', delayMs: 2_000 },
+      { jobId: jobId(JOB.CacheInvalidate, 'discovery'), delayMs: 2_000 },
     );
   }
 }

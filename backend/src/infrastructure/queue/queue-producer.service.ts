@@ -5,6 +5,7 @@ import type { JobsOptions } from 'bullmq';
 
 import { infrastructureConfig } from '../../config/infrastructure.config';
 import type { EnqueueOptions, JobEnqueuer } from '../../common/queue/job-enqueuer.port';
+import { assertValidJobId } from '../../common/queue/job-id';
 import { JOB_QUEUE, JOB_RETRY, type JobPayloads } from '../../common/queue/job-payloads';
 import type { JobName } from '../../common/queue/queue.constants';
 import { QueueRegistry } from './queue-registry.service';
@@ -48,6 +49,13 @@ export class QueueProducer implements JobEnqueuer {
    * shares a queue with jobs that have different policies.
    */
   buildJobOptions(job: JobName, options: EnqueueOptions): JobsOptions {
+    // BullMQ validates a custom id inside `Queue.add`, which every producer spec
+    // mocks — so two colon-bearing ids shipped and threw only in production
+    // (see common/queue/job-id.ts). Asserting here moves the check in front of
+    // the mock, where the existing specs can see it.
+    if (options.jobId !== undefined) {
+      assertValidJobId(options.jobId);
+    }
     const policy = this.config.policies[JOB_QUEUE[job]];
     const override = JOB_RETRY[job] ?? {};
     return {
