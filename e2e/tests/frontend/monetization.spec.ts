@@ -333,15 +333,28 @@ test.describe('@phase4 frontend monetization', () => {
     );
   });
 
-  test('usage renders one allowance card per tool, with an accessible bar', async ({ page }) => {
+  test('usage renders one allowance card per tool, uncapped on this stack', async ({ page }) => {
     // D5 replaced three token windows with one card per writing tool. The labels are the SERVER's
     // (`AI_QUOTA_RULES`), which is why they are asserted by name rather than by position.
+    //
+    // **Uncapped, and not by accident.** `e2e-fixtures.seed.ts` sets all three allowance keys to
+    // `0` (= unlimited) on the free plan for this stack, because the suite runs far more Polish
+    // round-trips than any real plan allows and would otherwise 429 in *arrange* — the B4-1 /
+    // B6 defect shape. An unlimited allowance deliberately draws NO progress bar, so asserting
+    // one here fails against correct product behaviour. This asserts the rendering that stack
+    // actually produces.
+    //
+    // ⚠️ **Coverage gap, recorded rather than hidden:** the bar's ARIA values
+    // (`expectAllowanceBar`) are therefore never exercised in a browser. Restoring that needs a
+    // writer with a FINITE allowance, and an entitlement override cannot supply one —
+    // `EntitlementService.getLimits` reads the plan definition only and ignores overrides
+    // entirely. It would take a writer on a paid tier, since the seed patches `free` alone.
     const usage = new UsagePage(page);
     await usage.goto();
     await usage.expectResolved();
-    await usage.expectAllowanceBar('Polish');
-    await usage.expectAllowanceBar('Manuscript feedback');
-    await usage.expectAllowanceBar('Story analyses');
+    await usage.expectUncapped('Polish');
+    await usage.expectUncapped('Manuscript feedback');
+    await usage.expectUncapped('Story analyses');
   });
 
   test('billing history opens all four ledgers, empty rather than errored', async ({ page }) => {

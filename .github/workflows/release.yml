@@ -50,7 +50,7 @@ jobs:
       HAS_COSIGN: ${{ secrets.COSIGN_KEY != '' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4 # tag: existing repo convention for actions/*
+        uses: actions/checkout@v5 # tag: existing repo convention for actions/*
 
       # Derive the semver, short sha, and build time once — shared by tags,
       # build-args, and the /version metadata baked into the image.
@@ -132,7 +132,7 @@ jobs:
       REGISTRY: ghcr.io
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0 # release-note diffing needs full tag history
 

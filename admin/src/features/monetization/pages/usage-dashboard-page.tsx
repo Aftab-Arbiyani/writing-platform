@@ -1,6 +1,6 @@
 import { QCard, QSectionHeader } from '@qalam/ui';
 import { Table, type TableColumnsType } from 'antd';
-import { CalendarRange, CircleDollarSign, Coins, Cpu } from 'lucide-react';
+import { CalendarRange, CircleDollarSign, Cpu } from 'lucide-react';
 import type { ReactElement } from 'react';
 
 import { EmptyState } from '@/components/empty-state';
@@ -64,7 +64,7 @@ export function UsageDashboardPage(): ReactElement {
     <PageContainer>
       <PageHeader
         title="AI usage & cost"
-        description="Totalled from the credit ledger's AI-usage entries, attributed per feature."
+        description="Totalled from the AI usage log, attributed per feature."
       />
 
       <AsyncSection
@@ -83,18 +83,12 @@ export function UsageDashboardPage(): ReactElement {
             />
           ) : (
             <div className="flex flex-col gap-6">
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 <StatCard
                   label="Total tokens"
                   value={usage.totalTokens.toLocaleString()}
                   icon={Cpu}
                   hint="Input + output across all features"
-                />
-                <StatCard
-                  label="Credits consumed"
-                  value={usage.totalCreditsConsumed.toLocaleString()}
-                  icon={Coins}
-                  hint="Debited from user wallets"
                 />
                 <StatCard
                   label="Total cost"

@@ -68,7 +68,6 @@ describe('subscriptionsAreEmpty', () => {
 describe('usageIsEmpty', () => {
   const usage = (over: Partial<UsageAnalytics> = {}): UsageAnalytics => ({
     totalTokens: 0,
-    totalCreditsConsumed: 0,
     totalCostUsd: 0,
     last30dCostUsd: 0,
     byFeature: [],

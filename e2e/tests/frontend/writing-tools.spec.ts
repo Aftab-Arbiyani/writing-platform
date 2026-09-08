@@ -31,6 +31,21 @@ const AI_WRITING = 'ai_writing';
 const STORY_INTELLIGENCE = 'story_intelligence';
 
 /**
+ * The five story-analysis feature flags one "Map this story" run spends, in the order the server
+ * runs them. Written out rather than derived from `@qalam/shared`: the suite asserts against the
+ * flag keys the server is expected to SEED, and importing the same helper both sides use would let
+ * them move together and prove nothing — the rule the hardcoded price in `monetization.spec.ts`
+ * follows for the same reason.
+ */
+const STORY_ANALYSIS_FLAGS = [
+  'feature.ai.characterAnalysis.enabled',
+  'feature.ai.plotAnalysis.enabled',
+  'feature.ai.worldBuilding.enabled',
+  'feature.ai.styleAnalysis.enabled',
+  'feature.ai.storyTimeline.enabled',
+];
+
+/**
  * The in-editor **Writing tools** drawer (D5, was the AI assistant panel) — Polish, Manuscript
  * feedback and Story Map, mounted by the `/write` route.
  *
@@ -277,7 +292,12 @@ test.describe('@phase4 frontend writing tools', () => {
      */
     test('Map this story starts a run and reports its progress', async ({ page, api, data }) => {
       await asEntitledWriter({ page, api, data }, [AI_WRITING, STORY_INTELLIGENCE], async () => {
-        await withAiFeatures([], 'writing tools: map this story', async () => {
+        // One run spends FIVE analyses and the server checks each kind's own feature flag before
+        // it calls the model, so an empty flag set fails on the first one — the browser run that
+        // found this showed `The AI feature "character_analysis" is not enabled.` in an alert
+        // exactly where the step counter should have been. The drawer's tab gate is an
+        // ENTITLEMENT (`story_intelligence`); these are the FLAGS, and both have to be up.
+        await withAiFeatures(STORY_ANALYSIS_FLAGS, 'writing tools: map this story', async () => {
           const editor = new EditorPage(page);
           await editor.goto();
           await editor.writePiece({

@@ -91,14 +91,12 @@ const SUBS: SubscriptionAnalytics = {
 
 const EMPTY_USAGE: UsageAnalytics = {
   totalTokens: 0,
-  totalCreditsConsumed: 0,
   totalCostUsd: 0,
   last30dCostUsd: 0,
   byFeature: [],
 };
 const USAGE: UsageAnalytics = {
   totalTokens: 4_500_000,
-  totalCreditsConsumed: 12_500,
   totalCostUsd: 124.5,
   last30dCostUsd: 31.2,
   byFeature: [

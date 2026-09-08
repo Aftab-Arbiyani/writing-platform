@@ -53,7 +53,7 @@ jobs:
       DEPLOY_DIR: ${{ vars.DEPLOY_DIR || '/opt/qalam' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Resolve rollback target
         id: meta

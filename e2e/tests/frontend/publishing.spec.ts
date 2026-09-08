@@ -130,7 +130,12 @@ test.describe('@phase4 frontend publishing — review, publish, versions', () =>
 
     // `notes`, plural — mobile sent `note`, which passed only because nothing ever set it (P-5).
     await publishing.requestChanges('Tighten the closing couplet.');
-    await expect(page.getByText('Tighten the closing couplet.')).toBeVisible();
+    // Scoped to the notes list on purpose. A bare `getByText` matches TWICE — once in the
+    // rendered `<bdi>` and once in the textarea, which keeps the submitted text as its value —
+    // and Playwright's strict mode fails a two-match locator rather than picking one. The
+    // assertion is about what a reviewer's note LOOKS like once recorded, so the list is the
+    // element that answers it; the textarea matching is an artefact of the form not clearing.
+    await expect(page.locator('dl').getByText('Tighten the closing couplet.')).toBeVisible();
   });
 
   test('a version is captured and reverted', async ({ page, api, data }) => {

@@ -61,7 +61,7 @@ jobs:
       DEPLOY_DIR: ${{ vars.DEPLOY_DIR || '/opt/qalam' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       # Resolve the promotion target. On a tag push this reduces to the
       # `sha-<short>` image release.yml built for the very same commit.

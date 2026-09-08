@@ -52,7 +52,9 @@ export const MONETIZATION_ROUTES: readonly MonetizationRoute[] = [
     key: 'actions',
     path: '/billing/actions',
     heading: 'Billing actions',
-    populatedMarker: 'Adjust credits',
+    // 'Adjust credits' until D5 deleted `CreditAdjustForm` with the credit economy. The refund
+    // form is the only action left on this route, so it is what proves the route rendered.
+    populatedMarker: 'Refund a payment',
   },
   // A1c — the dashboards. Each can legitimately be empty on a young install.
   {

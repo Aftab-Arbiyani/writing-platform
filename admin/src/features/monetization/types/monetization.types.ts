@@ -270,10 +270,18 @@ export interface SubscriptionAnalytics {
   last30d: { created: number; upgraded: number; downgraded: number; canceled: number };
 }
 
-/** `GET /admin/monetization/analytics/usage` — AI tokens, credits and cost. */
+/**
+ * `GET /admin/monetization/analytics/usage` — AI tokens and cost.
+ *
+ * `totalCreditsConsumed` was here until D5, and its removal is worth a note because of HOW it
+ * survived. This interface is declared locally rather than imported from `@qalam/api-types`, so
+ * when B4 re-pointed the server's `usage()` at `ai_usage_logs` and stopped sending the field,
+ * nothing failed to compile — and the page went on calling `.toLocaleString()` on `undefined`,
+ * crashing the dashboard. Every admin unit test kept passing because their fixtures SUPPLIED the
+ * field the server no longer sent. A browser found it; 387 unit tests could not.
+ */
 export interface UsageAnalytics {
   totalTokens: number;
-  totalCreditsConsumed: number;
   totalCostUsd: number;
   last30dCostUsd: number;
   byFeature: Array<{ feature: string; tokens: number; costUsd: number }>;

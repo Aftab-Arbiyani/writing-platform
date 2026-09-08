@@ -31,7 +31,7 @@ jobs:
       security-events: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       # SHA-pinned (P7.2 supply-chain standard for security-sensitive actions).
       - name: Initialize CodeQL
