@@ -4146,6 +4146,36 @@ counted. `CI` is the row that proved it from the other direction — it was size
 weeks while what it actually needed was a DEFINITION, and no amount of estimating would have
 produced one.
 
+#### VIS-DRIFT — a passing snapshot is never re-minted (found 2026-09-08, cleared by a full re-mint)
+
+`playwright.config.ts` sets `maxDiffPixelRatio: 0.02`, and `--update-snapshots` rewrites only the
+baselines that FAIL. Those two facts together mean a real product change that lands under 2% of a
+shot's pixels is invisible **twice over**: verification passes it, and a re-mint declines to rewrite
+it. It then persists indefinitely, and every later review reports the file as "identical".
+
+**Measured, not inferred.** The live app answers six settings sections —
+`["Profile","Account","Notifications","Appearance","Safety","Billing"]` — while all four committed
+`frontend-settings-blocks` baselines carried **seven**, the extra one being the AI section D5 deleted
+(`settings-layout.tsx:64`). The nav delta is ≈0.9 % of a 1280×776 shot. `frontend-settings` was worse
+and older: **four** entries, predating `VITE_ENABLE_COLLABORATION`/`_MONETIZATION` altogether, hidden
+because that page is 1597 px tall so even a two-entry difference is under 1 %.
+
+**The hazard scales with page height**, which is why `fullPage` shots are where this hides. The
+webkit `settings-blocks` file was corrected only by accident in the 2026-09-08 mint: its height also
+moved 8 px, and a SIZE mismatch can never pass a comparison.
+
+Owner decision (2026-09-08): **the 2 % ratio stays** — it was chosen against measured drift (
+`story-publishing` once moved 2.25 % between two mints of one commit), and tightening it globally
+buys flaky failures. The debt was cleared instead by deleting every baseline and re-minting from
+scratch, since a MISSING baseline is always written and so bypasses the threshold entirely. Moving
+the remaining tall `fullPage` shots to viewport captures — the treatment `comments`, `suggestions`
+and `collaborators` already got for drift — is the durable fix and is **not** scheduled here.
+
+**The lesson for any future baseline review:** "byte-identical" answers only "was this file
+rewritten", never "does this file still depict the product". Three separate meanings have now hidden
+behind that word — no screenshot was taken, the test failed before shooting, and the shot differed
+but under threshold.
+
 ### 3.22d Not defects — recorded so a future row does not size them as work
 
 > **Four rows were moved here on 2026-09-01, by owner decision, and the distinction matters more than
