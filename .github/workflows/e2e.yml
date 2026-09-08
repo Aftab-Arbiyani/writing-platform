@@ -19,6 +19,11 @@ concurrency:
 jobs:
   e2e:
     runs-on: ubuntu-latest
+    # The suite itself takes ~35s; the rest is install + build. This ceiling exists because
+    # the job has no other defence against a HANG: without it a stuck run inherits GitHub's
+    # 6-hour default, which is exactly what happened on 2026-09-08 (50+ minutes on a step
+    # whose tests had already finished). Fail in twenty minutes and say so.
+    timeout-minutes: 20
     services:
       postgres:
         image: postgres:16-alpine
@@ -93,5 +98,20 @@ jobs:
       - name: Run migrations
         run: pnpm --filter backend migration:run
 
+      # **The suite cannot pass without this, and it was never here.** The e2e specs assume a
+      # seeded instance — roles and permissions above all, since almost every spec authenticates
+      # and then hits a guarded route. Measured against a fresh database on 2026-09-08:
+      # unseeded 99 failed / 52 passed, seeded 148 passed / 3 failed. `web-e2e.yml` has always
+      # seeded (`migrate, seed, start`); this workflow simply never did, and the failure it
+      # caused was invisible because the job died at the migration step first.
+      - name: Seed the instance
+        run: pnpm --filter backend seed
+
+      # `test:e2e` carries `--forceExit`, and that is a MITIGATION rather than a fix — worth
+      # knowing before anyone removes it. Every spec closes its app in `afterAll`, the tests all
+      # complete in ~35s, and then Jest cannot exit: something in a library (an ioredis or pg
+      # socket, most likely) outlives `app.close()`. `--detectOpenHandles` ran the full suite and
+      # named NOTHING, so the handle is not tracked by async_hooks and there is no obvious thread
+      # to pull. Until someone finds it, `--forceExit` turns a six-hour stall into a verdict.
       - name: E2E tests
         run: pnpm --filter backend test:e2e
