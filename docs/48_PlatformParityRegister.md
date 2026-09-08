@@ -4176,6 +4176,29 @@ rewritten", never "does this file still depict the product". Three separate mean
 behind that word — no screenshot was taken, the test failed before shooting, and the shot differed
 but under threshold.
 
+**What the clean re-mint actually found** (run `34226254604`, all 104 written as
+`A snapshot doesn't exist … writing actual`; **71 of 104 differed from the files they replaced**):
+
+| Finding                                                                                                                                                                                                                                                                          | Evidence                                                                           |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `admin-billing-actions` ×4 still showed the **"Adjust credits" card D5 deleted** (14.4 %). The page renders only `<RefundForm />` — `billing-actions-page.tsx:30`                                                                                                                | old vs new crop; component read                                                    |
+| `frontend-settings-blocks` ×4 still carried the **AI settings section** (0.89 %); the live app answers six sections                                                                                                                                                              | `NAVPROBE … ["Profile","Account","Notifications","Appearance","Safety","Billing"]` |
+| `frontend-story-publishing` ×4 bakes a **wall-clock date** — `Submitted Aug 31, 2026` in the old file, `Sep 8, 2026` in the new. `Submitted` sits in a `<dl>`, so the test's `listitem` mask never covered it. **It drifts daily and stays under 2 %, which is why it survived** | both crops                                                                         |
+| the old `frontend-story-publishing` also held a **`fullPage` scroll-and-stitch artifact** — the sticky search header duplicated mid-page. Most of its 7.5 %                                                                                                                      | old crop                                                                           |
+| `admin-users` ×2 differed 33 %; the new shot is the deterministic one (search filtered to `e2e_writer`, `1–1 of 1`, one masked row)                                                                                                                                              | new crop                                                                           |
+
+The wall-clock date is the strongest argument for **keeping** the 2 % ratio: tighten it and that
+baseline fails every day. It is also the strongest argument for masking `Submitted` or freezing the
+clock, which is the real fix and is **not** done here.
+
+⚠️ **One anomaly is NOT explained, and is recorded rather than guessed at.** `admin-billing-actions`
+compared EQUAL in the previous mint (`34217079577`, which rewrote only 4 files and passed all 7 admin
+tests per project) against a baseline showing a card the served bundle cannot render. Both runs served
+the same build — `billing-actions-DY5KXtZC.js` — and both executed the test. A 14 % difference cannot
+pass a 2 % gate, so something about that comparison did not happen as the logs describe. No mechanism
+is claimed here. What is certain is that deleting the file bypassed it, because a MISSING snapshot is
+always written; if this recurs, that anomaly is the thing to chase, not the threshold.
+
 ### 3.22d Not defects — recorded so a future row does not size them as work
 
 > **Four rows were moved here on 2026-09-01, by owner decision, and the distinction matters more than
