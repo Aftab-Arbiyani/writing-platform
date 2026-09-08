@@ -3,6 +3,7 @@ import { Role } from '@qalam/shared';
 import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 
+import { NotificationsService } from '../src/modules/notifications/notifications.service';
 import { RedisService } from '../src/redis/redis.service';
 import { RolesService } from '../src/modules/users/roles.service';
 import { createTestApp } from './utils/create-test-app';
@@ -447,7 +448,17 @@ describe('Notifications (e2e)', () => {
         .expect(201);
       expect(created.body.data.deliveredCount).toBeGreaterThan(0);
 
-      // The recipient received a system notification.
+      // Fan-out is ASYNC whenever the queue is wired, and this app registers
+      // every queue — so the request only enqueues, and `deliveredCount` above is
+      // the eligible count, not a delivery receipt. No worker runs in-process, so
+      // the inbox is legitimately empty at this point; asserting it directly here
+      // is what made this spec fail for years. Drive the worker's own entry point
+      // instead, which is exactly what the `notifications` processor calls.
+      const service = app.get(NotificationsService);
+      const delivered = await service.fanOutSystemNotification(created.body.data.id);
+      expect(delivered).toBeGreaterThan(0);
+
+      // The recipient received a system notification once fan-out has run.
       expect(types(await inbox(recipient.token, '?limit=50'))).toContain('system');
     });
   });
