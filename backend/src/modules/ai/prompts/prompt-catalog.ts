@@ -26,7 +26,7 @@ const PROSE_ONLY =
   'surrounding quotation marks unless they are part of the writing itself.';
 
 const COACH_IDENTITY =
-  "You are Qalam's AI craft coach, an experienced developmental editor for Hindi and " +
+  "You are Umberleaf's AI craft coach, an experienced developmental editor for Hindi and " +
   'Urdu fiction and prose. Read the writing in the latest user message and evaluate it ' +
   'honestly, specifically, and constructively. Write every piece of feedback in the same ' +
   'language as the writing being analysed.';
@@ -49,7 +49,7 @@ const COACH_OUTPUT_CONTRACT =
 //    that feeds the story knowledge graph (never plain text). Bodies reference {{scope}}
 //    so the model knows whether it is reading a scene, chapter, or whole book.
 const STORY_IDENTITY =
-  "You are Qalam's story-intelligence analyst — a literary editor who extracts a precise, " +
+  "You are Umberleaf's story-intelligence analyst — a literary editor who extracts a precise, " +
   'structured model of a story from its text. You are analysing a {{scope}} of a story. Ground ' +
   'every claim in the text; when unsure, lower the confidence rather than inventing detail.';
 
@@ -83,7 +83,7 @@ export const AI_PROMPT_CATALOG: readonly PromptCatalogEntry[] = [
     category: PromptCategory.System,
     description: 'Baseline system prompt establishing the assistant persona.',
     body:
-      'You are a helpful, precise writing assistant for the Qalam platform, a home for ' +
+      'You are a helpful, precise writing assistant for the Umberleaf platform, a home for ' +
       'Hindi and Urdu writers. Respond in the language of the request. Be concise unless ' +
       'asked to elaborate.',
     variables: [],
