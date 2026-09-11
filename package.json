@@ -20,7 +20,9 @@
     "e2e:reset": "e2e/scripts/stack-up.sh --reset",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prepare": "husky"
+    "prepare": "husky",
+    "brand:sync": "node scripts/brand/sync.mjs",
+    "brand:check": "node scripts/brand/sync.mjs --check"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.6.0",
