@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
-import { PaymentProvider, PaymentStatus, PurchaseKind } from '@qalam/shared';
+import { PaymentProvider, PaymentStatus, PurchaseKind } from '@umberleaf/shared';
 
 import { paymentsConfig } from '../../../../config/payments.config';
 import { PaymentProviderNotConfiguredException } from '../../monetization.exceptions';
@@ -19,7 +19,7 @@ import type {
 /**
  * The **manual** payment adapter (AF5) — a provider that completes a charge without moving money.
  *
- * `PaymentProvider.Manual` has been in `@qalam/shared` since AF5 shipped, documented as covering
+ * `PaymentProvider.Manual` has been in `@umberleaf/shared` since AF5 shipped, documented as covering
  * "admin/comp grants", with **no implementation** — so the registry answered
  * `PAYMENT_PROVIDER_NOT_CONFIGURED` for it exactly like the three key-gated real providers. That gap
  * is what made "subscribe → entitlement granted" unassertable in any environment without third-party

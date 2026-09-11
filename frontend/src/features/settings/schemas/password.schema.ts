@@ -1,4 +1,4 @@
-import { PASSWORD_MAX, PASSWORD_MIN } from '@qalam/shared';
+import { PASSWORD_MAX, PASSWORD_MIN } from '@umberleaf/shared';
 import { z } from 'zod';
 
 /**

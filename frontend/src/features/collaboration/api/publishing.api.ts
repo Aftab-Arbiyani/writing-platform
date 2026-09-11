@@ -1,4 +1,4 @@
-import type { Visibility } from '@qalam/shared';
+import type { Visibility } from '@umberleaf/shared';
 
 import { get, patch, post } from '@/lib/api-client';
 

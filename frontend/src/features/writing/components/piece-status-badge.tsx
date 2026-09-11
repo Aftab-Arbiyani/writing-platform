@@ -1,5 +1,5 @@
-import { PieceStatus } from '@qalam/shared';
-import { QTag, type QTagColor } from '@qalam/ui';
+import { PieceStatus } from '@umberleaf/shared';
+import { QTag, type QTagColor } from '@umberleaf/ui';
 import type { ReactElement } from 'react';
 
 const MAP: Record<PieceStatus, { label: string; color: QTagColor }> = {

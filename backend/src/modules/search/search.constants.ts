@@ -1,6 +1,6 @@
 /**
  * Module-internal knobs for search (E8). Product-facing bounds (min/max query
- * length, autocomplete cap, recent-search cap) live in `@qalam/shared` limits;
+ * length, autocomplete cap, recent-search cap) live in `@umberleaf/shared` limits;
  * these are implementation tuning that no client needs to know.
  */
 

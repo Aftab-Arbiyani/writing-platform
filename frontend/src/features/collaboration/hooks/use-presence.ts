@@ -1,4 +1,4 @@
-import { PRESENCE_TTL_SECONDS, PresenceState } from '@qalam/shared';
+import { PRESENCE_TTL_SECONDS, PresenceState } from '@umberleaf/shared';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 

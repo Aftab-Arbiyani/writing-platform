@@ -1,4 +1,4 @@
-import { RankingSignal, RetrievalSource } from '@qalam/shared';
+import { RankingSignal, RetrievalSource } from '@umberleaf/shared';
 
 import type { SettingsService } from '../settings';
 import type { SettingsActor } from '../settings/settings.util';

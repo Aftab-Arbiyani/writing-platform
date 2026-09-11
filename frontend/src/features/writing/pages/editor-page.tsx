@@ -1,4 +1,4 @@
-import { QButton, QErrorState, QSelect, QSpinner } from '@qalam/ui';
+import { QButton, QErrorState, QSelect, QSpinner } from '@umberleaf/ui';
 import { EditorContent, useEditor } from '@tiptap/react';
 import { ArrowLeft, Eye, MoreHorizontal, NotebookPen, Send } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState, type ReactElement, type ReactNode } from 'react';

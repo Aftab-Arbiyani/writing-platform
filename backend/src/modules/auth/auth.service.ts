@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { UserStatus } from '@qalam/shared';
+import { UserStatus } from '@umberleaf/shared';
 import { QueryFailedError } from 'typeorm';
 
 import { TransactionRunner } from '../../common/database/transaction-runner';

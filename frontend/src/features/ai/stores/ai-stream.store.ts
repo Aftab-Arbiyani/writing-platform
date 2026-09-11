@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { AiFinishReason, AiProvider, AiStreamEvent, AiTokenUsage } from '@qalam/api-types';
+import type { AiFinishReason, AiProvider, AiStreamEvent, AiTokenUsage } from '@umberleaf/api-types';
 
 /**
  * Transient AI-streaming UI state (AF1). Streamed tokens are CLIENT/UI state — the

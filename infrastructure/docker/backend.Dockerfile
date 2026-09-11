@@ -48,7 +48,7 @@ RUN pnpm install --frozen-lockfile
 # docs, env files, and specs never enter the context).
 COPY . .
 
-# Build the backend and (via turbo's ^build dependency) every @qalam/* package
+# Build the backend and (via turbo's ^build dependency) every @umberleaf/* package
 # it depends on, in the right order.
 RUN pnpm turbo build --filter backend
 

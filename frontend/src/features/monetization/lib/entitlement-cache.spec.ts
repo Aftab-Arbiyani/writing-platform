@@ -1,4 +1,4 @@
-import { EntitlementReason, EntitlementStatus, PlanTier, PremiumFeature } from '@qalam/shared';
+import { EntitlementReason, EntitlementStatus, PlanTier, PremiumFeature } from '@umberleaf/shared';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { STORAGE_KEYS } from '@/lib/constants';

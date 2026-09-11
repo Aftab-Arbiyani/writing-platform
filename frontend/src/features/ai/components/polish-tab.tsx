@@ -1,4 +1,4 @@
-import { QButton, QSelect, useToast } from '@qalam/ui';
+import { QButton, QSelect, useToast } from '@umberleaf/ui';
 import { Check, RefreshCw, Square, X } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
 

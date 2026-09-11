@@ -1,5 +1,5 @@
 /**
- * Maps `@qalam/shared` ERROR_CODES (and the client's own codes) to calm, admin-appropriate
+ * Maps `@umberleaf/shared` ERROR_CODES (and the client's own codes) to calm, admin-appropriate
  * messages. Branch on `code`, never the server `message` (docs/32 §2). Unknown codes fall back to a
  * neutral line — never leak a raw code or stack to an operator.
  */

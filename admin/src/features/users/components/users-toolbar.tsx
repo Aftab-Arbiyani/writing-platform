@@ -1,4 +1,4 @@
-import { QButton } from '@qalam/ui';
+import { QButton } from '@umberleaf/ui';
 import { Select } from 'antd';
 import { RefreshCw, SlidersHorizontal } from 'lucide-react';
 import type { ReactElement } from 'react';

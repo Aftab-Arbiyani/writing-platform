@@ -1,5 +1,5 @@
-import type { SemanticSearchRequest } from '@qalam/api-types';
-import { QEmptyState } from '@qalam/ui';
+import type { SemanticSearchRequest } from '@umberleaf/api-types';
+import { QEmptyState } from '@umberleaf/ui';
 import { SearchX } from 'lucide-react';
 import type { ReactElement } from 'react';
 

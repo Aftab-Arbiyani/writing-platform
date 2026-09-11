@@ -1,4 +1,4 @@
-import { PromotionType, Role } from '@qalam/shared';
+import { PromotionType, Role } from '@umberleaf/shared';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 

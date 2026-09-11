@@ -1,4 +1,4 @@
-/** App-level constants. Domain vocabulary (enums, limits, error codes) lives in @qalam/shared. */
+/** App-level constants. Domain vocabulary (enums, limits, error codes) lives in @umberleaf/shared. */
 
 export const APP_NAME = 'Qalam';
 

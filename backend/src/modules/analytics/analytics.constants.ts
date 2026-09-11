@@ -1,4 +1,4 @@
-import { AnalyticsPeriod } from '@qalam/shared';
+import { AnalyticsPeriod } from '@umberleaf/shared';
 
 /** Redis (DB 0) cache keys for the expensive computed reads. */
 export const ANALYTICS_CACHE_KEYS = {

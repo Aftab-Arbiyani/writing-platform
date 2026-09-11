@@ -1,4 +1,4 @@
-import { ThemePreference, Visibility } from '@qalam/shared';
+import { ThemePreference, Visibility } from '@umberleaf/shared';
 
 import type { UserSettings } from './entities/user-settings.entity';
 import type { UserSettingsRepository } from './user-settings.repository';

@@ -1,7 +1,7 @@
 /**
  * Wire types for the Audit Logs feature (A6), mirroring the E12.7 backend DTOs
  * (`backend/src/modules/audit/dto/audit-log.dto.ts`). Hand-authored until
- * `@qalam/api-types` regenerates — TODO(aftab): drop for generated types.
+ * `@umberleaf/api-types` regenerates — TODO(aftab): drop for generated types.
  */
 
 /** One audit-trail entry (backend AuditLogDto). */

@@ -1,5 +1,5 @@
 import { HttpStatus } from '@nestjs/common';
-import { ERROR_CODES, RetrievalIntent, RetrievalSource } from '@qalam/shared';
+import { ERROR_CODES, RetrievalIntent, RetrievalSource } from '@umberleaf/shared';
 
 import { AppException } from '../../common/exceptions/app.exception';
 import { ContextAssemblerService } from './context/context-assembler.service';

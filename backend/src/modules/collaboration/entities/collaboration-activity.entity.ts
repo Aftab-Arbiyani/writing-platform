@@ -6,7 +6,7 @@ import { QalamBaseEntity } from '../../../common/base/base.entity';
  * One event in a story's collaboration activity feed (AF6). Append-only in feel
  * (inserted once, never updated) though it extends {@link QalamBaseEntity} for a
  * time-ordered UUIDv7 id and `created_at`. `type` is an open catalogue string
- * (`CollaborationActivity` in @qalam/shared) so new event kinds land without a
+ * (`CollaborationActivity` in @umberleaf/shared) so new event kinds land without a
  * migration; `metadata` carries per-event context (role changed to, comment id,
  * etc.). `storyId` / `actorId` are plain uuids (no FK — module isolation).
  */

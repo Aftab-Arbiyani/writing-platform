@@ -1,5 +1,10 @@
 import { Column, Entity, Index } from 'typeorm';
-import type { BillingInterval, PaymentProvider, PlanTier, SubscriptionStatus } from '@qalam/shared';
+import type {
+  BillingInterval,
+  PaymentProvider,
+  PlanTier,
+  SubscriptionStatus,
+} from '@umberleaf/shared';
 
 import { QalamBaseEntity } from '../../../common/base/base.entity';
 

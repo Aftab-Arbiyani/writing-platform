@@ -1,6 +1,6 @@
 import { Inject, Injectable, Optional } from '@nestjs/common';
-import { AiSafetyStage, AiSafetyVerdict } from '@qalam/shared';
-import type { AiFeature } from '@qalam/shared';
+import { AiSafetyStage, AiSafetyVerdict } from '@umberleaf/shared';
+import type { AiFeature } from '@umberleaf/shared';
 
 import { AiInputBlockedException, AiOutputBlockedException } from '../ai.exceptions';
 import { AI_SAFETY_HOOKS } from './safety.types';

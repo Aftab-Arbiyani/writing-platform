@@ -1,4 +1,4 @@
-import type { AiFinishReason, AiMessageRole, AiTokenUsage } from '@qalam/shared';
+import type { AiFinishReason, AiMessageRole, AiTokenUsage } from '@umberleaf/shared';
 
 /**
  * The provider-facing types (AF1). These are the ONLY shapes an adapter sees —

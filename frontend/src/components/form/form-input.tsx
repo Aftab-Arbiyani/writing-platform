@@ -1,4 +1,4 @@
-import { QInput, type QInputProps } from '@qalam/ui';
+import { QInput, type QInputProps } from '@umberleaf/ui';
 import { Controller, type Control, type FieldPath, type FieldValues } from 'react-hook-form';
 
 /**

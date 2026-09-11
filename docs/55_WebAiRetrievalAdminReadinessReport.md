@@ -71,7 +71,7 @@ already used, leaving latency and context tokens as whole units where a fraction
 newest-first is a _good_ design — it keeps a 90-day window bounded. But `totalQueries` is `rows.length`,
 so a busy install reports exactly 5,000 requests and every derived rate describes only the newest slice,
 and **a client could not detect it**. `truncated: boolean` was added to `SearchAnalyticsData`, the DTO
-and `@qalam/api-types`; the dashboard renders a banner naming the sample size. This is the one place A3
+and `@umberleaf/api-types`; the dashboard renders a banner naming the sample size. This is the one place A3
 extended a contract, and it was extended because an honest UI was otherwise impossible, not for
 convenience.
 
@@ -97,10 +97,10 @@ of **0 disables a signal** rather than treating it neutrally, which the section 
 **The config form submits a full snapshot, not a diff.** The endpoint takes a partial patch, but the read
 always answers with every source and every signal, so a snapshot is both simpler and safer: an untouched
 weight cannot be lost to an omitted key, and what the operator sees is what the next request plans with.
-The form schema is therefore _total_ over both enums — a signal added to `@qalam/shared` fails the build
+The form schema is therefore _total_ over both enums — a signal added to `@umberleaf/shared` fails the build
 here rather than rendering an unlabelled input.
 
-**Bounds live in `@qalam/shared`, once.** `RETRIEVAL_CONFIG_BOUNDS` (plus
+**Bounds live in `@umberleaf/shared`, once.** `RETRIEVAL_CONFIG_BOUNDS` (plus
 `SEARCH_ANALYTICS_DEFAULT_WINDOW_DAYS`) is read by `UpdateRetrievalConfigDto`, the controller's window
 default and the admin form schema. Before A3 the DTO hardcoded four ranges and documented a fifth
 ("0..1") that it did not enforce. No control can now offer a value the route rejects, and a bound moves

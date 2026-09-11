@@ -1,4 +1,4 @@
-import { QButton, useToast } from '@qalam/ui';
+import { QButton, useToast } from '@umberleaf/ui';
 import { Undo2 } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
 

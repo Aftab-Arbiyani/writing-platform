@@ -1,4 +1,4 @@
-import { QEmptyState, QErrorState, QSkeleton } from '@qalam/ui';
+import { QEmptyState, QErrorState, QSkeleton } from '@umberleaf/ui';
 import { Mail } from 'lucide-react';
 import type { ReactElement } from 'react';
 

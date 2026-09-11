@@ -1,5 +1,5 @@
 import type { ConfigType } from '@nestjs/config';
-import { PaymentProvider, PaymentStatus, PurchaseKind } from '@qalam/shared';
+import { PaymentProvider, PaymentStatus, PurchaseKind } from '@umberleaf/shared';
 
 import type { paymentsConfig } from '../../../../config/payments.config';
 import { PaymentProviderNotConfiguredException } from '../../monetization.exceptions';

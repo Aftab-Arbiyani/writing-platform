@@ -1,8 +1,8 @@
 /**
  * Auth wire types (docs/32 §10). These mirror the frozen `v1` auth DTOs
- * (`backend/src/modules/auth/dto/*`). They live here because `@qalam/api-types` still ships
+ * (`backend/src/modules/auth/dto/*`). They live here because `@umberleaf/api-types` still ships
  * only the placeholder `AuthTokens` — once the backend emits `openapi.json` and
- * `@qalam/api-types` is regenerated, replace these with the generated types (CI guards drift,
+ * `@umberleaf/api-types` is regenerated, replace these with the generated types (CI guards drift,
  * docs/05 §10). The web app never receives `refreshToken` in the body (httpOnly cookie,
  * docs/13 §3.3); it is typed optional only to match the shared contract.
  */

@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { UpdateRetrievalAdminConfig } from '@qalam/api-types';
-import { PERMISSIONS, RankingSignal, RETRIEVAL_CONFIG_BOUNDS } from '@qalam/shared';
-import { QCard, QSectionHeader } from '@qalam/ui';
+import type { UpdateRetrievalAdminConfig } from '@umberleaf/api-types';
+import { PERMISSIONS, RankingSignal, RETRIEVAL_CONFIG_BOUNDS } from '@umberleaf/shared';
+import { QCard, QSectionHeader } from '@umberleaf/ui';
 import { App, Button, InputNumber, Switch } from 'antd';
 import { useEffect } from 'react';
 import type { ReactElement } from 'react';
@@ -34,7 +34,7 @@ const bounds = RETRIEVAL_CONFIG_BOUNDS;
  * with a positive weight (`weight > 0`), so zeroing one removes it from ranking and from the
  * explanations users see. The form says so rather than leaving an operator to discover it.
  *
- * Bounds come from `RETRIEVAL_CONFIG_BOUNDS` in `@qalam/shared` — the same constant the DTO
+ * Bounds come from `RETRIEVAL_CONFIG_BOUNDS` in `@umberleaf/shared` — the same constant the DTO
  * validates against — so no control here can offer a value the route refuses.
  */
 export function SearchConfigPage(): ReactElement {

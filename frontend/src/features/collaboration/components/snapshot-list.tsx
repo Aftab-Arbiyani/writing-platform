@@ -1,5 +1,5 @@
-import { POLICY_ACTIONS } from '@qalam/shared';
-import { QButton, QCard, QSkeleton, useConfirm, useToast } from '@qalam/ui';
+import { POLICY_ACTIONS } from '@umberleaf/shared';
+import { QButton, QCard, QSkeleton, useConfirm, useToast } from '@umberleaf/ui';
 import { Lock } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { useNavigate } from 'react-router';

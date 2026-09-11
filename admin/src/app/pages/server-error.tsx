@@ -1,4 +1,4 @@
-import { QErrorState } from '@qalam/ui';
+import { QErrorState } from '@umberleaf/ui';
 import type { ReactElement } from 'react';
 
 import { usePageTitle } from '@/hooks/use-page-title';

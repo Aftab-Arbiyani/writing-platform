@@ -1,4 +1,4 @@
-import { SearchSort, SearchType } from '@qalam/shared';
+import { SearchSort, SearchType } from '@umberleaf/shared';
 import { fireEvent, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 

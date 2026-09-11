@@ -14,7 +14,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiProduces, ApiTags } from '@nestjs/swagger';
-import { PERMISSIONS, PieceStatus, Role, UserStatus } from '@qalam/shared';
+import { PERMISSIONS, PieceStatus, Role, UserStatus } from '@umberleaf/shared';
 import type { Request, Response } from 'express';
 
 import { RateLimit } from '../../common/decorators/rate-limit.decorator';

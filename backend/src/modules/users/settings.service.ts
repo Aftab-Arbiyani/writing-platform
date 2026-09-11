@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ThemePreference, Visibility } from '@qalam/shared';
+import { ThemePreference, Visibility } from '@umberleaf/shared';
 
 import type { UpdateSettingsDto } from './dto/update-settings.dto';
 import type { SettingsResponseDto } from './dto/settings-response.dto';

@@ -1,4 +1,4 @@
-import { ReportReason, ReportSeverity } from '@qalam/shared';
+import { ReportReason, ReportSeverity } from '@umberleaf/shared';
 
 import { AiSafetyDetector } from './ai-safety.detector';
 import { ContentSafetyService } from './content-safety.service';

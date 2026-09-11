@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { QButton, QInput } from '@qalam/ui';
+import { QButton, QInput } from '@umberleaf/ui';
 import { Checkbox } from 'antd';
 import { Eye, EyeOff } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
@@ -14,7 +14,7 @@ import { loginSchema, type LoginFormValues } from '../schemas/login.schema';
  * Admin sign-in form (docs/27, docs/33) — RHF + Zod, labelled `QInput`s with a11y error wiring, a
  * password visibility toggle (`aria-pressed`), a remember-me checkbox, and a loading submit. Server
  * errors (bad credentials, suspended, …) surface as a single form-level alert mapped from the
- * `@qalam/shared` error code. The token/session handling lives in `useLogin`; redirect is `onSuccess`.
+ * `@umberleaf/shared` error code. The token/session handling lives in `useLogin`; redirect is `onSuccess`.
  */
 export interface LoginFormProps {
   onSuccess: () => void;

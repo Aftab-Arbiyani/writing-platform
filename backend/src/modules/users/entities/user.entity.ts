@@ -1,4 +1,4 @@
-import { UserStatus } from '@qalam/shared';
+import { UserStatus } from '@umberleaf/shared';
 import { Check, Column, Entity, Index } from 'typeorm';
 
 import { QalamAuditEntity } from '../../../common/base/audit.entity';

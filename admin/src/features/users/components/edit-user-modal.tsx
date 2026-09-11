@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ROLE_RANK } from '@qalam/shared';
-import { QButton, useToast } from '@qalam/ui';
+import { ROLE_RANK } from '@umberleaf/shared';
+import { QButton, useToast } from '@umberleaf/ui';
 import { Input, Select, Switch } from 'antd';
 import type { ReactElement } from 'react';
 import { Controller, useForm } from 'react-hook-form';

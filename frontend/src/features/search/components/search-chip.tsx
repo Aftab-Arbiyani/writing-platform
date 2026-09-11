@@ -1,4 +1,4 @@
-import { cn } from '@qalam/ui';
+import { cn } from '@umberleaf/ui';
 import { X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { ReactElement } from 'react';

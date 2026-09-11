@@ -1,5 +1,5 @@
-import { AiFeature } from '@qalam/shared';
-import { QDrawer } from '@qalam/ui';
+import { AiFeature } from '@umberleaf/shared';
+import { QDrawer } from '@umberleaf/ui';
 import { Tabs } from 'antd';
 import { useState, type ReactElement, type ReactNode } from 'react';
 

@@ -1,4 +1,4 @@
-import { MAX_COMMENT_BODY_LENGTH } from '@qalam/shared';
+import { MAX_COMMENT_BODY_LENGTH } from '@umberleaf/shared';
 import { describe, expect, it } from 'vitest';
 
 import {

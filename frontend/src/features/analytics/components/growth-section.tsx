@@ -1,4 +1,4 @@
-import { QSelect, cn } from '@qalam/ui';
+import { QSelect, cn } from '@umberleaf/ui';
 import { AreaChart, LineChart as LineIcon } from 'lucide-react';
 import type { ReactElement } from 'react';
 

@@ -1,4 +1,4 @@
-import { QEmptyState, type QEmptyStateProps } from '@qalam/ui';
+import { QEmptyState, type QEmptyStateProps } from '@umberleaf/ui';
 import { Inbox } from 'lucide-react';
 import type { ReactElement } from 'react';
 

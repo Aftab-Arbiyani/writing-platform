@@ -1,4 +1,4 @@
-import type { PolicyActionCode } from '@qalam/shared';
+import type { PolicyActionCode } from '@umberleaf/shared';
 import type { ReactElement, ReactNode } from 'react';
 
 import { useCapability } from '../hooks/use-capabilities';

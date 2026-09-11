@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import type { OnApplicationBootstrap } from '@nestjs/common';
-import { DEFAULT_ROLE_PERMISSIONS, PERMISSION_CATALOGUE } from '@qalam/shared';
+import { DEFAULT_ROLE_PERMISSIONS, PERMISSION_CATALOGUE } from '@umberleaf/shared';
 
 import type { Permission } from './entities/permission.entity';
 import { PermissionRepository } from './permission.repository';

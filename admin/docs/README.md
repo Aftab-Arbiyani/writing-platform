@@ -11,7 +11,7 @@ finalized in Epic A9 (production readiness).
 | [ROUTES.md](./ROUTES.md)                   | Route inventory + role floors + guard composition        |
 | [COMPONENTS.md](./COMPONENTS.md)           | Shared + feature component & hook inventory              |
 | [API_INTEGRATION.md](./API_INTEGRATION.md) | api-client, query config, endpoint map, error→UX mapping |
-| [SHARED_PACKAGES.md](./SHARED_PACKAGES.md) | `@qalam/*` usage + refactor review                       |
+| [SHARED_PACKAGES.md](./SHARED_PACKAGES.md) | `@umberleaf/*` usage + refactor review                   |
 | [ENVIRONMENT.md](./ENVIRONMENT.md)         | Env vars (Zod-validated) + local setup                   |
 | [DEPLOYMENT.md](./DEPLOYMENT.md)           | Build, hosting (nginx), CI gate, rollout                 |
 | [PERFORMANCE.md](./PERFORMANCE.md)         | Splitting, ECharts lazy-loading, caching, audit result   |

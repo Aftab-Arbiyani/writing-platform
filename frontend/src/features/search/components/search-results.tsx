@@ -1,4 +1,4 @@
-import { SearchType } from '@qalam/shared';
+import { SearchType } from '@umberleaf/shared';
 import type { ReactElement } from 'react';
 
 import type { UseSearchQueryParamsResult } from '../hooks/use-search-query-params';

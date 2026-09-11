@@ -1,4 +1,4 @@
-import { QAvatar, QTextArea } from '@qalam/ui';
+import { QAvatar, QTextArea } from '@umberleaf/ui';
 import { type KeyboardEvent, type ReactElement, useEffect, useId, useRef, useState } from 'react';
 
 import { mediaUrl } from '@/lib/media';

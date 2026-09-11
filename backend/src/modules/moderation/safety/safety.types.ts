@@ -1,4 +1,4 @@
-import type { ReportReason, ReportSeverity } from '@qalam/shared';
+import type { ReportReason, ReportSeverity } from '@umberleaf/shared';
 
 /**
  * Automated content-safety vocabulary (AF6). A pluggable detector pipeline that

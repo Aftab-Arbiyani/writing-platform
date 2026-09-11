@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { POLICY_ACTIONS } from '@qalam/shared';
+import { POLICY_ACTIONS } from '@umberleaf/shared';
 import type { EntityManager } from 'typeorm';
 
 import { decodeCursor } from '../../common/pagination/cursor.util';

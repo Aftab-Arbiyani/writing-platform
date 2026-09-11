@@ -1,4 +1,4 @@
-import { NotificationType } from '@qalam/shared';
+import { NotificationType } from '@umberleaf/shared';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 

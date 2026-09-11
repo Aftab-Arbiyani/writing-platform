@@ -1,12 +1,12 @@
 import { SetMetadata } from '@nestjs/common';
 import type { CustomDecorator } from '@nestjs/common';
-import type { RateLimitTierName } from '@qalam/shared';
+import type { RateLimitTierName } from '@umberleaf/shared';
 
 import { RATE_LIMIT_KEY } from '../constants/metadata.constants';
 
 /**
  * Declares one or more rate-limit tiers for a route (docs 05 §8, docs 13 §8).
- * Tiers are defined in `@qalam/shared` (`RATE_LIMIT_TIERS`); `RateLimitGuard`
+ * Tiers are defined in `@umberleaf/shared` (`RATE_LIMIT_TIERS`); `RateLimitGuard`
  * enforces each with a Redis sliding window (DB 2). Multiple tiers model
  * dual-window limits, e.g. login is 5/min **and** 20/hour:
  *

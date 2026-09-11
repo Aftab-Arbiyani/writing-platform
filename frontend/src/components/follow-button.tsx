@@ -1,4 +1,4 @@
-import { QButton, useToast, type QButtonSize } from '@qalam/ui';
+import { QButton, useToast, type QButtonSize } from '@umberleaf/ui';
 import { Check, Clock, UserPlus } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { useNavigate } from 'react-router';

@@ -1,4 +1,4 @@
-import { QPagination } from '@qalam/ui';
+import { QPagination } from '@umberleaf/ui';
 import type { ReactElement } from 'react';
 
 /**

@@ -1,4 +1,4 @@
-import { DEFAULT_ROLE_PERMISSIONS, permissionSatisfies, Role, ROLE_RANK } from '@qalam/shared';
+import { DEFAULT_ROLE_PERMISSIONS, permissionSatisfies, Role, ROLE_RANK } from '@umberleaf/shared';
 
 import { useAuthStore } from '@/stores/auth.store';
 

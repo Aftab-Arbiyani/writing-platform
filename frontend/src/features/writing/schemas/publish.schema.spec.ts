@@ -1,4 +1,4 @@
-import { Visibility } from '@qalam/shared';
+import { Visibility } from '@umberleaf/shared';
 import { describe, expect, it } from 'vitest';
 
 import { publishSchema } from './publish.schema';

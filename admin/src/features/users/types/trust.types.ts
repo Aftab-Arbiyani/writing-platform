@@ -5,7 +5,7 @@ import type {
   TrustLevel,
   TrustStatus,
   UserStatus,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 /**
  * Wire types for the admin Trust surface (AF6, row A2; extended by B9) — seven routes on

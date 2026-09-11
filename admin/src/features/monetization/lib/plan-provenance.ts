@@ -9,7 +9,7 @@ import {
   type PlanLimits,
   type PlanTier,
   type PremiumFeature,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 /**
  * Reading the plan catalogue honestly (A1a) — pure, so the rules are testable without a DOM.
@@ -20,7 +20,7 @@ import {
  *    server folds the stored `monetization.plans` setting over the compiled defaults and hands back
  *    one merged object, so nothing on the wire says which numbers an administrator chose and which
  *    are simply what the code ships. An operator about to change a cap needs that distinction, so it
- *    is derived here by comparing the resolved value against `DEFAULT_PLAN_*` from `@qalam/shared` —
+ *    is derived here by comparing the resolved value against `DEFAULT_PLAN_*` from `@umberleaf/shared` —
  *    the same constants the server compiled from. Derived, therefore inferred: see
  *    {@link featureProvenance} for where that inference is weaker and why.
  * 2. **The two sentinel conventions.** `0` means unlimited for every limit key except

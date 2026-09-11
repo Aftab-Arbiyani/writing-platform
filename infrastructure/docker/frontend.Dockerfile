@@ -33,7 +33,7 @@ COPY . .
 
 RUN pnpm install --frozen-lockfile
 
-# Builds frontend plus its @qalam/* workspace dependencies (turbo ^build).
+# Builds frontend plus its @umberleaf/* workspace dependencies (turbo ^build).
 RUN pnpm turbo build --filter frontend
 
 # ── Stage 2: runtime — static bundle behind non-root nginx ──────────────────

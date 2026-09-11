@@ -1,4 +1,4 @@
-import { Role, TrustLevel, TrustStatus, UserStatus } from '@qalam/shared';
+import { Role, TrustLevel, TrustStatus, UserStatus } from '@umberleaf/shared';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 

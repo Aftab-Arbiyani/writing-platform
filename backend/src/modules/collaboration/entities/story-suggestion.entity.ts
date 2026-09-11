@@ -1,5 +1,5 @@
 import { Column, Entity, Index } from 'typeorm';
-import { SuggestionStatus } from '@qalam/shared';
+import { SuggestionStatus } from '@umberleaf/shared';
 
 import { QalamBaseEntity } from '../../../common/base/base.entity';
 

@@ -46,7 +46,7 @@ more event lines; never log request bodies wholesale.
 
 Every business-significant log line carries `event` (dot-namespaced, past-tense
 verbs avoided — events name _facts_). The taxonomy is a constant catalogue in
-`@qalam/shared` (same home as error codes), so event names are typo-proof and
+`@umberleaf/shared` (same home as error codes), so event names are typo-proof and
 greppable across backend and dashboards.
 
 | Namespace      | Events (Phase 1 catalogue)                                                                                                                                                                                                              |

@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { DiscoverPieceKind, WriterKind } from '@qalam/shared';
+import { DiscoverPieceKind, WriterKind } from '@umberleaf/shared';
 import { IsEnum, IsOptional } from 'class-validator';
 
 import { CursorPaginationDto } from '../../../common/dto/cursor-pagination.dto';

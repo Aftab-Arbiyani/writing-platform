@@ -515,7 +515,7 @@ keyed per user id when authenticated, per IP otherwise. Responses carry
 
 **Why sliding window over fixed window:** fixed windows admit 2× bursts at boundaries;
 the sorted-set sliding window is exact, and at our request volume the extra Redis cost
-is irrelevant. Limits live in `@qalam/shared` next to the other domain limits.
+is irrelevant. Limits live in `@umberleaf/shared` next to the other domain limits.
 
 ---
 
@@ -526,7 +526,7 @@ is irrelevant. Limits live in `@qalam/shared` next to the other domain limits.
 | A01 | Broken Access Control                    | Global default-deny guard + `@Public()` opt-out (§4.3); single `VisibilityService` (§4.2); repository visibility scopes; service-layer ownership checks; admin capability matrix (§4.1)                                                       |
 | A02 | Cryptographic Failures                   | Argon2id (§3.1); TLS everywhere (HSTS preload); JWT secrets ≥ 256-bit random, separate per token type; no PII in JWT claims; UUIDv7 not used as a secret                                                                                      |
 | A03 | Injection                                | Parameterized TypeORM only + lint ban on interpolation (§6); `websearch_to_tsquery`; DTO whitelist validation (§5.1); TipTap schema rejection (§5.2)                                                                                          |
-| A04 | Insecure Design                          | This document's threat model (§2), re-reviewed per module; abuse-case rows in every feature design doc; limits catalogued in `@qalam/shared`                                                                                                  |
+| A04 | Insecure Design                          | This document's threat model (§2), re-reviewed per module; abuse-case rows in every feature design doc; limits catalogued in `@umberleaf/shared`                                                                                              |
 | A05 | Security Misconfiguration                | Zod env fail-fast at boot; helmet + CSP (§5.4); Swagger `/docs` disabled in prod (ADR §3); non-root distroless/alpine containers; `synchronize: false` always                                                                                 |
 | A06 | Vulnerable & Outdated Components         | `pnpm-lock.yaml` committed; `pnpm audit --prod` gate in CI; Renovate scheduled post-launch (§12); pinned major versions per ADR §10                                                                                                           |
 | A07 | Identification & Authentication Failures | Rate-limit tiers (§8); rotation + family reuse detection (§3.2); breached-password check; no enumeration; fresh-session requirement on sensitive ops (§3.5)                                                                                   |

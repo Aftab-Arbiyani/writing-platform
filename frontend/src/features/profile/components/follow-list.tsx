@@ -1,4 +1,4 @@
-import { QEmptyState, QErrorState, QSkeleton, QSpinner } from '@qalam/ui';
+import { QEmptyState, QErrorState, QSkeleton, QSpinner } from '@umberleaf/ui';
 import { Users } from 'lucide-react';
 import type { ReactElement } from 'react';
 

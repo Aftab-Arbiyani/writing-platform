@@ -1,4 +1,4 @@
-import { QCard } from '@qalam/ui';
+import { QCard } from '@umberleaf/ui';
 import { Trophy } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { Link } from 'react-router';

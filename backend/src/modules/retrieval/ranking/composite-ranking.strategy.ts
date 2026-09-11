@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { RankingSignal } from '@qalam/shared';
+import { RankingSignal } from '@umberleaf/shared';
 
 import type { RankingStrategy } from '../ports/ranking.port';
 import type {

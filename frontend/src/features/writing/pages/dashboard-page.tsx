@@ -1,5 +1,5 @@
-import { PieceStatus } from '@qalam/shared';
-import { cn, QButton, QCard, QEmptyState, QErrorState, QSkeleton, QSpinner } from '@qalam/ui';
+import { PieceStatus } from '@umberleaf/shared';
+import { cn, QButton, QCard, QEmptyState, QErrorState, QSkeleton, QSpinner } from '@umberleaf/ui';
 import { PenLine, PlayCircle } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';

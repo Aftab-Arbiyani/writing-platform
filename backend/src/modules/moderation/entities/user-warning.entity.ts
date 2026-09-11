@@ -1,4 +1,4 @@
-import type { ReportSeverity } from '@qalam/shared';
+import type { ReportSeverity } from '@umberleaf/shared';
 import { Column, Entity, Index } from 'typeorm';
 
 import { QalamBaseEntity } from '../../../common/base/base.entity';

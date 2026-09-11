@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { RetrievalQueryType } from '@qalam/shared';
+import { RetrievalQueryType } from '@umberleaf/shared';
 
 /** Ordered pattern rules — first match wins. Deterministic query classification. */
 const RULES: ReadonlyArray<{ type: RetrievalQueryType; pattern: RegExp }> = [

@@ -1,5 +1,5 @@
 import { Column, Entity, Index } from 'typeorm';
-import type { PromotionType } from '@qalam/shared';
+import type { PromotionType } from '@umberleaf/shared';
 
 import { QalamAppendOnlyEntity } from '../../../common/base/append-only.entity';
 

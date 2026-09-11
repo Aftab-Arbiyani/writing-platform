@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { PERMISSIONS } from '@qalam/shared';
+import { PERMISSIONS } from '@umberleaf/shared';
 import type { Request, Response } from 'express';
 
 import { PERMISSIONS_KEY } from '../../common/constants/metadata.constants';

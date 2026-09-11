@@ -1,5 +1,5 @@
 import { Column, Entity, Index, Unique } from 'typeorm';
-import type { PromptCategory } from '@qalam/shared';
+import type { PromptCategory } from '@umberleaf/shared';
 
 import { QalamBaseEntity } from '../../../../common/base/base.entity';
 

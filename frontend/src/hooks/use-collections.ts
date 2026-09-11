@@ -1,4 +1,4 @@
-import type { Visibility } from '@qalam/shared';
+import type { Visibility } from '@umberleaf/shared';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { collectionsApi } from '@/lib/collections-api';

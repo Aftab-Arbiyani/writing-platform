@@ -1,4 +1,4 @@
-import { NotificationStatus } from '@qalam/shared';
+import { NotificationStatus } from '@umberleaf/shared';
 
 import type { CursorPayload } from '../../common/pagination/cursor.util';
 import type { NotificationActorDto, NotificationDto } from './dto/notification-response.dto';

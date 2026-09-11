@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { PieceStatus } from '@qalam/shared';
+import type { PieceStatus } from '@umberleaf/shared';
 import { DataSource } from 'typeorm';
 import type { EntityManager, Repository } from 'typeorm';
 

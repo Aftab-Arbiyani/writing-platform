@@ -1,4 +1,4 @@
-import { ERROR_CODES, type SuggestionStatus } from '@qalam/shared';
+import { ERROR_CODES, type SuggestionStatus } from '@umberleaf/shared';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { isApiError } from '@/lib/errors';

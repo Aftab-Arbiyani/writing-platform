@@ -29,7 +29,7 @@ aggregation).
 **Next: Phase 2** (AI, payments/subscriptions/monetization, Apple login) — **not yet started;
 do not implement until explicitly planned.** When it begins, build as new modules + additive
 endpoints/columns that never break the frozen `v1` contract (`docs/25` §8). The React frontend
-and the separate Flutter app consume `v1` via `openapi.json` → `@qalam/api-types`.
+and the separate Flutter app consume `v1` via `openapi.json` → `@umberleaf/api-types`.
 
 ## Monorepo map
 
@@ -72,7 +72,7 @@ pnpm --filter backend migration:generate src/database/migrations/<Name>
 5. **All HTTP goes through the centralized api-client** (`src/lib/api-client.ts`). No `fetch`
    in components. All responses use the envelope
    `{ success, data, meta } | { success:false, error:{ code, … } }`; codes come from
-   `@qalam/shared` `ERROR_CODES`.
+   `@umberleaf/shared` `ERROR_CODES`.
 6. **Backend layering:** controller → service → repository. Validation lives in DTOs
    (class-validator). Only repositories touch query builders. **No cross-module repository
    imports** — modules talk via exported services/events.

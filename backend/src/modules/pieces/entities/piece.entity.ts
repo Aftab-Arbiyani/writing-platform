@@ -1,4 +1,4 @@
-import { PieceStatus, Visibility } from '@qalam/shared';
+import { PieceStatus, Visibility } from '@umberleaf/shared';
 import { Check, Column, Entity, Index } from 'typeorm';
 
 import { QalamAuditEntity } from '../../../common/base/audit.entity';
@@ -15,7 +15,7 @@ export interface SeoMetadata {
  *
  * `content` (TipTap JSON) is the single source of truth (§5); HTML is never
  * stored. `content_text`, `word_count`, `reading_time_seconds` are DERIVED on
- * every content write (service, via @qalam/utils). `slug` is NULL until first
+ * every content write (service, via @umberleaf/utils). `slug` is NULL until first
  * publish and then permanent (§1.5). All FK columns are plain (constraints in
  * the migration) so the pieces module doesn't import other modules' entities
  * (docs 16 §3.1). `search_vector` (generated) + `archived_at`/`seo_metadata`

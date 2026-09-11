@@ -15,7 +15,7 @@ untouched).
 ## Pieces
 
 - `PERMISSIONS` catalogue + `DEFAULT_ROLE_PERMISSIONS` + `permissionSatisfies` live in
-  `@qalam/shared` (vocabulary shared with clients).
+  `@umberleaf/shared` (vocabulary shared with clients).
 - `PermissionFactory` — wildcard matcher/engine (`*`, `module.*`, exact; AND across a route's list).
 - `PermissionResolver` — a principal's effective grant set: rank-stacked role grants
   (a role inherits every lower-ranked role's, preserving RBAC semantics) ∪ direct user

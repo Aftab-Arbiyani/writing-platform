@@ -1,4 +1,4 @@
-import { cn } from '@qalam/ui';
+import { cn } from '@umberleaf/ui';
 import { AlertTriangle, Info, XCircle } from 'lucide-react';
 import type { ReactElement, ReactNode } from 'react';
 

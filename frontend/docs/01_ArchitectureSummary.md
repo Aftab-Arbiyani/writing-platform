@@ -33,12 +33,12 @@ src/
 ## Golden rules (enforced)
 
 1. **Feature isolation** — a feature never imports another feature's internals. Shared code lives in
-   `@/lib`, `@/components`, `@/hooks`, or a `@qalam/*` package. (Verified: zero cross-feature imports.)
+   `@/lib`, `@/components`, `@/hooks`, or a `@umberleaf/*` package. (Verified: zero cross-feature imports.)
 2. **Server state → TanStack Query; never Zustand.** Zustand holds only client/UI state (theme,
    online status, nav, editor UI, analytics view-prefs). URL is the source of truth for tabs/filters.
 3. **All HTTP through `lib/api-client.ts`** (a typed `fetch` wrapper — not axios). The only exception is
    `lib/upload.ts` (XHR, for upload progress). Every response is the envelope
-   `{ success, data, meta } | { success:false, error:{ code, … } }`; error codes come from `@qalam/shared`.
+   `{ success, data, meta } | { success:false, error:{ code, … } }`; error codes come from `@umberleaf/shared`.
 4. **RTL day-one** — CSS **logical** properties only (`ms/me/ps/pe/start/end`); physical `ml/mr/pl/pr/left/right`
    are banned. (Verified: zero violations.)
 5. **Tokens only** — colours via `--q-*` tokens (Tailwind theme + AntD algorithm from one resolved mode);

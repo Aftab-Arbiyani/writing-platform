@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { QButton, useToast } from '@qalam/ui';
+import { QButton, useToast } from '@umberleaf/ui';
 import { Input, Select, Switch } from 'antd';
 import { Wrench } from 'lucide-react';
 import { useEffect, useState, type ReactElement } from 'react';

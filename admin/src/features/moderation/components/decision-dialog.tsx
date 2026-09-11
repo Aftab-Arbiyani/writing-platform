@@ -1,6 +1,6 @@
-import { PERMISSIONS, ReportResolution } from '@qalam/shared';
-import type { ReportSeverity } from '@qalam/shared';
-import { QButton, useToast } from '@qalam/ui';
+import { PERMISSIONS, ReportResolution } from '@umberleaf/shared';
+import type { ReportSeverity } from '@umberleaf/shared';
+import { QButton, useToast } from '@umberleaf/ui';
 import { Input, Select } from 'antd';
 import { useState, type ReactElement } from 'react';
 

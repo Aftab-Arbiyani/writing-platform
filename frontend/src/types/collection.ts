@@ -1,4 +1,4 @@
-import type { Visibility } from '@qalam/shared';
+import type { Visibility } from '@umberleaf/shared';
 
 /**
  * Reading lists / collections (W7b, docs/45 §4.4) — the wire shapes of

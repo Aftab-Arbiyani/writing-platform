@@ -1,4 +1,4 @@
-import { POLICY_ACTIONS, PolicyEffect, StoryRole } from '@qalam/shared';
+import { POLICY_ACTIONS, PolicyEffect, StoryRole } from '@umberleaf/shared';
 import { screen, waitFor } from '@testing-library/react';
 import type * as ReactRouter from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';

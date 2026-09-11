@@ -1,4 +1,4 @@
-import { QBadge, useToast } from '@qalam/ui';
+import { QBadge, useToast } from '@umberleaf/ui';
 import { Bell } from 'lucide-react';
 import { useEffect, useRef, type ReactElement } from 'react';
 

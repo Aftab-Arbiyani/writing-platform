@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { ThemePreference, Visibility } from '@qalam/shared';
+import { ThemePreference, Visibility } from '@umberleaf/shared';
 import { IsBoolean, IsEnum, IsObject, IsOptional } from 'class-validator';
 
 /**

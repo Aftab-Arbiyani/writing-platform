@@ -1,11 +1,11 @@
-import { extractPlainText } from '@qalam/utils';
+import { extractPlainText } from '@umberleaf/utils';
 
 import { anchorText, replaceTextRange } from './content-text.util';
 
 /**
  * The platform flattens a TipTap document to a string in TWO places, on purpose:
  *
- * - `@qalam/utils` `extractPlainText` — FTS input, word count, reading time. It puts a
+ * - `@umberleaf/utils` `extractPlainText` — FTS input, word count, reading time. It puts a
  *   space between text nodes and collapses/trims, so words at block boundaries do not
  *   fuse for a human reader or a search index.
  * - `anchorText` (collaboration) — the coordinate space suggestion anchors index into.
@@ -26,7 +26,7 @@ const TWO_BLOCKS = {
   ],
 };
 
-describe('anchorText vs @qalam/utils extractPlainText', () => {
+describe('anchorText vs @umberleaf/utils extractPlainText', () => {
   it('produces different strings for the same document, by design', () => {
     expect(extractPlainText(TWO_BLOCKS)).toBe('first second');
     expect(anchorText(TWO_BLOCKS)).toBe('firstsecond');

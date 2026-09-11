@@ -1,4 +1,4 @@
-import { AiProvider } from '@qalam/shared';
+import { AiProvider } from '@umberleaf/shared';
 
 import { AiProviderNotConfiguredException } from '../ai.exceptions';
 import type { AiProviderAdapter } from './ai-provider.port';

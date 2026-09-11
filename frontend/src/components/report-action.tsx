@@ -1,5 +1,5 @@
-import type { ReportEntityType } from '@qalam/shared';
-import { QButton, type QButtonSize, type QButtonVariant } from '@qalam/ui';
+import type { ReportEntityType } from '@umberleaf/shared';
+import { QButton, type QButtonSize, type QButtonVariant } from '@umberleaf/ui';
 import { Flag } from 'lucide-react';
 import { type ReactElement, useState } from 'react';
 import { useNavigate } from 'react-router';

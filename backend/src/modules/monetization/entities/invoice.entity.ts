@@ -1,5 +1,5 @@
 import { Column, Entity, Index } from 'typeorm';
-import type { InvoiceStatus, PaymentProvider } from '@qalam/shared';
+import type { InvoiceStatus, PaymentProvider } from '@umberleaf/shared';
 
 import { QalamBaseEntity } from '../../../common/base/base.entity';
 

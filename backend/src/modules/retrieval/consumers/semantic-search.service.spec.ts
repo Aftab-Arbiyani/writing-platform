@@ -1,4 +1,9 @@
-import { ERROR_CODES, RetrievalIntent, RetrievalQueryType, RetrievalSource } from '@qalam/shared';
+import {
+  ERROR_CODES,
+  RetrievalIntent,
+  RetrievalQueryType,
+  RetrievalSource,
+} from '@umberleaf/shared';
 
 import type { RetrievalCacheService } from '../retrieval-cache.service';
 import type { RetrievalService } from '../retrieval.service';

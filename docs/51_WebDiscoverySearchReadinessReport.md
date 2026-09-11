@@ -45,7 +45,7 @@ wire did not contain what the row assumed ([48 §3.9](./48_PlatformParityRegiste
   `recordHistory` option, default unchanged.
 - **Synthesis was decided by a cached plan** (W5-8, found in Phase 3) — see §3.
 
-`@qalam/api-types` also declared a search-filter shape the DTO rejects outright (W5-1, the third
+`@umberleaf/api-types` also declared a search-filter shape the DTO rejects outright (W5-1, the third
 instance of that class after W4-2 and W4-5). Corrected before the web API layer existed, and pinned by
 a spec asserting the request body has no `filters` key.
 
@@ -73,7 +73,7 @@ admin on `:5174`.
 | Unit — frontend (`vitest`)       | **554 passed / 103 files** (515 before W5; +39 across the retrieval layer, the four surfaces, and the gate)                                                                                                           |
 | Unit — backend (`jest`)          | **1012 passed / 137 suites**; the retrieval subset is 57 across 14                                                                                                                                                    |
 | Unit — admin (`vitest`)          | **156 passed / 53 files** — untouched by W5, run because the gate is workspace-wide                                                                                                                                   |
-| Unit — packages                  | **31 passed** (`@qalam/utils`)                                                                                                                                                                                        |
+| Unit — packages                  | **31 passed** (`@umberleaf/utils`)                                                                                                                                                                                    |
 | Build (`pnpm build`, turbo)      | **7 tasks clean** — `tsc -b` + `vite build` for both apps and `nest build` for the backend, not `--noEmit`                                                                                                            |
 | Lint (`pnpm lint`, turbo)        | **9 tasks clean**, zero warnings                                                                                                                                                                                      |
 | Bundle budget (`perf:budget`)    | **within budget** — entry 144.4 kB gz; the AF4 route chunk (`search-*.js`) is 8.1 kB gz                                                                                                                               |

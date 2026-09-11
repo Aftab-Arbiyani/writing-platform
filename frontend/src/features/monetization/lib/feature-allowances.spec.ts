@@ -1,4 +1,4 @@
-import { PlanTier, QuotaWindow } from '@qalam/shared';
+import { PlanTier, QuotaWindow } from '@umberleaf/shared';
 import { describe, expect, it } from 'vitest';
 
 import type { FeatureQuotaResponse } from '../types/monetization.types';

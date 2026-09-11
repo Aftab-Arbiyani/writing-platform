@@ -7,7 +7,7 @@ import {
   SubscriptionEventType,
   SubscriptionStatus,
   isPlanUpgrade,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 import { LessThan, Repository } from 'typeorm';
 
 import type { CursorPayload } from '../../common/pagination/cursor.util';

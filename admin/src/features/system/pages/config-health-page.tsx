@@ -1,4 +1,4 @@
-import { QCard, type QTagColor } from '@qalam/ui';
+import { QCard, type QTagColor } from '@umberleaf/ui';
 import { Table, type TableColumnsType } from 'antd';
 import { CheckCircle2, ShieldCheck } from 'lucide-react';
 import type { ReactElement } from 'react';

@@ -1,4 +1,4 @@
-import type { SearchType } from '@qalam/shared';
+import type { SearchType } from '@umberleaf/shared';
 
 import { del, get, getPage, type CursorPage } from '@/lib/api-client';
 import { buildQueryString } from '@/lib/http';

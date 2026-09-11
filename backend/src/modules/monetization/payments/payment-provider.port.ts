@@ -4,7 +4,7 @@ import type {
   PaymentStatus,
   PlanTier,
   PurchaseKind,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 /**
  * The payment-provider abstraction (AF5). Every provider (Stripe, Apple App Store,

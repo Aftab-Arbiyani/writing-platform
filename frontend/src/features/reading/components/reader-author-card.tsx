@@ -1,4 +1,4 @@
-import { QAvatar, QCard } from '@qalam/ui';
+import { QAvatar, QCard } from '@umberleaf/ui';
 import type { ReactElement } from 'react';
 import { Link } from 'react-router';
 

@@ -1,11 +1,11 @@
-import type { SearchAnalytics } from '@qalam/api-types';
+import type { SearchAnalytics } from '@umberleaf/api-types';
 import {
   RankingSignal,
   RetrievalFailureReason,
   RetrievalIntent,
   RetrievalQueryType,
   RetrievalSource,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -22,7 +22,7 @@ import {
 
 /**
  * The label maps are `satisfies Record<Enum, string>`, so a MISSING key already fails the build.
- * What that cannot catch is the reverse: an enum member renamed in `@qalam/shared` while a stale
+ * What that cannot catch is the reverse: an enum member renamed in `@umberleaf/shared` while a stale
  * label survives under the old key, which renders a raw token to an operator. These assert the
  * key sets are equal, which closes that direction.
  */

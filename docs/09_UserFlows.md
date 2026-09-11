@@ -24,7 +24,7 @@
 | Term             | Meaning                                                                                                                                  |
 | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | Actor            | `Visitor` (no session) · `User` · `Writer` (User acting as author) · `Moderator` / `Admin` (RBAC §8)                                     |
-| Error codes      | `DOMAIN_REASON` catalogue in `@qalam/shared`; always delivered in the §5 error envelope                                                  |
+| Error codes      | `DOMAIN_REASON` catalogue in `@umberleaf/shared`; always delivered in the §5 error envelope                                              |
 | "Session issued" | Access JWT (15 min) held in memory + rotating refresh JWT (30 d) set as httpOnly `Secure` `SameSite=Lax` cookie scoped to `/api/v1/auth` |
 | Queue            | Named BullMQ queue from ADR §3 (`scheduled-publish`, `notifications`, `analytics-rollup`, `emails`, …)                                   |
 
@@ -47,7 +47,7 @@
 ```
 
 1. **Step 1 — Account.** Email + password (Zod: valid email; ≥ 8 chars). Inline validation via RHF.
-2. **Step 2 — Username.** Input constrained to `^[a-z0-9_]{3,30}$` (`USERNAME_REGEX` from `@qalam/shared`). Debounced (400 ms) availability check: `GET /api/v1/users/username-availability?u=…`.
+2. **Step 2 — Username.** Input constrained to `^[a-z0-9_]{3,30}$` (`USERNAME_REGEX` from `@umberleaf/shared`). Debounced (400 ms) availability check: `GET /api/v1/users/username-availability?u=…`.
 3. **PERMANENT-username warning.** Directly under the field, always visible — not a tooltip:
    > "Your username is **permanent**. It becomes your profile URL (`qalam.app/@username`) and can never be changed. Your pen name _can_ change anytime."
    > The **Continue** button is disabled until the user checks _"I understand my username is permanent."_
@@ -209,7 +209,7 @@ _Why dwell + scroll:_ either alone is gameable — a parked tab isn't a read (ta
 
 **Preconditions:** Authenticated; piece visible. All three are optimistic (rollback spec: `12_StateManagement.md` §4).
 
-**8a. Clap** — enthusiasm dial, 0–50 per user (`MAX_CLAPS_PER_USER` in `@qalam/shared`):
+**8a. Clap** — enthusiasm dial, 0–50 per user (`MAX_CLAPS_PER_USER` in `@umberleaf/shared`):
 
 ```
 tap tap tap …            UI counter +1 each tap (caps at 50, then wiggle)
@@ -308,7 +308,7 @@ Requester                          API                      Target (private)
 
 1. Writer types `@` in TipTap → mention extension (ADR §6) opens a debounced user-search popover (username + pen name + avatar).
 2. Selection inserts an atomic **mention node** storing `{ userId, username }` in the document JSON. _Why store the id:_ usernames are permanent (ADR §4), but the id keeps the reference robust and renderable even if display data changes.
-3. Mentions in **drafts trigger nothing.** On publish (immediate or scheduled), the server walks the canonical JSON, extracts mention nodes, dedupes per user, and enqueues `mention` notifications — capped at 20 distinct mentions per piece (`@qalam/shared` limit) to blunt spam.
+3. Mentions in **drafts trigger nothing.** On publish (immediate or scheduled), the server walks the canonical JSON, extracts mention nodes, dedupes per user, and enqueues `mention` notifications — capped at 20 distinct mentions per piece (`@umberleaf/shared` limit) to blunt spam.
 4. Rendered mentions link to `/@:username`. Tapping a mention notification deep-links to the piece.
 
 **Edge branches:** mentioned user deleted before publish → node renders as plain text, no notification. Editing a published piece to add a new mention → notifies **only** the newly added user (server diffs mention sets). Self-mentions never notify.

@@ -1,5 +1,5 @@
-import { COUPON_CODE_MAX, PlanTier, PromotionType } from '@qalam/shared';
-import { QButton, QCard, QSectionHeader, useToast } from '@qalam/ui';
+import { COUPON_CODE_MAX, PlanTier, PromotionType } from '@umberleaf/shared';
+import { QButton, QCard, QSectionHeader, useToast } from '@umberleaf/ui';
 import { useState, type ReactElement } from 'react';
 
 import { getErrorMessage, isApiError } from '@/lib/errors';

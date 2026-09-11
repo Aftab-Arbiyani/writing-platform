@@ -1,11 +1,17 @@
 /**
  * Handwritten wire types.
  *
- * The envelope shapes are DOMAIN vocabulary and live in @qalam/shared
+ * The envelope shapes are DOMAIN vocabulary and live in @umberleaf/shared
  * (ADR §5); they are re-exported here so API consumers can import everything
  * wire-related from a single package.
  */
-export type { ApiFailure, ApiResponse, ApiSuccess, CursorMeta, OffsetMeta } from '@qalam/shared';
+export type {
+  ApiFailure,
+  ApiResponse,
+  ApiSuccess,
+  CursorMeta,
+  OffsetMeta,
+} from '@umberleaf/shared';
 
 /**
  * PLACEHOLDER — replaced by the generated OpenAPI types once the auth module

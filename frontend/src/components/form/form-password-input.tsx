@@ -1,4 +1,4 @@
-import { QInput, type QInputProps } from '@qalam/ui';
+import { QInput, type QInputProps } from '@umberleaf/ui';
 import { Eye, EyeOff } from 'lucide-react';
 import { useState } from 'react';
 import { Controller, type Control, type FieldPath, type FieldValues } from 'react-hook-form';

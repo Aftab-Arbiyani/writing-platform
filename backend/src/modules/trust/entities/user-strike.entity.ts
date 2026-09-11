@@ -1,4 +1,4 @@
-import type { StrikeSeverity } from '@qalam/shared';
+import type { StrikeSeverity } from '@umberleaf/shared';
 import { Column, Entity, Index } from 'typeorm';
 
 import { QalamBaseEntity } from '../../../common/base/base.entity';

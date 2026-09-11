@@ -1,5 +1,5 @@
-import { ReportEntityType } from '@qalam/shared';
-import { QAvatar, QButton, useConfirm, useToast } from '@qalam/ui';
+import { ReportEntityType } from '@umberleaf/shared';
+import { QAvatar, QButton, useConfirm, useToast } from '@umberleaf/ui';
 import { type ReactElement, useState } from 'react';
 import { Link } from 'react-router';
 

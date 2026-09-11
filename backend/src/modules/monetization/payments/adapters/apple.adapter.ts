@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
-import { PaymentProvider, PurchaseKind } from '@qalam/shared';
+import { PaymentProvider, PurchaseKind } from '@umberleaf/shared';
 
 import { paymentsConfig } from '../../../../config/payments.config';
 import {

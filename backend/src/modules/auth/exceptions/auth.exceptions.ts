@@ -1,10 +1,10 @@
 import { HttpStatus } from '@nestjs/common';
-import { ERROR_CODES } from '@qalam/shared';
+import { ERROR_CODES } from '@umberleaf/shared';
 
 import { AppException } from '../../../common/exceptions/app.exception';
 
 /**
- * Domain exceptions for auth (docs 16 §3.4). Each carries a stable `@qalam/shared`
+ * Domain exceptions for auth (docs 16 §3.4). Each carries a stable `@umberleaf/shared`
  * code and a meaningful HTTP status; the global filter renders the ADR §5
  * envelope. Messages are deliberately generic where enumeration is a risk
  * (docs 13 §3.1) — the same `AUTH_INVALID_CREDENTIALS` for wrong email or wrong

@@ -32,7 +32,7 @@ const STORY_INTELLIGENCE = 'story_intelligence';
 
 /**
  * The five story-analysis feature flags one "Map this story" run spends, in the order the server
- * runs them. Written out rather than derived from `@qalam/shared`: the suite asserts against the
+ * runs them. Written out rather than derived from `@umberleaf/shared`: the suite asserts against the
  * flag keys the server is expected to SEED, and importing the same helper both sides use would let
  * them move together and prove nothing — the rule the hardcoded price in `monetization.spec.ts`
  * follows for the same reason.

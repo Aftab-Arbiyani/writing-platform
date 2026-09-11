@@ -1,5 +1,5 @@
-import { ReportEntityType } from '@qalam/shared';
-import { QAvatar, QButton } from '@qalam/ui';
+import { ReportEntityType } from '@umberleaf/shared';
+import { QAvatar, QButton } from '@umberleaf/ui';
 import { FileText, MapPin, Pencil } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { Link } from 'react-router';

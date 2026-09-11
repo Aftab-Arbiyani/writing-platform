@@ -1,5 +1,5 @@
-import { PERMISSIONS } from '@qalam/shared';
-import { QButton, useToast } from '@qalam/ui';
+import { PERMISSIONS } from '@umberleaf/shared';
+import { QButton, useToast } from '@umberleaf/ui';
 import { Descriptions, Input, Select, Tabs } from 'antd';
 import { useState, type ReactElement, type ReactNode } from 'react';
 

@@ -1,4 +1,4 @@
-import { FeedSort } from '@qalam/shared';
+import { FeedSort } from '@umberleaf/shared';
 
 import type { TaxonomyService } from '../taxonomy/taxonomy.service';
 import type { FeedQueryDto } from './dto/feed-query.dto';

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PieceStatus, Visibility } from '@qalam/shared';
+import { PieceStatus, Visibility } from '@umberleaf/shared';
 import { DataSource } from 'typeorm';
 
 /** Raw aggregate rows (bigint columns arrive as strings; mappers coerce). */

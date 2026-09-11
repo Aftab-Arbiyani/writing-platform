@@ -1,4 +1,4 @@
-import { QCard, cn } from '@qalam/ui';
+import { QCard, cn } from '@umberleaf/ui';
 import { Minus, TrendingDown, TrendingUp } from 'lucide-react';
 import type { ReactElement, ReactNode } from 'react';
 

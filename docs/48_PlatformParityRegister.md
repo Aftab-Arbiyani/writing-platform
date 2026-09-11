@@ -5,7 +5,7 @@
 > `b349798`, `08862fd`), **mobile is done** (`8e6e302`, `5f410c7`, `efb4aff`, `96fa9a6`), the
 > **vocabulary contract has landed** (`cd28cfd`, mobile `f7a5891`), and the **DB contraction is
 > applied** (`7597e01`). **D5-clients is closed.** No deprecated D5 vocabulary remains in
-> `@qalam/shared` or on the wire, and the four dead tables and two dead columns are gone.
+> `@umberleaf/shared` or on the wire, and the four dead tables and two dead columns are gone.
 >
 > **One thing remains, and it is not code.** The E2E suite is rewritten but has **never run against a
 > browser**, and six visual baselines still need a CI re-mint (**F3**). The decision and the
@@ -692,7 +692,7 @@ them to the mirror list in `tokens.css`.
 > gone, and the stale value (`#3e7c4f`, from before W3c-2 darkened `--q-success` to `#356b44`) with them.
 >
 > **The mirror is now asserted, not declared.** `chart-options.spec.ts` reads
-> `@qalam/ui/styles/tokens.css` **as a file**, parses the `:root` and `[data-theme='dark']` blocks with
+> `@umberleaf/ui/styles/tokens.css` **as a file**, parses the `:root` and `[data-theme='dark']` blocks with
 > comments stripped (they quote historical hexes — "Darkened from #3e7c4f" — and a value in prose must
 > not be able to satisfy an assertion about a live token), and compares every fallback against what the
 > token file actually declares. A spec listing the expected hexes would have been a FOURTH copy that
@@ -1026,7 +1026,7 @@ first place. Trading a 404 for a sequential scan of an append-only table is not 
 The client-side mapping is **removed**, and its spec now asserts the opposite — a 404 must surface as an
 error. If the endpoint regresses, that fails loudly instead of a client quietly absorbing it again.
 
-### W4-2 · ~~**medium**~~ · **CLOSED 2026-07-29** · `@qalam/api-types` declares the wrong shape for `purchases/restore`
+### W4-2 · ~~**medium**~~ · **CLOSED 2026-07-29** · `@umberleaf/api-types` declares the wrong shape for `purchases/restore`
 
 | Source                                          | Shape                                        |
 | ----------------------------------------------- | -------------------------------------------- |
@@ -1124,7 +1124,7 @@ mid-checkout and the payment test failed with `MONETIZATION_DISABLED`. They are 
 `test.describe.serial` block. The entitlement-override test needs no such treatment: its change is scoped
 to one user.
 
-### W4-5 · ~~**medium**~~ · **CLOSED 2026-07-29** · `@qalam/api-types` declares a `couponCode` on `ChangePlanRequest` that the DTO rejects
+### W4-5 · ~~**medium**~~ · **CLOSED 2026-07-29** · `@umberleaf/api-types` declares a `couponCode` on `ChangePlanRequest` that the DTO rejects
 
 `ChangePlanRequest` in `packages/api-types` carries `couponCode?: string`. The backend's `ChangePlanDto` has
 no such property, and the app runs `ValidationPipe({ whitelist: true, forbidNonWhitelisted: true })`
@@ -1148,7 +1148,7 @@ Getting there took two attempts, and the first is worth recording because it is 
 tests are prone to. v1 hand-listed the interface keys behind a `satisfies Record<keyof T, true>` guard, and
 **re-introducing the exact W4-5 drift left all nine tests green**: the literal knew nothing of the new
 field, and Jest transpiles without type-checking so the compile-time guard never ran. `tsc` did not catch
-it either — the backend had no `@qalam/api-types` dependency at all, so the import silently failed to
+it either — the backend had no `@umberleaf/api-types` dependency at all, so the import silently failed to
 resolve and the whole response half was inert. Fixed by adding the devDependency and by **parsing the
 package source** for keys, the same technique the QTag contrast scan uses on `q-tag.tsx` (T-2b) and for the
 same reason: a test that restates what it checks drifts from it. The drift was re-injected afterwards, the
@@ -1204,7 +1204,7 @@ All three items, and the placement follows §5.2 rather than the widget's own am
    `FeatureLockCard` makes the same split from the decision's own `reason`, so the lock says _reset on
    <date>_ or _needs a paid plan_ rather than one generic sentence. Mobile lacked an
    `EntitlementReason` vocabulary entirely — it was comparing against a bare `'plan_excludes'` string
-   literal — so that was mirrored from `@qalam/shared` along with `entitlementReasonLabel`.
+   literal — so that was mirrored from `@umberleaf/shared` along with `entitlementReasonLabel`.
 3. **The doc comment is rewritten, not deleted.** It now names its call sites, which is what makes it
    checkable; a comment claiming universal use was worse than none because it is the thing a reader
    checks instead of grepping.
@@ -1235,7 +1235,7 @@ re-derived:
 - **Hidden from existing subscribers, not ignored for them.** `ChangePlanDto` has no `couponCode` and
   the API runs `ValidationPipe({whitelist: true, forbidNonWhitelisted: true})`, so sending one would
   400 the whole plan change (W4-5). The field only appears when there is no subscription.
-- **The code is normalized before it leaves.** `normalizeCouponCode` was mirrored from `@qalam/shared`;
+- **The code is normalized before it leaves.** `normalizeCouponCode` was mirrored from `@umberleaf/shared`;
   the server looks a coupon up by its upper-cased, trimmed form, so an untrimmed lower-case code
   simply finds nothing and reads to the user as "invalid".
 - **`valid: false` is an answer, not an error.** The endpoint catches both coupon exceptions and
@@ -1547,7 +1547,7 @@ observability decision, not an E2E one.
 > `(no adapter shipped)` — otherwise opening the page and pressing Save would rewrite their config
 > to whatever the Select fell back to.
 
-Both are declared in `@qalam/shared` and have **zero consumers** anywhere — backend, frontend, admin, e2e
+Both are declared in `@umberleaf/shared` and have **zero consumers** anywhere — backend, frontend, admin, e2e
 (grepped). They read like a gate ("which providers have a working implementation") and gate nothing; the
 live answers are `ProviderRegistryService.implementedProviders()` / `configuredProviders()`, computed from
 what is actually registered.
@@ -1596,7 +1596,7 @@ Contract as it actually stands (file:line):
 | `POST /ai/ask/stream`             | `ask-book.controller.ts:45`         | same                                    | `sources` → `start` → `delta`* → `done` \| `error`       |
 | `GET /ai/explorer/:storyId/:view` | `story-explorer.controller.ts:26`   | `ai.use`                                | Graph-only, no LLM — **AF3/W6 territory, not W5's row**  |
 
-### W5-1 · **high** · `@qalam/api-types` declares a search filter shape the DTO rejects outright
+### W5-1 · **high** · `@umberleaf/api-types` declares a search filter shape the DTO rejects outright
 
 `packages/api-types/src/retrieval.ts:114` declares:
 
@@ -1928,7 +1928,7 @@ Recorded because each is a pattern, not a one-off:
 
 ---
 
-## 3.11 W4-2 / W4-5 / W5-1 — **CLASS CLOSED 2026-08-05** — `@qalam/api-types` drifting from the DTOs
+## 3.11 W4-2 / W4-5 / W5-1 — **CLASS CLOSED 2026-08-05** — `@umberleaf/api-types` drifting from the DTOs
 
 Three separate findings, one defect. Each was closed on its own; nothing stopped a fourth, and a fourth
 was already sitting there (see "what it found on its first run" below).
@@ -2169,7 +2169,7 @@ for the export payload — W8's web layer types the two separately.
 > field to satisfy a symmetry nobody asked for.
 >
 > **What was actually wrong is that the second shape existed only inside a service method body.** The
-> route returned `Record<string, unknown>`, so Swagger recorded nothing, `@qalam/api-types` carried a
+> route returned `Record<string, unknown>`, so Swagger recorded nothing, `@umberleaf/api-types` carried a
 > hand-written mirror of a method's internals, and the §3.11 guard had to excuse both types as
 > UNMIRRORED. It is now `AiConversationExportDto` + `AiConversationExportMessageDto`, whose class notes
 > say why the shape differs, and both are **pinned** by the guard — closing the other half of
@@ -2209,7 +2209,7 @@ The guard added on 2026-08-05 pins `AiConversationSummary`, `AiConversationDetai
 `CreateAiConversationRequest`, `AiUsageWindowSummary` and `AiUsageResponse` to their DTOs
 (`api-types.contract.spec.ts:264-272`). It cannot see:
 
-- **the `PATCH` body** — `@qalam/api-types` has no `UpdateAiConversationRequest` at all, so a typed client
+- **the `PATCH` body** — `@umberleaf/api-types` has no `UpdateAiConversationRequest` at all, so a typed client
   has no type for `{title?, status?}`. Same direction as `CreateSubscriptionRequest.region` and `jsonMode`:
   a shipped capability invisible to every typed consumer, rather than a break.
 - **the export payload** — the handler returns `Promise<Record<string, unknown>>`
@@ -2383,7 +2383,7 @@ found three broken AF6 surfaces, W4 found two wrong `api-types` shapes, W5 found
 filtered search, W8 found a surface that can never be populated. Here the wire matched the summary
 exactly, and — checked rather than assumed, since the §3.11 guard's coverage is deliberately partial —
 `ExplorerViewResponse`, `AskBookRequest` and `AskBookResponse` were **already mirrored in
-`@qalam/api-types` and already pinned by the guard** (`api-types.contract.spec.ts:294-296`). That is
+`@umberleaf/api-types` and already pinned by the guard** (`api-types.contract.spec.ts:294-296`). That is
 what the §3.11 guard was built to produce, and it is the first row where it paid out.
 
 **What the audit did change: four projection behaviours no paraphrase states.** Each one would have
@@ -3464,7 +3464,7 @@ only checked 0.72 would pass with `Math.ceil`.
 
 That is the "no silent caps" rule broken at the contract level: a surface cannot label a sample it cannot
 see. **FIXED** by adding `truncated: boolean` to `SearchAnalyticsData`, `SearchAnalyticsDto` and
-`@qalam/api-types` (`total >= ANALYTICS_ROW_CAP`), exporting the cap so the service can compare against
+`@umberleaf/api-types` (`total >= ANALYTICS_ROW_CAP`), exporting the cap so the service can compare against
 it, and rendering a banner that names the sample size. **This is the one contract extension in A3**, and
 the justification is that an honest UI was otherwise impossible — not that it was convenient.
 
@@ -3774,7 +3774,7 @@ something that runs the app:
 >   Editing `DEFAULT_PLAN_FEATURES` alone would have changed nothing anywhere real. **D3 escaped this
 >   trap by needing no catalogue edit and said so at the time** ([§6.13](#613-d3s-sweep-2026-08-17));
 >   D4 could not, so the five are unioned in at RESOLUTION — `UNIVERSAL_PLAN_FEATURES` in
->   `@qalam/shared`, folded into every tier by `MonetizationConfigService`. That is code, which is
+>   `@umberleaf/shared`, folded into every tier by `MonetizationConfigService`. That is code, which is
 >   live the moment it deploys, and it needs **no data migration**.
 > - **These arrays are entitlement inputs, not display copy**, which settles the product question the
 >   row left open. `entitlement.service.ts` computes `included.has(feature)`, so "drop the five from
@@ -5296,7 +5296,7 @@ subscriber's plan is computed correctly and then ignored on every route but the 
    done, because its premise had gone stale:**
 
    - **`ai_writing` is now enforced.** `AiUsageMeterService.checkQuota` maps the request's `AiFeature`
-     through a TOTAL `AI_FEATURE_PREMIUM_CODE` map in `@qalam/shared` and asserts the code when the
+     through a TOTAL `AI_FEATURE_PREMIUM_CODE` map in `@umberleaf/shared` and asserts the code when the
      feature has one, beside the existing `assertAllowed(AiBudget)`. Five features are sold behind it —
      `writing_assistant`, `craft_coach` (it generates model output and meters identically; its
      `analysis` prompt category is a template label, not a product tier) and the three vestigial AF1
@@ -5626,7 +5626,7 @@ found four claimed-but-absent records in the epic before it.
 1. **Only what the row named?** Yes — the three surfaces, plus the hub that makes them reachable. Two
    things W8 touched that were _not_ in its row, both consequences rather than additions: a cross-link
    card on W4's `/settings/billing/usage` (the other half of the §3.12 usage decision — a one-way link
-   would have been the confusing option), and `UpdateAiConversationRequest` in `@qalam/api-types`, which
+   would have been the confusing option), and `UpdateAiConversationRequest` in `@umberleaf/api-types`, which
    the PATCH route needed and which is now pinned by the §3.11 guard. **Archiving was deliberately left
    out** even though the DTO accepts it (**W8-2**).
 2. **Does mobile actually have every part I built?** No, in one direction that matters: mobile has the
@@ -5645,7 +5645,7 @@ found four claimed-but-absent records in the epic before it.
 
 1. **Only what the row named?** Yes — Story Explorer and Ask My Book, plus the two things each was
    unbuildable without: `storyId` on the editor→AI seam (§3.13), and `AskBookStreamEvent` in
-   `@qalam/api-types`, now pinned by the §3.11 guard's completeness check. `resolveAvailability` was
+   `@umberleaf/api-types`, now pinned by the §3.11 guard's completeness check. `resolveAvailability` was
    widened to accept `feature: null` for the same reason — the explorer's route has no flag, and every
    existing caller passes a feature, so the change is additive. **Nothing else was touched.** The
    buffered `POST /ai/ask` got an api method it does not yet have a caller for; it is one line, it
@@ -5826,7 +5826,7 @@ aiMonthlyCredits: 0}` to the compiled defaults **for the resolved tier**. That s
      and answers "unlimited everything" for the token caps; once B6 existed it also left
      `maxCollaborators` _absent_, and absent is the single state with no honest reading. Closing it at
      the source beat having every caller guess.
-   - **`resolvePlanLimit` + `NEGATIVE_UNLIMITED_LIMIT_KEYS`** in `@qalam/shared`. B6 could have been
+   - **`resolvePlanLimit` + `NEGATIVE_UNLIMITED_LIMIT_KEYS`** in `@umberleaf/shared`. B6 could have been
      built with a bare `if (limit < 0)` at its two call sites; the registry exists so the _next_ cap
      with a meaningful zero has somewhere to declare itself instead of quietly copying whichever
      neighbour it was pasted from.
@@ -5870,7 +5870,7 @@ aiMonthlyCredits: 0}` to the compiled defaults **for the resolved tier**. That s
    - The **`MAX_STORY_COLLABORATORS` ceiling (20, 409) still exists** alongside the plan cap. Two caps
      on one action is worth writing down: the flat one is anti-abuse and no plan raises it, the plan
      one is a paywall and upgrading clears it. The plan cap is checked first.
-   - The **api-types guard (§3.11) was checked and is not applicable** — `@qalam/api-types` has no
+   - The **api-types guard (§3.11) was checked and is not applicable** — `@umberleaf/api-types` has no
      collaboration namespace, so there is nothing for `CollaboratorLimitDto` to drift from. Same
      position as B4's `PieceLimitDto`. If a collaboration namespace is ever added, these types are
      what it starts with.
@@ -5963,7 +5963,7 @@ from the **story owner's** plan and applied at READ time only ([45 §4.12](./45_
      (and it really does delete, keeping `publish`/`review` rows forever), while B7 deletes nothing
      and only decides what is shown. B7 adds **no** pruning, retention, or scheduled work — "hidden,
      never deleted" is the decision, and the storage cost was accepted deliberately.
-   - **The api-types guard (§3.11) was checked and is not applicable** — `@qalam/api-types` has no
+   - **The api-types guard (§3.11) was checked and is not applicable** — `@umberleaf/api-types` has no
      publishing namespace, so there is nothing for `SnapshotHistoryDto` to drift from. Same position
      as B4's `PieceLimitDto` and B6's `CollaboratorLimitDto`. The guard's 72 assertions pass
      untouched.
@@ -6148,13 +6148,13 @@ rows 1–2; report [53](./53_WebConversationLayerReadinessReport.md)).
    - a **report action** on each comment row — W7b, as above.
 
    **One thing web has that mobile does not:** the composer enforces `COMMENT_MAX_LENGTH` from
-   `@qalam/shared`; mobile hardcodes `maxLength: 2000` in `comment_composer.dart:77`. Same number
+   `@umberleaf/shared`; mobile hardcodes `maxLength: 2000` in `comment_composer.dart:77`. Same number
    today, two sources of truth. Filed below.
 
 3. **Does mobile need a follow-up?** Yes, one, and it is small: **M7-1** — `comment_composer.dart`
    hardcodes `maxLength: 2000` where `COMMENT_MAX_LENGTH` is the shared constant the DTO validates
    against. It agrees today, so nothing is broken; it is a drift waiting to happen, of exactly the
-   class §3.11 closed for `@qalam/api-types`. Unowned; not W7a's to fix (mobile is out of scope for
+   class §3.11 closed for `@umberleaf/api-types`. Unowned; not W7a's to fix (mobile is out of scope for
    this row).
 
    > **CLOSED 2026-08-17** (`d088d49`) — now `Limits.commentMaxLength`
@@ -6405,7 +6405,7 @@ one to the other, only by pinning both to the server's regex.
 
 5. **The constant defect P-2 found, which is a real bug and not a tidiness note.** Both composers were
    counting the story-review body against the **2,000-character engagement comment cap**. That is the
-   wrong endpoint's limit. AF6's private story review is `MAX_COMMENT_BODY_LENGTH` in `@qalam/shared`
+   wrong endpoint's limit. AF6's private story review is `MAX_COMMENT_BODY_LENGTH` in `@umberleaf/shared`
    `collaboration.ts` — **5,000** — while 2,000 is `limits.ts`'s cap on a **public piece comment**.
    The two had been conflated. Mobile had no mirror of the larger constant at all, so
    `Limits.storyCommentBodyMax = 5000` was added (`lib/shared/domain/limits.dart:24`) with a docblock
@@ -6529,7 +6529,7 @@ clean.
 
 #### The map, and why it stops where it does
 
-`AiFeature → PremiumFeature | null`, in `@qalam/shared` beside `AiFeature`, mirrored in Dart for the
+`AiFeature → PremiumFeature | null`, in `@umberleaf/shared` beside `AiFeature`, mirrored in Dart for the
 Flutter client. **Five** features are sold behind `ai_writing`: `writing_assistant`, `craft_coach`, and
 the three vestigial AF1 codes (`grammar`, `rewrite`, `summarization`) which have no caller and are
 mapped for totality. Everything else maps to `null`, each for its own reason:
@@ -6550,7 +6550,7 @@ mapped for totality. Everything else maps to `null`, each for its own reason:
 **Totality is the load-bearing part.** The map is declared with `satisfies Record<AiFeature, …>` rather
 than a `Record<>` annotation, which keeps `keyof typeof` as the literal keys so the mutual-extends
 assertion beside it is a real check and not a tautology; adding an `AiFeature` without a row fails
-`pnpm typecheck` in three places. `@qalam/shared` has no test runner — it is pure vocabulary — so
+`pnpm typecheck` in three places. `@umberleaf/shared` has no test runner — it is pure vocabulary — so
 typecheck **is** its suite, and that is where the pin belongs. Dart has no equivalent for a `Map`
 literal, so `aiPremiumMapIsTotal()` stands in for it and the mobile suite asserts it. The direction
 matters more than it looks: a future AI feature that forgets to declare itself must fail loudly, never
@@ -7071,7 +7071,7 @@ The total is labelled a **projection** and that word is load-bearing: with no ro
 the server's `sumActiveStrikeWeight`. A strike that expired since the standing was fetched makes the real
 total lower. Claiming a confirmed figure there would be the more comfortable copy and the false one.
 
-The thresholds, weights and band boundaries are all read from `@qalam/shared`, never inlined, and the
+The thresholds, weights and band boundaries are all read from `@umberleaf/shared`, never inlined, and the
 component spec asserts the copy at exactly weight 2→3 and 5→6 so a change to either constant fails a
 test rather than quietly rewording a dialog.
 
@@ -7106,7 +7106,7 @@ maps verbatim: "Good standing" for `normal`, "Restricted" for `shadowed`, "Shado
 `shadow` restriction type, "Everywhere" for `global` scope, "In force" for a live restriction, "No end
 date" / "Until <date>" for the expiry, "Standing" for the status field.
 
-The duplication is deliberate. `@qalam/shared` is a contract package and carries no copy, and there is
+The duplication is deliberate. `@umberleaf/shared` is a contract package and carries no copy, and there is
 no cross-app import to reach for, so the alternative was letting an operator and a writer describe the
 same restriction in two vocabularies. Three fields have **no** client wording to inherit — `score`,
 `level` and `activeStrikeWeight` are rendered by neither client — so those use the enum's own words
@@ -7452,7 +7452,7 @@ surface, no retrieval **evaluation** UI (`evaluation/search-evaluation.service.t
 and is not this row's), and no fix for §3.19's missing catalogue entry.
 
 **One scope decision that reads like scope creep and is not.** `RETRIEVAL_CONFIG_BOUNDS` and
-`SEARCH_ANALYTICS_DEFAULT_WINDOW_DAYS` were added to `@qalam/shared` and the DTO was repointed at them.
+`SEARCH_ANALYTICS_DEFAULT_WINDOW_DAYS` were added to `@umberleaf/shared` and the DTO was repointed at them.
 The DTO previously hardcoded four ranges and documented a fifth it did not enforce; the admin form needs
 those same numbers, and a form offering a value the route rejects is a defect waiting to happen. One
 constant, two readers, no behavioural change — the AF1 `AI_PARAM_BOUNDS` idiom.

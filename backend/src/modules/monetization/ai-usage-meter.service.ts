@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { QuotaWindow, quotaRuleForAiFeature, premiumCodeForAiFeature } from '@qalam/shared';
+import { QuotaWindow, quotaRuleForAiFeature, premiumCodeForAiFeature } from '@umberleaf/shared';
 
 import { DomainEventBus } from '../../common/events/domain-event-bus';
 import { DomainEventType } from '../../common/events/domain-events';

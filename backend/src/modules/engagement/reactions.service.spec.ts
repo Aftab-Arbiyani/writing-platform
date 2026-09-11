@@ -1,4 +1,4 @@
-import { MAX_CLAPS_PER_USER_PER_PIECE } from '@qalam/shared';
+import { MAX_CLAPS_PER_USER_PER_PIECE } from '@umberleaf/shared';
 import type { EntityManager } from 'typeorm';
 
 import type { TransactionRunner } from '../../common/database/transaction-runner';

@@ -5,7 +5,7 @@ import { persist } from 'zustand/middleware';
  * Theme slice (client state → Zustand per docs/00 §6). Persisted under
  * 'qalam-admin-theme' — the same key the anti-flash script in index.html reads
  * before first paint. Dark mode is class-strategy: `data-theme` on <html>,
- * consumed by @qalam/ui tokens.css and the AntD dark algorithm.
+ * consumed by @umberleaf/ui tokens.css and the AntD dark algorithm.
  */
 export type ThemeMode = 'light' | 'dark' | 'system';
 export type ResolvedTheme = 'light' | 'dark';

@@ -1,5 +1,5 @@
-import { MAX_SUGGESTION_LENGTH, POLICY_ACTIONS } from '@qalam/shared';
-import { QButton, QDialog, QTextArea, useToast } from '@qalam/ui';
+import { MAX_SUGGESTION_LENGTH, POLICY_ACTIONS } from '@umberleaf/shared';
+import { QButton, QDialog, QTextArea, useToast } from '@umberleaf/ui';
 import { PenLine, X } from 'lucide-react';
 import { type ReactElement, useState } from 'react';
 

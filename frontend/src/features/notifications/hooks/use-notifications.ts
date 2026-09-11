@@ -1,4 +1,4 @@
-import type { NotificationStatus, NotificationType } from '@qalam/shared';
+import type { NotificationStatus, NotificationType } from '@umberleaf/shared';
 import { useInfiniteQuery } from '@tanstack/react-query';
 
 import { qk } from '@/lib/query-keys';

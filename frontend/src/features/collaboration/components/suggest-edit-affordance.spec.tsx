@@ -1,4 +1,4 @@
-import { POLICY_ACTIONS } from '@qalam/shared';
+import { POLICY_ACTIONS } from '@umberleaf/shared';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 

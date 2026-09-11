@@ -150,10 +150,10 @@ Five, all detailed in [48 §3.6](./48_PlatformParityRegister.md). Summarised by 
 | #        | Severity | Finding                                                                                     | Client impact                                                          |
 | -------- | -------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
 | **W4-1** | medium   | `subscription/history` 404s where its three sibling ledgers answer an empty page            | Mapped narrowly to an empty page, else every free reader sees an error |
-| **W4-2** | medium   | `@qalam/api-types` `RestorePurchasesResponse` has two of three fields wrong                 | Type declared locally from the controller                              |
+| **W4-2** | medium   | `@umberleaf/api-types` `RestorePurchasesResponse` has two of three fields wrong             | Type declared locally from the controller                              |
 | **W4-3** | —        | eight features sold, one enforced — see [48 §5.2](./48_PlatformParityRegister.md)           | Determined the whole gating design (§2)                                |
 | **W4-4** | high     | **there is no inert payment port** — every provider including `manual` refuses without keys | Determined the E2E shape (§6) and the "payments unavailable" state     |
-| **W4-5** | medium   | `@qalam/api-types` `ChangePlanRequest.couponCode` would 400 the whole plan change           | Promo field hidden from existing subscribers                           |
+| **W4-5** | medium   | `@umberleaf/api-types` `ChangePlanRequest.couponCode` would 400 the whole plan change       | Promo field hidden from existing subscribers                           |
 
 **The W3c-1 check this row asked for comes back clean.** All twenty routes are coarse-gated on
 `BillingUse`, which `Role.User` holds, and **none asserts an entitlement** — the entitlement decisions
@@ -186,7 +186,7 @@ Re-run in full at the register close-out (2026-07-29), across both repos:
 | Backend suite                     | ✅ **987 passed** (136 files) — +14 `ManualAdapter`, +9 api-types contract, +3 `listHistory` |
 | Backend lint / tsc / `nest build` | ✅ clean                                                                                     |
 | Migration                         | ✅ `1784620000000` applied, reverted and re-applied; index confirmed in `pg_indexes`         |
-| `@qalam/api-types` build          | ✅ clean after the three corrections                                                         |
+| `@umberleaf/api-types` build      | ✅ clean after the three corrections                                                         |
 | Frontend unit suite               | ✅ **503 passed** (97 files)                                                                 |
 | `eslint .` (frontend + e2e + be)  | ✅ clean, 0 errors 0 warnings                                                                |
 | `npm run build`                   | ✅ (`tsc -b && vite build`)                                                                  |

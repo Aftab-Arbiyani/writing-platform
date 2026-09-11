@@ -1,5 +1,5 @@
-import { ThemePreference } from '@qalam/shared';
-import { cn } from '@qalam/ui';
+import { ThemePreference } from '@umberleaf/shared';
+import { cn } from '@umberleaf/ui';
 import { Monitor, Moon, Sun } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { ReactElement } from 'react';

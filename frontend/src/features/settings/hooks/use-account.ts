@@ -1,4 +1,4 @@
-import { Role } from '@qalam/shared';
+import { Role } from '@umberleaf/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { decodeAccessToken } from '@/lib/jwt';

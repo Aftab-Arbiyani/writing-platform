@@ -1,4 +1,4 @@
-import { MAX_CLAPS_PER_USER_PER_PIECE } from '@qalam/shared';
+import { MAX_CLAPS_PER_USER_PER_PIECE } from '@umberleaf/shared';
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { ReactElement, ReactNode } from 'react';

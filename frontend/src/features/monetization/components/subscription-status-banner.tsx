@@ -1,4 +1,4 @@
-import { QCard } from '@qalam/ui';
+import { QCard } from '@umberleaf/ui';
 import type { ReactElement } from 'react';
 
 import { resolveStatusBanner, type BannerTone } from '../lib/subscription-status';

@@ -1,4 +1,4 @@
-# 08 — Component Library (`@qalam/ui`)
+# 08 — Component Library (`@umberleaf/ui`)
 
 > **Derives from:** `00_ArchitectureDecisions.md` §2 (package responsibilities), §6
 > (frontend stack). Visual/behavioral specs live in `07_DesignSystem.md`; screen usage
@@ -9,17 +9,17 @@
 
 ## 1. Package Charter
 
-`@qalam/ui` is _how it looks_ (ADR §2): design tokens, the AntD theme factory, the
+`@umberleaf/ui` is _how it looks_ (ADR §2): design tokens, the AntD theme factory, the
 Tailwind `@theme` layer, motion variants, and shared presentational components consumed
 by both `frontend/` and `admin/`.
 
-**Hard boundaries — what `@qalam/ui` may never contain:**
+**Hard boundaries — what `@umberleaf/ui` may never contain:**
 
 - No data fetching: no TanStack Query, no `api-client`, no hooks that touch the network.
 - No routing: no `react-router` imports — navigation is injected (see `linkComponent`
   pattern, §3).
 - No app state: no Zustand stores; components are controlled via props.
-- No domain logic: limits like `MAX_CLAPS_PER_USER` are _imported_ from `@qalam/shared`
+- No domain logic: limits like `MAX_CLAPS_PER_USER` are _imported_ from `@umberleaf/shared`
   as defaults, never redefined.
 
 _Why:_ a presentational-only package stays buildable by tsup, testable in isolation,
@@ -30,9 +30,9 @@ renderable in Storybook without providers, and reusable by any future consumer
 
 | Question (first "yes" wins)                                                           | Home                                                    | Examples                                      |
 | ------------------------------------------------------------------------------------- | ------------------------------------------------------- | --------------------------------------------- |
-| Is it a token, theme object, motion variant, or global style?                         | `@qalam/ui/tokens`                                      | `tokens.css`, `antdTheme()`, `fadeRise`       |
-| Is it a generic primitive any product surface could use?                              | `@qalam/ui` (Q-prefixed)                                | `QButton`, `QDialog`, `QSkeleton`             |
-| Is it domain-shaped but purely presentational _and_ used by ≥ 2 apps or ≥ 2 features? | `@qalam/ui` (product components)                        | `PieceCard`, `AuthorByline`, `ClapButton`     |
+| Is it a token, theme object, motion variant, or global style?                         | `@umberleaf/ui/tokens`                                  | `tokens.css`, `antdTheme()`, `fadeRise`       |
+| Is it a generic primitive any product surface could use?                              | `@umberleaf/ui` (Q-prefixed)                            | `QButton`, `QDialog`, `QSkeleton`             |
+| Is it domain-shaped but purely presentational _and_ used by ≥ 2 apps or ≥ 2 features? | `@umberleaf/ui` (product components)                    | `PieceCard`, `AuthorByline`, `ClapButton`     |
 | Is it an app-wide composite that wires shell/app concerns (router, session)?          | `frontend/src/components/` (or `admin/src/components/`) | `AppShell`, `TopBar`, `NotificationsBell`     |
 | Is it used by exactly one feature?                                                    | `features/<name>/components/`                           | `PublishSheet`, `FootnotePopover`, `StatTile` |
 
@@ -44,7 +44,7 @@ moves _up_ one level via the §7 workflow — it is never copy-pasted sideways.
 ## 2. Build-vs-Wrap Policy
 
 The rule of thumb (ADR §6): **AntD for complex widget machinery, custom for literary
-surfaces.** Wrapping means: AntD component inside, `@qalam/ui` API outside — apps never
+surfaces.** Wrapping means: AntD component inside, `@umberleaf/ui` API outside — apps never
 import `antd` directly (lint-enforced), so an AntD swap-out later is a package-internal
 change.
 
@@ -66,7 +66,7 @@ change.
 
 Conventions used below: every component `forwardRef`s to its root element; every
 component accepts `className` (Tailwind merge via `clsx` + `tailwind-merge`); domain
-types come from `@qalam/api-types`; navigation is injected:
+types come from `@umberleaf/api-types`; navigation is injected:
 
 ```ts
 // The one navigation seam. Apps pass their router's Link; Storybook passes <a>.
@@ -172,7 +172,7 @@ export interface QSkeletonProps {
 ### 3.2 Product components
 
 ```ts
-import type { PieceSummary, AuthorSummary, LanguageRef } from '@qalam/api-types';
+import type { PieceSummary, AuthorSummary, LanguageRef } from '@umberleaf/api-types';
 
 export interface PieceCardProps {
   piece: PieceSummary; // slug, title, subtitle, language{code,dir,nativeName},
@@ -188,7 +188,7 @@ export interface PieceCardProps {
 export interface ClapButtonProps {
   total: number; // piece-wide clap count (formatted by the component)
   mine: number; // this user's claps, 0..max
-  max?: number; // default MAX_CLAPS_PER_USER from @qalam/shared (50)
+  max?: number; // default MAX_CLAPS_PER_USER from @umberleaf/shared (50)
   onClap: (increment: number) => void; // called ONCE per batch, 600ms after last tap
   disabled?: boolean; // own piece / logged out — tooltip explains why
   disabledReason?: string;
@@ -225,7 +225,7 @@ export interface ReadingProgressProps {
 
 ## 4. Every-Component Checklist
 
-No component merges into `@qalam/ui` unless every box is checked. This list is the PR
+No component merges into `@umberleaf/ui` unless every box is checked. This list is the PR
 template for the package.
 
 | #   | Check               | Concretely                                                                                                                                             |
@@ -256,13 +256,13 @@ template for the package.
   controlled — optimistic logic belongs to the app's TanStack Query hooks, not the
   component (`06` §4.1). Uncontrolled convenience variants are not offered.
 - **Data-shaped props, not prop soup.** Product components accept the
-  `@qalam/api-types` summary object (`piece={piece}`) rather than 14 scalar props — the
+  `@umberleaf/api-types` summary object (`piece={piece}`) rather than 14 scalar props — the
   wire contract is the design contract.
 - **Naming:** primitives are `Q`-prefixed (`QButton`) — they are Qalam's opinion of a
   generic control. Product components carry plain domain names (`PieceCard`,
   `ClapButton`) — there is only one of each concept. Files: `QButton/QButton.tsx` +
   `QButton.stories.tsx` + `index.ts`; exports are named, no default exports.
-- **One motion source:** components import variants from `@qalam/ui/motion` — never
+- **One motion source:** components import variants from `@umberleaf/ui/motion` — never
   inline `transition={{ duration: … }}` literals.
 
 ---
@@ -270,7 +270,7 @@ template for the package.
 ## 6. Storybook Plan (Phase 1)
 
 - **Setup:** Storybook ^8 with the Vite builder, living in `packages/ui`
-  (`pnpm --filter @qalam/ui storybook`). Decorators provide: token CSS, AntD
+  (`pnpm --filter @umberleaf/ui storybook`). Decorators provide: token CSS, AntD
   `ConfigProvider` (theme from the same factory the apps use), `MotionProvider`, and a
   mock `LinkComponent`.
 - **Global toolbars:** theme (light/dark → `data-theme`), direction (ltr/rtl → `dir`
@@ -315,26 +315,26 @@ two failure modes before any JSX is written.
 
 ## 8. Authoring standards (all apps)
 
-§1–§7 charter the `@qalam/ui` package. This section is the standard for authoring components
-**everywhere** — `@qalam/ui`, `frontend/`, and `admin/` app components. It enforces `16` §4
+§1–§7 charter the `@umberleaf/ui` package. This section is the standard for authoring components
+**everywhere** — `@umberleaf/ui`, `frontend/`, and `admin/` app components. It enforces `16` §4
 for React and complements the placement table in §1.1.
 
 ### 8.1 Where a component lives (the procedure)
 
 Run §1.1's table for every new component (first "yes" wins): token/theme/motion →
-`@qalam/ui/tokens`; generic primitive → `@qalam/ui` (`Q*`); presentational + domain-shaped +
-≥2 apps/features → `@qalam/ui` product component; app-wide composite wiring shell/session →
+`@umberleaf/ui/tokens`; generic primitive → `@umberleaf/ui` (`Q*`); presentational + domain-shaped +
+≥2 apps/features → `@umberleaf/ui` product component; app-wide composite wiring shell/session →
 `src/components/`; single-feature → `features/<name>/components/`. **Promotion is one-way**
 (§7) — a feature component a second feature needs moves _up_, never copy-pasted sideways
 (cross-feature imports are lint-blocked, `03` §5 rule 7).
 
 ### 8.2 Container vs presentational (enforced by tier)
 
-|          | Presentational                                    | Container                                            |
-| -------- | ------------------------------------------------- | ---------------------------------------------------- |
-| Lives in | all of `@qalam/ui`, most `features/*/components/` | thin `features/*/components/` wrapper, route modules |
-| Knows    | props only (tokens, motion, a11y)                 | query hooks, mutations, URL params, stores           |
-| Data     | via props; **controlled** for social state        | fetches via the feature `api/` hooks                 |
+|          | Presentational                                        | Container                                            |
+| -------- | ----------------------------------------------------- | ---------------------------------------------------- |
+| Lives in | all of `@umberleaf/ui`, most `features/*/components/` | thin `features/*/components/` wrapper, route modules |
+| Knows    | props only (tokens, motion, a11y)                     | query hooks, mutations, URL params, stores           |
+| Data     | via props; **controlled** for social state            | fetches via the feature `api/` hooks                 |
 
 **Components never fetch** — component → feature query hook (`usePiece(id)`) → feature `api/`
 → `lib/api-client` (three mockable layers, `16` §4.2). A component importing `api-client`/
@@ -351,11 +351,11 @@ features/<name>/
 ├── hooks/      # use-*.ts
 ├── stores/     # feature-private Zustand slices (client state only)
 ├── schemas/    # Zod schemas for this feature's forms
-├── types/      # feature-local types (wire types from @qalam/api-types)
+├── types/      # feature-local types (wire types from @umberleaf/api-types)
 └── index.ts    # the feature's PUBLIC surface — the only cross-feature import point
 ```
 
-`@qalam/ui` component: `QButton/QButton.tsx` + `QButton.stories.tsx` + `index.ts`. Files
+`@umberleaf/ui` component: `QButton/QButton.tsx` + `QButton.stories.tsx` + `index.ts`. Files
 kebab-case; component PascalCase. **No re-export barrels inside `components/`, `dto/`,
 `entities/`** (cycles + broken tree-shaking, `16` §5.2); allowed barrels: one per feature +
 the package root.
@@ -368,7 +368,7 @@ default** for social state (no uncontrolled convenience variants); **`forwardRef
 
 - merge `className`** (never clobber); **required a11y props for non-text UI** (`QBadge.
 srLabel`, `QTag.removeLabel`, `QDialog.title`); **`LinkComponent` injection** for navigation
-  in `@qalam/ui` (no `react-router` import). Props interface `PascalCase`+`Props`, declared
+  in `@umberleaf/ui` (no `react-router` import). Props interface `PascalCase`+`Props`, declared
   above the component; explicit types, no `any`; user-content fields default `dir="auto"`.
 
 ### 8.5 Composition, size & boundaries
@@ -376,7 +376,7 @@ srLabel`, `QTag.removeLabel`, `QDialog.title`); **`LinkComponent` injection** fo
 Compound components for cohesive groups (`Component.Root/.Header/.Body`) over 12-prop
 monoliths; **extract at 200 lines** (component's job is rendering, not orchestration —
 `16` §4.2); custom hooks for 3+-dep effects / state machines / twice-reused logic; reuse
-graduates _down_ (`components/`/`@qalam/ui`/`@qalam/utils`) — **never** a `features/common`
+graduates _down_ (`components/`/`@umberleaf/ui`/`@umberleaf/utils`) — **never** a `features/common`
 junk drawer. **Feature boundary (load-bearing):** features never import other features'
 internals (go through `index.ts`); `app/` composes features, features never import `app/`;
 the exit check is `rm -rf features/<name>` + route removal (`03` §5 rule 7, §6.2).
@@ -389,7 +389,7 @@ the exit check is `rm -rf features/<name>` + route removal (`03` §5 rule 7, §6
 □ Keyboard reachable + :focus-visible ring; Esc/arrow where the pattern needs it (07 §13)
 □ Reduced motion via shared variants (07 §14); states loading/disabled(+reason)/error/empty designed
 □ forwardRef to root; className merged; a11y contract per §4 / 07 §9,§13
-□ No app imports in @qalam/ui; social state controlled; no fetch in components
+□ No app imports in @umberleaf/ui; social state controlled; no fetch in components
 □ Function component; props interface above; < 200 lines; named export (default only for route lazy)
-□ Story per variant + Matrix (theme×dir) for @qalam/ui; Vitest for logic
+□ Story per variant + Matrix (theme×dir) for @umberleaf/ui; Vitest for logic
 ```

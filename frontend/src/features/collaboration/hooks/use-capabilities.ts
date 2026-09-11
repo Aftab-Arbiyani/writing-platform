@@ -1,4 +1,4 @@
-import type { PolicyActionCode } from '@qalam/shared';
+import type { PolicyActionCode } from '@umberleaf/shared';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 

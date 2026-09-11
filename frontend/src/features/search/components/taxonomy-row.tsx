@@ -1,4 +1,4 @@
-import { QCard } from '@qalam/ui';
+import { QCard } from '@umberleaf/ui';
 import { ChevronRight } from 'lucide-react';
 import { memo, type ReactElement } from 'react';
 import { Link } from 'react-router';

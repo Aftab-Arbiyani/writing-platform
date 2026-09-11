@@ -1,5 +1,5 @@
 /**
- * @qalam/config — base ESLint flat config (ESLint 9).
+ * @umberleaf/config — base ESLint flat config (ESLint 9).
  *
  * Uses the plain `recommended` typescript-eslint preset — deliberately NOT the
  * type-checked variant — so lint stays fast in CI (no full `tsc` program build).

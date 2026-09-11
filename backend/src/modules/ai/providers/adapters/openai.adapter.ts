@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
-import { AiProvider } from '@qalam/shared';
+import { AiProvider } from '@umberleaf/shared';
 
 import { aiConfig } from '../../../../config/ai.config';
 import { OpenAiCompatibleAdapter } from './openai-compatible.adapter';

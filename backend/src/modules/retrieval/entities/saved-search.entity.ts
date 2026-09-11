@@ -1,4 +1,4 @@
-import type { RetrievalQueryType } from '@qalam/shared';
+import type { RetrievalQueryType } from '@umberleaf/shared';
 import { Column, Entity, Index } from 'typeorm';
 
 import { QalamBaseEntity } from '../../../common/base/base.entity';

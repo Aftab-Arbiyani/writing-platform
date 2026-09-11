@@ -1,5 +1,5 @@
 import { Switch } from 'antd';
-import { QErrorState, QSpinner, useToast } from '@qalam/ui';
+import { QErrorState, QSpinner, useToast } from '@umberleaf/ui';
 import type { ReactElement } from 'react';
 
 import { usePageTitle } from '@/hooks/use-page-title';

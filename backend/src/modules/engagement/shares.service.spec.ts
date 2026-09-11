@@ -1,4 +1,4 @@
-import { ShareChannel } from '@qalam/shared';
+import { ShareChannel } from '@umberleaf/shared';
 import type { EntityManager } from 'typeorm';
 
 import type { TransactionRunner } from '../../common/database/transaction-runner';

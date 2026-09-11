@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ReviewState } from '@qalam/shared';
-import type { PublicationEvent as PublicationEventType, SnapshotReason } from '@qalam/shared';
+import { ReviewState } from '@umberleaf/shared';
+import type { PublicationEvent as PublicationEventType, SnapshotReason } from '@umberleaf/shared';
 import { Repository } from 'typeorm';
 
 import { PublicationEvent } from './entities/publication-event.entity';

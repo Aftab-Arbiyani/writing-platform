@@ -1,6 +1,6 @@
 import { Column, Entity, Index } from 'typeorm';
-import { ReviewState } from '@qalam/shared';
-import type { ReviewDecision } from '@qalam/shared';
+import { ReviewState } from '@umberleaf/shared';
+import type { ReviewDecision } from '@umberleaf/shared';
 
 import { QalamBaseEntity } from '../../../common/base/base.entity';
 

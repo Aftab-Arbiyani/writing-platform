@@ -1,4 +1,4 @@
-import { ExplorerView } from '@qalam/shared';
+import { ExplorerView } from '@umberleaf/shared';
 
 import type { StoryGraphDto } from '../../story-intelligence/dto/story-response.dto';
 import { StoryIntelligenceService } from '../../story-intelligence/story-intelligence.service';

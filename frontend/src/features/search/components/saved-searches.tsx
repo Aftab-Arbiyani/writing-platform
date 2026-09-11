@@ -1,5 +1,5 @@
-import type { SavedSearch } from '@qalam/api-types';
-import { QButton, QDialog, QInput, useToast } from '@qalam/ui';
+import type { SavedSearch } from '@umberleaf/api-types';
+import { QButton, QDialog, QInput, useToast } from '@umberleaf/ui';
 import { Bookmark, BookmarkPlus, X } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
 

@@ -3,7 +3,7 @@ import type {
   ExplorerViewResponse,
   MapStoryRequest,
   StoryMapStreamEvent,
-} from '@qalam/api-types';
+} from '@umberleaf/api-types';
 
 import { get, stream } from '@/lib/api-client';
 

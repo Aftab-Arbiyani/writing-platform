@@ -1,4 +1,4 @@
-import { RetrievalQueryType } from '@qalam/shared';
+import { RetrievalQueryType } from '@umberleaf/shared';
 
 import { QueryClassifierService } from './query-classifier.service';
 

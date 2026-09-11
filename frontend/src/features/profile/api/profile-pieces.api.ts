@@ -1,4 +1,4 @@
-import type { PieceStatus } from '@qalam/shared';
+import type { PieceStatus } from '@umberleaf/shared';
 
 import { getPage, type CursorPage } from '@/lib/api-client';
 import { buildQueryString } from '@/lib/http';

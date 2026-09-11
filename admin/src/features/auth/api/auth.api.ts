@@ -1,4 +1,4 @@
-import type { AuthTokens } from '@qalam/api-types';
+import type { AuthTokens } from '@umberleaf/api-types';
 
 import { api } from '@/lib/api-client';
 

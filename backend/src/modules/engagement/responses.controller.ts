@@ -16,7 +16,7 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { PERMISSIONS } from '@qalam/shared';
+import { PERMISSIONS } from '@umberleaf/shared';
 import type { Request } from 'express';
 
 import { CursorPaginationDto } from '../../common/dto/cursor-pagination.dto';

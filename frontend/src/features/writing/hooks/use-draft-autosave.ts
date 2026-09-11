@@ -1,4 +1,4 @@
-import { ERROR_CODES } from '@qalam/shared';
+import { ERROR_CODES } from '@umberleaf/shared';
 import { useCallback, useEffect, useRef } from 'react';
 
 import { ApiError } from '@/lib/api-client';

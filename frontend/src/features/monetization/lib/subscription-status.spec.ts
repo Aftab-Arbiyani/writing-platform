@@ -1,4 +1,4 @@
-import { BillingInterval, PaymentProvider, PlanTier, SubscriptionStatus } from '@qalam/shared';
+import { BillingInterval, PaymentProvider, PlanTier, SubscriptionStatus } from '@umberleaf/shared';
 import { describe, expect, it } from 'vitest';
 
 import { formatDate } from '@/lib/format';

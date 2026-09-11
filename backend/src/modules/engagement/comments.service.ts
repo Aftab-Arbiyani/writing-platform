@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { MAX_COMMENT_DEPTH, ROLE_RANK, type Role } from '@qalam/shared';
+import { MAX_COMMENT_DEPTH, ROLE_RANK, type Role } from '@umberleaf/shared';
 
 import { TransactionRunner } from '../../common/database/transaction-runner';
 import { DomainEventBus } from '../../common/events/domain-event-bus';

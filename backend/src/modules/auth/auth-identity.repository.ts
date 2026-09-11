@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { AuthProvider } from '@qalam/shared';
+import { AuthProvider } from '@umberleaf/shared';
 import { DataSource } from 'typeorm';
 import type { EntityManager, Repository } from 'typeorm';
 

@@ -8,7 +8,7 @@ import type {
   PresenceState,
   StoryRole,
   SuggestionStatus,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 /** A collaborator on a story (owner is included, synthesised from the piece author). */
 export class MemberDto {

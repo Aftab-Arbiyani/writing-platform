@@ -1,5 +1,5 @@
-import { MAX_SUGGESTION_LENGTH } from '@qalam/shared';
-import { QButton, QCard, QInput, QTextArea } from '@qalam/ui';
+import { MAX_SUGGESTION_LENGTH } from '@umberleaf/shared';
+import { QButton, QCard, QInput, QTextArea } from '@umberleaf/ui';
 import { type ReactElement, useState } from 'react';
 
 /**

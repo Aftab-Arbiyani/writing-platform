@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import type { NotificationStatus, NotificationType } from '@qalam/shared';
+import type { NotificationStatus, NotificationType } from '@umberleaf/shared';
 
 /** The actor who triggered a notification (denormalized at emit time). */
 export class NotificationActorDto {

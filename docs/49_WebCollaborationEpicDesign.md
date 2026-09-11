@@ -66,7 +66,7 @@ input.
   matching capability is `allowed`.
 - **Fails closed.** A failed capabilities load degrades to read-only, exactly as mobile does. Never
   optimistic.
-- Role rank (`STORY_ROLE_RANK`, `storyRoleAtLeast`) is imported from `@qalam/shared` for **display
+- Role rank (`STORY_ROLE_RANK`, `storyRoleAtLeast`) is imported from `@umberleaf/shared` for **display
   ordering only** — never to decide whether a button appears.
 - Restricted effects (`suspended`, `read_only`, `muted`, `blocked`, `conditional_access` +
   `shadow_only`) render the W3c walls from the server's own `effect`/`reason`.
@@ -75,14 +75,14 @@ input.
 
 `frontend/src/features/collaboration/`, following `features/reading/` exactly:
 
-| Layer         | Content                                                                                                                  |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `api/`        | `collaboration.api.ts`, `publishing.api.ts`, `trust.api.ts` — the only place AF6 routes are named                        |
-| `types/`      | `collaboration.types.ts` — wire types mirroring the DTOs; vocabulary re-exported from `@qalam/shared`, never re-declared |
-| `hooks/`      | one hook per query/mutation, `qk.*` keys only, invalidation by prefix                                                    |
-| `components/` | `capability-gate`, `role-badge`, `presence-bar`, member/invitation/comment/suggestion pieces                             |
-| `pages/`      | one page per route below                                                                                                 |
-| `index.ts`    | the feature's public surface; `app/routes/*` composes it                                                                 |
+| Layer         | Content                                                                                                                      |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `api/`        | `collaboration.api.ts`, `publishing.api.ts`, `trust.api.ts` — the only place AF6 routes are named                            |
+| `types/`      | `collaboration.types.ts` — wire types mirroring the DTOs; vocabulary re-exported from `@umberleaf/shared`, never re-declared |
+| `hooks/`      | one hook per query/mutation, `qk.*` keys only, invalidation by prefix                                                        |
+| `components/` | `capability-gate`, `role-badge`, `presence-bar`, member/invitation/comment/suggestion pieces                                 |
+| `pages/`      | one page per route below                                                                                                     |
+| `index.ts`    | the feature's public surface; `app/routes/*` composes it                                                                     |
 
 New `qk` namespace (added to `lib/query-keys.ts`, never ad-hoc arrays):
 

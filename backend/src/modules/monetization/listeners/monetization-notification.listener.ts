@@ -1,5 +1,5 @@
 import { Injectable, Logger, type OnModuleInit } from '@nestjs/common';
-import { NotificationEntityType, NotificationType, SubscriptionEventType } from '@qalam/shared';
+import { NotificationEntityType, NotificationType, SubscriptionEventType } from '@umberleaf/shared';
 
 import { DomainEventBus } from '../../../common/events/domain-event-bus';
 import {

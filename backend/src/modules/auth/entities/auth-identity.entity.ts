@@ -1,4 +1,4 @@
-import { AuthProvider } from '@qalam/shared';
+import { AuthProvider } from '@umberleaf/shared';
 import { Column, Entity, Index, Unique } from 'typeorm';
 
 import { QalamBaseEntity } from '../../../common/base/base.entity';

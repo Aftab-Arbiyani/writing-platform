@@ -3,7 +3,7 @@
  * P7.2 admin DTOs (`backend/src/modules/security/security-admin.controller.ts` +
  * `security-platform.service.ts` + `key-management.service.ts`,
  * `backend/src/modules/compliance/compliance.service.ts`, and the privacy vocabulary in
- * `backend/src/modules/privacy/privacy.constants.ts`). Hand-authored until `@qalam/api-types`
+ * `backend/src/modules/privacy/privacy.constants.ts`). Hand-authored until `@umberleaf/api-types`
  * covers them — only the fields the views read are declared (extra response fields are ignored by
  * structural typing). Never carries a secret or key material — status only.
  */

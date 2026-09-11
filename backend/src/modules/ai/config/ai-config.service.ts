@@ -1,8 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { AI_GENERATION_DEFAULTS, AI_PARAM_BOUNDS, clampAiParam } from '@qalam/shared';
-import type { AiGenerationParams, AiProvider, AiResolvedConfig } from '@qalam/shared';
+import { AI_GENERATION_DEFAULTS, AI_PARAM_BOUNDS, clampAiParam } from '@umberleaf/shared';
+import type { AiGenerationParams, AiProvider, AiResolvedConfig } from '@umberleaf/shared';
 import { Repository } from 'typeorm';
 
 import { aiConfig } from '../../../config/ai.config';

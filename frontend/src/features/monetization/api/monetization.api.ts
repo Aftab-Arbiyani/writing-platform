@@ -1,4 +1,4 @@
-import type { BillingInterval, PaymentProvider, PlanTier, PremiumFeature } from '@qalam/shared';
+import type { BillingInterval, PaymentProvider, PlanTier, PremiumFeature } from '@umberleaf/shared';
 
 import { get, getPage, post, type CursorPage } from '@/lib/api-client';
 import { buildQueryString } from '@/lib/http';
@@ -197,7 +197,7 @@ export const monetizationApi = {
   /**
    * POST /monetization/purchases/restore — re-grant from a store receipt.
    *
-   * Returns `{ restored, providerRef, expiresAt }`. `@qalam/api-types` used to declare a different
+   * Returns `{ restored, providerRef, expiresAt }`. `@umberleaf/api-types` used to declare a different
    * shape entirely; W4-2 corrected the package against this controller and pinned the two together, so
    * {@link RestorePurchasesResult} is now just an alias of the package type. Store-receipt-only, so like
    * credit purchases this has no browser path; the method exists for contract completeness and is not

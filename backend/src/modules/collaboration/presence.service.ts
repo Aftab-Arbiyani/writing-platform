@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { POLICY_ACTIONS, PRESENCE_TTL_SECONDS } from '@qalam/shared';
-import type { PresenceState } from '@qalam/shared';
+import { POLICY_ACTIONS, PRESENCE_TTL_SECONDS } from '@umberleaf/shared';
+import type { PresenceState } from '@umberleaf/shared';
 
 import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { PieceNotFoundException } from '../pieces/exceptions/pieces.exceptions';

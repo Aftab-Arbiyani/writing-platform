@@ -1,4 +1,4 @@
-import { PaymentStatus } from '@qalam/shared';
+import { PaymentStatus } from '@umberleaf/shared';
 import type { Repository } from 'typeorm';
 
 import type { Payment } from './entities/payment.entity';

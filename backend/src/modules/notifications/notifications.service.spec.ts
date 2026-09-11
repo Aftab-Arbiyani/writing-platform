@@ -1,4 +1,4 @@
-import { NotificationEntityType, NotificationType } from '@qalam/shared';
+import { NotificationEntityType, NotificationType } from '@umberleaf/shared';
 
 import type { NotificationQueryDto } from './dto/notification-query.dto';
 import type { NotificationPreference } from './entities/notification-preference.entity';

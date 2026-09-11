@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ERROR_CODES } from '@qalam/shared';
-import { QButton } from '@qalam/ui';
+import { ERROR_CODES } from '@umberleaf/shared';
+import { QButton } from '@umberleaf/ui';
 import { CheckCircle2 } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
 import { useForm } from 'react-hook-form';

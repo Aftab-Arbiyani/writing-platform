@@ -1,4 +1,4 @@
-import { QEmptyState, QTag } from '@qalam/ui';
+import { QEmptyState, QTag } from '@umberleaf/ui';
 import { ShieldOff } from 'lucide-react';
 import type { ReactElement } from 'react';
 

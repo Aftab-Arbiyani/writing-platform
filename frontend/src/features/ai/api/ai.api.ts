@@ -4,7 +4,7 @@ import type {
   AiFeaturesResponse,
   AiModelInfo,
   AiStreamEvent,
-} from '@qalam/api-types';
+} from '@umberleaf/api-types';
 
 import { get, post, stream } from '@/lib/api-client';
 

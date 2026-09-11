@@ -1,4 +1,4 @@
-import { SearchType, SEARCH_QUERY_MIN } from '@qalam/shared';
+import { SearchType, SEARCH_QUERY_MIN } from '@umberleaf/shared';
 import { useInfiniteQuery } from '@tanstack/react-query';
 
 import { qk, type SearchFilters } from '@/lib/query-keys';

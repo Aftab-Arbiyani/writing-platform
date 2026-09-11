@@ -1,4 +1,4 @@
-import type { TextDirection } from '@qalam/shared';
+import type { TextDirection } from '@umberleaf/shared';
 
 import type { WriterCardRow } from './discovery.repository';
 import type { CardRow } from './feed.repository';

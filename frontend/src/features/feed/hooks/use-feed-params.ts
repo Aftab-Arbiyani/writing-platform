@@ -1,4 +1,4 @@
-import { FeedSort } from '@qalam/shared';
+import { FeedSort } from '@umberleaf/shared';
 import { useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router';
 

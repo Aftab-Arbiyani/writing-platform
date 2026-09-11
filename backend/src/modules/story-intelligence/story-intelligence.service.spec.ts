@@ -1,4 +1,4 @@
-import { AiFeature, StoryAnalysisKind, StoryAnalysisScope } from '@qalam/shared';
+import { AiFeature, StoryAnalysisKind, StoryAnalysisScope } from '@umberleaf/shared';
 
 import type { AiCompletionService } from '../ai/orchestration/ai-completion.service';
 import type { EntitlementService } from '../monetization/entitlement.service';

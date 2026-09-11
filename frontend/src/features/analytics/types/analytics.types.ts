@@ -1,9 +1,9 @@
-import type { AnalyticsPeriod, PieceStatus, Visibility } from '@qalam/shared';
+import type { AnalyticsPeriod, PieceStatus, Visibility } from '@umberleaf/shared';
 
 /**
  * Writer-analytics wire types (E10, docs/32 §10) — mirror the frozen `v1` DTOs
  * (`backend/src/modules/analytics/dto/*`) plus the two piece reads this feature reuses
- * (`/me/pieces`, `/pieces/:id`). Replace with generated `@qalam/api-types` once the backend emits
+ * (`/me/pieces`, `/pieces/:id`). Replace with generated `@umberleaf/api-types` once the backend emits
  * `openapi.json`. The analytics feature re-declares the piece shapes rather than importing
  * `features/writing` (a feature never imports another feature, docs/26 §4).
  */

@@ -1,7 +1,7 @@
 import { ForbiddenException } from '@nestjs/common';
 import type { ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { Role } from '@qalam/shared';
+import { Role } from '@umberleaf/shared';
 
 import type { AuthenticatedUser } from '../interfaces/authenticated-user.interface';
 import { RolesGuard } from './roles.guard';

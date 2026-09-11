@@ -1,4 +1,4 @@
-import { MAX_COMMENT_BODY_LENGTH } from '@qalam/shared';
+import { MAX_COMMENT_BODY_LENGTH } from '@umberleaf/shared';
 
 /**
  * The text layer of composing an @mention (P-2, docs/48 §5.1).

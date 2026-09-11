@@ -1,4 +1,4 @@
-import type { NotificationEntityType, NotificationType } from '@qalam/shared';
+import type { NotificationEntityType, NotificationType } from '@umberleaf/shared';
 
 /**
  * Outbound notification port for collaboration (AF6). Decouples this module from

@@ -1,4 +1,4 @@
-import { FollowStatus } from '@qalam/shared';
+import { FollowStatus } from '@umberleaf/shared';
 import { Check, Column, Entity, Index, Unique } from 'typeorm';
 
 import { QalamBaseEntity } from '../../../common/base/base.entity';

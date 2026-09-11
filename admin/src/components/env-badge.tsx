@@ -1,4 +1,4 @@
-import { QTag } from '@qalam/ui';
+import { QTag } from '@umberleaf/ui';
 import type { ReactElement } from 'react';
 
 import { env } from '@/config/env';

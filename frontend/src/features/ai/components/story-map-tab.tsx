@@ -1,5 +1,5 @@
-import { ExplorerView, StoryAnalysisKind } from '@qalam/shared';
-import { QButton, QCard, QEmptyState, QErrorState, QSkeleton, QTag, cn } from '@qalam/ui';
+import { ExplorerView, StoryAnalysisKind } from '@umberleaf/shared';
+import { QButton, QCard, QEmptyState, QErrorState, QSkeleton, QTag, cn } from '@umberleaf/ui';
 import { Network, Square } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
 

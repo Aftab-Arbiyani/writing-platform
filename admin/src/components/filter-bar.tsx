@@ -1,4 +1,4 @@
-import { QButton, cn } from '@qalam/ui';
+import { QButton, cn } from '@umberleaf/ui';
 import { FilterX } from 'lucide-react';
 import type { ReactElement, ReactNode } from 'react';
 

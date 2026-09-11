@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { ShareChannel } from '@qalam/shared';
+import { ShareChannel } from '@umberleaf/shared';
 import { IsEnum } from 'class-validator';
 
 /**

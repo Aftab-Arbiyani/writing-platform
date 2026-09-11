@@ -6,7 +6,7 @@
  * a new adapter class — never a change to the planner or the RetrievalService. This is
  * the direct analogue of AF1's provider/context ports: one seam, many implementations.
  */
-import type { RetrievalSource } from '@qalam/shared';
+import type { RetrievalSource } from '@umberleaf/shared';
 
 import type { RetrievalCandidate, RetrievalPlan, RetrievalRequest } from '../retrieval.types';
 

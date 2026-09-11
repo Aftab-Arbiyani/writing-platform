@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { AnalyticsPeriod, TrendType } from '@qalam/shared';
+import { AnalyticsPeriod, TrendType } from '@umberleaf/shared';
 import { Type } from 'class-transformer';
 import { IsEnum, IsInt, IsOptional, Max, Min } from 'class-validator';
 

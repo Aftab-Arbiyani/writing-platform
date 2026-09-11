@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { RetrievalSource } from '@qalam/shared';
+import { RetrievalSource } from '@umberleaf/shared';
 
 import type { Retriever } from '../ports/retriever.port';
 import type { RetrievalCandidate, RetrievalPlan, RetrievalRequest } from '../retrieval.types';

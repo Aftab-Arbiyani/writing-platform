@@ -1,4 +1,4 @@
-import { QButton, QEmptyState, QPageContainer } from '@qalam/ui';
+import { QButton, QEmptyState, QPageContainer } from '@umberleaf/ui';
 import { WifiOff } from 'lucide-react';
 import type { ReactElement } from 'react';
 

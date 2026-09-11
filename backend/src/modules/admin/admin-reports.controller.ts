@@ -22,7 +22,7 @@ import {
   ApiProduces,
   ApiTags,
 } from '@nestjs/swagger';
-import { PERMISSIONS, ReportStatus } from '@qalam/shared';
+import { PERMISSIONS, ReportStatus } from '@umberleaf/shared';
 import type { Request, Response } from 'express';
 
 import { RateLimit } from '../../common/decorators/rate-limit.decorator';

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { AnalyticsPeriod } from '@qalam/shared';
+import { AnalyticsPeriod } from '@umberleaf/shared';
 import { z } from 'zod';
 
 import { JOB } from '../../../common/queue/queue.constants';

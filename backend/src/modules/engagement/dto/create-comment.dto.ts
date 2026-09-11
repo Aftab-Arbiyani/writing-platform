@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { COMMENT_MAX_LENGTH, COMMENT_MIN_LENGTH } from '@qalam/shared';
+import { COMMENT_MAX_LENGTH, COMMENT_MIN_LENGTH } from '@umberleaf/shared';
 import { IsString, Length } from 'class-validator';
 
 /**

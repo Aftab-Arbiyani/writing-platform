@@ -1,4 +1,4 @@
-import { QAvatar, QSkeleton, QTag } from '@qalam/ui';
+import { QAvatar, QSkeleton, QTag } from '@umberleaf/ui';
 import { Flame, TrendingUp } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { Link } from 'react-router';

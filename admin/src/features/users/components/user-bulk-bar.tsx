@@ -1,5 +1,5 @@
-import { PERMISSIONS } from '@qalam/shared';
-import { QButton, useToast } from '@qalam/ui';
+import { PERMISSIONS } from '@umberleaf/shared';
+import { QButton, useToast } from '@umberleaf/ui';
 import { useState, type ReactElement } from 'react';
 
 import { BulkActionBar } from '@/components/bulk-action-bar';

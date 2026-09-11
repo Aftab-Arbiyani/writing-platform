@@ -1,5 +1,5 @@
-import { ERROR_CODES, PremiumFeature, premiumCodeForAiFeature } from '@qalam/shared';
-import type { AiFeature, AiFeaturesResponse } from '@qalam/api-types';
+import { ERROR_CODES, PremiumFeature, premiumCodeForAiFeature } from '@umberleaf/shared';
+import type { AiFeature, AiFeaturesResponse } from '@umberleaf/api-types';
 
 /**
  * Whether a writing tool may be used right now, and if not, why (W2/AF2, docs/45 §4.2).

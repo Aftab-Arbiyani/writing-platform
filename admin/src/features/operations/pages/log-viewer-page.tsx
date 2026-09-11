@@ -1,4 +1,4 @@
-import { QCard, QTag } from '@qalam/ui';
+import { QCard, QTag } from '@umberleaf/ui';
 import { FileJson, ScrollText } from 'lucide-react';
 import type { ReactElement } from 'react';
 

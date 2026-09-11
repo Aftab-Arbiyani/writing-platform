@@ -3,7 +3,7 @@
 Counts (F10): **8 features · 20 feature pages · 81 feature components · 22 route modules · 7 shared hooks.**
 Components carry no API logic — data comes from hooks in pages; components take props.
 
-## `@qalam/ui` design-system primitives
+## `@umberleaf/ui` design-system primitives
 
 Imported app-wide; own the look, tokens, dark mode, and a11y contract:
 
@@ -11,7 +11,7 @@ Imported app-wide; own the look, tokens, dark mode, and a11y contract:
 `QDrawer` · `QEmptyState` · `QErrorState` · `QInput` · `QLoadingOverlay` · `QPageContainer` ·
 `QPageLoader` · `QPagination` · `QSearch` · `QSectionHeader` · `QSectionLoader` · `QSelect` ·
 `QSkeleton` · `QSpinner` · `QTag` · `QTextArea` (+ their `*Props`). Motion primitives via
-`@qalam/ui/motion` (`MotionProvider`, `pageTransition`). AntD theme via `getAntdTheme(resolved)`.
+`@umberleaf/ui/motion` (`MotionProvider`, `pageTransition`). AntD theme via `getAntdTheme(resolved)`.
 
 ## Shared app components (`src/components`)
 

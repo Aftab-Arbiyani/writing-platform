@@ -1,4 +1,4 @@
-import { QButton } from '@qalam/ui';
+import { QButton } from '@umberleaf/ui';
 import { CheckCheck, Settings } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { Link } from 'react-router';

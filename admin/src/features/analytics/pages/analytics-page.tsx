@@ -1,4 +1,4 @@
-import { useToast } from '@qalam/ui';
+import { useToast } from '@umberleaf/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { Tabs } from 'antd';
 import { lazy, Suspense, useState, type ReactElement } from 'react';

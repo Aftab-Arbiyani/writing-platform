@@ -1,4 +1,4 @@
-import { fadeRise } from '@qalam/ui/motion';
+import { fadeRise } from '@umberleaf/ui/motion';
 import { motion } from 'framer-motion';
 import type { ReactNode } from 'react';
 

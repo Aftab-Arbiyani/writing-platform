@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { slugify } from '@qalam/utils';
+import { slugify } from '@umberleaf/utils';
 import { DataSource, In } from 'typeorm';
 import type { EntityManager } from 'typeorm';
 

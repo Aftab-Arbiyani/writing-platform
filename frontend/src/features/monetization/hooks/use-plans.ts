@@ -1,4 +1,4 @@
-import type { BillingInterval, PlanTier } from '@qalam/shared';
+import type { BillingInterval, PlanTier } from '@umberleaf/shared';
 import { useMutation, useQuery } from '@tanstack/react-query';
 
 import { qk } from '@/lib/query-keys';

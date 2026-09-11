@@ -1,5 +1,5 @@
 import { Column, Entity, Index } from 'typeorm';
-import type { StoryRole } from '@qalam/shared';
+import type { StoryRole } from '@umberleaf/shared';
 
 import { QalamBaseEntity } from '../../../common/base/base.entity';
 

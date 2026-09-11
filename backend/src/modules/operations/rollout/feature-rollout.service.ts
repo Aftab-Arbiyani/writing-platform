@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ERROR_CODES } from '@qalam/shared';
+import { ERROR_CODES } from '@umberleaf/shared';
 
 import { SettingsService } from '../../settings/settings.service';
 import type { SettingsActor } from '../../settings/settings.util';

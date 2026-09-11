@@ -1,5 +1,5 @@
 import { Column, Entity, Index } from 'typeorm';
-import type { PlanTier, SubscriptionEventType, SubscriptionStatus } from '@qalam/shared';
+import type { PlanTier, SubscriptionEventType, SubscriptionStatus } from '@umberleaf/shared';
 
 import { QalamAppendOnlyEntity } from '../../../common/base/append-only.entity';
 

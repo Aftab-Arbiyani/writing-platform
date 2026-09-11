@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { SAVED_SEARCH_MAX_PER_USER } from '@qalam/shared';
+import { SAVED_SEARCH_MAX_PER_USER } from '@umberleaf/shared';
 
 import type { SaveSearchDto } from '../dto/retrieval-request.dto';
 import type { SavedSearchDto } from '../dto/retrieval-response.dto';

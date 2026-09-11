@@ -1,6 +1,6 @@
 # Qalam Admin — Accessibility Guide (WCAG 2.1 AA)
 
-Accessibility is centralized in the `@qalam/ui` primitives and enforced by
+Accessibility is centralized in the `@umberleaf/ui` primitives and enforced by
 convention. This guide documents the patterns and the A9 audit result.
 
 ## Patterns in place
@@ -45,9 +45,9 @@ The audit rated the app **"unusually well-built for a11y."** Applied fixes:
   chart missing it).
 - Added the sr-only **`<h2>`** per analytics section (heading hierarchy).
 
-## Known low-severity items (in `@qalam/ui`, out of admin-only scope)
+## Known low-severity items (in `@umberleaf/ui`, out of admin-only scope)
 
-Three minor items live in the shared `@qalam/ui` primitives (consumed by the
+Three minor items live in the shared `@umberleaf/ui` primitives (consumed by the
 reader app too), so they were **documented, not changed** under the admin-only
 A9 scope: `QDialog` could add `aria-describedby` for its description; `QDrawer`
 could require a `title`/`aria-label` (every admin usage already passes `title`);

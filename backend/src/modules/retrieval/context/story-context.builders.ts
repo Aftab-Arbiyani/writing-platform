@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ERROR_CODES } from '@qalam/shared';
+import { ERROR_CODES } from '@umberleaf/shared';
 
 import { AppException } from '../../../common/exceptions/app.exception';
 import type { ContextFragment, ContextProvider } from '../../ai/context/context-builder.port';

@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { SEARCH_QUERY_MIN, SearchSort, SearchType } from '@qalam/shared';
+import { SEARCH_QUERY_MIN, SearchSort, SearchType } from '@umberleaf/shared';
 
 import { AppException } from '../../common/exceptions/app.exception';
 import { buildCursorPage } from '../../common/pagination/pagination.helper';

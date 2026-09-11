@@ -7,7 +7,7 @@ import {
   POLICY_ACTIONS,
   SnapshotReason,
   SuggestionStatus,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { AuditService } from '../audit/audit.service';

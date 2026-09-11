@@ -1,5 +1,5 @@
 import { Injectable, Logger, type OnModuleInit } from '@nestjs/common';
-import { UserStatus } from '@qalam/shared';
+import { UserStatus } from '@umberleaf/shared';
 
 import { PolicyEngineService } from '../policy';
 import type { AccountStatusPort } from '../policy/policy.types';

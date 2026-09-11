@@ -1,5 +1,5 @@
-import { PERMISSIONS } from '@qalam/shared';
-import { QErrorState, QSectionHeader, QSkeleton } from '@qalam/ui';
+import { PERMISSIONS } from '@umberleaf/shared';
+import { QErrorState, QSectionHeader, QSkeleton } from '@umberleaf/ui';
 import {
   Bookmark,
   BookOpen,

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { AiStreamEvent } from '@qalam/api-types';
+import type { AiStreamEvent } from '@umberleaf/api-types';
 
 import { useAiStreamStore } from './ai-stream.store';
 

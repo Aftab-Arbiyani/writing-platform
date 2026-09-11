@@ -1,4 +1,4 @@
-import { SubscriptionStatus } from '@qalam/shared';
+import { SubscriptionStatus } from '@umberleaf/shared';
 import { CalendarX, CircleAlert, Hourglass, Lock, PauseCircle } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 

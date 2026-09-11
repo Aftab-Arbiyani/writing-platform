@@ -1,4 +1,4 @@
-import { QCard, QSectionHeader } from '@qalam/ui';
+import { QCard, QSectionHeader } from '@umberleaf/ui';
 import {
   ArrowDownRight,
   ArrowUpRight,

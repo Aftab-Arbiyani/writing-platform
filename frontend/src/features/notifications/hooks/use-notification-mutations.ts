@@ -1,4 +1,4 @@
-import { NotificationStatus } from '@qalam/shared';
+import { NotificationStatus } from '@umberleaf/shared';
 import {
   useMutation,
   useQueryClient,

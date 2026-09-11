@@ -1,4 +1,4 @@
-import type { AiProvider } from '@qalam/shared';
+import type { AiProvider } from '@umberleaf/shared';
 
 import type {
   ProviderCompletionRequest,

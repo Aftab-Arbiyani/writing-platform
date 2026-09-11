@@ -1,4 +1,4 @@
-import type { RetrievalAdminConfig, SearchAnalytics } from '@qalam/api-types';
+import type { RetrievalAdminConfig, SearchAnalytics } from '@umberleaf/api-types';
 import {
   RankingSignal,
   RetrievalFailureReason,
@@ -6,7 +6,7 @@ import {
   RetrievalQueryType,
   RetrievalSource,
   Role,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 

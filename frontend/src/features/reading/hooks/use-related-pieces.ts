@@ -1,4 +1,4 @@
-import type { RecommendationItem } from '@qalam/api-types';
+import type { RecommendationItem } from '@umberleaf/api-types';
 import { useQuery } from '@tanstack/react-query';
 
 import { qk } from '@/lib/query-keys';

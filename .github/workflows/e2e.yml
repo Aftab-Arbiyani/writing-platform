@@ -88,12 +88,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # `@qalam/shared` and `@qalam/api-types` are consumed through their built `dist/`,
+      # `@umberleaf/shared` and `@umberleaf/api-types` are consumed through their built `dist/`,
       # so the backend cannot even be TYPE-CHECKED until they exist — and `migration:run`
       # goes through ts-node, which type-checks. Without this the very next step dies with
-      # `TS2307: Cannot find module '@qalam/shared'` before a single migration is applied.
+      # `TS2307: Cannot find module '@umberleaf/shared'` before a single migration is applied.
       - name: Build workspace packages
-        run: pnpm --filter "@qalam/*" build
+        run: pnpm --filter "@umberleaf/*" build
 
       - name: Run migrations
         run: pnpm --filter backend migration:run

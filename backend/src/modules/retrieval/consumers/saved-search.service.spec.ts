@@ -1,4 +1,4 @@
-import { SAVED_SEARCH_MAX_PER_USER } from '@qalam/shared';
+import { SAVED_SEARCH_MAX_PER_USER } from '@umberleaf/shared';
 
 import { SavedSearch } from '../entities/saved-search.entity';
 import {

@@ -1,5 +1,5 @@
-import { QButton, QEmptyState, QErrorState, QSpinner } from '@qalam/ui';
-import { fadeRise } from '@qalam/ui/motion';
+import { QButton, QEmptyState, QErrorState, QSpinner } from '@umberleaf/ui';
+import { fadeRise } from '@umberleaf/ui/motion';
 import { motion } from 'framer-motion';
 import { Compass, Feather, FileText, Flame, LogIn, PenLine, SearchX, Users } from 'lucide-react';
 import type { ReactElement } from 'react';

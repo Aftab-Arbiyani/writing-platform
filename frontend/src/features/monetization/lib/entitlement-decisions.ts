@@ -1,4 +1,4 @@
-import { EntitlementReason, EntitlementStatus, PlanTier, planRank } from '@qalam/shared';
+import { EntitlementReason, EntitlementStatus, PlanTier, planRank } from '@umberleaf/shared';
 
 import type {
   EntitlementDecision,
@@ -10,7 +10,7 @@ import type {
  * Pure readers over an entitlement snapshot (AF5, W4).
  *
  * Mobile carries these as methods on its `EntitlementSnapshot` class; web's wire types are plain
- * interfaces straight off `@qalam/api-types`, so the behaviour lives here as functions instead of
+ * interfaces straight off `@umberleaf/api-types`, so the behaviour lives here as functions instead of
  * being re-implemented at each call site. Nothing in this file decides anything — it reads what the
  * server already decided.
  */

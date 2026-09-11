@@ -8,8 +8,8 @@ import {
   PlanTier,
   PremiumFeature,
   SubscriptionStatus,
-} from '@qalam/shared';
-import type { PlanDefinition } from '@qalam/shared';
+} from '@umberleaf/shared';
+import type { PlanDefinition } from '@umberleaf/shared';
 import type { Repository } from 'typeorm';
 
 import type { CacheService } from '../../infrastructure/cache/cache.service';

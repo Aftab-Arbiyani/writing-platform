@@ -1,4 +1,4 @@
-import type { NotificationEntityType, NotificationType } from '@qalam/shared';
+import type { NotificationEntityType, NotificationType } from '@umberleaf/shared';
 import { Column, Entity, Index } from 'typeorm';
 
 import { QalamAuditEntity } from '../../../common/base/audit.entity';
@@ -28,7 +28,7 @@ export class Notification extends QalamAuditEntity {
   @Column({ type: 'uuid', nullable: true })
   actorId!: string | null;
 
-  /** Open catalogue (`@qalam/shared` NotificationType) — varchar so new kinds need no migration. */
+  /** Open catalogue (`@umberleaf/shared` NotificationType) — varchar so new kinds need no migration. */
   @Column({ type: 'varchar', length: 40 })
   type!: NotificationType;
 

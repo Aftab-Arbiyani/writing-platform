@@ -1,4 +1,4 @@
-import { AiFeature, DEFAULT_PLAN_LIMITS, PlanTier, QuotaWindow } from '@qalam/shared';
+import { AiFeature, DEFAULT_PLAN_LIMITS, PlanTier, QuotaWindow } from '@umberleaf/shared';
 
 import type { UsageService as AiUsageService } from '../ai';
 import type { EntitlementService } from './entitlement.service';

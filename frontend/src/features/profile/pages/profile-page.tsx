@@ -1,4 +1,4 @@
-import { QErrorState, QSkeleton } from '@qalam/ui';
+import { QErrorState, QSkeleton } from '@umberleaf/ui';
 import { useState, type ReactElement } from 'react';
 import { useSearchParams } from 'react-router';
 

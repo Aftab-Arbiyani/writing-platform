@@ -1,4 +1,4 @@
-import type { StoryEdgeType } from '@qalam/shared';
+import type { StoryEdgeType } from '@umberleaf/shared';
 import { Column, Entity, Index } from 'typeorm';
 
 import { QalamBaseEntity } from '../../../common/base/base.entity';
@@ -7,7 +7,7 @@ import type { StoryEvidenceRef } from '../story.types';
 /**
  * An edge in the story knowledge graph (AF3) — a typed link between two nodes
  * (relationship / mention / appears-in / occurs-at / involves / precedes / …).
- * `type` is an OPEN varchar keyed to the `@qalam/shared` catalogue. Upserts dedupe on
+ * `type` is an OPEN varchar keyed to the `@umberleaf/shared` catalogue. Upserts dedupe on
  * `(graphId, sourceId, targetId, type)`. `sourceId`/`targetId` are plain uuid columns
  * (node ids), no relation decorators (module isolation).
  */

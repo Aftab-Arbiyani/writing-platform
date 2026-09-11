@@ -4,7 +4,7 @@ import type {
   PresenceState,
   StoryRole,
   SuggestionStatus,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 import { del, get, getPage, patch, post, type CursorPage } from '@/lib/api-client';
 import { buildQueryString } from '@/lib/http';

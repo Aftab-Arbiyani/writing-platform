@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import type { OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import type { PromptCategory } from '@qalam/shared';
+import type { PromptCategory } from '@umberleaf/shared';
 import { Repository } from 'typeorm';
 
 import { AiPromptNotFoundException } from '../ai.exceptions';

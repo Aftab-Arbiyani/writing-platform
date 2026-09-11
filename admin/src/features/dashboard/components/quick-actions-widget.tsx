@@ -1,4 +1,4 @@
-import { QSectionHeader } from '@qalam/ui';
+import { QSectionHeader } from '@umberleaf/ui';
 import { BarChart3, FileText, Flag, ScrollText, ShieldCheck, Users } from 'lucide-react';
 import type { ReactElement } from 'react';
 

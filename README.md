@@ -28,7 +28,7 @@ See [docs/18_DevelopmentRoadmap.md](docs/18_DevelopmentRoadmap.md).
 backend/     NestJS 11 modular monolith (API + BullMQ workers) — PostgreSQL 16, Redis
 frontend/    Reader/writer app — React 19, Vite 7, AntD 5 + Tailwind 4, TipTap
 admin/       Admin panel — same stack, workbench flavor
-packages/    @qalam/shared · @qalam/utils · @qalam/api-types · @qalam/ui · @qalam/config
+packages/    @umberleaf/shared · @umberleaf/utils · @umberleaf/api-types · @umberleaf/ui · @umberleaf/config
 infrastructure/  Dockerfiles + nginx configs
 docs/        Architecture volumes 00–18 (00 = master ADR)
 ```

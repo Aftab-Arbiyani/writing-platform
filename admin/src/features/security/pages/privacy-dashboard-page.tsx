@@ -1,4 +1,4 @@
-import { QCard } from '@qalam/ui';
+import { QCard } from '@umberleaf/ui';
 import { FileDown, Trash2, UserCheck } from 'lucide-react';
 import type { ReactElement } from 'react';
 

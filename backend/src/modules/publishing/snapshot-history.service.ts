@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { resolvePlanLimit } from '@qalam/shared';
+import { resolvePlanLimit } from '@umberleaf/shared';
 
 import { EntitlementService } from '../monetization/entitlement.service';
 import { SnapshotHistoryLimitedException } from '../monetization/monetization.exceptions';

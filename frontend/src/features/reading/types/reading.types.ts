@@ -1,4 +1,4 @@
-import type { PieceStatus, ShareChannel, TextDirection, Visibility } from '@qalam/shared';
+import type { PieceStatus, ShareChannel, TextDirection, Visibility } from '@umberleaf/shared';
 
 export type { ShareChannel };
 

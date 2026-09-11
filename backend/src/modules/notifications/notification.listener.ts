@@ -4,7 +4,7 @@ import {
   MENTION_REGEX,
   NotificationEntityType,
   NotificationType,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 import { DomainEventBus } from '../../common/events/domain-event-bus';
 import {

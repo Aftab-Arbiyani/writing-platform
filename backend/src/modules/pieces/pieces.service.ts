@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
-import { PieceStatus, Visibility } from '@qalam/shared';
-import { slugify } from '@qalam/utils';
+import { PieceStatus, Visibility } from '@umberleaf/shared';
+import { slugify } from '@umberleaf/utils';
 import { randomBytes } from 'node:crypto';
 import type { EntityManager } from 'typeorm';
 

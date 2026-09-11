@@ -11,13 +11,13 @@ import {
   resolvePlanLimit,
   STORY_MAP_ANALYSIS_COUNT,
   uncountedPaidAiFeatures,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 import { MONETIZATION_SETTING_KEYS } from './monetization.constants';
 import { SETTING_DEFINITION_BY_KEY } from '../settings/settings.catalog';
 
 /**
- * The D5 allowance vocabulary lives in `@qalam/shared`, which has no test runner — its suite
+ * The D5 allowance vocabulary lives in `@umberleaf/shared`, which has no test runner — its suite
  * is `tsc`. Anything about it that a TYPE cannot express has to be asserted somewhere, and
  * this is that somewhere.
  */

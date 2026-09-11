@@ -1,4 +1,4 @@
-import { QButton, QPageContainer } from '@qalam/ui';
+import { QButton, QPageContainer } from '@umberleaf/ui';
 import { ArrowRight, PenLine } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { useNavigate } from 'react-router';

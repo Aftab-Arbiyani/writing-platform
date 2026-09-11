@@ -1,4 +1,4 @@
-import { PERMISSIONS } from '@qalam/shared';
+import { PERMISSIONS } from '@umberleaf/shared';
 import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 
 import { usePermissions } from '@/hooks/use-permissions';

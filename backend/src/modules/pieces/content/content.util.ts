@@ -1,6 +1,6 @@
-import { countWords, extractPlainText, readingTime } from '@qalam/utils';
+import { countWords, extractPlainText, readingTime } from '@umberleaf/utils';
 
-/** Derived, recomputed on every content write (docs 04 §5) — via @qalam/utils. */
+/** Derived, recomputed on every content write (docs 04 §5) — via @umberleaf/utils. */
 export interface ContentMetrics {
   contentText: string;
   wordCount: number;

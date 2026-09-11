@@ -1,5 +1,5 @@
-import { PolicyResourceType } from '@qalam/shared';
-import type { Visibility } from '@qalam/shared';
+import { PolicyResourceType } from '@umberleaf/shared';
+import type { Visibility } from '@umberleaf/shared';
 
 import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import type { PolicyResource, PolicySubject } from '../policy';

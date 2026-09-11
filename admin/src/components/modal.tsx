@@ -1,4 +1,4 @@
-import { QDialog, type QDialogProps } from '@qalam/ui';
+import { QDialog, type QDialogProps } from '@umberleaf/ui';
 import type { ReactElement } from 'react';
 
 /**

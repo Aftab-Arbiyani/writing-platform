@@ -123,9 +123,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       # `migration:run` runs under ts-node and therefore type-checks the entity graph,
-      # which imports `@qalam/shared` from its built `dist/`. Same omission as e2e.yml had.
+      # which imports `@umberleaf/shared` from its built `dist/`. Same omission as e2e.yml had.
       - name: Build workspace packages
-        run: pnpm --filter "@qalam/*" build
+        run: pnpm --filter "@umberleaf/*" build
       # Apply all migrations, revert the latest (proves down()), re-apply — so a
       # migration without a working rollback fails CI.
       - name: Validate migrations (up → down → up)

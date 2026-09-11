@@ -11,7 +11,7 @@ call `api.*` and feature hooks call those.
   `Promise<ApiResult<T>> = { data, meta }`. Unwraps the envelope
   `{ success, data, meta } | { success:false, error:{ code, message, … } }`.
 - Throws a typed **`ApiError`** on any non-success — branch on `.code` (from
-  `@qalam/shared` `ERROR_CODES`), never on message. `.status`, `.details`,
+  `@umberleaf/shared` `ERROR_CODES`), never on message. `.status`, `.details`,
   `.requestId` are available.
 - **Auth**: the access token is held **in memory only** (never localStorage); the
   refresh token rides an httpOnly cookie sent via `credentials:'include'`.

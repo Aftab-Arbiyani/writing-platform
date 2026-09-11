@@ -70,7 +70,7 @@ returns JSON rather than a file.
 
 ### 1.2 Wire package
 
-`@qalam/api-types` gained `UpdateAiConversationRequest`, `AiConversationExport` and
+`@umberleaf/api-types` gained `UpdateAiConversationRequest`, `AiConversationExport` and
 `AiConversationExportMessage`. The first is now **pinned to `UpdateAiConversationDto`** by the §3.11
 contract guard (72 tests green, up from 71); the two export shapes are exempted by name with a reason,
 because the handler returns `Promise<Record<string, unknown>>` and there is no DTO to pin against.
@@ -182,10 +182,10 @@ correctly flag-gated; the runner was wrong, not the code. Letting Playwright own
 
 Worth recording because [45](./45_WebClientRoadmap.md) E3 mandates the full build for exactly this
 reason, and this run vindicated it. `tsc --noEmit` in `frontend/` passed clean while resolving
-`@qalam/api-types` from a **stale `dist/`** — so the three new interfaces were invisible to it, and four
+`@umberleaf/api-types` from a **stale `dist/`** — so the three new interfaces were invisible to it, and four
 real errors were hidden, including a `QCard as="form"` that its prop union does not allow and a
 `features.data.enabled` that should be `aiEnabled`. `tsc -b` builds the project references and failed
-on all four. `@qalam/utils` had no build output at all, which is also why the local backend would not
+on all four. `@umberleaf/utils` had no build output at all, which is also why the local backend would not
 start.
 
 ### 4.2 The visual red is correct, and is the intended outcome

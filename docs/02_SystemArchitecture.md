@@ -187,7 +187,7 @@ where a piece learns it renders RTL. Kept separate from `pieces` so vocabulary g
 (admin CRUD, merging tags) never entangles content logic.
 
 **`engagement`** — Lightweight social actions: `likes`, `claps` (transactional cap of 50
-per user per piece, the constant living in `@qalam/shared`), `bookmarks`. Updates
+per user per piece, the constant living in `@umberleaf/shared`), `bookmarks`. Updates
 denormalized `piece_stats` counters in the same transaction — never `COUNT(*)` on hot
 paths (ADR §4) — and produces the events that feed notifications and trending.
 

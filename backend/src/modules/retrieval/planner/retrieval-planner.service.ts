@@ -4,7 +4,7 @@ import {
   RetrievalQueryType,
   RetrievalSource,
   RETRIEVAL_MAX_TOP_K,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 import type { ResolvedRetrievalConfig, RetrievalPlan, RetrievalRequest } from '../retrieval.types';
 

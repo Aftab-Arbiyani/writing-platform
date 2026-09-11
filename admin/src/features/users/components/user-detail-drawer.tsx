@@ -1,5 +1,5 @@
-import { PERMISSIONS } from '@qalam/shared';
-import { QButton } from '@qalam/ui';
+import { PERMISSIONS } from '@umberleaf/shared';
+import { QButton } from '@umberleaf/ui';
 import { Descriptions, Tabs, Tag } from 'antd';
 import { Pencil } from 'lucide-react';
 import { useState, type ReactElement, type ReactNode } from 'react';

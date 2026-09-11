@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { FollowStatus, MAX_SOCIAL_LINKS, SOCIAL_LINK_URL_MAX } from '@qalam/shared';
+import { FollowStatus, MAX_SOCIAL_LINKS, SOCIAL_LINK_URL_MAX } from '@umberleaf/shared';
 
 import { TransactionRunner } from '../../common/database/transaction-runner';
 import {

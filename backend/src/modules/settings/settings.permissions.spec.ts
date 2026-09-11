@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { PERMISSIONS } from '@qalam/shared';
+import { PERMISSIONS } from '@umberleaf/shared';
 
 import { PERMISSIONS_KEY, RATE_LIMIT_KEY } from '../../common/constants/metadata.constants';
 import { FeatureFlagsController } from './feature-flags.controller';

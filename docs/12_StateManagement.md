@@ -294,10 +294,10 @@ Rules:
 
 - **Schema colocated with the form**, in the feature: `features/auth/schemas/register.schema.ts`.
   The component imports the schema; the schema imports domain atoms (`USERNAME_REGEX`,
-  limits) from `@qalam/shared`. Where the backend validates the same shape, the schema is
-  built from **shared primitives via `@qalam/api-types`** so FE and BE cannot drift —
+  limits) from `@umberleaf/shared`. Where the backend validates the same shape, the schema is
+  built from **shared primitives via `@umberleaf/api-types`** so FE and BE cannot drift —
   the request _types_ are generated from OpenAPI; the Zod _rules_ share the same
-  `@qalam/shared` constants both sides import. One vocabulary, two enforcers (ADR §3: Zod
+  `@umberleaf/shared` constants both sides import. One vocabulary, two enforcers (ADR §3: Zod
   everywhere).
 - `useForm({ resolver: zodResolver(schema), mode: "onTouched" })` — validate on blur first,
   then on change after first error (calm, not naggy).

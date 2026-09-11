@@ -1,4 +1,10 @@
-import { ReportEntityType, ReportPriority, ReportReason, ReportStatus, Role } from '@qalam/shared';
+import {
+  ReportEntityType,
+  ReportPriority,
+  ReportReason,
+  ReportStatus,
+  Role,
+} from '@umberleaf/shared';
 
 import type { AuditService } from '../audit/audit.service';
 import type { AuthService } from '../auth/auth.service';

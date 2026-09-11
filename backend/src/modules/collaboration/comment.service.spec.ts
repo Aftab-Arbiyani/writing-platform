@@ -5,8 +5,8 @@ import {
   POLICY_ACTIONS,
   PolicyEffect,
   Visibility,
-} from '@qalam/shared';
-import type { PolicyDecision } from '@qalam/shared';
+} from '@umberleaf/shared';
+import type { PolicyDecision } from '@umberleaf/shared';
 
 import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import type { AuditService } from '../audit/audit.service';

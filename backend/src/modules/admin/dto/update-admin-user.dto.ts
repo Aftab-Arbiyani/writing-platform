@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { PEN_NAME_MAX, Role, UserStatus } from '@qalam/shared';
+import { PEN_NAME_MAX, Role, UserStatus } from '@umberleaf/shared';
 import { IsBoolean, IsEnum, IsOptional, IsString, Length, MaxLength } from 'class-validator';
 
 /**

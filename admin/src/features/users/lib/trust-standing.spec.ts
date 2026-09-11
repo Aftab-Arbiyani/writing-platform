@@ -5,7 +5,7 @@ import {
   STRIKE_SUSPENSION_THRESHOLD,
   StrikeSeverity,
   trustLevelForScore,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 import { describe, expect, it } from 'vitest';
 
 import type { AdminRestriction } from '../types/trust.types';

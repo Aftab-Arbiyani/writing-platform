@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-import { AiFeature, FLAGGED_AI_FEATURES } from '@qalam/shared';
+import { AiFeature, FLAGGED_AI_FEATURES } from '@umberleaf/shared';
 
 import { AI_PROMPT_CATALOG } from '../ai/prompts/prompt-catalog';
 import { FEATURE_FLAG_DEFINITIONS } from '../settings/settings.catalog';

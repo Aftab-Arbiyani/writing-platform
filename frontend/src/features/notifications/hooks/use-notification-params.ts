@@ -1,4 +1,4 @@
-import { NotificationStatus, NotificationType } from '@qalam/shared';
+import { NotificationStatus, NotificationType } from '@umberleaf/shared';
 import { useCallback } from 'react';
 import { useSearchParams } from 'react-router';
 

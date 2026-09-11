@@ -1,12 +1,12 @@
-import { AiFeature, AiFinishReason, AiModelAvailability, AiProvider } from '@qalam/shared';
-import type { AiModelMetadata } from '@qalam/shared';
+import { AiFeature, AiFinishReason, AiModelAvailability, AiProvider } from '@umberleaf/shared';
+import type { AiModelMetadata } from '@umberleaf/shared';
 
 import type { AiUsageMeter } from '../../../common/metering/ai-usage-meter.port';
 import type { aiConfig } from '../../../config/ai.config';
 import { AiFeatureService } from '../ai-feature.service';
 import type { SettingsService } from '../../settings/settings.service';
 import type { SettingsService as UserPreferencesService } from '../../users/settings.service';
-import { AI_MASTER_FLAG_KEY, ERROR_CODES, aiFeatureFlagKey } from '@qalam/shared';
+import { AI_MASTER_FLAG_KEY, ERROR_CODES, aiFeatureFlagKey } from '@umberleaf/shared';
 import type { AiConfigService } from '../config/ai-config.service';
 import type { ContextRegistryService } from '../context/context-registry.service';
 import type { PromptRegistryService } from '../prompts/prompt-registry.service';

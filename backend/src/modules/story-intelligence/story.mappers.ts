@@ -1,4 +1,4 @@
-import type { StoryEventKind } from '@qalam/shared';
+import type { StoryEventKind } from '@umberleaf/shared';
 
 import type { StoryAnalysis } from './entities/story-analysis.entity';
 import type { StoryEdge } from './entities/story-edge.entity';

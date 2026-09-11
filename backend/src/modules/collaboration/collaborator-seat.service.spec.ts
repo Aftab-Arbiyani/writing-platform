@@ -1,5 +1,10 @@
-import { DEFAULT_PLAN_LIMITS, InvitationStatus, PlanTier, UNLIMITED_SEATS } from '@qalam/shared';
-import type { PlanLimits } from '@qalam/shared';
+import {
+  DEFAULT_PLAN_LIMITS,
+  InvitationStatus,
+  PlanTier,
+  UNLIMITED_SEATS,
+} from '@umberleaf/shared';
+import type { PlanLimits } from '@umberleaf/shared';
 
 import type { EntitlementService } from '../monetization/entitlement.service';
 import {

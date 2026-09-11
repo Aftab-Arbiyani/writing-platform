@@ -1,5 +1,5 @@
-import { TRUST_SCORE_DEFAULT, TrustLevel } from '@qalam/shared';
-import type { TrustLevel as TrustLevelType } from '@qalam/shared';
+import { TRUST_SCORE_DEFAULT, TrustLevel } from '@umberleaf/shared';
+import type { TrustLevel as TrustLevelType } from '@umberleaf/shared';
 import { Column, Entity, Index } from 'typeorm';
 
 import { QalamBaseEntity } from '../../../common/base/base.entity';

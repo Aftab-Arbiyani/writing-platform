@@ -1,7 +1,7 @@
 {
-  "name": "@qalam/config",
+  "name": "@umberleaf/config",
   "version": "0.1.0",
-  "description": "Qalam build presets: shared tsconfig bases, ESLint 9 flat configs, and the Prettier preset.",
+  "description": "Umberleaf build presets: shared tsconfig bases, ESLint 9 flat configs, and the Prettier preset.",
   "private": false,
   "type": "module",
   "files": [

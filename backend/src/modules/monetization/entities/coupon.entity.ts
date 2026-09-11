@@ -1,5 +1,5 @@
 import { Column, Entity, Index } from 'typeorm';
-import type { BillingInterval, PlanTier, PromotionType } from '@qalam/shared';
+import type { BillingInterval, PlanTier, PromotionType } from '@umberleaf/shared';
 
 import { QalamBaseEntity } from '../../../common/base/base.entity';
 

@@ -1,5 +1,5 @@
 import { Injectable, type OnModuleInit } from '@nestjs/common';
-import type { StoryRole } from '@qalam/shared';
+import type { StoryRole } from '@umberleaf/shared';
 
 import { PolicyEngineService } from '../policy';
 import type { StoryMembershipPort } from '../policy/policy.types';

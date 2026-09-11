@@ -46,24 +46,24 @@ with its own bundle and threat model — `03` §3.3).
 
 Versions are pinned by the workspace; see `frontend/package.json` and ADR §6 "Version pins".
 
-| Concern          | Library                                             | Notes / where configured                                                     |
-| ---------------- | --------------------------------------------------- | ---------------------------------------------------------------------------- |
-| Framework        | **React 19**                                        | `StrictMode`, function components only (`16` §4.2).                          |
-| Build/dev        | **Vite 7** + `@vitejs/plugin-react`                 | `vite.config.ts`; `@/` alias → `src/`.                                       |
-| Language         | **TypeScript 5.6, `strict`**                        | Extends `@qalam/config/tsconfig/react`; no `any`, no non-null `!` (`16` §1). |
-| Server state     | **TanStack Query v5**                               | `lib/query-client.ts`; devtools in DEV only (`providers.tsx`).               |
-| Client state     | **Zustand v5**                                      | Slice-per-concern; only theme is persisted (`12` §3).                        |
-| URL/routing      | **React Router v7** (`react-router`)                | `app/router.tsx`; data-API `lazy()` route groups (`11`).                     |
-| Forms            | **React Hook Form 7 + Zod 3.24**                    | `@hookform/resolvers`; schemas share `@qalam/shared` atoms (`33`).           |
-| HTTP             | **native `fetch` wrapper**                          | `lib/api-client.ts`. **Not axios** — see §7 and `32` §1.                     |
-| UI kit           | **Ant Design 5**                                    | Wrapped, never imported in app code (`08` §2); themed via `ConfigProvider`.  |
-| Styling          | **Tailwind CSS v4** + `@qalam/ui` tokens            | `@tailwindcss/vite`; preflight off; logical props only (`07` §11).           |
-| Motion           | **Framer Motion 12**                                | Variants from `@qalam/ui/motion` (`07` §5, §14).                             |
-| Editor           | **TipTap 3** (`@tiptap/react`, `pm`, `starter-kit`) | Owns document state; loaded only inside the editor route (`12` §5).          |
-| Icons            | **lucide-react**                                    | 1.5px stroke; `@ant-design/icons` banned in app code (`07` §6).              |
-| Fonts            | **@fontsource** (Inter, Lora; Noto scripts)         | Self-hosted, no CDN (ADR §6; `07` §3.3).                                     |
-| Errors/telemetry | **@sentry/react 9**                                 | Release-tagged; `VITE_SENTRY_DSN` gates it (`config/env.ts`).                |
-| Types            | **@qalam/api-types**                                | OpenAPI-generated wire contract; the design contract for props (`08` §5).    |
+| Concern          | Library                                             | Notes / where configured                                                         |
+| ---------------- | --------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Framework        | **React 19**                                        | `StrictMode`, function components only (`16` §4.2).                              |
+| Build/dev        | **Vite 7** + `@vitejs/plugin-react`                 | `vite.config.ts`; `@/` alias → `src/`.                                           |
+| Language         | **TypeScript 5.6, `strict`**                        | Extends `@umberleaf/config/tsconfig/react`; no `any`, no non-null `!` (`16` §1). |
+| Server state     | **TanStack Query v5**                               | `lib/query-client.ts`; devtools in DEV only (`providers.tsx`).                   |
+| Client state     | **Zustand v5**                                      | Slice-per-concern; only theme is persisted (`12` §3).                            |
+| URL/routing      | **React Router v7** (`react-router`)                | `app/router.tsx`; data-API `lazy()` route groups (`11`).                         |
+| Forms            | **React Hook Form 7 + Zod 3.24**                    | `@hookform/resolvers`; schemas share `@umberleaf/shared` atoms (`33`).           |
+| HTTP             | **native `fetch` wrapper**                          | `lib/api-client.ts`. **Not axios** — see §7 and `32` §1.                         |
+| UI kit           | **Ant Design 5**                                    | Wrapped, never imported in app code (`08` §2); themed via `ConfigProvider`.      |
+| Styling          | **Tailwind CSS v4** + `@umberleaf/ui` tokens        | `@tailwindcss/vite`; preflight off; logical props only (`07` §11).               |
+| Motion           | **Framer Motion 12**                                | Variants from `@umberleaf/ui/motion` (`07` §5, §14).                             |
+| Editor           | **TipTap 3** (`@tiptap/react`, `pm`, `starter-kit`) | Owns document state; loaded only inside the editor route (`12` §5).              |
+| Icons            | **lucide-react**                                    | 1.5px stroke; `@ant-design/icons` banned in app code (`07` §6).                  |
+| Fonts            | **@fontsource** (Inter, Lora; Noto scripts)         | Self-hosted, no CDN (ADR §6; `07` §3.3).                                         |
+| Errors/telemetry | **@sentry/react 9**                                 | Release-tagged; `VITE_SENTRY_DSN` gates it (`config/env.ts`).                    |
+| Types            | **@umberleaf/api-types**                            | OpenAPI-generated wire contract; the design contract for props (`08` §5).        |
 
 **On Framer Motion + TipTap + Sentry** — all three are present in the scaffold's
 dependencies and are load-bearing. **On React Helmet Async** (named in the brief): the
@@ -176,25 +176,25 @@ frontend/src/
 │   └── error-messages.ts     # error.code → localized copy catalogue (06 §4.5)
 ├── stores/                   # truly app-wide Zustand slices (theme, session-ui) (12 §3)
 ├── hooks/                    # app-wide hooks (useMediaQuery, useDebouncedValue)
-├── styles/                   # global.css (imports @qalam/ui tokens + tailwind)
+├── styles/                   # global.css (imports @umberleaf/ui tokens + tailwind)
 ├── config/                   # env.ts (typed env)
 ├── types/                    # app-wide ambient/shared TS types
 └── test/                     # setup.ts + src/test/factories/ (16 §7.4)
 ```
 
 Boundary rules are lint-enforced (`03` §5): **features never import other features**;
-shared code moves _down_ to `components/`, `lib/`, or a `@qalam/*` package; `app/` composes
+shared code moves _down_ to `components/`, `lib/`, or a `@umberleaf/*` package; `app/` composes
 features, features never import `app/`.
 
 ### 4.1 Shared workspace modules (what the app imports, never the reverse)
 
-| Package            | The app uses it for                                                                                                                                                                                                                       | Rule                                                                                                    |
-| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `@qalam/shared`    | `ERROR_CODES`, enums (`PieceStatus`, `Visibility`, `Role`, `NotificationType`…), limits (`MAX_CLAPS_PER_USER=50`, `TAGS_MAX_PER_PIECE=5`…), regexes (`USERNAME_REGEX`), `PERMISSIONS`, `DEFAULT_ROLE_PERMISSIONS`, `permissionSatisfies`. | Branch on codes/enums from here, never string literals. Client permission checks derive from here (§8). |
-| `@qalam/api-types` | Request/response wire types generated from `openapi.json`; the shape of every hook's result and every product component's props (`08` §5).                                                                                                | Never hand-duplicate a wire type; regenerate on backend change.                                         |
-| `@qalam/ui`        | Tokens (`tokens.css`, tailwind `@theme`), `getAntdTheme()`, motion variants, primitives (`QButton`…) and product components (`PieceCard`…).                                                                                               | App never imports `antd` directly (`08` §2).                                                            |
-| `@qalam/utils`     | Pure helpers: `slugify`, `readingTime`, cursor helpers, `assertNever`.                                                                                                                                                                    | No I/O, no domain constants.                                                                            |
-| `@qalam/config`    | tsconfig/eslint/prettier presets.                                                                                                                                                                                                         | Build-time only; never imported at runtime.                                                             |
+| Package                | The app uses it for                                                                                                                                                                                                                       | Rule                                                                                                    |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `@umberleaf/shared`    | `ERROR_CODES`, enums (`PieceStatus`, `Visibility`, `Role`, `NotificationType`…), limits (`MAX_CLAPS_PER_USER=50`, `TAGS_MAX_PER_PIECE=5`…), regexes (`USERNAME_REGEX`), `PERMISSIONS`, `DEFAULT_ROLE_PERMISSIONS`, `permissionSatisfies`. | Branch on codes/enums from here, never string literals. Client permission checks derive from here (§8). |
+| `@umberleaf/api-types` | Request/response wire types generated from `openapi.json`; the shape of every hook's result and every product component's props (`08` §5).                                                                                                | Never hand-duplicate a wire type; regenerate on backend change.                                         |
+| `@umberleaf/ui`        | Tokens (`tokens.css`, tailwind `@theme`), `getAntdTheme()`, motion variants, primitives (`QButton`…) and product components (`PieceCard`…).                                                                                               | App never imports `antd` directly (`08` §2).                                                            |
+| `@umberleaf/utils`     | Pure helpers: `slugify`, `readingTime`, cursor helpers, `assertNever`.                                                                                                                                                                    | No I/O, no domain constants.                                                                            |
+| `@umberleaf/config`    | tsconfig/eslint/prettier presets.                                                                                                                                                                                                         | Build-time only; never imported at runtime.                                                             |
 
 ---
 
@@ -282,7 +282,7 @@ Therefore:
 
 1. The app **decodes the JWT payload** (client-side, no verification — it is a hint, not a
    trust boundary) to read `role`, holding it beside the in-memory access token.
-2. Effective capabilities are derived **client-side** from `@qalam/shared`
+2. Effective capabilities are derived **client-side** from `@umberleaf/shared`
    `DEFAULT_ROLE_PERMISSIONS` + `permissionSatisfies(granted, required)` — the same catalogue
    the server resolves from. A `useCan('piece.publish')`-style hook gates UI affordances.
 3. **These checks are UX only.** Per-user direct grants can exist server-side and are
@@ -338,7 +338,7 @@ server thresholds are met (dwell ≥30s AND completion ≥50%). Both are `204`, 
 
 Every reusable component and where it lives (decision table `08` §1.1). Contracts/sketches
 are in `08` §3; standards for _building_ them are in `08` §8. "Home" is one of: **UI** =
-`@qalam/ui` (primitive `Q*` or product component), **components/** = app-wide composite,
+`@umberleaf/ui` (primitive `Q*` or product component), **components/** = app-wide composite,
 **feature** = `features/<name>/components/`.
 
 | Component                                                                                         | Home                       | Notes                                                                                                  |

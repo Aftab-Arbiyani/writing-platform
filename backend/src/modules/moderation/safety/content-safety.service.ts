@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { ReportSeverity } from '@qalam/shared';
+import { ReportSeverity } from '@umberleaf/shared';
 
 import {
   SAFETY_DETECTORS,

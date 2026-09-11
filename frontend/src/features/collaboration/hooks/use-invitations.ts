@@ -1,4 +1,4 @@
-import type { StoryRole } from '@qalam/shared';
+import type { StoryRole } from '@umberleaf/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { get } from '@/lib/api-client';

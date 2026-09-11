@@ -7,8 +7,8 @@ import {
   AiModelCapability,
   AiProvider,
   PromptCategory,
-} from '@qalam/shared';
-import type { AiGenerationParams, AiModelMetadata, AiTokenUsage } from '@qalam/shared';
+} from '@umberleaf/shared';
+import type { AiGenerationParams, AiModelMetadata, AiTokenUsage } from '@umberleaf/shared';
 
 /** Registry model row (client view). */
 export class AiModelDto implements AiModelMetadata {

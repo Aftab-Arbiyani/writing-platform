@@ -1,5 +1,5 @@
 import type { INestApplication } from '@nestjs/common';
-import { Role } from '@qalam/shared';
+import { Role } from '@umberleaf/shared';
 import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 

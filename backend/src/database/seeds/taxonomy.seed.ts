@@ -1,4 +1,4 @@
-import { TextDirection } from '@qalam/shared';
+import { TextDirection } from '@umberleaf/shared';
 
 import { TaxonomyRepository } from '../../modules/taxonomy/taxonomy.repository';
 

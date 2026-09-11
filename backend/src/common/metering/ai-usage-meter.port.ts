@@ -1,4 +1,4 @@
-import type { AiFeature, AiProvider } from '@qalam/shared';
+import type { AiFeature, AiProvider } from '@umberleaf/shared';
 
 /**
  * The AI usage-metering seam (AF5). Lives in `common` (dependency-free) so the AI

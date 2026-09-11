@@ -8,7 +8,7 @@ import {
   StoryAnalysisScope,
   storyAnalysisFeature,
   storyAnalysisPromptKey,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 import type { CursorPayload } from '../../common/pagination/cursor.util';
 import { decodeCursor, encodeCursor } from '../../common/pagination/cursor.util';
@@ -219,7 +219,7 @@ export class StoryIntelligenceService {
   /**
    * A boundary-safe snapshot of the full knowledge graph for cross-module reuse (the AF4
    * Retrieval Platform, and any future feature that grounds on the graph). Returns the
-   * shared wire shape (`@qalam/api-types` StoryGraph) so consumers never import this
+   * shared wire shape (`@umberleaf/api-types` StoryGraph) so consumers never import this
    * module's entities (docs 16 §3.1 module isolation). Owner-scoped → STORY_NOT_FOUND.
    * This is the intended reuse seam from docs/35 §10: "future features inject the graph
    * as context instead of re-analysing."

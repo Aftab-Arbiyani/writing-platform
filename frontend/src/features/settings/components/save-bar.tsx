@@ -1,5 +1,5 @@
-import { QButton } from '@qalam/ui';
-import { fadeRise } from '@qalam/ui/motion';
+import { QButton } from '@umberleaf/ui';
+import { fadeRise } from '@umberleaf/ui/motion';
 import { AnimatePresence, motion } from 'framer-motion';
 import type { ReactElement } from 'react';
 

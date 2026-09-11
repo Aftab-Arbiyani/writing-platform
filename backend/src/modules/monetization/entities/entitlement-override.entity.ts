@@ -1,5 +1,5 @@
 import { Column, Entity, Index } from 'typeorm';
-import type { OverrideEffect, PremiumFeature } from '@qalam/shared';
+import type { OverrideEffect, PremiumFeature } from '@umberleaf/shared';
 
 import { QalamBaseEntity } from '../../../common/base/base.entity';
 

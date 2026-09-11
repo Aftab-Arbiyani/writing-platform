@@ -1,4 +1,4 @@
-import { QButton, QDialog, QErrorState, QSkeleton, useToast } from '@qalam/ui';
+import { QButton, QDialog, QErrorState, QSkeleton, useToast } from '@umberleaf/ui';
 import { Plus, Star, BookMarked } from 'lucide-react';
 import { type ReactElement, useState } from 'react';
 

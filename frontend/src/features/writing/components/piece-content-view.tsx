@@ -1,7 +1,7 @@
 import { EditorContent, useEditor } from '@tiptap/react';
 import type { ReactElement } from 'react';
 
-import type { TextDirection } from '@qalam/shared';
+import type { TextDirection } from '@umberleaf/shared';
 
 import { buildEditorExtensions } from '../editor/tiptap-extensions';
 import type { TipTapDoc } from '../types/piece.types';

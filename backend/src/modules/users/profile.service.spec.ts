@@ -1,4 +1,4 @@
-import { FollowStatus } from '@qalam/shared';
+import { FollowStatus } from '@umberleaf/shared';
 
 import type { TransactionRunner } from '../../common/database/transaction-runner';
 import type { MediaService } from '../../media/media.service';

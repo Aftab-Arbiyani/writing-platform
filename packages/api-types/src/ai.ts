@@ -3,7 +3,7 @@
  * and Flutter consume over `/api/v1/ai/*` and `/api/v1/admin/ai/*`.
  *
  * The provider-agnostic VOCABULARY (enums, `AiModelMetadata`, `AiGenerationParams`,
- * `AiResolvedConfig`, cost helper) lives in `@qalam/shared` and is re-exported
+ * `AiResolvedConfig`, cost helper) lives in `@umberleaf/shared` and is re-exported
  * here so a client imports everything AI-wire-related from one package — never
  * duplicating the shapes. This file adds only the DTO envelopes that are specific
  * to the HTTP surface. These are handwritten until the backend emits `openapi.json`
@@ -25,7 +25,7 @@ export type {
   AiTokenUsage,
   AiUsageWindow,
   PromptCategory,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 import type {
   AiFeature,
@@ -38,7 +38,7 @@ import type {
   AiStreamEventType,
   AiTokenUsage,
   PromptCategory,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 // ── Registry ────────────────────────────────────────────────────────────────
 

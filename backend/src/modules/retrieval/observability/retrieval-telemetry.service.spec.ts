@@ -1,4 +1,4 @@
-import { RetrievalFailureReason, RetrievalIntent, RetrievalQueryType } from '@qalam/shared';
+import { RetrievalFailureReason, RetrievalIntent, RetrievalQueryType } from '@umberleaf/shared';
 
 import type { RetrievalQueryLog } from '../entities/retrieval-query-log.entity';
 import { ANALYTICS_ROW_CAP, RetrievalLogRepository } from './retrieval-log.repository';

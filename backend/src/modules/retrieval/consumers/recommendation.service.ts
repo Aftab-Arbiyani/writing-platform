@@ -5,7 +5,7 @@ import {
   RetrievalQueryType,
   RetrievalSource,
   SearchSort,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 import { DiscoveryService } from '../../feed/discovery.service';
 import { TrendingService } from '../../feed/trending.service';

@@ -6,7 +6,7 @@ import {
   PolicyResourceType,
   SnapshotReason,
   type Visibility,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 import { AuditService } from '../audit/audit.service';
 import { NotificationsService } from '../notifications/notifications.service';

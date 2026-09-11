@@ -1,4 +1,4 @@
-import { QButton, QSpinner } from '@qalam/ui';
+import { QButton, QSpinner } from '@umberleaf/ui';
 import { XCircle } from 'lucide-react';
 import { useEffect, useRef, type ReactElement } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';

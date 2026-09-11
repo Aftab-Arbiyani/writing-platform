@@ -5,7 +5,7 @@ import type {
   ReportResolution,
   ReportSeverity,
   ReportStatus,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 import { Column, Entity, Index } from 'typeorm';
 
 import { QalamBaseEntity } from '../../../common/base/base.entity';

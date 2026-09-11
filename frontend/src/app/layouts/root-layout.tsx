@@ -1,4 +1,4 @@
-import { pageTransition } from '@qalam/ui/motion';
+import { pageTransition } from '@umberleaf/ui/motion';
 import { motion } from 'framer-motion';
 import type { ReactElement } from 'react';
 import { Outlet, ScrollRestoration, useLocation } from 'react-router';

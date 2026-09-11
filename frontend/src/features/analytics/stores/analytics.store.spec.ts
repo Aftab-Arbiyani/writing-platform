@@ -1,4 +1,4 @@
-import { AnalyticsPeriod } from '@qalam/shared';
+import { AnalyticsPeriod } from '@umberleaf/shared';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { useAnalyticsStore, windowFor } from './analytics.store';

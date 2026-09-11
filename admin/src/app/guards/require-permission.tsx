@@ -1,5 +1,5 @@
-import type { PermissionCode } from '@qalam/shared';
-import { QPageLoader } from '@qalam/ui';
+import type { PermissionCode } from '@umberleaf/shared';
+import { QPageLoader } from '@umberleaf/ui';
 import type { ReactElement } from 'react';
 import { Navigate, Outlet } from 'react-router';
 

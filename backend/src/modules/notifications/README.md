@@ -82,7 +82,7 @@ The polymorphic target (`entity_type`/`entity_id`) + denormalized `data` payload
 
 ## Extending
 
-Add a `NotificationType` in `@qalam/shared` (the column is `varchar(40)` — no
+Add a `NotificationType` in `@umberleaf/shared` (the column is `varchar(40)` — no
 migration), map it in `TYPE_PREFERENCE`, emit a domain event where it originates,
 and handle it in `NotificationEventListener`.
 

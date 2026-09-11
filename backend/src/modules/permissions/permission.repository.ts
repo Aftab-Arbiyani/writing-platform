@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import type { PermissionDefinition } from '@qalam/shared';
+import type { PermissionDefinition } from '@umberleaf/shared';
 import { Repository } from 'typeorm';
 
 import { Permission } from './entities/permission.entity';

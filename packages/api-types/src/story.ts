@@ -3,7 +3,7 @@
  * structured story knowledge graph and its analyses over `/api/v1/story-intelligence/*`.
  *
  * The provider-agnostic VOCABULARY (kinds, node/edge types, scopes, statuses) lives in
- * `@qalam/shared` and is re-exported here so a client imports everything story-related
+ * `@umberleaf/shared` and is re-exported here so a client imports everything story-related
  * from one package. Every analysis returns STRUCTURED objects first (the `*Data`
  * payloads + the graph), with human-readable `summary`/`recommendations` derived from
  * them — never free-form text alone (docs/34 §13). Handwritten until the backend emits
@@ -18,7 +18,7 @@ export type {
   StoryEventKind,
   StoryIssueSeverity,
   StoryNodeType,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 import type {
   AiTokenUsage,
@@ -29,7 +29,7 @@ import type {
   StoryEventKind,
   StoryIssueSeverity,
   StoryNodeType,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 // ── Shared building blocks ──────────────────────────────────────────────────
 

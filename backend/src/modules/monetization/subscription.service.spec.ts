@@ -5,8 +5,8 @@ import {
   PlanTier,
   SubscriptionEventType,
   SubscriptionStatus,
-} from '@qalam/shared';
-import type { PlanDefinition } from '@qalam/shared';
+} from '@umberleaf/shared';
+import type { PlanDefinition } from '@umberleaf/shared';
 import type { Repository } from 'typeorm';
 
 import type { DomainEventBus } from '../../common/events/domain-event-bus';

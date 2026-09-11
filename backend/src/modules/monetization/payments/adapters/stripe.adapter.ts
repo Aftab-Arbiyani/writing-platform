@@ -2,7 +2,7 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
-import { PaymentProvider, PaymentStatus, PurchaseKind } from '@qalam/shared';
+import { PaymentProvider, PaymentStatus, PurchaseKind } from '@umberleaf/shared';
 
 import { paymentsConfig } from '../../../../config/payments.config';
 import {

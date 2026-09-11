@@ -1,5 +1,5 @@
-import { PremiumFeature } from '@qalam/shared';
-import { QEmptyState } from '@qalam/ui';
+import { PremiumFeature } from '@umberleaf/shared';
+import { QEmptyState } from '@umberleaf/ui';
 import { Network } from 'lucide-react';
 import type { ReactElement, ReactNode } from 'react';
 

@@ -4,7 +4,7 @@ import {
   COLLECTION_NAME_MAX,
   COLLECTION_NAME_MIN,
   Visibility,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 import { IsEnum, IsOptional, IsString, Length, MaxLength } from 'class-validator';
 
 /**

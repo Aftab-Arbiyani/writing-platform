@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { FollowStatus } from '@qalam/shared';
+import { FollowStatus } from '@umberleaf/shared';
 
 /** Result of a follow action: `accepted` (public) or `pending` (private request). */
 export class FollowActionResponseDto {

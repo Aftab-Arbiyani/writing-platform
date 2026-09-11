@@ -1,4 +1,4 @@
-import { QTag, type QTagColor } from '@qalam/ui';
+import { QTag, type QTagColor } from '@umberleaf/ui';
 import { Boxes, Cpu, GitCommitHorizontal, Hammer, Rocket, Server, TimerReset } from 'lucide-react';
 import type { ReactElement, ReactNode } from 'react';
 

@@ -2,7 +2,7 @@
  * Wire types for the Platform Analytics dashboard (A8), mirroring the E12.9
  * backend DTOs (`backend/src/modules/analytics/dto/admin-analytics-response.dto`)
  * plus the reused trending (`/analytics/trending`) and moderation-trends
- * (`/admin/reports/trends`) contracts. Hand-authored until `@qalam/api-types`
+ * (`/admin/reports/trends`) contracts. Hand-authored until `@umberleaf/api-types`
  * regenerates — TODO(aftab): drop for generated types once `openapi.json` covers them.
  */
 

@@ -1,5 +1,5 @@
-import { RestrictionScope } from '@qalam/shared';
-import type { RestrictionScope as RestrictionScopeType, RestrictionType } from '@qalam/shared';
+import { RestrictionScope } from '@umberleaf/shared';
+import type { RestrictionScope as RestrictionScopeType, RestrictionType } from '@umberleaf/shared';
 import { Column, Entity, Index } from 'typeorm';
 
 import { QalamBaseEntity } from '../../../common/base/base.entity';

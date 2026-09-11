@@ -109,7 +109,7 @@ export function loader({ params }: LoaderFunctionArgs) {
 _Why not `/u/:username`:_ `/@name` is the identity contract promised in the signup flow and
 the IA (docs 09 §1, 10 §5) — the router bends, not the URL. Reserved words (`feed`,
 `search`, `me`, `settings`, `auth`, `write`, `p`, `tag`, `genre`) can never collide with
-handles because usernames matching them are rejected at registration (`@qalam/shared`
+handles because usernames matching them are rejected at registration (`@umberleaf/shared`
 reserved-username list) _and_ static routes match first anyway. Defense in both layers.
 
 ---
@@ -318,7 +318,7 @@ explicit wall gets reported.
   from the landing page) · `editor` (largest — TipTap + extensions; **never** in the
   visitor-critical path) · `me/*` · `settings` · per-section admin chunks.
 - Shared vendor chunks (`react`, router, TanStack Query, AntD core) split by Vite
-  `manualChunks`; `@qalam/ui` tokens ship in the entry CSS so first paint is on-theme in
+  `manualChunks`; `@umberleaf/ui` tokens ship in the entry CSS so first paint is on-theme in
   both light and dark (ADR §6 dark mode is day one).
 
 ---

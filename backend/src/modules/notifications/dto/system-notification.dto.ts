@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { SYSTEM_NOTIFICATION_BODY_MAX, SYSTEM_NOTIFICATION_TITLE_MAX } from '@qalam/shared';
+import { SYSTEM_NOTIFICATION_BODY_MAX, SYSTEM_NOTIFICATION_TITLE_MAX } from '@umberleaf/shared';
 import { IsNotEmpty, IsObject, IsOptional, IsString, MaxLength } from 'class-validator';
 
 /** `POST /admin/system-notifications` body (admin only) — create + broadcast. */

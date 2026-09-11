@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { AiProvider, IMPLEMENTED_AI_PROVIDERS, PERMISSIONS } from '@qalam/shared';
+import { AiProvider, IMPLEMENTED_AI_PROVIDERS, PERMISSIONS } from '@umberleaf/shared';
 import { App, Button, Card, InputNumber, Select, Switch } from 'antd';
 import { useEffect } from 'react';
 import type { ReactElement } from 'react';
@@ -23,7 +23,7 @@ import type { AiOrgConfigForm } from '../schemas/ai-config.schema';
  * and every subsequent AI call would fail against a provider with no adapter behind it. That is also
  * what made `IMPLEMENTED_AI_PROVIDERS` a dead export: the list existed and nothing consulted it.
  *
- * `stub` is excluded on purpose even though it HAS an adapter — its own docblock in `@qalam/shared`
+ * `stub` is excluded on purpose even though it HAS an adapter — its own docblock in `@umberleaf/shared`
  * says why: it is a test-stack path gated on `AI_STUB_ENABLED`, and offering it in a production admin
  * UI is how every writer's suggestion becomes the same canned paragraph.
  */

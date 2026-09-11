@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { MONETIZATION_MASTER_FLAG_KEY } from '@qalam/shared';
+import { MONETIZATION_MASTER_FLAG_KEY } from '@umberleaf/shared';
 
 import { evaluateFeatureFlag } from '../settings/feature-flag-evaluator';
 import { SettingsService } from '../settings/settings.service';

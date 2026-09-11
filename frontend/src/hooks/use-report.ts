@@ -1,4 +1,4 @@
-import { ReportReason } from '@qalam/shared';
+import { ReportReason } from '@umberleaf/shared';
 import { useMutation } from '@tanstack/react-query';
 
 import { reportsApi } from '@/lib/reports-api';

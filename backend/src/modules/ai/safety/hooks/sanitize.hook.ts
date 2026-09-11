@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { AiSafetyStage, AiSafetyVerdict } from '@qalam/shared';
+import { AiSafetyStage, AiSafetyVerdict } from '@umberleaf/shared';
 
 import type { SafetyHook, SafetyInput, SafetyResult } from '../safety.types';
 

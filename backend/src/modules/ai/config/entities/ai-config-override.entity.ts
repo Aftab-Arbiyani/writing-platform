@@ -1,5 +1,5 @@
 import { Column, Entity, Index } from 'typeorm';
-import type { AiGenerationParams, AiProvider } from '@qalam/shared';
+import type { AiGenerationParams, AiProvider } from '@umberleaf/shared';
 
 import { QalamBaseEntity } from '../../../../common/base/base.entity';
 

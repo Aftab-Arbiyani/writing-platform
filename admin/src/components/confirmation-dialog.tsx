@@ -1,4 +1,4 @@
-import { QButton, QDialog } from '@qalam/ui';
+import { QButton, QDialog } from '@umberleaf/ui';
 import type { ReactElement, ReactNode } from 'react';
 
 /**

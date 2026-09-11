@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { AUTOCOMPLETE_LIMIT_DEFAULT, AUTOCOMPLETE_LIMIT_MAX, SearchType } from '@qalam/shared';
+import { AUTOCOMPLETE_LIMIT_DEFAULT, AUTOCOMPLETE_LIMIT_MAX, SearchType } from '@umberleaf/shared';
 import { Type } from 'class-transformer';
 import { IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, Max, Min } from 'class-validator';
 

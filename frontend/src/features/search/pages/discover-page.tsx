@@ -1,4 +1,4 @@
-import { QButton, QEmptyState, QErrorState } from '@qalam/ui';
+import { QButton, QEmptyState, QErrorState } from '@umberleaf/ui';
 import {
   BookOpen,
   Compass,

@@ -2,7 +2,7 @@ import type { HealthStatus } from '@/components/status-indicator';
 
 /**
  * Dashboard wire types — subsets of the real backend DTOs the dashboard consumes (hand-declared;
- * `@qalam/api-types` has no generated types yet). Only the fields the dashboard reads are declared;
+ * `@umberleaf/api-types` has no generated types yet). Only the fields the dashboard reads are declared;
  * extra response fields are ignored by structural typing.
  */
 

@@ -1,4 +1,4 @@
-import { NotificationType } from '@qalam/shared';
+import { NotificationType } from '@umberleaf/shared';
 import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 

@@ -1,4 +1,4 @@
-import { QButton } from '@qalam/ui';
+import { QButton } from '@umberleaf/ui';
 import { Dropdown, type MenuProps } from 'antd';
 import { MoreHorizontal, type LucideIcon } from 'lucide-react';
 import { createElement, type ReactElement } from 'react';

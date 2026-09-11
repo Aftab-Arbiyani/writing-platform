@@ -1,5 +1,5 @@
 import { Column, Entity, Index } from 'typeorm';
-import type { PaymentMethodType, PaymentProvider } from '@qalam/shared';
+import type { PaymentMethodType, PaymentProvider } from '@umberleaf/shared';
 
 import { QalamBaseEntity } from '../../../common/base/base.entity';
 

@@ -228,7 +228,7 @@ _Why three axes and not one "category" field:_
 
 ### 5.1 Piece slug rules
 
-Generated once by `@qalam/utils` `slugify` at **first publish** (drafts have no slug):
+Generated once by `@umberleaf/utils` `slugify` at **first publish** (drafts have no slug):
 
 1. Normalize: NFKD → `unaccent` → lowercase → spaces/punctuation → `-`; strip to `[a-z0-9-]`; collapse/trim dashes; truncate at 80 chars on a word boundary.
 2. **Non-Latin titles** (the launch norm — Hindi/Urdu): if the ASCII residue is < 3 chars, the slug base falls back to `piece`. We do **not** auto-transliterate Devanagari/Nastaliq (_Why:_ machine transliteration is lossy and often embarrassing; a wrong romanization of a poem's title is worse than a neutral one). The publish sheet shows the slug with an optional "edit URL" field so writers can supply their own romanization — the one moment slugs are editable.

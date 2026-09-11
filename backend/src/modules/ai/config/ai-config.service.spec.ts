@@ -1,5 +1,5 @@
-import { AiModelAvailability, AiProvider } from '@qalam/shared';
-import type { AiModelMetadata } from '@qalam/shared';
+import { AiModelAvailability, AiProvider } from '@umberleaf/shared';
+import type { AiModelMetadata } from '@umberleaf/shared';
 import type { Repository } from 'typeorm';
 
 import type { aiConfig } from '../../../config/ai.config';

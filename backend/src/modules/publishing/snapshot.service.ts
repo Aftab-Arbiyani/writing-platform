@@ -4,7 +4,7 @@ import {
   POLICY_ACTIONS,
   PolicyResourceType,
   type SnapshotReason,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 import { AuditService } from '../audit/audit.service';
 import { PieceNotFoundException } from '../pieces/exceptions/pieces.exceptions';

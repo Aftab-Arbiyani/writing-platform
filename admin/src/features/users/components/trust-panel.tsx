@@ -1,5 +1,5 @@
-import { PERMISSIONS } from '@qalam/shared';
-import { QCard, QSectionHeader } from '@qalam/ui';
+import { PERMISSIONS } from '@umberleaf/shared';
+import { QCard, QSectionHeader } from '@umberleaf/ui';
 import { ShieldAlert } from 'lucide-react';
 import type { ReactElement } from 'react';
 

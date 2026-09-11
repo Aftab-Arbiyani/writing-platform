@@ -5,7 +5,7 @@ import {
   USERNAME_MAX,
   USERNAME_MIN,
   USERNAME_REGEX,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 import { IsEmail, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 
 /**

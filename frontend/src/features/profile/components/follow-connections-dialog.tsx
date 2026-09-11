@@ -1,4 +1,4 @@
-import { QDialog, cn } from '@qalam/ui';
+import { QDialog, cn } from '@umberleaf/ui';
 import type { ReactElement } from 'react';
 
 import { useFollowers, useFollowing } from '../hooks/use-follow-lists';

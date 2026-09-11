@@ -1,4 +1,4 @@
-import { Visibility } from '@qalam/shared';
+import { Visibility } from '@umberleaf/shared';
 import { Column, Entity, Index, Unique } from 'typeorm';
 
 import { QalamAuditEntity } from '../../../common/base/audit.entity';

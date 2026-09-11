@@ -6,8 +6,8 @@ import {
   TrustLevel,
   TrustStatus,
   UserStatus,
-} from '@qalam/shared';
-import type { QTagColor } from '@qalam/ui';
+} from '@umberleaf/shared';
+import type { QTagColor } from '@umberleaf/ui';
 
 /**
  * Human labels for the trust vocabulary on the ADMIN side (AF6, row A2).
@@ -18,7 +18,7 @@ import type { QTagColor } from '@qalam/ui';
  * other). An operator and the writer they are talking to must describe the same restriction with
  * the same word; a support ticket where one says "shadow-restricted" and the other reads
  * "hidden" is the failure this duplication prevents. There is no cross-app import to reach for —
- * `@qalam/shared` is a contract package and carries no copy — so the maps are duplicated
+ * `@umberleaf/shared` is a contract package and carries no copy — so the maps are duplicated
  * deliberately and pinned by a test against the enum sets.
  *
  * Every lookup falls back to the raw wire value: these catalogues are stored as `varchar`, so a

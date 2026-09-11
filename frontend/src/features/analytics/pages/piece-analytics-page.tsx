@@ -1,4 +1,4 @@
-import { QSkeleton } from '@qalam/ui';
+import { QSkeleton } from '@umberleaf/ui';
 import { ArrowLeft, ExternalLink } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { Link, useParams } from 'react-router';

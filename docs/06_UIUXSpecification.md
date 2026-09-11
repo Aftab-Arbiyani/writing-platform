@@ -588,7 +588,7 @@ ones (§4.1, §4.6).
 1. **One component per concept** — one `PieceCard`, one `ClapButton`; variants are props/
    slots, never forks (`08` §5).
 2. **Copy lives in catalogues** (§4.4 / `lib/error-messages.ts`), referenced, never inlined.
-3. **Tokens only; logical props only; one motion source** (`@qalam/ui/motion`) — `07` §12,
+3. **Tokens only; logical props only; one motion source** (`@umberleaf/ui/motion`) — `07` §12,
    §14.
 4. **Interaction patterns defined once** (optimistic recipe `12` §2.5, undo toast `07` §7.9,
    infinite-scroll sentinel §4.2) — reuse the helper, don't re-implement per feature.

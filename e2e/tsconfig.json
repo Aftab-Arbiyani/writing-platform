@@ -1,5 +1,5 @@
 {
-  "extends": "@qalam/config/tsconfig/base.json",
+  "extends": "@umberleaf/config/tsconfig/base.json",
   "compilerOptions": {
     // Playwright resolves specifiers without file extensions and runs TS
     // directly, so use bundler-style resolution here (overrides the base's

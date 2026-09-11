@@ -1,6 +1,6 @@
 import { useCallback, useRef } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import type { AiCompletionRequest } from '@qalam/api-types';
+import type { AiCompletionRequest } from '@umberleaf/api-types';
 
 import { ApiError } from '@/lib/api-client';
 

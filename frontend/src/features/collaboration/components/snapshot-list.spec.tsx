@@ -1,4 +1,4 @@
-import { POLICY_ACTIONS, PolicyEffect, SnapshotReason } from '@qalam/shared';
+import { POLICY_ACTIONS, PolicyEffect, SnapshotReason } from '@umberleaf/shared';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 

@@ -1,4 +1,4 @@
-import { QButton, QCard, QEmptyState, QErrorState, QSkeleton } from '@qalam/ui';
+import { QButton, QCard, QEmptyState, QErrorState, QSkeleton } from '@umberleaf/ui';
 import { BarChart3, PenLine, WifiOff } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { useNavigate } from 'react-router';

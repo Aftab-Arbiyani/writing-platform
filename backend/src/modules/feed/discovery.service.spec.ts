@@ -1,4 +1,4 @@
-import { DiscoverPieceKind, FeedSort, WriterKind } from '@qalam/shared';
+import { DiscoverPieceKind, FeedSort, WriterKind } from '@umberleaf/shared';
 
 import { encodeCursor } from '../../common/pagination/cursor.util';
 import type { CursorPaginationDto } from '../../common/dto/cursor-pagination.dto';

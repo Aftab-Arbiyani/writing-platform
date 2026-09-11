@@ -4,7 +4,7 @@ import {
   AiFeature,
   FLAGGED_AI_FEATURES,
   aiFeatureFlagKey,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 import { evaluateFeatureFlag } from '../settings/feature-flag-evaluator';
 import { SettingsService } from '../settings/settings.service';

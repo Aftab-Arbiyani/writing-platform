@@ -10,7 +10,7 @@
 
 - **Working codename:** **Qalam** (قلم / क़लम — _"the pen"_). Chosen because it is shared
   vocabulary between Urdu and Hindi, our launch audiences. Rename is a find/replace on the
-  `@qalam/*` package scope; nothing else couples to it.
+  `@umberleaf/*` package scope; nothing else couples to it.
 - **Product:** A global creative writing platform — _"a premium writing sanctuary."_
 - **Launch audience:** Hindi and Urdu writers. **Urdu is RTL — right-to-left support is a
   day-one architectural requirement, not a Phase 2 retrofit.**
@@ -57,8 +57,8 @@ imports; modules communicate through exported services or events). Extraction se
 | Package manager   | **pnpm 9 workspaces**                                       | Strict node_modules (no phantom deps), content-addressed store, `workspace:*` protocol. npm/yarn hoisting hides dependency bugs.                                    |
 | Task runner       | **Turborepo 2**                                             | Task graph + local/remote caching with near-zero config. Nx is more powerful but far more opinionated/invasive; we don't need generators or module federation.      |
 | Node              | **24 LTS** (`.nvmrc`, `engines >= 22`)                      | Current LTS on the host; native `fetch`, stable test runner.                                                                                                        |
-| TypeScript        | **^5.x, `strict: true` everywhere**                         | Non-negotiable. Shared base configs in `@qalam/config`.                                                                                                             |
-| Lint/format       | **ESLint 9 flat config + Prettier 3**                       | Flat config is the present and future of ESLint; shared config exported from `@qalam/config`.                                                                       |
+| TypeScript        | **^5.x, `strict: true` everywhere**                         | Non-negotiable. Shared base configs in `@umberleaf/config`.                                                                                                         |
+| Lint/format       | **ESLint 9 flat config + Prettier 3**                       | Flat config is the present and future of ESLint; shared config exported from `@umberleaf/config`.                                                                   |
 | Git hooks         | **husky + lint-staged + commitlint** (conventional commits) | Cheap enforcement at the edge; CI re-verifies.                                                                                                                      |
 | Internal packages | **Built with tsup (ESM + d.ts), consumed as `workspace:*`** | Source-consumption breaks the NestJS tsc pipeline; building packages keeps every consumer (Vite, Nest, future RN/CLI) uniform. Turbo `dependsOn: ^build` orders it. |
 
@@ -72,11 +72,11 @@ platfrom/                       # repo root (existing dir name kept)
 ├── frontend/                   # Reader/writer app (React + Vite)
 ├── admin/                      # Admin panel (React + Vite)
 ├── packages/
-│   ├── shared/                 # @qalam/shared     — domain constants, enums, error codes
-│   ├── api-types/              # @qalam/api-types  — OpenAPI-generated + handwritten API types
-│   ├── ui/                     # @qalam/ui         — design tokens, AntD theme, primitives
-│   ├── config/                 # @qalam/config     — tsconfig/eslint/prettier presets
-│   └── utils/                  # @qalam/utils      — pure functions (slugify, readingTime…)
+│   ├── shared/                 # @umberleaf/shared     — domain constants, enums, error codes
+│   ├── api-types/              # @umberleaf/api-types  — OpenAPI-generated + handwritten API types
+│   ├── ui/                     # @umberleaf/ui         — design tokens, AntD theme, primitives
+│   ├── config/                 # @umberleaf/config     — tsconfig/eslint/prettier presets
+│   └── utils/                  # @umberleaf/utils      — pure functions (slugify, readingTime…)
 ├── infrastructure/
 │   ├── docker/                 # Dockerfiles (backend, frontend, admin)
 │   └── nginx/                  # reverse-proxy configs (dev + prod templates)
@@ -89,15 +89,15 @@ platfrom/                       # repo root (existing dir name kept)
 
 **Package responsibilities (keep these disjoint):**
 
-- `@qalam/shared` — _what the domain knows_: enums (`PieceStatus`, `Visibility`, `Role`),
+- `@umberleaf/shared` — _what the domain knows_: enums (`PieceStatus`, `Visibility`, `Role`),
   error-code catalogue, limits (`MAX_CLAPS_PER_USER = 50`), regexes (`USERNAME_REGEX`).
-- `@qalam/utils` — _how to compute_: pure, dependency-free functions.
-- `@qalam/api-types` — _the wire contract_: generated from the backend's OpenAPI spec
+- `@umberleaf/utils` — _how to compute_: pure, dependency-free functions.
+- `@umberleaf/api-types` — _the wire contract_: generated from the backend's OpenAPI spec
   (`openapi-typescript`) + handwritten request/response helpers. Flutter generates Dart
   models from the same `openapi.json` — one contract, three consumers.
-- `@qalam/ui` — _how it looks_: design tokens (CSS variables), AntD theme object,
+- `@umberleaf/ui` — _how it looks_: design tokens (CSS variables), AntD theme object,
   Tailwind preset, shared primitives.
-- `@qalam/config` — _how we build_: `tsconfig/base|nest|react`, `eslint/base|nest|react`,
+- `@umberleaf/config` — _how we build_: `tsconfig/base|nest|react`, `eslint/base|nest|react`,
   `prettier` preset.
 
 ## 3. Backend Decisions (NestJS)
@@ -168,7 +168,7 @@ backend/src/
   { "success": true,  "data": …, "meta": { /* pagination etc. */ } }
   { "success": false, "error": { "code": "PIECE_NOT_FOUND", "message": "…", "details": [], "requestId": "…" } }
   ```
-- **Error codes:** `DOMAIN_REASON` catalogue in `@qalam/shared` (e.g.
+- **Error codes:** `DOMAIN_REASON` catalogue in `@umberleaf/shared` (e.g.
   `AUTH_INVALID_CREDENTIALS`, `PIECE_SCHEDULE_IN_PAST`). HTTP status still meaningful.
 - **Pagination:** **cursor-based for feeds/timelines** (`?cursor&limit`, opaque base64,
   stable under insertion), offset-based for admin tables (`?page&limit`, needs totals).
@@ -179,22 +179,22 @@ backend/src/
 
 ## 6. Frontend & Admin Decisions (React + Vite)
 
-| Area         | Decision                                                                                                                                                                                                                                                                                                               | Rationale                                                           |
-| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| Core         | React ^19, Vite ^7, TS strict                                                                                                                                                                                                                                                                                          |                                                                     |
-| Server state | **TanStack Query v5 only** — never mirrored into Zustand                                                                                                                                                                                                                                                               | One cache, one invalidation model.                                  |
-| Client state | **Zustand v5** slices (theme, editor UI, session)                                                                                                                                                                                                                                                                      | Redux is ceremony we don't need; Context re-renders too broadly.    |
-| Forms        | React Hook Form + Zod resolvers; Zod schemas shared with API layer                                                                                                                                                                                                                                                     |                                                                     |
-| URL state    | React Router v7 (data APIs); URL is the source of truth for tabs/filters/search                                                                                                                                                                                                                                        |                                                                     |
-| UI kit       | **AntD 5 + Tailwind 4**: AntD for complex widgets (tables, dialogs, pickers — admin-heavy), Tailwind for layout/spacing/custom literary surfaces. **Conflict rule:** Tailwind preflight disabled; tokens defined once as CSS variables in `@qalam/ui` and fed to _both_ AntD `ConfigProvider` theme and Tailwind theme | Two systems, one token source — no drift, no specificity wars.      |
-| Dark mode    | Class-strategy (`data-theme` on `<html>`), AntD dark algorithm, persisted + system-default, **day one**                                                                                                                                                                                                                |                                                                     |
-| RTL          | `dir` switches per content language (Urdu `rtl`); **CSS logical properties only** (`ms-*`/`me-*`, `ps-*`/`pe-*` — never `ml-*`/`mr-*`); AntD `direction` prop                                                                                                                                                          | Retrofit costs 10× — banned by lint rule from day one.              |
-| Editor       | TipTap 3; custom extensions Phase 1: footnotes, mentions, hashtags; marks: bold/italic/underline/align/blockquote/lists                                                                                                                                                                                                |                                                                     |
-| Motion       | Framer Motion; durations 150/250/400 ms; respects `prefers-reduced-motion`                                                                                                                                                                                                                                             |                                                                     |
-| API layer    | Centralized typed `fetch` wrapper (`lib/api-client.ts`) + per-feature query hooks; types from `@qalam/api-types`; no ad-hoc fetches in components                                                                                                                                                                      |                                                                     |
-| Structure    | `app/` (providers, router) · `features/<name>/{api,components,hooks,stores}` · `components/` (app-wide composites) · shared primitives in `@qalam/ui`                                                                                                                                                                  | Feature-first; a feature can be deleted in one `rm -rf`.            |
-| Testing      | **Vitest** + Testing Library (not Jest — native Vite pipeline, same config, faster)                                                                                                                                                                                                                                    |                                                                     |
-| i18n         | UI-chrome i18n deferred to Phase 1 (`react-i18next` planned); _content_ language/direction handling is day one                                                                                                                                                                                                         | Don't confuse UI language with content language — independent axes. |
+| Area         | Decision                                                                                                                                                                                                                                                                                                                   | Rationale                                                           |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| Core         | React ^19, Vite ^7, TS strict                                                                                                                                                                                                                                                                                              |                                                                     |
+| Server state | **TanStack Query v5 only** — never mirrored into Zustand                                                                                                                                                                                                                                                                   | One cache, one invalidation model.                                  |
+| Client state | **Zustand v5** slices (theme, editor UI, session)                                                                                                                                                                                                                                                                          | Redux is ceremony we don't need; Context re-renders too broadly.    |
+| Forms        | React Hook Form + Zod resolvers; Zod schemas shared with API layer                                                                                                                                                                                                                                                         |                                                                     |
+| URL state    | React Router v7 (data APIs); URL is the source of truth for tabs/filters/search                                                                                                                                                                                                                                            |                                                                     |
+| UI kit       | **AntD 5 + Tailwind 4**: AntD for complex widgets (tables, dialogs, pickers — admin-heavy), Tailwind for layout/spacing/custom literary surfaces. **Conflict rule:** Tailwind preflight disabled; tokens defined once as CSS variables in `@umberleaf/ui` and fed to _both_ AntD `ConfigProvider` theme and Tailwind theme | Two systems, one token source — no drift, no specificity wars.      |
+| Dark mode    | Class-strategy (`data-theme` on `<html>`), AntD dark algorithm, persisted + system-default, **day one**                                                                                                                                                                                                                    |                                                                     |
+| RTL          | `dir` switches per content language (Urdu `rtl`); **CSS logical properties only** (`ms-*`/`me-*`, `ps-*`/`pe-*` — never `ml-*`/`mr-*`); AntD `direction` prop                                                                                                                                                              | Retrofit costs 10× — banned by lint rule from day one.              |
+| Editor       | TipTap 3; custom extensions Phase 1: footnotes, mentions, hashtags; marks: bold/italic/underline/align/blockquote/lists                                                                                                                                                                                                    |                                                                     |
+| Motion       | Framer Motion; durations 150/250/400 ms; respects `prefers-reduced-motion`                                                                                                                                                                                                                                                 |                                                                     |
+| API layer    | Centralized typed `fetch` wrapper (`lib/api-client.ts`) + per-feature query hooks; types from `@umberleaf/api-types`; no ad-hoc fetches in components                                                                                                                                                                      |                                                                     |
+| Structure    | `app/` (providers, router) · `features/<name>/{api,components,hooks,stores}` · `components/` (app-wide composites) · shared primitives in `@umberleaf/ui`                                                                                                                                                                  | Feature-first; a feature can be deleted in one `rm -rf`.            |
+| Testing      | **Vitest** + Testing Library (not Jest — native Vite pipeline, same config, faster)                                                                                                                                                                                                                                        |                                                                     |
+| i18n         | UI-chrome i18n deferred to Phase 1 (`react-i18next` planned); _content_ language/direction handling is day one                                                                                                                                                                                                             | Don't confuse UI language with content language — independent axes. |
 
 **Fonts** (self-hosted via @fontsource, no CDN — privacy + perf):
 UI: **Inter** (+ Noto Sans Devanagari / Noto Naskh Arabic per script) · Reading: **Lora**
@@ -298,7 +298,7 @@ out). Backs Phase-4 Epic A7 (admin settings UI); additive-only over the frozen `
   a new column, so Phase-2+ config (AI, Payments, Mobile, Creator Economy) lands without a
   migration (§1.7 open-set rule).
 - Endpoints under `/admin/settings`, `/admin/feature-flags`, `/admin/maintenance`; gated on
-  the existing `settings.manage` PBAC grant (admin+, already in `@qalam/shared`). Reuses the
+  the existing `settings.manage` PBAC grant (admin+, already in `@umberleaf/shared`). Reuses the
   shared audit trail (every mutation → `audit_logs`) and Redis cache (DB 0, invalidated on
   write). **Maintenance mode** is the `maintenance.*` settings rows — no separate table.
 - Secrets stay in env only (ADR §8) — the store holds **non-secret operational config** only.
@@ -471,6 +471,6 @@ AF1 builds only the reusable _foundation_ — **no user-facing AI feature**.
 
 New vocabulary is append-only per `docs/25`: `AI_*` error codes, `ai.use`/`ai.manage`
 permissions, the `aiCompletion` rate tier, `AI_*` limits, and the AI enums in
-`@qalam/shared`. State management spans backend + React + admin + Flutter per
+`@umberleaf/shared`. State management spans backend + React + admin + Flutter per
 `docs/34` §9. Backend implemented + verified (build, tests, migration up→down→up);
 client integrations follow the seams in `docs/34`.

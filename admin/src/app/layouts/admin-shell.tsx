@@ -1,5 +1,5 @@
-import { cn } from '@qalam/ui';
-import { pageTransition } from '@qalam/ui/motion';
+import { cn } from '@umberleaf/ui';
+import { pageTransition } from '@umberleaf/ui/motion';
 import { motion } from 'framer-motion';
 import type { ReactElement } from 'react';
 import { Outlet, useLocation } from 'react-router';

@@ -1,4 +1,4 @@
-import { QTag } from '@qalam/ui';
+import { QTag } from '@umberleaf/ui';
 import type { ReactElement, ReactNode } from 'react';
 
 import { EmptyState } from '@/components/empty-state';

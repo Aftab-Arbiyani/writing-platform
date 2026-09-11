@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { QButton, QSpinner, useConfirm, useToast } from '@qalam/ui';
+import { QButton, QSpinner, useConfirm, useToast } from '@umberleaf/ui';
 import { Lock, LogOut } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { useForm } from 'react-hook-form';

@@ -1,4 +1,4 @@
-import { QEmptyState } from '@qalam/ui';
+import { QEmptyState } from '@umberleaf/ui';
 import { Lock } from 'lucide-react';
 import type { ReactElement } from 'react';
 

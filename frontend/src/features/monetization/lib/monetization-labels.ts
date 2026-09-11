@@ -11,7 +11,7 @@ import {
   PurchaseStatus,
   QuotaWindow,
   SubscriptionStatus,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 /**
  * Human labels for the monetization vocabulary (AF5, W4) — presentation only, so no surface ever

@@ -1,4 +1,4 @@
-import type { ExplorerView, StoryAnalysisKind } from '@qalam/api-types';
+import type { ExplorerView, StoryAnalysisKind } from '@umberleaf/api-types';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useRef, useState } from 'react';
 

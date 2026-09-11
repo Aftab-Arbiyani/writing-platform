@@ -1,4 +1,4 @@
-import { PERMISSIONS } from '@qalam/shared';
+import { PERMISSIONS } from '@umberleaf/shared';
 import { memo, type ReactElement } from 'react';
 
 import { AccessDenied } from '@/components/access-denied';

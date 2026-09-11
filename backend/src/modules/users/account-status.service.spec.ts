@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
-import { UserStatus } from '@qalam/shared';
+import { UserStatus } from '@umberleaf/shared';
 
 import type { PolicyEngineService } from '../policy';
 

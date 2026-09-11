@@ -1,4 +1,4 @@
-import { AnalyticsPeriod } from '@qalam/shared';
+import { AnalyticsPeriod } from '@umberleaf/shared';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 

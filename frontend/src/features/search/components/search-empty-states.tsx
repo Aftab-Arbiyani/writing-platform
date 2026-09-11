@@ -1,4 +1,4 @@
-import { QEmptyState } from '@qalam/ui';
+import { QEmptyState } from '@umberleaf/ui';
 import { SearchX, WifiOff } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { ReactElement } from 'react';

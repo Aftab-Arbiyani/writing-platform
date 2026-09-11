@@ -1,4 +1,4 @@
-import { QButton, QCard, useToast } from '@qalam/ui';
+import { QButton, QCard, useToast } from '@umberleaf/ui';
 import { InputNumber, Table, type TableColumnsType } from 'antd';
 import { OctagonX, ToggleRight } from 'lucide-react';
 import { useState, type ReactElement } from 'react';

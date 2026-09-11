@@ -1,5 +1,5 @@
-import { PLAN_TIER_ORDER, type PlanDefinition, type PlanTier } from '@qalam/shared';
-import { QCard, QSectionHeader, QTag } from '@qalam/ui';
+import { PLAN_TIER_ORDER, type PlanDefinition, type PlanTier } from '@umberleaf/shared';
+import { QCard, QSectionHeader, QTag } from '@umberleaf/ui';
 import { AlertTriangle, Check, Lock } from 'lucide-react';
 import type { ReactElement } from 'react';
 

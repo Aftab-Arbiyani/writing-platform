@@ -1,5 +1,5 @@
 {
-  "extends": "@qalam/config/tsconfig/base.json",
+  "extends": "@umberleaf/config/tsconfig/base.json",
   "compilerOptions": {
     "noEmit": true
   },

@@ -1,5 +1,5 @@
 import { Column, Entity, Index } from 'typeorm';
-import type { PublicationEvent as PublicationEventType } from '@qalam/shared';
+import type { PublicationEvent as PublicationEventType } from '@umberleaf/shared';
 
 import { QalamAppendOnlyEntity } from '../../../common/base/append-only.entity';
 

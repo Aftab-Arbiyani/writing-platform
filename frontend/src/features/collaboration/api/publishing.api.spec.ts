@@ -1,4 +1,4 @@
-import { Visibility } from '@qalam/shared';
+import { Visibility } from '@umberleaf/shared';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as apiClient from '@/lib/api-client';

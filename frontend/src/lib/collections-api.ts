@@ -1,4 +1,4 @@
-import type { Visibility } from '@qalam/shared';
+import type { Visibility } from '@umberleaf/shared';
 
 import { del, get, getPage, patch, post, type CursorPage } from '@/lib/api-client';
 import { buildQueryString } from '@/lib/http';

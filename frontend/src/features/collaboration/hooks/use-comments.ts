@@ -1,4 +1,4 @@
-import type { CommentKind, CommentStatus } from '@qalam/shared';
+import type { CommentKind, CommentStatus } from '@umberleaf/shared';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { qk } from '@/lib/query-keys';

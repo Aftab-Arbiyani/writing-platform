@@ -1,4 +1,4 @@
-import { ThemePreference, Visibility } from '@qalam/shared';
+import { ThemePreference, Visibility } from '@umberleaf/shared';
 import { Column, CreateDateColumn, Entity, PrimaryColumn, UpdateDateColumn } from 'typeorm';
 
 /**

@@ -1,4 +1,4 @@
-import { QButton, QSpinner, useToast } from '@qalam/ui';
+import { QButton, QSpinner, useToast } from '@umberleaf/ui';
 import { CheckCircle2, MailCheck, XCircle } from 'lucide-react';
 import { useEffect, useRef, type ReactElement } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';

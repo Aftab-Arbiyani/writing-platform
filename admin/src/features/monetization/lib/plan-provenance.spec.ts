@@ -4,7 +4,7 @@ import {
   PlanTier,
   PremiumFeature,
   UNLIMITED_SEATS,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 import { describe, expect, it } from 'vitest';
 
 import {

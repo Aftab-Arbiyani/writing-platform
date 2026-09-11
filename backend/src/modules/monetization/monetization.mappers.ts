@@ -1,4 +1,4 @@
-import type { EntitlementSnapshot } from '@qalam/shared';
+import type { EntitlementSnapshot } from '@umberleaf/shared';
 
 import type { Coupon } from './entities/coupon.entity';
 import type { EntitlementOverride } from './entities/entitlement-override.entity';

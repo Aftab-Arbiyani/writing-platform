@@ -4,7 +4,7 @@ import {
   AI_DEFAULT_MONTHLY_TOKEN_LIMIT,
   AI_STREAM_TIMEOUT_MS,
   AiProvider,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 /**
  * AI platform config (AF1). Provider credentials are SECRETS — env only, never a

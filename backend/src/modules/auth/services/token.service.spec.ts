@@ -1,6 +1,6 @@
 import { JwtService } from '@nestjs/jwt';
 import type { ConfigType } from '@nestjs/config';
-import { Role } from '@qalam/shared';
+import { Role } from '@umberleaf/shared';
 import type { Redis } from 'ioredis';
 
 import type { authConfig } from '../../../config/auth.config';

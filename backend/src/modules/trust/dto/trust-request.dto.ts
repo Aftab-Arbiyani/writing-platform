@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { RestrictionScope, RestrictionType, StrikeSeverity } from '@qalam/shared';
+import { RestrictionScope, RestrictionType, StrikeSeverity } from '@umberleaf/shared';
 import {
   IsIn,
   IsISO8601,

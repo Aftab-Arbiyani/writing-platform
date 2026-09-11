@@ -1,4 +1,4 @@
-import { QCard, QEmptyState, QSpinner } from '@qalam/ui';
+import { QCard, QEmptyState, QSpinner } from '@umberleaf/ui';
 import { Gauge } from 'lucide-react';
 import type { ReactElement } from 'react';
 

@@ -18,10 +18,10 @@
     "@fontsource/lora": "^5.0.0",
     "@fontsource/noto-nastaliq-urdu": "^5.3.0",
     "@hookform/resolvers": "^3.0.0",
-    "@qalam/api-types": "workspace:*",
-    "@qalam/shared": "workspace:*",
-    "@qalam/ui": "workspace:*",
-    "@qalam/utils": "workspace:*",
+    "@umberleaf/api-types": "workspace:*",
+    "@umberleaf/shared": "workspace:*",
+    "@umberleaf/ui": "workspace:*",
+    "@umberleaf/utils": "workspace:*",
     "@sentry/react": "^9.0.0",
     "@tanstack/react-query": "^5.0.0",
     "@tiptap/extension-placeholder": "^3.27.2",
@@ -43,7 +43,7 @@
     "zustand": "^5.0.0"
   },
   "devDependencies": {
-    "@qalam/config": "workspace:*",
+    "@umberleaf/config": "workspace:*",
     "@tailwindcss/vite": "^4.0.0",
     "@tanstack/react-query-devtools": "^5.0.0",
     "@testing-library/jest-dom": "^6.0.0",

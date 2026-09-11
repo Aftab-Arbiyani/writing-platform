@@ -1,4 +1,4 @@
-import { ReviewState, Visibility } from '@qalam/shared';
+import { ReviewState, Visibility } from '@umberleaf/shared';
 import { describe, expect, it } from 'vitest';
 
 import {

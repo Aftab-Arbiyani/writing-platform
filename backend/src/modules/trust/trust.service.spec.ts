@@ -7,7 +7,7 @@ import {
   TrustLevel,
   TrustStatus,
   UserStatus,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 import type { AuditService } from '../audit/audit.service';
 import type { PolicyEngineService } from '../policy';

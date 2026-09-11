@@ -1,4 +1,4 @@
-import { RecommendationKind } from '@qalam/shared';
+import { RecommendationKind } from '@umberleaf/shared';
 
 import type { DiscoveryService } from '../../feed/discovery.service';
 import type { TrendingService } from '../../feed/trending.service';

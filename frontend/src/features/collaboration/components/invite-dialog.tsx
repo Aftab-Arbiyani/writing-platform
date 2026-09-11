@@ -4,8 +4,8 @@ import {
   MAX_STORY_COLLABORATORS,
   StoryRole,
   type StoryRole as Role,
-} from '@qalam/shared';
-import { QButton, QDialog, QInput, QSelect } from '@qalam/ui';
+} from '@umberleaf/shared';
+import { QButton, QDialog, QInput, QSelect } from '@umberleaf/ui';
 import { type ReactElement, useState } from 'react';
 
 import { useDebounce } from '@/hooks/use-debounce';

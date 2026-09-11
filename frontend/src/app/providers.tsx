@@ -1,5 +1,5 @@
-import { getAntdTheme } from '@qalam/ui';
-import { MotionProvider } from '@qalam/ui/motion';
+import { getAntdTheme } from '@umberleaf/ui';
+import { MotionProvider } from '@umberleaf/ui/motion';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { App as AntApp, ConfigProvider } from 'antd';

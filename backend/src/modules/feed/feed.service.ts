@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { FeedSort } from '@qalam/shared';
+import { FeedSort } from '@umberleaf/shared';
 
 import { buildCursorPage } from '../../common/pagination/pagination.helper';
 import type { CursorPage } from '../../common/types/paginated-result';

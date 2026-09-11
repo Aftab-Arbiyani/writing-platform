@@ -5,7 +5,7 @@
 > The exported OpenAPI spec is the machine-readable form of this contract.
 
 - **Style:** REST over JSON · base path **`/api/v1`** · dev port `4000` · docs at `/docs` (non-prod)
-- **Consumers:** web app, admin app (both via `@qalam/api-types`), Flutter (Dart codegen) — one spec, three clients.
+- **Consumers:** web app, admin app (both via `@umberleaf/api-types`), Flutter (Dart codegen) — one spec, three clients.
 
 ---
 
@@ -80,7 +80,7 @@ Success example:
 ### 3.1 Conventions
 
 - Format: **`DOMAIN_REASON`** — SCREAMING_SNAKE, domain prefix first.
-- Single source of truth: `packages/shared/src/error-codes.ts` (`@qalam/shared`), exported
+- Single source of truth: `packages/shared/src/error-codes.ts` (`@umberleaf/shared`), exported
   as a `const` object — backend throws them (`AppException` subclasses), web/Flutter map
   them to localized messages. **Clients branch on `code`, never on `message`** — messages
   are for humans and may change without notice; codes are contract.
@@ -258,7 +258,7 @@ over a filtered, indexed query is acceptable here.
 | Unknown params | rejected (`forbidNonWhitelisted: true`) — typos fail loudly, not silently                  |                                               |
 
 Booleans in queries are literal `true`/`false` (transformed in DTOs). Enum-ish params
-(`tab`, `type`, `status`) validate against `@qalam/shared` enums.
+(`tab`, `type`, `status`) validate against `@umberleaf/shared` enums.
 
 ---
 
@@ -308,7 +308,7 @@ On breach: `429` + `Retry-After: <seconds>` + envelope code `RATE_LIMITED`.
 | `read` (everything else)                        | per user / IP        | 600/min         |
 
 Auth endpoints are deliberately the strictest tier — they're the credential-stuffing
-surface. Limits are constants in `@qalam/shared` and enforced by a guard; tiers are
+surface. Limits are constants in `@umberleaf/shared` and enforced by a guard; tiers are
 declared per-route with a decorator.
 
 ---
@@ -349,7 +349,7 @@ Clients generate one key per user intent (per tap of "Publish"), not per HTTP at
         ▼
  `pnpm --filter backend openapi:export` → openapi.json   (build artifact, CI-generated)
         │
-        ├──▶ openapi-typescript ──▶ packages/api-types (@qalam/api-types) ──▶ web + admin
+        ├──▶ openapi-typescript ──▶ packages/api-types (@umberleaf/api-types) ──▶ web + admin
         │
         └──▶ openapi-generator (dart-dio) ──▶ Dart models/client ──▶ Flutter
 ```
@@ -359,7 +359,7 @@ Rules:
 - Every route documents its success shape **and** its error codes
   (`@ApiOkResponse`/`@ApiErrorCodes(...)` custom decorator) — undocumented behavior is a
   review blocker, because for codegen consumers _undocumented = nonexistent_.
-- `openapi.json` is exported in CI on every PR; the generated `@qalam/api-types` output is
+- `openapi.json` is exported in CI on every PR; the generated `@umberleaf/api-types` output is
   committed, and CI fails on drift — a backend change that alters the contract is visible
   in the same diff that causes it.
 - Breaking-change review happens on the `openapi.json` diff, not on TypeScript goodwill.

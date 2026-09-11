@@ -7,18 +7,18 @@ app through workspace packages but is a wholly separate deployable.
 
 ## Stack
 
-| Concern          | Choice                                                       |
-| ---------------- | ------------------------------------------------------------ |
-| Framework        | React 19 + TypeScript (strict)                               |
-| Build/dev        | Vite 7 (`@vitejs/plugin-react`, `@tailwindcss/vite`)         |
-| UI               | AntD 5 (complex widgets) + Tailwind 4 (layout) + `@qalam/ui` |
-| Server state     | TanStack Query v5                                            |
-| Client state     | Zustand v5 (+ `persist` for UI prefs)                        |
-| Forms            | React Hook Form + Zod                                        |
-| Routing          | React Router v7 (data router)                                |
-| Charts           | Apache ECharts 6 (lazy, tree-shaken)                         |
-| Errors/telemetry | `react-error-boundary` + Sentry (`@sentry/react`)            |
-| Tests            | Vitest + Testing Library + jsdom                             |
+| Concern          | Choice                                                           |
+| ---------------- | ---------------------------------------------------------------- |
+| Framework        | React 19 + TypeScript (strict)                                   |
+| Build/dev        | Vite 7 (`@vitejs/plugin-react`, `@tailwindcss/vite`)             |
+| UI               | AntD 5 (complex widgets) + Tailwind 4 (layout) + `@umberleaf/ui` |
+| Server state     | TanStack Query v5                                                |
+| Client state     | Zustand v5 (+ `persist` for UI prefs)                            |
+| Forms            | React Hook Form + Zod                                            |
+| Routing          | React Router v7 (data router)                                    |
+| Charts           | Apache ECharts 6 (lazy, tree-shaken)                             |
+| Errors/telemetry | `react-error-boundary` + Sentry (`@sentry/react`)                |
+| Tests            | Vitest + Testing Library + jsdom                                 |
 
 ## Folder structure (feature-first)
 

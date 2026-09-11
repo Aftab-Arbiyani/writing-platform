@@ -1,5 +1,5 @@
-import { StoryRole } from '@qalam/shared';
-import type { PolicyDecision } from '@qalam/shared';
+import { StoryRole } from '@umberleaf/shared';
+import type { PolicyDecision } from '@umberleaf/shared';
 
 import type {
   ActivityDto,

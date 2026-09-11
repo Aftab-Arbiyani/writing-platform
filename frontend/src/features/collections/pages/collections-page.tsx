@@ -7,14 +7,14 @@ import {
   QTag,
   useConfirm,
   useToast,
-} from '@qalam/ui';
+} from '@umberleaf/ui';
 import { Dropdown, type MenuProps } from 'antd';
 import { BookMarked, Lock, MoreHorizontal, Plus, Star } from 'lucide-react';
 import { type ReactElement, useState } from 'react';
 import { Link } from 'react-router';
 
 import { CollectionFormDialog } from '@/components/collections';
-import { Visibility } from '@qalam/shared';
+import { Visibility } from '@umberleaf/shared';
 import { useCollectionActions, useMyCollections } from '@/hooks/use-collections';
 import { useInfiniteScroll } from '@/hooks/use-infinite-scroll';
 import { usePageTitle } from '@/hooks/use-page-title';

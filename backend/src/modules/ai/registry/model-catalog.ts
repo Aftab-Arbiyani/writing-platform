@@ -1,5 +1,5 @@
-import { AiModelAvailability, AiModelCapability, AiProvider } from '@qalam/shared';
-import type { AiModelMetadata } from '@qalam/shared';
+import { AiModelAvailability, AiModelCapability, AiProvider } from '@umberleaf/shared';
+import type { AiModelMetadata } from '@umberleaf/shared';
 
 /**
  * The seed model catalogue (AF1) — the source of truth for which models exist,

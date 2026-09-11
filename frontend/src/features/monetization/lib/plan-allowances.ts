@@ -4,8 +4,8 @@ import {
   PLAN_TIER_ORDER,
   QuotaWindow,
   resolvePlanLimit,
-} from '@qalam/shared';
-import type { PlanDefinition, PlanTier } from '@qalam/shared';
+} from '@umberleaf/shared';
+import type { PlanDefinition, PlanTier } from '@umberleaf/shared';
 
 /**
  * What one plan grants, per tool — the lines a plan card shows instead of a credit balance (D5).

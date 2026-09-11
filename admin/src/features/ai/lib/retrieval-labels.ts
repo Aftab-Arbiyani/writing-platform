@@ -5,8 +5,8 @@ import {
   RetrievalQueryType,
   RetrievalSource,
   RETRIEVAL_SOURCE_ORDER,
-} from '@qalam/shared';
-import type { SearchAnalytics } from '@qalam/api-types';
+} from '@umberleaf/shared';
+import type { SearchAnalytics } from '@umberleaf/api-types';
 
 /**
  * Operator-facing names for the retrieval enums, plus the emptiness rule for the analytics read
@@ -14,7 +14,7 @@ import type { SearchAnalytics } from '@qalam/api-types';
  * unit-testable without rendering.
  *
  * Every map is declared `satisfies Record<Enum, string>`, so adding a source, signal, intent,
- * query type or failure reason to `@qalam/shared` fails the build here instead of rendering a raw
+ * query type or failure reason to `@umberleaf/shared` fails the build here instead of rendering a raw
  * `snake_case` token to an admin.
  */
 

@@ -1,4 +1,4 @@
-import { RetrievalIntent, RetrievalQueryType, RetrievalSource } from '@qalam/shared';
+import { RetrievalIntent, RetrievalQueryType, RetrievalSource } from '@umberleaf/shared';
 
 import { DEFAULT_RETRIEVAL_CONFIG } from '../retrieval.constants';
 import type { RetrievalRequest } from '../retrieval.types';

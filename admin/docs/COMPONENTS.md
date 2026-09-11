@@ -1,7 +1,7 @@
 # Qalam Admin — Component Inventory
 
 Shared, cross-feature components live in `src/components` (thin adapters over
-`@qalam/ui` primitives + admin-specific composites). Feature-specific components
+`@umberleaf/ui` primitives + admin-specific composites). Feature-specific components
 live under `src/features/<feature>/components`. Shared hooks live in `src/hooks`.
 
 ## Shared components (`src/components`)
@@ -39,7 +39,7 @@ live under `src/features/<feature>/components`. Shared hooks live in `src/hooks`
 `stat-card`/`metric-card`/`dashboard-grid` and the overlay/state components are the
 **canonical building blocks** — features compose them rather than reinventing.
 Where a feature needs a bespoke surface (chart wrappers, a settings form field),
-it still delegates styling/behavior to `@qalam/ui` primitives + `--q-*` tokens.
+it still delegates styling/behavior to `@umberleaf/ui` primitives + `--q-*` tokens.
 
 _A9 pruned unused speculative components (`metric-badge`, `dashboard-skeleton`,
 analytics `growth-badge`/`comparison-card`) to keep the inventory dead-code-free;

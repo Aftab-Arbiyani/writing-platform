@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { RetrievalIntent } from '@qalam/shared';
+import { RetrievalIntent } from '@umberleaf/shared';
 
 /**
  * Intent detection (AF4) — the first pipeline stage. Determines WHAT the user is trying to

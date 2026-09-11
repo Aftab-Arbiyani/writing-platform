@@ -2,7 +2,7 @@
  * AI platform vocabulary (AF1 — Phase 2 AI foundation).
  *
  * This is the provider-AGNOSTIC domain vocabulary shared by the backend AI
- * module, the React apps, and the Flutter app. Like the rest of `@qalam/shared`
+ * module, the React apps, and the Flutter app. Like the rest of `@umberleaf/shared`
  * it is zero-dependency pure vocabulary: enums (`as const` objects + derived
  * union types — JSON-safe wire strings), the shapes that cross the wire, and
  * pure helpers. No provider SDK type ever leaks in here (ADR: application code
@@ -209,7 +209,7 @@ export const AI_FEATURE_PREMIUM_CODE = {
 
 /**
  * The totality test for {@link AI_FEATURE_PREMIUM_CODE}, pinned at COMPILE TIME because
- * `@qalam/shared` is pure vocabulary with no test runner — `pnpm typecheck` is its suite.
+ * `@umberleaf/shared` is pure vocabulary with no test runner — `pnpm typecheck` is its suite.
  *
  * `satisfies` (rather than a `Record<…>` annotation) is what makes this a real test
  * instead of a tautology: it keeps `keyof typeof` as the map's LITERAL keys, so the

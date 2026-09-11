@@ -1,5 +1,5 @@
 import { Column, Entity, Index } from 'typeorm';
-import type { PaymentProvider, WebhookEventStatus } from '@qalam/shared';
+import type { PaymentProvider, WebhookEventStatus } from '@umberleaf/shared';
 
 import { QalamAppendOnlyEntity } from '../../../common/base/append-only.entity';
 

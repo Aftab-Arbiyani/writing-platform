@@ -15,7 +15,7 @@ Postgres/Redis in CI (Phase 1.5, docs 18).
 ## What must be tested (docs 16 §7.1)
 
 Services (every public method, happy + error), guards/interceptors/filters (every
-branch), and `@qalam/*` utils are **mandatory** (≥ 80%). Controllers get an e2e
+branch), and `@umberleaf/*` utils are **mandatory** (≥ 80%). Controllers get an e2e
 smoke per module (envelope shape, status, validation rejection). Pure-presentational
 code is skipped.
 

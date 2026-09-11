@@ -5,8 +5,8 @@ import type {
   StoryAnalysisScope,
   StoryAnalysisStatus,
   StoryNodeType,
-} from '@qalam/shared';
-import { normalizeStoryName } from '@qalam/shared';
+} from '@umberleaf/shared';
+import { normalizeStoryName } from '@umberleaf/shared';
 import { DataSource, type EntityManager, Repository } from 'typeorm';
 
 import type { CursorPayload } from '../../common/pagination/cursor.util';

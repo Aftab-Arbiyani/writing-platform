@@ -3,7 +3,7 @@ import type {
   RetrievalIntent,
   RetrievalQueryType,
   RetrievalSource,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 import { Column, Entity, Index } from 'typeorm';
 
 import { QalamAppendOnlyEntity } from '../../../common/base/append-only.entity';

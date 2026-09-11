@@ -1,4 +1,4 @@
-import { QSkeleton } from '@qalam/ui';
+import { QSkeleton } from '@umberleaf/ui';
 import type { ReactElement } from 'react';
 
 import { DashboardGrid } from '@/components/dashboard-grid';

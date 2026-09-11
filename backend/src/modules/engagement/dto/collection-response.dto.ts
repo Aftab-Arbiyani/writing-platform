@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import type { Visibility } from '@qalam/shared';
+import type { Visibility } from '@umberleaf/shared';
 
 /** A collection's metadata (owner-only in Phase 1). */
 export class CollectionResponseDto {

@@ -1,4 +1,4 @@
-import type { DiscoverPieceKind, WriterKind } from '@qalam/shared';
+import type { DiscoverPieceKind, WriterKind } from '@umberleaf/shared';
 import { useQuery } from '@tanstack/react-query';
 
 import { qk } from '@/lib/query-keys';

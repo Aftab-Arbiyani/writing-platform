@@ -1,5 +1,5 @@
-import { BillingInterval, PlanTier, SubscriptionStatus } from '@qalam/shared';
-import { QButton, QCard, QEmptyState, QSpinner, QTag } from '@qalam/ui';
+import { BillingInterval, PlanTier, SubscriptionStatus } from '@umberleaf/shared';
+import { QButton, QCard, QEmptyState, QSpinner, QTag } from '@umberleaf/ui';
 import { CreditCard, Gauge, Receipt, Sparkles } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { ReactElement } from 'react';

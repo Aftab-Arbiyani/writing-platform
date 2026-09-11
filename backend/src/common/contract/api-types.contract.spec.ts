@@ -81,7 +81,7 @@ import {
 } from '../../modules/story-intelligence/dto/story-response.dto';
 
 /**
- * Pins every mirrored `@qalam/api-types` interface to the backend DTO it mirrors.
+ * Pins every mirrored `@umberleaf/api-types` interface to the backend DTO it mirrors.
  *
  * ## The class this closes
  *
@@ -127,7 +127,7 @@ import {
 // ── Reading the package's declared shapes ─────────────────────────────────────
 
 const PACKAGE_SRC = resolve(__dirname, '../../../../packages/api-types/src');
-/** `@qalam/shared` is indexed too: several api-types exports are aliases of shared vocabulary. */
+/** `@umberleaf/shared` is indexed too: several api-types exports are aliases of shared vocabulary. */
 const SHARED_SRC = resolve(__dirname, '../../../../packages/shared/src');
 
 interface Declaration {
@@ -198,7 +198,7 @@ function declaredKeys(name: string, seen = new Set<string>()): string[] {
   seen.add(name);
   const declaration = DECLARATIONS.get(name);
   if (declaration === undefined) {
-    throw new Error(`"${name}" is not declared in @qalam/api-types or @qalam/shared`);
+    throw new Error(`"${name}" is not declared in @umberleaf/api-types or @umberleaf/shared`);
   }
   if (declaration.aliasOf !== null) return declaredKeys(declaration.aliasOf, seen);
   return [
@@ -211,7 +211,7 @@ function declaredKeys(name: string, seen = new Set<string>()): string[] {
   ];
 }
 
-/** Names exported from `@qalam/api-types` itself (its `src`, not the re-exported shared vocabulary). */
+/** Names exported from `@umberleaf/api-types` itself (its `src`, not the re-exported shared vocabulary). */
 const EXPORTED_BY_PACKAGE = new Set(
   [...indexDeclarations(PACKAGE_SRC, new Map()).keys()].filter((name) => name.length > 0),
 );
@@ -244,7 +244,7 @@ function documentedProperties(dto: DtoClass): string[] {
 // ── The register ──────────────────────────────────────────────────────────────
 
 interface Mirror {
-  /** The `@qalam/api-types` export. */
+  /** The `@umberleaf/api-types` export. */
   type: string;
   dto: DtoClass;
   /**
@@ -332,7 +332,7 @@ const UNMIRRORED: Readonly<Record<string, string>> = {
   AuthTokens:
     'Documented placeholder for the not-yet-generated auth spec; no DTO publishes it (see manual.ts).',
   AiModelInfo:
-    'Alias of `AiModelMetadata` from @qalam/shared, which `AiModelDto implements` — pinned by tsc, not here.',
+    'Alias of `AiModelMetadata` from @umberleaf/shared, which `AiModelDto implements` — pinned by tsc, not here.',
   AiStreamEvent:
     'The SSE `data:` payload, not a body: it never passes a ValidationPipe and no DTO documents it.',
   StoryMapStreamEvent:
@@ -348,7 +348,7 @@ const UNMIRRORED: Readonly<Record<string, string>> = {
   RankingExplanation: 'Structural sub-block; backend counterpart is retrieval.types.ts, not a DTO.',
 
   // A block of D5 exemptions stood here — credit, Ask My Book and AI-conversation types that
-  // the server had already removed but `@qalam/api-types` still exported, because deleting an
+  // the server had already removed but `@umberleaf/api-types` still exported, because deleting an
   // exported type before the clients stop importing it breaks their typecheck in a commit that
   // cannot also fix them. Every row carried the same reason and the same expiry: "retained
   // until the client half lands."
@@ -377,7 +377,7 @@ const UNMIRRORED: Readonly<Record<string, string>> = {
 
 // ── The guard ─────────────────────────────────────────────────────────────────
 
-describe('@qalam/api-types matches the DTOs it mirrors', () => {
+describe('@umberleaf/api-types matches the DTOs it mirrors', () => {
   const requests = MIRRORS.filter((m) => m.direction === 'request');
   const responses = MIRRORS.filter((m) => m.direction === 'response');
 

@@ -1,8 +1,8 @@
-import { PASSWORD_MAX, PASSWORD_MIN, USERNAME_REGEX } from '@qalam/shared';
+import { PASSWORD_MAX, PASSWORD_MIN, USERNAME_REGEX } from '@umberleaf/shared';
 import { z } from 'zod';
 
 /**
- * Register schema (docs/33 §2) — built from the SAME `@qalam/shared` atoms the backend
+ * Register schema (docs/33 §2) — built from the SAME `@umberleaf/shared` atoms the backend
  * `RegisterDto` validates against, so the two cannot drift. The frozen `v1` register contract
  * accepts only `{ email, username, password }`: `penName` lives on the profile (E2, deferred),
  * so there is no display-name field here. `confirmPassword` + `acceptTerms` are client-only

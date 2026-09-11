@@ -1,4 +1,4 @@
-import type { AnalyticsPeriod, PieceStatus, TrendType } from '@qalam/shared';
+import type { AnalyticsPeriod, PieceStatus, TrendType } from '@umberleaf/shared';
 
 import { get, getPage, type CursorPage } from '@/lib/api-client';
 import { buildQueryString } from '@/lib/http';

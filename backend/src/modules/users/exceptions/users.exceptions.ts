@@ -1,5 +1,5 @@
 import { HttpStatus } from '@nestjs/common';
-import { ERROR_CODES } from '@qalam/shared';
+import { ERROR_CODES } from '@umberleaf/shared';
 
 import { AppException } from '../../../common/exceptions/app.exception';
 
@@ -64,7 +64,7 @@ export class FollowRequestNotFoundException extends AppException {
  * An admin account-state transition that conflicts with the current state
  * (e.g. suspending an already-suspended user, unsuspending an active one). A
  * state conflict → 409 (docs 05 §4). Reuses the generic `CONFLICT` code so no
- * change to the frozen `@qalam/shared` catalogue is needed (E12.5 is additive).
+ * change to the frozen `@umberleaf/shared` catalogue is needed (E12.5 is additive).
  */
 export class UserStatusConflictException extends AppException {
   constructor(message: string) {

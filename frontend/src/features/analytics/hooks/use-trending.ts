@@ -1,4 +1,4 @@
-import { AnalyticsPeriod } from '@qalam/shared';
+import { AnalyticsPeriod } from '@umberleaf/shared';
 import { useQuery } from '@tanstack/react-query';
 
 import { qk } from '@/lib/query-keys';

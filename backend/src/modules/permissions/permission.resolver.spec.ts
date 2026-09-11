@@ -1,4 +1,4 @@
-import { DEFAULT_ROLE_PERMISSIONS, Role } from '@qalam/shared';
+import { DEFAULT_ROLE_PERMISSIONS, Role } from '@umberleaf/shared';
 
 import type { PermissionRepository } from './permission.repository';
 import { PermissionResolver } from './permission.resolver';

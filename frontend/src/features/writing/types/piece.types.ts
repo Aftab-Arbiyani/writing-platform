@@ -1,8 +1,8 @@
-import type { PieceStatus, TextDirection, Visibility } from '@qalam/shared';
+import type { PieceStatus, TextDirection, Visibility } from '@umberleaf/shared';
 
 /**
  * Writing wire types (docs/32 §10) — mirror the frozen `v1` piece DTOs
- * (`backend/src/modules/pieces/dto/*`). Replace with generated `@qalam/api-types` once the
+ * (`backend/src/modules/pieces/dto/*`). Replace with generated `@umberleaf/api-types` once the
  * backend emits `openapi.json`. `content` is a TipTap/ProseMirror JSON document; the server
  * re-validates it against a schema whitelist (docs/13 §5.2), so the editor must only produce
  * whitelisted nodes/marks.

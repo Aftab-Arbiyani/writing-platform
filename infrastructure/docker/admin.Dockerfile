@@ -30,7 +30,7 @@ COPY . .
 
 RUN pnpm install --frozen-lockfile
 
-# Builds admin plus its @qalam/* workspace dependencies (turbo ^build).
+# Builds admin plus its @umberleaf/* workspace dependencies (turbo ^build).
 RUN pnpm turbo build --filter admin
 
 # ── Stage 2: runtime — static bundle behind non-root nginx ──────────────────

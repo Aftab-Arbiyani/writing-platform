@@ -1,5 +1,5 @@
-import { SearchSort } from '@qalam/shared';
-import type { TextDirection, Visibility } from '@qalam/shared';
+import { SearchSort } from '@umberleaf/shared';
+import type { TextDirection, Visibility } from '@umberleaf/shared';
 
 import type { CursorPayload } from '../../common/pagination/cursor.util';
 import type {

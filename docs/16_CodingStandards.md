@@ -2,7 +2,7 @@
 
 > **Status:** Binding. Derives from `00_ArchitectureDecisions.md`. Where this document and
 > the ADR ever disagree, the ADR wins and this file gets fixed. Everything here is
-> enforceable: by the compiler, by ESLint rules exported from `@qalam/config`, or by
+> enforceable: by the compiler, by ESLint rules exported from `@umberleaf/config`, or by
 > review checklist. A standard that cannot be enforced is a suggestion — we don't ship
 > suggestions.
 
@@ -11,7 +11,7 @@
 ## 1. TypeScript Standards
 
 `strict: true` in every tsconfig, no exceptions, no per-file opt-outs. The shared bases
-live in `@qalam/config` (`tsconfig/base`, `tsconfig/nest`, `tsconfig/react`) — apps and
+live in `@umberleaf/config` (`tsconfig/base`, `tsconfig/nest`, `tsconfig/react`) — apps and
 packages extend, never redefine.
 
 ### 1.1 The `any` ban
@@ -72,7 +72,7 @@ type Notification =
 ```
 
 Plain enums remain fine for closed value sets with no attached shape (`PieceStatus`,
-`Visibility`, `Role` — these live in `@qalam/shared` and map to DB values). Prefer
+`Visibility`, `Role` — these live in `@umberleaf/shared` and map to DB values). Prefer
 `as const` object literals + union types over `enum` for new code in packages consumed
 by Vite apps (enums generate runtime code; const objects tree-shake).
 
@@ -104,7 +104,7 @@ assertion keeps arrange blocks readable. The lint rule is relaxed to `warn` for
 | `@ts-ignore`                   | Banned. `@ts-expect-error` allowed **with a trailing reason comment**.                               |
 | Optional chaining to hide bugs | `a?.b?.c ?? fallback` is not error handling. If absence is exceptional, throw.                       |
 | `null` vs `undefined`          | DB/API nullable fields are `null` (matches JSON/Postgres); "not provided" is `undefined`. Don't mix. |
-| Exhaustiveness                 | `switch` on unions ends with `default: assertNever(x)` (helper in `@qalam/utils`).                   |
+| Exhaustiveness                 | `switch` on unions ends with `default: assertNever(x)` (helper in `@umberleaf/utils`).               |
 | Dates                          | Timestamps cross the wire as ISO-8601 UTC strings; `Date` objects only at the edges.                 |
 
 ---
@@ -165,7 +165,7 @@ The layering is **controller → service → repository**, and module boundaries
 `analytics` per ADR §1). Every cross-module repository import is a weld across a seam we
 paid for.
 
-Enforced by `eslint-plugin-boundaries` config in `@qalam/config`: imports matching
+Enforced by `eslint-plugin-boundaries` config in `@umberleaf/config`: imports matching
 `modules/*/repositories/**` or `modules/*/entities/**` from a different module fail lint.
 
 ### 3.2 DTO rules — the three-DTO pattern
@@ -183,7 +183,7 @@ Every module with CRUD ships three DTOs per resource:
   in the future" → `PIECE_SCHEDULE_IN_PAST`, not an `@IsDate` re-check).
 - Nested objects use `@ValidateNested() @Type(() => ChildDto)` — always both.
 - Swagger decorators (`@ApiProperty`) on every DTO field: the OpenAPI spec is a build
-  artifact feeding `@qalam/api-types` codegen (ADR §3), so an undocumented field is a
+  artifact feeding `@umberleaf/api-types` codegen (ADR §3), so an undocumented field is a
   missing field for every frontend consumer.
 - Response shaping uses dedicated response DTO/serializer classes — never return
   entities raw (leaks `deleted_at`, internal FKs, and future columns you forgot about).
@@ -210,7 +210,7 @@ services, the same rule ends up written twice and drifting.
 ### 3.4 Error handling
 
 - Domain errors extend **`AppException`** (in `backend/src/common`), constructed with a
-  code from the `@qalam/shared` error-code catalogue:
+  code from the `@umberleaf/shared` error-code catalogue:
 
   ```ts
   export class PieceNotFoundException extends AppException {
@@ -226,7 +226,7 @@ services, the same rule ends up written twice and drifting.
 - Never `catch (e) {}` — swallow nothing. Catch to translate (wrap driver/library errors
   into domain exceptions) or to compensate; otherwise let it propagate to the filter.
 - Codes follow `DOMAIN_REASON` (`AUTH_INVALID_CREDENTIALS`, `PIECE_SCHEDULE_IN_PAST`).
-  Adding a code = one PR touching `@qalam/shared` first; the catalogue is the contract
+  Adding a code = one PR touching `@umberleaf/shared` first; the catalogue is the contract
   the frontends switch on.
 - Log at the throw site only when you add context the filter can't know; the filter logs
   every 5xx once with the request ID. **Why:** double-logging turns incident triage into
@@ -260,14 +260,14 @@ handling wiring (publish endpoint, ADR §5), Swagger operation decorators.
 ### 4.1 Feature-first structure
 
 Per ADR §6: `app/` (providers, router) · `features/<name>/{api,components,hooks,stores}`
-· `components/` (app-wide composites) · primitives in `@qalam/ui`.
+· `components/` (app-wide composites) · primitives in `@umberleaf/ui`.
 
 - A feature owns everything about itself. Test: `rm -rf features/collections` should
   break only the router entry and explicit cross-feature imports — nothing silent.
 - Cross-feature imports go through the feature's `index.ts` (its public surface). Deep
   imports into another feature's internals fail lint.
 - Something used by 2+ features graduates: composite → `components/`, primitive →
-  `@qalam/ui`, pure logic → `@qalam/utils`. Don't create `features/common` — that's a
+  `@umberleaf/ui`, pure logic → `@umberleaf/utils`. Don't create `features/common` — that's a
   junk drawer with a nicer name.
 
 ### 4.2 Components
@@ -305,7 +305,7 @@ Per ADR §6: `app/` (providers, router) · `features/<name>/{api,components,hook
 All HTTP goes through `lib/api-client.ts` — the single typed `fetch` wrapper that owns:
 base URL (`VITE_API_URL`), auth header/refresh-retry, ADR §5 envelope unwrapping, error
 normalization (envelope `error.code` → typed `ApiError`), request-ID propagation. Types
-come from `@qalam/api-types`. **Raw `fetch`/`axios` in components or hooks fails
+come from `@umberleaf/api-types`. **Raw `fetch`/`axios` in components or hooks fails
 review** — lint restricts `fetch` imports outside `lib/`.
 
 ### 4.6 CSS — Tailwind + tokens, RTL-safe from day one
@@ -314,7 +314,7 @@ review** — lint restricts `fetch` imports outside `lib/`.
   restyle AntD internals with Tailwind overrides — theme it through `ConfigProvider`
   fed by the same tokens (ADR §6 conflict rule).
 - **HARD BAN on physical direction classes.** Urdu is RTL on day one (ADR §0, §6), and
-  a retrofit costs 10×. Enforced by a custom ESLint rule + Stylelint in `@qalam/config`;
+  a retrofit costs 10×. Enforced by a custom ESLint rule + Stylelint in `@umberleaf/config`;
   CI fails on any occurrence:
 
   | ❌ Banned                     | ✅ Use instead                |
@@ -344,17 +344,17 @@ table reviewers hold frontend PRs against:
 
 | Kind                                                                     | Home                                  | Rule                                                                                    |
 | ------------------------------------------------------------------------ | ------------------------------------- | --------------------------------------------------------------------------------------- |
-| Wire request/response types                                              | `@qalam/api-types`                    | Generated from `openapi.json`; never hand-duplicated.                                   |
-| Domain enums (`PieceStatus`, `Visibility`, `Role`, `NotificationType`…)  | `@qalam/shared`                       | Imported, never re-declared; `as const` object + union in Vite packages (§1.3).         |
-| Domain constants/limits/regex (`MAX_CLAPS_PER_USER`, `USERNAME_REGEX`…)  | `@qalam/shared`                       | The one source both FE and BE import.                                                   |
-| Error codes / permissions catalogue                                      | `@qalam/shared`                       | `ERROR_CODES`, `PERMISSIONS`, `DEFAULT_ROLE_PERMISSIONS`, `permissionSatisfies`.        |
-| Pure functions (`slugify`, `readingTime`, cursor helpers, `assertNever`) | `@qalam/utils`                        | No I/O, no domain constants, no framework.                                              |
-| Design tokens / theme / motion variants                                  | `@qalam/ui`                           | Single token source (`07` §1, §12).                                                     |
+| Wire request/response types                                              | `@umberleaf/api-types`                | Generated from `openapi.json`; never hand-duplicated.                                   |
+| Domain enums (`PieceStatus`, `Visibility`, `Role`, `NotificationType`…)  | `@umberleaf/shared`                   | Imported, never re-declared; `as const` object + union in Vite packages (§1.3).         |
+| Domain constants/limits/regex (`MAX_CLAPS_PER_USER`, `USERNAME_REGEX`…)  | `@umberleaf/shared`                   | The one source both FE and BE import.                                                   |
+| Error codes / permissions catalogue                                      | `@umberleaf/shared`                   | `ERROR_CODES`, `PERMISSIONS`, `DEFAULT_ROLE_PERMISSIONS`, `permissionSatisfies`.        |
+| Pure functions (`slugify`, `readingTime`, cursor helpers, `assertNever`) | `@umberleaf/utils`                    | No I/O, no domain constants, no framework.                                              |
+| Design tokens / theme / motion variants                                  | `@umberleaf/ui`                       | Single token source (`07` §1, §12).                                                     |
 | Query-key factory                                                        | `src/lib/query-keys.ts` (`qk.*`)      | Data-shaped, one factory per app; ad-hoc string keys banned (`12` §2.1).                |
 | App-local types (props, view models)                                     | `features/<name>/types` / `src/types` | Feature-local unless used by 2+ features → move down. Never a `features/common` drawer. |
 
 Client permission gating decodes `role` from the JWT and derives capabilities from
-`@qalam/shared` `DEFAULT_ROLE_PERMISSIONS` — a **UX hint only**; the server is authoritative
+`@umberleaf/shared` `DEFAULT_ROLE_PERMISSIONS` — a **UX hint only**; the server is authoritative
 (`12` §7, `26` §8).
 
 ### 4.8 Frontend performance rules
@@ -388,8 +388,8 @@ alphabetized within:
 import { randomUUID } from 'node:crypto';
 // 2. External packages
 import { Injectable } from '@nestjs/common';
-// 3. @qalam/* workspace packages
-import { ErrorCode, MAX_CLAPS_PER_USER } from '@qalam/shared';
+// 3. @umberleaf/* workspace packages
+import { ErrorCode, MAX_CLAPS_PER_USER } from '@umberleaf/shared';
 // 4. Internal aliases (@/ → src/)
 import { AppException } from '@/common/exceptions/app.exception';
 // 5. Relative
@@ -401,8 +401,8 @@ no `../../..` climbing past two levels (use the alias).
 
 ### 5.2 Barrel-file policy
 
-- **Packages:** every `@qalam/*` package exports through its root `index.ts` (tsup entry).
-  Consumers import from `@qalam/shared`, never from `@qalam/shared/src/enums` — deep
+- **Packages:** every `@umberleaf/*` package exports through its root `index.ts` (tsup entry).
+  Consumers import from `@umberleaf/shared`, never from `@umberleaf/shared/src/enums` — deep
   imports into packages fail lint.
 - **Apps:** _avoid_ deep barrel chains. Allowed barrels: one `index.ts` per frontend
   feature (its public surface) and per backend module (module public surface: the module
@@ -420,7 +420,7 @@ import cycles, defeat tree-shaking, and make "who uses this?" unanswerable.
   one of them. Good comments record: non-obvious constraints ("Nastaliq needs
   line-height ≥ 2 — see docs/00 §6"), links to decisions, warnings about tempting-but-wrong
   refactors, and the reasoning behind magic values.
-- **JSDoc is required on every public API of every `@qalam/*` package** — these cross
+- **JSDoc is required on every public API of every `@umberleaf/*` package** — these cross
   team boundaries and show up in editor tooltips. Apps' internal functions need JSDoc
   only when the signature can't carry the meaning.
 - Commented-out code is deleted, not committed. Git remembers.
@@ -440,15 +440,15 @@ import cycles, defeat tree-shaking, and make "who uses this?" unanswerable.
 
 ### 7.1 What must be tested
 
-| Layer                                    | Requirement                                                                                                    | Coverage target                           |
-| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| Backend services                         | **Mandatory** — every public method, happy + error paths                                                       | ≥ 80% (enforced in CI for `*.service.ts`) |
-| Guards / interceptors / filters          | **Mandatory** — they are security surface                                                                      | Every branch                              |
-| `@qalam/utils` + `@qalam/shared` helpers | **Mandatory** — pure functions, cheapest tests we own                                                          | ≥ 80%                                     |
-| Repositories                             | Integration tests where queries have logic (FTS, cursors, visibility scopes); Testcontainers arrives Phase 1.5 | Query-logic paths                         |
-| Controllers                              | e2e via Supertest per module — envelope shape, status codes, validation rejection                              | Per-endpoint smoke                        |
-| Frontend hooks + utils                   | **Mandatory** (Vitest + Testing Library)                                                                       | Behavior, not snapshots                   |
-| Frontend components                      | Test behavior/interaction for anything with logic; skip pure-presentational                                    | —                                         |
+| Layer                                            | Requirement                                                                                                    | Coverage target                           |
+| ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| Backend services                                 | **Mandatory** — every public method, happy + error paths                                                       | ≥ 80% (enforced in CI for `*.service.ts`) |
+| Guards / interceptors / filters                  | **Mandatory** — they are security surface                                                                      | Every branch                              |
+| `@umberleaf/utils` + `@umberleaf/shared` helpers | **Mandatory** — pure functions, cheapest tests we own                                                          | ≥ 80%                                     |
+| Repositories                                     | Integration tests where queries have logic (FTS, cursors, visibility scopes); Testcontainers arrives Phase 1.5 | Query-logic paths                         |
+| Controllers                                      | e2e via Supertest per module — envelope shape, status codes, validation rejection                              | Per-endpoint smoke                        |
+| Frontend hooks + utils                           | **Mandatory** (Vitest + Testing Library)                                                                       | Behavior, not snapshots                   |
+| Frontend components                              | Test behavior/interaction for anything with logic; skip pure-presentational                                    | —                                         |
 
 **Why services/utils/guards first:** they are where bugs cost the most and where tests
 are cheapest to keep green. UI snapshot suites rot; behavior tests don't.
@@ -507,7 +507,7 @@ A change is **Done** when every box is checked — not when it demos:
   no server state in Zustand; verified in BOTH themes and BOTH directions (dir="rtl")
 □ DB changes: generated migration reviewed via /migration-check; merged migrations
   untouched
-□ OpenAPI spec regenerated if API surface changed (@qalam/api-types stays in sync)
+□ OpenAPI spec regenerated if API surface changed (@umberleaf/api-types stays in sync)
 □ No secrets, no console.log left behind (Pino/structured logging only on backend)
 □ Docs updated when a decision or contract changed (this file, ADR, or module README)
 □ Self-reviewed diff before requesting review (see 17_GitWorkflow.md §5)

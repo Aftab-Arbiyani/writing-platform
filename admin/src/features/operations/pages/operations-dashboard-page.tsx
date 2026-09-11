@@ -1,4 +1,4 @@
-import { QCard, QTag } from '@qalam/ui';
+import { QCard, QTag } from '@umberleaf/ui';
 import { Table, type TableColumnsType } from 'antd';
 import {
   Activity,

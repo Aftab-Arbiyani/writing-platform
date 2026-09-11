@@ -1,4 +1,4 @@
-import { NotificationType } from '@qalam/shared';
+import { NotificationType } from '@umberleaf/shared';
 import { describe, expect, it } from 'vitest';
 
 import { groupByDate } from './group-by-date';

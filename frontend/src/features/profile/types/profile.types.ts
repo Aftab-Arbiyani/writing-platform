@@ -1,4 +1,4 @@
-import type { PieceStatus } from '@qalam/shared';
+import type { PieceStatus } from '@umberleaf/shared';
 
 /**
  * Profile-view-local types. Shared wire types (ProfileResponse, UserSummary, FollowRequest, …)

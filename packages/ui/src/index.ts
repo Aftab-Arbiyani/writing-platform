@@ -1,6 +1,6 @@
 /**
- * @qalam/ui — design tokens, AntD theme factory, and shared presentational primitives.
- * Motion variants + MotionProvider live at the `@qalam/ui/motion` subpath.
+ * @umberleaf/ui — design tokens, AntD theme factory, and shared presentational primitives.
+ * Motion variants + MotionProvider live at the `@umberleaf/ui/motion` subpath.
  * No data fetching, no router, no app state (docs/08 §1).
  */
 

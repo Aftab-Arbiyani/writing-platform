@@ -5,7 +5,7 @@ import {
   TAGS_MAX_PER_PIECE,
   TITLE_MAX,
   Visibility,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 import {
   ArrayMaxSize,
   IsArray,

@@ -1,4 +1,4 @@
-import { Role } from '@qalam/shared';
+import { Role } from '@umberleaf/shared';
 
 import type { RolesRepository } from './roles.repository';
 import { RolesService } from './roles.service';

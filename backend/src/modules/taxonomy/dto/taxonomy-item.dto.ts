@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import type { TextDirection } from '@qalam/shared';
+import type { TextDirection } from '@umberleaf/shared';
 
 /** Public shape of a language (docs 04 §3.3). */
 export class LanguageDto {

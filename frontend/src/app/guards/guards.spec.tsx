@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import { Role } from '@qalam/shared';
+import { Role } from '@umberleaf/shared';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, describe, expect, it } from 'vitest';
 

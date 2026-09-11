@@ -6,7 +6,7 @@ import {
   PEN_NAME_MAX,
   PEN_NAME_MIN,
   WEBSITE_URL_MAX,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 import {
   ArrayMaxSize,
   IsArray,

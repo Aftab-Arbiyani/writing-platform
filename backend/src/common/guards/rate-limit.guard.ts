@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import type { CanActivate, ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { RATE_LIMIT_TIERS } from '@qalam/shared';
-import type { RateLimitTier, RateLimitTierName } from '@qalam/shared';
+import { RATE_LIMIT_TIERS } from '@umberleaf/shared';
+import type { RateLimitTier, RateLimitTierName } from '@umberleaf/shared';
 import type { Request, Response } from 'express';
 import type { Redis } from 'ioredis';
 import { randomUUID } from 'node:crypto';

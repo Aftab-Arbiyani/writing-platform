@@ -1,5 +1,5 @@
 import { Column, Entity, Index } from 'typeorm';
-import { CommentKind, CommentStatus } from '@qalam/shared';
+import { CommentKind, CommentStatus } from '@umberleaf/shared';
 
 import { QalamAuditEntity } from '../../../common/base/audit.entity';
 

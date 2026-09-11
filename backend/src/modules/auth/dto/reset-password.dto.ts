@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { PASSWORD_MAX, PASSWORD_MIN } from '@qalam/shared';
+import { PASSWORD_MAX, PASSWORD_MIN } from '@umberleaf/shared';
 import { IsString, IsNotEmpty, MaxLength, MinLength } from 'class-validator';
 
 /**

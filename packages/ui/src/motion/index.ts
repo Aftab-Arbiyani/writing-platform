@@ -1,5 +1,5 @@
 /**
- * `@qalam/ui/motion` — motion tokens, standard variants, and the reduced-motion provider.
+ * `@umberleaf/ui/motion` — motion tokens, standard variants, and the reduced-motion provider.
  * Import variants from here (never inline `transition={{ duration }}` literals — docs/08 §5).
  */
 export { MotionProvider } from './motion-provider.js';

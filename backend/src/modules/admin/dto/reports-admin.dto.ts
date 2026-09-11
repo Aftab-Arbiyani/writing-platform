@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ReportPriority, ReportResolution, ReportSeverity, ReportStatus } from '@qalam/shared';
+import { ReportPriority, ReportResolution, ReportSeverity, ReportStatus } from '@umberleaf/shared';
 import {
   IsEnum,
   IsIn,

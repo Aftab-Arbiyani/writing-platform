@@ -1,4 +1,4 @@
-import { FollowStatus } from '@qalam/shared';
+import { FollowStatus } from '@umberleaf/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { del, post } from '@/lib/api-client';

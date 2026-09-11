@@ -1,4 +1,4 @@
-import { QButton, QCard, QSectionHeader, useToast } from '@qalam/ui';
+import { QButton, QCard, QSectionHeader, useToast } from '@umberleaf/ui';
 import { AlertTriangle } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
 

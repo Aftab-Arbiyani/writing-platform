@@ -1,6 +1,6 @@
 import type { ExecutionContext } from '@nestjs/common';
 import type { Reflector } from '@nestjs/core';
-import { Role } from '@qalam/shared';
+import { Role } from '@umberleaf/shared';
 
 import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { PermissionFactory } from './permission.factory';

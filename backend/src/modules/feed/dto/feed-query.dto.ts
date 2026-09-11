@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { FeedSort, Visibility } from '@qalam/shared';
+import { FeedSort, Visibility } from '@umberleaf/shared';
 import { Type } from 'class-transformer';
 import { IsEnum, IsInt, IsISO8601, IsOptional, IsString, Max, Min } from 'class-validator';
 
@@ -11,7 +11,7 @@ const READING_TIME_MAX = 24 * 60 * 60; // 24h in seconds — a sane upper bound
  * Filters + sort for the browsable feeds (Latest, and Following where sensible).
  * Extends the cursor base (`cursor` + `limit`, docs 05 §5.1). Multi-value filters
  * are comma-separated (OR semantics, docs 05 §6); values validate against
- * `@qalam/shared` enums. Filters only ever NARROW a feed — they never widen it
+ * `@umberleaf/shared` enums. Filters only ever NARROW a feed — they never widen it
  * past its visibility rules.
  */
 export class FeedQueryDto extends CursorPaginationDto {

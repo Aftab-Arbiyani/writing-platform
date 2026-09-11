@@ -57,7 +57,7 @@ RUN pnpm fetch                              # lockfile-only → this layer survi
 FROM fetch AS build
 COPY . .
 RUN pnpm install --frozen-lockfile --offline \
- && pnpm turbo build --filter=backend...    # builds @qalam/shared, utils, api-types first (^build)
+ && pnpm turbo build --filter=backend...    # builds @umberleaf/shared, utils, api-types first (^build)
 RUN pnpm --filter=backend deploy --prod /out   # prunes to prod deps, self-contained node_modules
 
 # ── 4. runtime: minimal, non-root ─────────────────────────────────────────

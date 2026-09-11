@@ -1,4 +1,4 @@
-import type { Role } from '@qalam/shared';
+import type { Role } from '@umberleaf/shared';
 
 import type { ApiPagination } from '@/lib/api-client';
 import { api } from '@/lib/api-client';

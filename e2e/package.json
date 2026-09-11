@@ -17,8 +17,8 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",
     "@playwright/test": "^1.55.0",
-    "@qalam/api-types": "workspace:*",
-    "@qalam/config": "workspace:*",
+    "@umberleaf/api-types": "workspace:*",
+    "@umberleaf/config": "workspace:*",
     "@types/node": "^24.0.0",
     "dotenv": "^16.4.0",
     "eslint": "^9.0.0",

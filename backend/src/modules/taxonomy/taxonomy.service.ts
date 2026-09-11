@@ -1,5 +1,5 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { ERROR_CODES } from '@qalam/shared';
+import { ERROR_CODES } from '@umberleaf/shared';
 
 import { AppException } from '../../common/exceptions/app.exception';
 import type { GenreDto, LanguageDto, TagDto } from './dto/taxonomy-item.dto';

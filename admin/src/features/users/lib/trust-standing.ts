@@ -6,8 +6,8 @@ import {
   TRUST_SCORE_MIN,
   TrustLevel,
   type StrikeSeverity,
-} from '@qalam/shared';
-import type { QTagColor } from '@qalam/ui';
+} from '@umberleaf/shared';
+import type { QTagColor } from '@umberleaf/ui';
 
 import type { AdminRestriction, AdminStrike } from '../types/trust.types';
 

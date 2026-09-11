@@ -1,5 +1,5 @@
 import { Column, Entity, Index, Unique } from 'typeorm';
-import type { AiModelAvailability, AiModelCapability, AiProvider } from '@qalam/shared';
+import type { AiModelAvailability, AiModelCapability, AiProvider } from '@umberleaf/shared';
 
 import { QalamBaseEntity } from '../../../../common/base/base.entity';
 

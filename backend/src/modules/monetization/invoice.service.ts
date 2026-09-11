@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { InvoiceStatus, PaymentProvider } from '@qalam/shared';
+import { InvoiceStatus, PaymentProvider } from '@umberleaf/shared';
 import { Repository } from 'typeorm';
 
 import type { CursorPayload } from '../../common/pagination/cursor.util';

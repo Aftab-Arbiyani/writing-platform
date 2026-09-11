@@ -1,4 +1,4 @@
-import { PERMISSIONS, ReportStatus } from '@qalam/shared';
+import { PERMISSIONS, ReportStatus } from '@umberleaf/shared';
 import { ChevronsUp, Eye, Gavel, UserPlus } from 'lucide-react';
 import type { ReactElement } from 'react';
 

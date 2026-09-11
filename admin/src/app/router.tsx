@@ -1,4 +1,4 @@
-import { PERMISSIONS, Role } from '@qalam/shared';
+import { PERMISSIONS, Role } from '@umberleaf/shared';
 import { createBrowserRouter, Navigate } from 'react-router';
 
 import { AdminErrorBoundary } from '@/app/error-boundary';

@@ -1,5 +1,5 @@
 import { Logger } from '@nestjs/common';
-import { Role } from '@qalam/shared';
+import { Role } from '@umberleaf/shared';
 import type { EntityManager } from 'typeorm';
 
 import type { TransactionRunner } from '../../common/database/transaction-runner';

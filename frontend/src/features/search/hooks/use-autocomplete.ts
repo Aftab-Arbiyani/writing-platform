@@ -1,4 +1,4 @@
-import { SEARCH_QUERY_MIN } from '@qalam/shared';
+import { SEARCH_QUERY_MIN } from '@umberleaf/shared';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 
 import { useDebounce } from '@/hooks/use-debounce';

@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
-import { AuthProvider } from '@qalam/shared';
+import { AuthProvider } from '@umberleaf/shared';
 import { CodeChallengeMethod, OAuth2Client } from 'google-auth-library';
 import type { Redis } from 'ioredis';
 import { randomBytes } from 'node:crypto';

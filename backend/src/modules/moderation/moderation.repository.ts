@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ReportStatus } from '@qalam/shared';
-import type { ReportEntityType, ReportReason } from '@qalam/shared';
+import { ReportStatus } from '@umberleaf/shared';
+import type { ReportEntityType, ReportReason } from '@umberleaf/shared';
 import { In, Repository } from 'typeorm';
 import type { SelectQueryBuilder } from 'typeorm';
 

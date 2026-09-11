@@ -1,4 +1,4 @@
-# @qalam/ui
+# @umberleaf/ui
 
 The look of Qalam, and nothing else (charter: `docs/08_ComponentLibrary.md`).
 

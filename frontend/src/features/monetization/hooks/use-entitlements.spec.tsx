@@ -4,7 +4,7 @@ import {
   ERROR_CODES,
   PlanTier,
   PremiumFeature,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
 import type { ReactElement, ReactNode } from 'react';

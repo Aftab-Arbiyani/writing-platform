@@ -1,12 +1,12 @@
 import { HttpStatus } from '@nestjs/common';
-import { ERROR_CODES } from '@qalam/shared';
-import type { ErrorCode } from '@qalam/shared';
+import { ERROR_CODES } from '@umberleaf/shared';
+import type { ErrorCode } from '@umberleaf/shared';
 
 import { AppException } from '../../common/exceptions/app.exception';
 
 /**
  * Domain exceptions for the Operations Platform (P7.4, docs 16 §3.4). Codes come
- * from the `@qalam/shared` catalogue (never message text). The
+ * from the `@umberleaf/shared` catalogue (never message text). The
  * `AllExceptionsFilter` maps these onto the standard error envelope with the
  * meaningful HTTP status below.
  */

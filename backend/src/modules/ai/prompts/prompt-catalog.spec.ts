@@ -1,4 +1,9 @@
-import { AiFeature, FLAGGED_AI_FEATURES, PromptCategory, aiFeatureFlagKey } from '@qalam/shared';
+import {
+  AiFeature,
+  FLAGGED_AI_FEATURES,
+  PromptCategory,
+  aiFeatureFlagKey,
+} from '@umberleaf/shared';
 
 import { FEATURE_FLAG_DEFINITIONS } from '../../settings/settings.catalog';
 import { AI_PROMPT_CATALOG } from './prompt-catalog';

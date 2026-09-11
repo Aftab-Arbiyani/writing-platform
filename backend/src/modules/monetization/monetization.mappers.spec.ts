@@ -1,4 +1,4 @@
-import { PlanTier, PromotionType } from '@qalam/shared';
+import { PlanTier, PromotionType } from '@umberleaf/shared';
 
 import type { Coupon } from './entities/coupon.entity';
 import { toCouponDto } from './monetization.mappers';

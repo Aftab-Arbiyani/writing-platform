@@ -1,4 +1,4 @@
-import { QButton } from '@qalam/ui';
+import { QButton } from '@umberleaf/ui';
 import { AlertTriangle, BarChart3, WifiOff } from 'lucide-react';
 import type { ReactElement, ReactNode } from 'react';
 

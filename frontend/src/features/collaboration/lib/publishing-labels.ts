@@ -6,8 +6,8 @@ import {
   SnapshotReason,
   TrustStatus,
   Visibility,
-} from '@qalam/shared';
-import type { QTagColor } from '@qalam/ui';
+} from '@umberleaf/shared';
+import type { QTagColor } from '@umberleaf/ui';
 
 /**
  * Human labels for the publishing + trust vocabulary (AF6, W3c) — presentation only, ported from

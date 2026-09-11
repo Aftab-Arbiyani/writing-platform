@@ -21,7 +21,7 @@ clients build against and the gate every PR is measured against.
 | **API version**       | `v1` — all routes under `/api/v1/*` (URI versioning); probes at root (`/health/*`, `/metrics`)             |
 | **Endpoints**         | 19 controllers · 102 OpenAPI paths (see `GET /docs` / exported `openapi.json`)                             |
 | **Response contract** | success `{ success, data, meta? }`; error `{ success:false, error:{ code, message, details, requestId } }` |
-| **Error catalogue**   | 69 `ERROR_CODES` in `@qalam/shared` — stable strings, never renamed/removed                                |
+| **Error catalogue**   | 69 `ERROR_CODES` in `@umberleaf/shared` — stable strings, never renamed/removed                            |
 | **AuthZ vocabulary**  | 26 `PERMISSIONS` codes (PBAC); 11 `RATE_LIMIT_TIERS`                                                       |
 | **DB schema version** | migration baseline **`1783582561943-NotificationActorIndex`** (10 migrations; `synchronize:false`)         |
 | **Auth model**        | JWT access (15 min) + rotating refresh (30 d) reuse-detection; Argon2id; Google OAuth (code+PKCE)          |
@@ -45,7 +45,7 @@ clients build against and the gate every PR is measured against.
 - **AuthN/AuthZ**: bearer access token; PBAC via permission codes; the permission
   catalogue is append-only within `v1`.
 - **Source of truth**: the exported `openapi.json` (built from `/docs` in
-  non-production) is the machine-readable contract that feeds `@qalam/api-types`
+  non-production) is the machine-readable contract that feeds `@umberleaf/api-types`
   codegen — the wire between backend, React, and Flutter.
 
 ---

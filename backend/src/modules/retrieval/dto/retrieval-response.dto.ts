@@ -6,7 +6,7 @@ import type {
   RetrievalIntent,
   RetrievalQueryType,
   RetrievalSource,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 import type { StoryEdgeDto, StoryNodeDto } from '../../story-intelligence/dto/story-response.dto';
 import type {

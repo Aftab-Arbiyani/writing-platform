@@ -1,4 +1,4 @@
-import type { ShareChannel } from '@qalam/shared';
+import type { ShareChannel } from '@umberleaf/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { qk } from '@/lib/query-keys';

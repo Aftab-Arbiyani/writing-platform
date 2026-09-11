@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import type { PieceStatus, Visibility } from '@qalam/shared';
+import type { PieceStatus, Visibility } from '@umberleaf/shared';
 
 import { GenreDto, LanguageDto, TagDto } from '../../taxonomy/dto/taxonomy-item.dto';
 import type { SeoMetadata } from '../entities/piece.entity';

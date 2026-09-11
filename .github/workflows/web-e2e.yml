@@ -177,7 +177,7 @@ jobs:
           VITE_ENABLE_COLLABORATION: 'true'
           VITE_ENABLE_MONETIZATION: 'true'
         run: |
-          pnpm --filter "@qalam/*" build
+          pnpm --filter "@umberleaf/*" build
           pnpm --filter frontend build
           pnpm --filter admin build
 
@@ -377,7 +377,7 @@ jobs:
           VITE_ENABLE_COLLABORATION: 'true'
           VITE_ENABLE_MONETIZATION: 'true'
         run: |
-          pnpm --filter "@qalam/*" build
+          pnpm --filter "@umberleaf/*" build
           pnpm --filter frontend build
           pnpm --filter admin build
 

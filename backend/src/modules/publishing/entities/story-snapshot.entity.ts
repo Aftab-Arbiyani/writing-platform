@@ -1,5 +1,5 @@
 import { Column, Entity, Index } from 'typeorm';
-import type { SnapshotReason } from '@qalam/shared';
+import type { SnapshotReason } from '@umberleaf/shared';
 
 import { QalamAppendOnlyEntity } from '../../../common/base/append-only.entity';
 

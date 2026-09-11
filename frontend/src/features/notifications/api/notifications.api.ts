@@ -1,4 +1,4 @@
-import type { NotificationStatus, NotificationType } from '@qalam/shared';
+import type { NotificationStatus, NotificationType } from '@umberleaf/shared';
 
 import { del, get, getPage, patch, type CursorPage } from '@/lib/api-client';
 import { buildQueryString } from '@/lib/http';

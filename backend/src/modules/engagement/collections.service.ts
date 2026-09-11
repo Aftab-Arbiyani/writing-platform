@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { DEFAULT_COLLECTION_SLUG, DEFAULT_COLLECTION_TITLE, Visibility } from '@qalam/shared';
-import { slugify } from '@qalam/utils';
+import { DEFAULT_COLLECTION_SLUG, DEFAULT_COLLECTION_TITLE, Visibility } from '@umberleaf/shared';
+import { slugify } from '@umberleaf/utils';
 
 import { TransactionRunner } from '../../common/database/transaction-runner';
 import { decodeCursor } from '../../common/pagination/cursor.util';

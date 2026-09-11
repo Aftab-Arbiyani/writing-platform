@@ -4,12 +4,12 @@ import type {
   PlanTier,
   PremiumFeature,
   PromotionType,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 /**
  * Wire shapes for the admin monetization surface (A1, docs/45 §5).
  *
- * Declared here rather than imported from `@qalam/api-types` because that package carries the
+ * Declared here rather than imported from `@umberleaf/api-types` because that package carries the
  * USER-facing monetization contract only — subscription, entitlements, usage, credits, invoices,
  * payments, plans, coupon validation. It has no admin shapes: no coupon record, no entitlement
  * override, no resolved config, and none of the three analytics payloads. This mirrors what
@@ -274,7 +274,7 @@ export interface SubscriptionAnalytics {
  * `GET /admin/monetization/analytics/usage` — AI tokens and cost.
  *
  * `totalCreditsConsumed` was here until D5, and its removal is worth a note because of HOW it
- * survived. This interface is declared locally rather than imported from `@qalam/api-types`, so
+ * survived. This interface is declared locally rather than imported from `@umberleaf/api-types`, so
  * when B4 re-pointed the server's `usage()` at `ai_usage_logs` and stopped sending the field,
  * nothing failed to compile — and the page went on calling `.toLocaleString()` on `undefined`,
  * crashing the dashboard. Every admin unit test kept passing because their fixtures SUPPLIED the

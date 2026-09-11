@@ -4,7 +4,7 @@
  * The request/response shapes over `/api/v1/ai/*` (search, ask, explorer,
  * recommendations, saved searches) and the admin surface. The provider-agnostic
  * VOCABULARY (intents, query types, sources, ranking signals, scopes, views, kinds)
- * lives in `@qalam/shared` and is re-exported here so a client imports everything
+ * lives in `@umberleaf/shared` and is re-exported here so a client imports everything
  * retrieval-related from one package.
  *
  * Every search result and recommendation carries its grounding — evidence references,
@@ -21,7 +21,7 @@ export type {
   RetrievalIntent,
   RetrievalQueryType,
   RetrievalSource,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 import type {
   ExplorerView,
@@ -31,7 +31,7 @@ import type {
   RetrievalIntent,
   RetrievalQueryType,
   RetrievalSource,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 import type { StoryGraphEdge, StoryGraphNode } from './story.js';
 

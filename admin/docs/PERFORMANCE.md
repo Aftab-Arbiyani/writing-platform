@@ -68,5 +68,5 @@ memoized chart options, query caching, abort, and tree-shaking are all in place.
 Two low-impact items were reviewed and deliberately **deferred** (they carry more
 change-risk than benefit on 20-row pages): memoizing the AntD column builders on
 the three list pages, and hoisting inline chart data arrays. `framer-motion` is
-retained — it powers the shared reduced-motion page transition (`@qalam/ui/motion`)
+retained — it powers the shared reduced-motion page transition (`@umberleaf/ui/motion`)
 and is a cached vendor chunk; removing it would be a cross-package behavior change.

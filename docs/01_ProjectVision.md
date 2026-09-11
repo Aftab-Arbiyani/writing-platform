@@ -220,12 +220,12 @@ Phases are gates, not sprints. A phase ships when its exit criteria hold, not on
 Everything that makes Phase 1 buildable at speed, with zero product features:
 
 - Monorepo: pnpm 9 workspaces + Turborepo 2, Node 24 LTS, TypeScript ^5 `strict` everywhere.
-- The five `@qalam/*` packages scaffolded with their disjoint responsibilities (ADR §2).
+- The five `@umberleaf/*` packages scaffolded with their disjoint responsibilities (ADR §2).
 - `docker-compose.yml` dev infra: postgres 16, redis 7, MinIO, mailpit (default profile
   is infra-only; apps run via `pnpm dev`).
 - CI (`.github/workflows/ci.yml`): lint → typecheck → test → build on PR + main;
   conventional-commit title check.
-- Design tokens (`--q-*` CSS variables) defined once in `@qalam/ui`, feeding both the
+- Design tokens (`--q-*` CSS variables) defined once in `@umberleaf/ui`, feeding both the
   AntD 5 theme and the Tailwind 4 theme.
 - Backend skeleton: `main.ts` bootstrap (helmet, CORS, URI versioning, pipes, Swagger,
   Pino), Zod-validated env, `common/`, `database/` with migration tooling.
@@ -274,7 +274,7 @@ Deliberately deferred, together, because each has heavy compliance/UX weight (AD
   designated successor, decided by data, not fashion (ADR §3).
 - Mobile (Flutter) expansion as demand dictates — the contract is ready from day one,
   since Flutter generates Dart models from the same exported `openapi.json` that feeds
-  `@qalam/api-types` (ADR §2).
+  `@umberleaf/api-types` (ADR §2).
 
 ### Explicit Non-Goals
 

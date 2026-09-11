@@ -4,11 +4,11 @@ import {
   TAGS_MAX_PER_PIECE,
   TITLE_MAX,
   Visibility,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 import { z } from 'zod';
 
 /**
- * Publish-sheet schema (docs/33, docs/06 §3.4). Built from `@qalam/shared` atoms so the client
+ * Publish-sheet schema (docs/33, docs/06 §3.4). Built from `@umberleaf/shared` atoms so the client
  * and the `Create/UpdatePieceDto` cannot drift. Title + genre are required to publish (the
  * server also enforces this via `PIECE_INCOMPLETE`); a future schedule must be in the future
  * (server: `PIECE_SCHEDULE_IN_PAST`). Content sufficiency (wordCount > 0) is enforced

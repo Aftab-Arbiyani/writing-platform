@@ -1,5 +1,5 @@
 import { Column, Entity, Index } from 'typeorm';
-import type { AiFeature, AiProvider } from '@qalam/shared';
+import type { AiFeature, AiProvider } from '@umberleaf/shared';
 
 import { QalamAppendOnlyEntity } from '../../../../common/base/append-only.entity';
 

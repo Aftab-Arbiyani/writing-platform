@@ -3,7 +3,7 @@ import {
   type BillingInterval,
   type PaymentProvider,
   type PlanTier,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { ApiError } from '@/lib/api-client';

@@ -7,12 +7,12 @@ import type {
   ReportSeverity,
   ReportStatus,
   Role,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 /**
  * Wire types for the Content Moderation feature (A5), mirroring the backend
  * moderation DTOs (`backend/src/modules/moderation/dto/*`). Hand-authored until
- * `@qalam/api-types` is regenerated for the new endpoints —
+ * `@umberleaf/api-types` is regenerated for the new endpoints —
  * TODO(aftab): drop for generated types once `openapi.json` includes them.
  */
 

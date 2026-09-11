@@ -1,5 +1,5 @@
-import { PERMISSIONS, ReportEntityType } from '@qalam/shared';
-import { QButton, QCard, QErrorState, QSkeleton, useToast } from '@qalam/ui';
+import { PERMISSIONS, ReportEntityType } from '@umberleaf/shared';
+import { QButton, QCard, QErrorState, QSkeleton, useToast } from '@umberleaf/ui';
 import type { ReactElement } from 'react';
 import { Link, useNavigate } from 'react-router';
 

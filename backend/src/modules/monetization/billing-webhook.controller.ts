@@ -1,7 +1,7 @@
 import { Controller, HttpCode, HttpStatus, Param, Post, Req, UseGuards } from '@nestjs/common';
 import type { RawBodyRequest } from '@nestjs/common';
 import { ApiExcludeEndpoint } from '@nestjs/swagger';
-import { PaymentProvider } from '@qalam/shared';
+import { PaymentProvider } from '@umberleaf/shared';
 import type { Request } from 'express';
 
 import { RateLimit } from '../../common/decorators/rate-limit.decorator';

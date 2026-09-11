@@ -7,7 +7,7 @@ import {
   PlanTier,
   PremiumFeature,
   PromotionType,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 import { Type } from 'class-transformer';
 import {
   IsBoolean,

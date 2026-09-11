@@ -1,4 +1,4 @@
-import type { CursorMeta, OffsetMeta } from '@qalam/shared';
+import type { CursorMeta, OffsetMeta } from '@umberleaf/shared';
 
 /**
  * Service/repository return shapes for paginated reads. Controllers map these

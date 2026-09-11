@@ -1,4 +1,4 @@
-import { countWords, extractPlainText, readingTime } from '@qalam/utils';
+import { countWords, extractPlainText, readingTime } from '@umberleaf/utils';
 import type { Editor } from '@tiptap/react';
 import { useEffect, useState, type ReactElement } from 'react';
 
@@ -6,7 +6,7 @@ import { formatReadingTime } from '@/lib/format';
 
 /**
  * Live word / character count + reading time (docs/06 §3.3 — opt-in, bottom corner). Uses the
- * SAME `@qalam/utils` functions the server derives with, so the numbers match exactly. Isolated
+ * SAME `@umberleaf/utils` functions the server derives with, so the numbers match exactly. Isolated
  * into its own component so recomputing on `update` re-renders only this small counter, never
  * the document (docs/12 §5). Debounced so long pieces don't recompute per keystroke.
  */

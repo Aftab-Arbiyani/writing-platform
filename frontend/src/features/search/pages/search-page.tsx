@@ -1,5 +1,5 @@
-import { SearchType } from '@qalam/shared';
-import { QSearch } from '@qalam/ui';
+import { SearchType } from '@umberleaf/shared';
+import { QSearch } from '@umberleaf/ui';
 import { Compass } from 'lucide-react';
 import type { KeyboardEvent, ReactElement } from 'react';
 import { Link } from 'react-router';

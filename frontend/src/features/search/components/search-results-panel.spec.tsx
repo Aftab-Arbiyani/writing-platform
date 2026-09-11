@@ -1,5 +1,5 @@
-import { RetrievalIntent, RetrievalQueryType, RetrievalSource } from '@qalam/shared';
-import type { SearchResultItem, SemanticSearchResponse } from '@qalam/api-types';
+import { RetrievalIntent, RetrievalQueryType, RetrievalSource } from '@umberleaf/shared';
+import type { SearchResultItem, SemanticSearchResponse } from '@umberleaf/api-types';
 import { screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 

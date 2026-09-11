@@ -1,10 +1,10 @@
-import { PERMISSIONS } from '@qalam/shared';
+import { PERMISSIONS } from '@umberleaf/shared';
 import type {
   AiOrgDefaults,
   RetrievalAdminConfig,
   UpdateAiOrgDefaultsRequest,
   UpdateRetrievalAdminConfig,
-} from '@qalam/api-types';
+} from '@umberleaf/api-types';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { usePermissions } from '@/hooks/use-permissions';

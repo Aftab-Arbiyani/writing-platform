@@ -6,7 +6,7 @@ import type {
   TrustLevel,
   TrustStatus,
   UserStatus,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 import type { BlockKind } from '../trust.constants';
 

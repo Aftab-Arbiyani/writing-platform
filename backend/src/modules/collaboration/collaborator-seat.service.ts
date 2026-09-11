@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { InvitationStatus, resolvePlanLimit } from '@qalam/shared';
+import { InvitationStatus, resolvePlanLimit } from '@umberleaf/shared';
 
 import { EntitlementService } from '../monetization/entitlement.service';
 import {

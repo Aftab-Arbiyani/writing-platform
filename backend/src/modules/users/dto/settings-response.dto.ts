@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { ThemePreference, Visibility } from '@qalam/shared';
+import { ThemePreference, Visibility } from '@umberleaf/shared';
 
 /** `GET/PATCH /settings` response — the DB-only preference bag. */
 export class SettingsResponseDto {

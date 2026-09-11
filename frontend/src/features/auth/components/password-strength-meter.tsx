@@ -1,5 +1,5 @@
-import { PASSWORD_MIN } from '@qalam/shared';
-import { cn } from '@qalam/ui';
+import { PASSWORD_MIN } from '@umberleaf/shared';
+import { cn } from '@umberleaf/ui';
 import type { ReactElement } from 'react';
 
 /**

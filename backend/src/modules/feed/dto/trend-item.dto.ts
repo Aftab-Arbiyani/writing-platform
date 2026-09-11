@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import type { TextDirection } from '@qalam/shared';
+import type { TextDirection } from '@umberleaf/shared';
 
 /** A trending tag — ranked by pieces published within the trend window. */
 export class TrendingTagDto {

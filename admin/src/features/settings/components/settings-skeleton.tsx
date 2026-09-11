@@ -1,4 +1,4 @@
-import { QSkeleton } from '@qalam/ui';
+import { QSkeleton } from '@umberleaf/ui';
 import type { ReactElement } from 'react';
 
 /** Section-shaped loading placeholder for a settings form (A7). */

@@ -1,4 +1,4 @@
-import { QButton, QCard, QEmptyState, QSpinner, QTag } from '@qalam/ui';
+import { QButton, QCard, QEmptyState, QSpinner, QTag } from '@umberleaf/ui';
 import { Receipt } from 'lucide-react';
 import { useState, type ReactElement, type ReactNode } from 'react';
 

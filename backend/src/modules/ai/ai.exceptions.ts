@@ -1,6 +1,6 @@
 import { HttpStatus } from '@nestjs/common';
-import { ERROR_CODES } from '@qalam/shared';
-import type { AiFeature, AiProvider } from '@qalam/shared';
+import { ERROR_CODES } from '@umberleaf/shared';
+import type { AiFeature, AiProvider } from '@umberleaf/shared';
 
 import { AppException } from '../../common/exceptions/app.exception';
 

@@ -1,5 +1,5 @@
-import { Visibility, type ThemePreference } from '@qalam/shared';
-import { QErrorState, QSelect, QSpinner, useToast } from '@qalam/ui';
+import { Visibility, type ThemePreference } from '@umberleaf/shared';
+import { QErrorState, QSelect, QSpinner, useToast } from '@umberleaf/ui';
 import { Bell } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { Link } from 'react-router';

@@ -1,4 +1,4 @@
-import { QSearch } from '@qalam/ui';
+import { QSearch } from '@umberleaf/ui';
 import type { ChangeEvent, ReactElement } from 'react';
 
 /**

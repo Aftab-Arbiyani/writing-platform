@@ -5,7 +5,7 @@ import {
   RestrictionType,
   TrustLevel,
   TrustStatus,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 import { screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 

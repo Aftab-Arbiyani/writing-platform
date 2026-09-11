@@ -1,4 +1,4 @@
-import { ERROR_CODES } from '@qalam/shared';
+import { ERROR_CODES } from '@umberleaf/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { isApiError } from '@/lib/errors';

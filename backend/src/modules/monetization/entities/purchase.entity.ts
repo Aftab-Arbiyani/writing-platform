@@ -1,5 +1,5 @@
 import { Column, Entity, Index } from 'typeorm';
-import type { PaymentProvider, PurchaseKind, PurchaseStatus } from '@qalam/shared';
+import type { PaymentProvider, PurchaseKind, PurchaseStatus } from '@umberleaf/shared';
 
 import { QalamAppendOnlyEntity } from '../../../common/base/append-only.entity';
 

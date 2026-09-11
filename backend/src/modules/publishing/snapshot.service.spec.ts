@@ -1,4 +1,4 @@
-import { Role, SnapshotReason } from '@qalam/shared';
+import { Role, SnapshotReason } from '@umberleaf/shared';
 
 import type { AuditService } from '../audit/audit.service';
 import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';

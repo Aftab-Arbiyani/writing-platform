@@ -3,7 +3,7 @@
  *
  * The provider-agnostic domain language for the reusable **Retrieval Platform**: the
  * single entry point every retrieval feature routes through (intent → classification →
- * planning → retrieval → context assembly → response). Like the rest of `@qalam/shared`
+ * planning → retrieval → context assembly → response). Like the rest of `@umberleaf/shared`
  * this is zero-dependency pure vocabulary — `as const` objects + derived union types
  * (JSON-safe wire strings) + guardrail constants.
  *

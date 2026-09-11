@@ -1,4 +1,4 @@
-import { PromptCategory } from '@qalam/shared';
+import { PromptCategory } from '@umberleaf/shared';
 
 /** A seed prompt template (v1 of its key). */
 export interface PromptCatalogEntry {
