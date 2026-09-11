@@ -1,6 +1,6 @@
 import { Column, Entity, Index } from 'typeorm';
 
-import { QalamBaseEntity } from '../../../common/base/base.entity';
+import { AppBaseEntity } from '../../../common/base/base.entity';
 
 /**
  * Single-use email-verification token (docs 13 §3 — verification flow).
@@ -13,7 +13,7 @@ import { QalamBaseEntity } from '../../../common/base/base.entity';
  * ON DELETE CASCADE is declared in the migration.
  */
 @Entity('verification_tokens')
-export class VerificationToken extends QalamBaseEntity {
+export class VerificationToken extends AppBaseEntity {
   @Index('idx_verification_tokens_user')
   @Column({ type: 'uuid' })
   userId!: string;

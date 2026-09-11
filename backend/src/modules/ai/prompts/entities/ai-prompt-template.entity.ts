@@ -1,7 +1,7 @@
 import { Column, Entity, Index, Unique } from 'typeorm';
 import type { PromptCategory } from '@umberleaf/shared';
 
-import { QalamBaseEntity } from '../../../../common/base/base.entity';
+import { AppBaseEntity } from '../../../../common/base/base.entity';
 
 /**
  * A prompt template version (AF1). Prompts are versioned: one row per (key,
@@ -13,7 +13,7 @@ import { QalamBaseEntity } from '../../../../common/base/base.entity';
 @Entity('ai_prompt_templates')
 @Unique('uq_ai_prompt_key_version', ['key', 'version'])
 @Index('idx_ai_prompt_key_active', ['key', 'active'])
-export class AiPromptTemplate extends QalamBaseEntity {
+export class AiPromptTemplate extends AppBaseEntity {
   /** Dot-cased template key, e.g. `system.base`. */
   @Column({ type: 'varchar', length: 120 })
   key!: string;

@@ -6,7 +6,7 @@ import type {
   SubscriptionStatus,
 } from '@umberleaf/shared';
 
-import { QalamBaseEntity } from '../../../common/base/base.entity';
+import { AppBaseEntity } from '../../../common/base/base.entity';
 
 /**
  * A user's subscription (AF5) — the mutable aggregate the Subscription service owns.
@@ -23,7 +23,7 @@ import { QalamBaseEntity } from '../../../common/base/base.entity';
 @Index('uq_subscription_user', ['userId'], { unique: true })
 @Index('idx_subscription_status', ['status'])
 @Index('idx_subscription_period_end', ['currentPeriodEnd'])
-export class Subscription extends QalamBaseEntity {
+export class Subscription extends AppBaseEntity {
   @Column({ type: 'uuid' })
   userId!: string;
 

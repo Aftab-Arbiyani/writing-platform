@@ -32,7 +32,7 @@ test.describe('@phase5 @responsive frontend (authenticated)', () => {
         // cover, which is exactly the shape that overflowed before the box-sizing fix.
         path: `/p/${piece.slug as string}`,
         ready: async () =>
-          void (await expect(page.locator('.qalam-prose')).toBeVisible({ timeout: 30_000 })),
+          void (await expect(page.locator('.umberleaf-prose')).toBeVisible({ timeout: 30_000 })),
       },
       {
         path: '/feed?tab=latest',

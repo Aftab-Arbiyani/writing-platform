@@ -1,7 +1,7 @@
 import type { StoryNodeType } from '@umberleaf/shared';
 import { Column, Entity, Index } from 'typeorm';
 
-import { QalamBaseEntity } from '../../../common/base/base.entity';
+import { AppBaseEntity } from '../../../common/base/base.entity';
 import type { StoryEvidenceRef } from '../story.types';
 
 /**
@@ -16,7 +16,7 @@ import type { StoryEvidenceRef } from '../story.types';
 @Entity('story_nodes')
 @Index('idx_story_nodes_graph_type', ['graphId', 'type'])
 @Index('uq_story_nodes_graph_type_name', ['graphId', 'type', 'normalizedName'], { unique: true })
-export class StoryNode extends QalamBaseEntity {
+export class StoryNode extends AppBaseEntity {
   @Column({ type: 'uuid' })
   graphId!: string;
 

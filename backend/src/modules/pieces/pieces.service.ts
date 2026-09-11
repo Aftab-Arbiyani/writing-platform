@@ -101,7 +101,7 @@ export class PiecesService {
    * How much of the author's plan piece allowance is spent (B4, docs/45 §4.9) — what
    * `GET /me/pieces/limit` returns and what {@link assertPieceAllowance} decides on.
    *
-   * **The count deliberately excludes soft-deleted pieces.** `Piece extends QalamAuditEntity`, so a
+   * **The count deliberately excludes soft-deleted pieces.** `Piece extends AppAuditEntity`, so a
    * deleted piece keeps its row and keeps its slug reserved forever — but B4 caps *pieces you may
    * have*, not pieces you have ever written, so deleting one frees its slot. That is the decided
    * reading (docs/45 §4.9), not an oversight in the query: do not "fix" `countByAuthor` to include

@@ -1,7 +1,7 @@
 import { Column, Entity, Index } from 'typeorm';
 import type { PaymentProvider, WebhookEventStatus } from '@umberleaf/shared';
 
-import { QalamAppendOnlyEntity } from '../../../common/base/append-only.entity';
+import { AppAppendOnlyEntity } from '../../../common/base/append-only.entity';
 
 /**
  * A received payment-provider webhook (AF5) — append-only. Written the instant a webhook
@@ -14,7 +14,7 @@ import { QalamAppendOnlyEntity } from '../../../common/base/append-only.entity';
 @Entity('payment_webhook_events')
 @Index('uq_webhook_provider_event', ['provider', 'providerEventId'], { unique: true })
 @Index('idx_webhook_status_created', ['status', 'createdAt'])
-export class PaymentWebhookEvent extends QalamAppendOnlyEntity {
+export class PaymentWebhookEvent extends AppAppendOnlyEntity {
   @Column({ type: 'varchar', length: 40 })
   provider!: PaymentProvider;
 

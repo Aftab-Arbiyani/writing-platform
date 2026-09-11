@@ -7,12 +7,12 @@ import { v7 as uuidv7 } from 'uuid';
  * mutate, they are inserted and deleted). Engagement rows with a surrogate PK use
  * it: `likes`, `bookmarks`, `shares`, `responses`, `collection_pieces`.
  *
- * It sits between {@link QalamBaseEntity} (which adds `updated_at`, for mutable
+ * It sits between {@link AppBaseEntity} (which adds `updated_at`, for mutable
  * rows like `claps`/`collections`) and the raw two-column joins (`piece_tags`,
  * which have a composite PK and declare their own columns). Same UUIDv7
  * `@BeforeInsert` assignment as the other bases (PG16 has no native v7, §1.2).
  */
-export abstract class QalamAppendOnlyEntity {
+export abstract class AppAppendOnlyEntity {
   @PrimaryColumn('uuid')
   id!: string;
 

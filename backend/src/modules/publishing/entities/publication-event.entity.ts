@@ -1,7 +1,7 @@
 import { Column, Entity, Index } from 'typeorm';
 import type { PublicationEvent as PublicationEventType } from '@umberleaf/shared';
 
-import { QalamAppendOnlyEntity } from '../../../common/base/append-only.entity';
+import { AppAppendOnlyEntity } from '../../../common/base/append-only.entity';
 
 /**
  * One entry of a story's publishing history (AF6) — the immutable audit trail of
@@ -9,14 +9,14 @@ import { QalamAppendOnlyEntity } from '../../../common/base/append-only.entity';
  * unpublished / visibility_changed / snapshot_created / reverted, …).
  *
  * Append-only: inserted once, never mutated, so it extends
- * {@link QalamAppendOnlyEntity} (id/created_at). `story_id` / `actor_id` are
+ * {@link AppAppendOnlyEntity} (id/created_at). `story_id` / `actor_id` are
  * plain uuids with NO SQL FK — the history survives independently of the
  * `pieces`/`users` lifecycles (docs 04 §1.4). `type` is an OPEN `varchar`
  * catalogue (see `PublicationEvent`) so a new event kind needs no migration.
  */
 @Entity('publication_events')
 @Index('idx_publication_event_story_created', ['storyId', 'createdAt'])
-export class PublicationEvent extends QalamAppendOnlyEntity {
+export class PublicationEvent extends AppAppendOnlyEntity {
   /** The story (piece) this event belongs to — `story_id === piece_id`. */
   @Column({ type: 'uuid' })
   storyId!: string;

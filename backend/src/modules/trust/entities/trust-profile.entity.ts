@@ -2,7 +2,7 @@ import { TRUST_SCORE_DEFAULT, TrustLevel } from '@umberleaf/shared';
 import type { TrustLevel as TrustLevelType } from '@umberleaf/shared';
 import { Column, Entity, Index } from 'typeorm';
 
-import { QalamBaseEntity } from '../../../common/base/base.entity';
+import { AppBaseEntity } from '../../../common/base/base.entity';
 
 /**
  * One reputation row per user (Trust & Safety, AF6). `score` is the reputation
@@ -14,7 +14,7 @@ import { QalamBaseEntity } from '../../../common/base/base.entity';
  */
 @Entity('trust_profiles')
 @Index('uq_trust_profiles_user', ['userId'], { unique: true })
-export class TrustProfile extends QalamBaseEntity {
+export class TrustProfile extends AppBaseEntity {
   @Column({ type: 'uuid' })
   userId!: string;
 

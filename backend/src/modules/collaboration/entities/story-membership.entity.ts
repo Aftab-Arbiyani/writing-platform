@@ -1,7 +1,7 @@
 import { Column, Entity, Index } from 'typeorm';
 import type { StoryRole } from '@umberleaf/shared';
 
-import { QalamBaseEntity } from '../../../common/base/base.entity';
+import { AppBaseEntity } from '../../../common/base/base.entity';
 
 /**
  * A collaborator's membership on one story (AF6). The story owner (the piece
@@ -18,7 +18,7 @@ import { QalamBaseEntity } from '../../../common/base/base.entity';
 @Entity('story_memberships')
 @Index('uq_story_membership', ['storyId', 'userId'], { unique: true })
 @Index('idx_story_membership_role', ['storyId', 'role'])
-export class StoryMembership extends QalamBaseEntity {
+export class StoryMembership extends AppBaseEntity {
   @Column({ type: 'uuid' })
   storyId!: string;
 

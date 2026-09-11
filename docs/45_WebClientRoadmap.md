@@ -119,7 +119,7 @@ soft-deleted rows ([04 §1.5](./04_DatabaseDesign.md)), so it is a safe identity
 New `frontend/src/features/reading/`, route `/p/:slug`, public with `OptionalAuthGuard` semantics.
 Ported from mobile's `lib/features/reading/`, which already solves every hard part:
 
-- **Content rendering** — TipTap JSON → React, reusing the existing `.qalam-prose` class, which
+- **Content rendering** — TipTap JSON → React, reusing the existing `.umberleaf-prose` class, which
   [already styles both the editing surface and the read-only preview](../frontend/src/styles/global.css)
   so what a writer sees is what a reader gets. Only the whitelisted node/mark set the server accepts.
 - **Reader preferences** — font size / theme, mirroring mobile's `reader_preferences_controller`.
@@ -505,7 +505,7 @@ absent, so it cannot join the seven codes that are advertised and never checked
 - Add `maxPieces` to each tier's `limits` in the `monetization.plans` catalogue default
   (`backend/src/modules/settings/settings.catalog.ts`). `0` for Pro and Enterprise.
 - Enforce on **`POST /pieces`** (`pieces.controller.ts:61`) by counting the author's pieces where
-  `deletedAt IS NULL`. **Pieces are soft-deleted** (`Piece extends QalamAuditEntity`), so a deleted
+  `deletedAt IS NULL`. **Pieces are soft-deleted** (`Piece extends AppAuditEntity`), so a deleted
   piece frees its slot even though the row and its reserved slug survive — that is the intended
   reading of "pieces you may have", and it must be stated in the entity/service comment so nobody
   later "fixes" the count to include tombstones.

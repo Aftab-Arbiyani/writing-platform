@@ -1,6 +1,6 @@
 import { Column, Entity, Index } from 'typeorm';
 
-import { QalamBaseEntity } from '../../../common/base/base.entity';
+import { AppBaseEntity } from '../../../common/base/base.entity';
 
 /**
  * A permission granted to a role (PBAC). Keyed by role NAME (the value carried in
@@ -12,7 +12,7 @@ import { QalamBaseEntity } from '../../../common/base/base.entity';
 @Entity('role_permissions')
 @Index('uq_role_permissions', ['roleName', 'permissionCode'], { unique: true })
 @Index('idx_role_permissions_role', ['roleName'])
-export class RolePermission extends QalamBaseEntity {
+export class RolePermission extends AppBaseEntity {
   /** Role name (e.g. `admin`) — matches the `roles.name` / `Role` enum value. */
   @Column({ type: 'varchar', length: 30 })
   roleName!: string;

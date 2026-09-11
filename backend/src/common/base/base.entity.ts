@@ -3,9 +3,9 @@ import { v7 as uuidv7 } from 'uuid';
 
 /**
  * Base class for every Qalam entity. NOT an `@Entity()` itself — domain
- * entities extend it in Phase 1 (`class User extends QalamBaseEntity`).
+ * entities extend it in Phase 1 (`class User extends AppBaseEntity`).
  *
- * Named `QalamBaseEntity` (not `BaseEntity`) on purpose: TypeORM ships its own
+ * Named `AppBaseEntity` (not `BaseEntity`) on purpose: TypeORM ships its own
  * `BaseEntity` (the ActiveRecord base), and an accidental import of that one
  * silently changes an entity's persistence model. The prefix removes that trap.
  *
@@ -17,11 +17,11 @@ import { v7 as uuidv7 } from 'uuid';
  *                  snake_case by SnakeNamingStrategy.
  *
  * Soft delete is deliberately NOT here (docs 04 §1.5 — only three aggregates get
- * it). Recoverable aggregates extend {@link QalamAuditEntity} instead;
+ * it). Recoverable aggregates extend {@link AppAuditEntity} instead;
  * append-only join/event tables that never mutate declare their own narrower
  * columns (they omit `updated_at` per §1.4).
  */
-export abstract class QalamBaseEntity {
+export abstract class AppBaseEntity {
   @PrimaryColumn('uuid')
   id!: string;
 

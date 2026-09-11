@@ -1,7 +1,7 @@
 import { Column, Entity, Index } from 'typeorm';
 import { CommentKind, CommentStatus } from '@umberleaf/shared';
 
-import { QalamAuditEntity } from '../../../common/base/audit.entity';
+import { AppAuditEntity } from '../../../common/base/audit.entity';
 
 /** Text-range anchor for an inline comment (TipTap document positions + the quoted text). */
 export interface CommentAnchor {
@@ -12,7 +12,7 @@ export interface CommentAnchor {
 
 /**
  * A collaboration comment or reply on a story (AF6). Soft-deletable
- * ({@link QalamAuditEntity}) — deleting a comment tombstones it so threads keep
+ * ({@link AppAuditEntity}) — deleting a comment tombstones it so threads keep
  * their shape and it can be recovered by moderation. A `general` comment is
  * story-level; an `inline` comment carries an {@link CommentAnchor}. `parentId`
  * links a reply to its root, forming a one-level thread.
@@ -24,7 +24,7 @@ export interface CommentAnchor {
 @Entity('collaboration_comments')
 @Index('idx_collab_comment_story', ['storyId', 'status', 'createdAt'])
 @Index('idx_collab_comment_parent', ['parentId'])
-export class CollaborationComment extends QalamAuditEntity {
+export class CollaborationComment extends AppAuditEntity {
   @Column({ type: 'uuid' })
   storyId!: string;
 

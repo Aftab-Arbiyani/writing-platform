@@ -1,7 +1,7 @@
 import type { StrikeSeverity } from '@umberleaf/shared';
 import { Column, Entity, Index } from 'typeorm';
 
-import { QalamBaseEntity } from '../../../common/base/base.entity';
+import { AppBaseEntity } from '../../../common/base/base.entity';
 
 /**
  * A single policy strike against a user (append-only). `weight` (from
@@ -13,7 +13,7 @@ import { QalamBaseEntity } from '../../../common/base/base.entity';
  */
 @Entity('user_strikes')
 @Index('idx_user_strikes_user', ['userId', 'createdAt'])
-export class UserStrike extends QalamBaseEntity {
+export class UserStrike extends AppBaseEntity {
   @Column({ type: 'uuid' })
   userId!: string;
 

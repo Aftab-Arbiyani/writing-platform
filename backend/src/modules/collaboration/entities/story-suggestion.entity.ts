@@ -1,7 +1,7 @@
 import { Column, Entity, Index } from 'typeorm';
 import { SuggestionStatus } from '@umberleaf/shared';
 
-import { QalamBaseEntity } from '../../../common/base/base.entity';
+import { AppBaseEntity } from '../../../common/base/base.entity';
 
 /** Text-range anchor for a suggestion (TipTap document positions). */
 export interface SuggestionAnchor {
@@ -23,7 +23,7 @@ export interface SuggestionAnchor {
  */
 @Entity('story_suggestions')
 @Index('idx_story_suggestion', ['storyId', 'status'])
-export class StorySuggestion extends QalamBaseEntity {
+export class StorySuggestion extends AppBaseEntity {
   @Column({ type: 'uuid' })
   storyId!: string;
 

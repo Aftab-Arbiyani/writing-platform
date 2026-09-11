@@ -1,7 +1,7 @@
 import type { RetrievalQueryType } from '@umberleaf/shared';
 import { Column, Entity, Index } from 'typeorm';
 
-import { QalamBaseEntity } from '../../../common/base/base.entity';
+import { AppBaseEntity } from '../../../common/base/base.entity';
 
 /**
  * A user's saved search (AF4). Owner-scoped; unique per (user, name). `storyId` scopes the
@@ -12,7 +12,7 @@ import { QalamBaseEntity } from '../../../common/base/base.entity';
 @Entity('saved_searches')
 @Index('uq_saved_searches_user_name', ['userId', 'name'], { unique: true })
 @Index('idx_saved_searches_user_created', ['userId', 'createdAt'])
-export class SavedSearch extends QalamBaseEntity {
+export class SavedSearch extends AppBaseEntity {
   @Column({ type: 'uuid' })
   userId!: string;
 

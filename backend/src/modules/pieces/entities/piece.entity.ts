@@ -1,7 +1,7 @@
 import { PieceStatus, Visibility } from '@umberleaf/shared';
 import { Check, Column, Entity, Index } from 'typeorm';
 
-import { QalamAuditEntity } from '../../../common/base/audit.entity';
+import { AppAuditEntity } from '../../../common/base/audit.entity';
 
 /** SEO override metadata (E4 addition; docs 04 §3.2 didn't enumerate it). */
 export interface SeoMetadata {
@@ -10,7 +10,7 @@ export interface SeoMetadata {
 }
 
 /**
- * A written piece (docs 04 §3.2). Soft-deletable ({@link QalamAuditEntity}) —
+ * A written piece (docs 04 §3.2). Soft-deletable ({@link AppAuditEntity}) —
  * writers delete in frustration and ask for it back (docs §1.5).
  *
  * `content` (TipTap JSON) is the single source of truth (§5); HTML is never
@@ -33,7 +33,7 @@ export interface SeoMetadata {
 @Index('idx_pieces_author_status', ['authorId', 'status', 'createdAt'])
 @Index('idx_pieces_language', ['languageId', 'publishedAt'])
 @Index('idx_pieces_genre', ['genreId', 'publishedAt'])
-export class Piece extends QalamAuditEntity {
+export class Piece extends AppAuditEntity {
   @Column({ type: 'uuid' })
   authorId!: string;
 

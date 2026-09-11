@@ -1,7 +1,7 @@
 import { AuthProvider } from '@umberleaf/shared';
 import { Column, Entity, Index, Unique } from 'typeorm';
 
-import { QalamBaseEntity } from '../../../common/base/base.entity';
+import { AppBaseEntity } from '../../../common/base/base.entity';
 
 /**
  * External OAuth identity linked to a {@link User} (docs 04 §3.1, docs 13 §3.5).
@@ -16,7 +16,7 @@ import { QalamBaseEntity } from '../../../common/base/base.entity';
 @Entity('auth_identities')
 @Unique('uq_auth_identities_provider_subject', ['provider', 'providerUserId'])
 @Unique('uq_auth_identities_user_provider', ['userId', 'provider'])
-export class AuthIdentity extends QalamBaseEntity {
+export class AuthIdentity extends AppBaseEntity {
   @Index('idx_auth_identities_user')
   @Column({ type: 'uuid' })
   userId!: string;

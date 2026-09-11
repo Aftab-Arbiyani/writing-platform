@@ -1,7 +1,7 @@
 import type { StoryAnalysisScope } from '@umberleaf/shared';
 import { Column, Entity, Index } from 'typeorm';
 
-import { QalamBaseEntity } from '../../../common/base/base.entity';
+import { AppBaseEntity } from '../../../common/base/base.entity';
 
 /**
  * The aggregate root of the story knowledge graph (AF3) — one per (owner, story).
@@ -12,7 +12,7 @@ import { QalamBaseEntity } from '../../../common/base/base.entity';
  */
 @Entity('story_graphs')
 @Index('uq_story_graphs_user_story', ['userId', 'storyId'], { unique: true })
-export class StoryGraph extends QalamBaseEntity {
+export class StoryGraph extends AppBaseEntity {
   @Column({ type: 'uuid' })
   userId!: string;
 

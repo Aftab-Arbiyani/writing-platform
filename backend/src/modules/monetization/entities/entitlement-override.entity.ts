@@ -1,7 +1,7 @@
 import { Column, Entity, Index } from 'typeorm';
 import type { OverrideEffect, PremiumFeature } from '@umberleaf/shared';
 
-import { QalamBaseEntity } from '../../../common/base/base.entity';
+import { AppBaseEntity } from '../../../common/base/base.entity';
 
 /**
  * A per-user entitlement override (AF5) — mutable (an admin can deactivate one). Backs
@@ -15,7 +15,7 @@ import { QalamBaseEntity } from '../../../common/base/base.entity';
 @Entity('entitlement_overrides')
 @Index('idx_entitlement_override_user_feature', ['userId', 'feature'])
 @Index('idx_entitlement_override_active', ['active'])
-export class EntitlementOverride extends QalamBaseEntity {
+export class EntitlementOverride extends AppBaseEntity {
   @Column({ type: 'uuid' })
   userId!: string;
 

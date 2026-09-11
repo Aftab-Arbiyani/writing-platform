@@ -1,7 +1,7 @@
 import { ShareChannel } from '@umberleaf/shared';
 import { Column, Entity, Index } from 'typeorm';
 
-import { QalamAppendOnlyEntity } from '../../../common/base/append-only.entity';
+import { AppAppendOnlyEntity } from '../../../common/base/append-only.entity';
 
 /**
  * A single share event (E7 — share tracking, ADR §10). Phase 1 stores the COUNT
@@ -15,7 +15,7 @@ import { QalamAppendOnlyEntity } from '../../../common/base/append-only.entity';
  */
 @Entity('shares')
 @Index('idx_shares_piece', ['pieceId', 'createdAt'])
-export class Share extends QalamAppendOnlyEntity {
+export class Share extends AppAppendOnlyEntity {
   @Column({ type: 'uuid', nullable: true })
   userId!: string | null;
 

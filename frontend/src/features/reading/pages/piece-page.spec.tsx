@@ -170,7 +170,7 @@ describe('PiecePage', () => {
     const { container } = renderAt('a-door-never-opened');
 
     await screen.findByRole('heading', { level: 1 });
-    expect(container.querySelector('.qalam-prose')).toHaveAttribute('dir', 'rtl');
+    expect(container.querySelector('.umberleaf-prose')).toHaveAttribute('dir', 'rtl');
   });
 
   /**

@@ -1,6 +1,6 @@
 import { Column, Entity, Index, Unique } from 'typeorm';
 
-import { QalamAppendOnlyEntity } from '../../../common/base/append-only.entity';
+import { AppAppendOnlyEntity } from '../../../common/base/append-only.entity';
 
 /**
  * Membership of a piece in a collection (docs 04 §3.5). Carries a payload
@@ -11,7 +11,7 @@ import { QalamAppendOnlyEntity } from '../../../common/base/append-only.entity';
 @Entity('collection_pieces')
 @Unique('uq_collection_pieces', ['collectionId', 'pieceId'])
 @Index('idx_collection_pieces_pos', ['collectionId', 'position'])
-export class CollectionPiece extends QalamAppendOnlyEntity {
+export class CollectionPiece extends AppAppendOnlyEntity {
   @Column({ type: 'uuid' })
   collectionId!: string;
 

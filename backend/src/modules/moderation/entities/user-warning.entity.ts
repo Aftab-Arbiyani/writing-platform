@@ -1,7 +1,7 @@
 import type { ReportSeverity } from '@umberleaf/shared';
 import { Column, Entity, Index } from 'typeorm';
 
-import { QalamBaseEntity } from '../../../common/base/base.entity';
+import { AppBaseEntity } from '../../../common/base/base.entity';
 
 /**
  * A formal warning issued to a user by a moderator (append-only). Surfaced in the
@@ -10,7 +10,7 @@ import { QalamBaseEntity } from '../../../common/base/base.entity';
  */
 @Entity('user_warnings')
 @Index('idx_user_warnings_user', ['userId', 'createdAt'])
-export class UserWarning extends QalamBaseEntity {
+export class UserWarning extends AppBaseEntity {
   @Column({ type: 'uuid' })
   userId!: string;
 

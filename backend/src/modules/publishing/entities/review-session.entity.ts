@@ -2,7 +2,7 @@ import { Column, Entity, Index } from 'typeorm';
 import { ReviewState } from '@umberleaf/shared';
 import type { ReviewDecision } from '@umberleaf/shared';
 
-import { QalamBaseEntity } from '../../../common/base/base.entity';
+import { AppBaseEntity } from '../../../common/base/base.entity';
 
 /**
  * An editorial review session for one story (AF6). The review workflow is a
@@ -11,7 +11,7 @@ import { QalamBaseEntity } from '../../../common/base/base.entity';
  * (non-gated stories publish directly — unchanged behaviour).
  *
  * Mutable (state transitions in_review → approved/changes_requested → published),
- * so it extends {@link QalamBaseEntity} (id/created_at/updated_at). At most one
+ * so it extends {@link AppBaseEntity} (id/created_at/updated_at). At most one
  * OPEN session (state not `approved`/`published`) per story — enforced in the
  * service, not by a DB constraint, to keep the history of closed sessions.
  *
@@ -22,7 +22,7 @@ import { QalamBaseEntity } from '../../../common/base/base.entity';
 @Entity('review_sessions')
 @Index('idx_review_session_story', ['storyId'])
 @Index('idx_review_session_story_state', ['storyId', 'state'])
-export class ReviewSession extends QalamBaseEntity {
+export class ReviewSession extends AppBaseEntity {
   /** The story (piece) under review — `story_id === piece_id`. */
   @Column({ type: 'uuid' })
   storyId!: string;

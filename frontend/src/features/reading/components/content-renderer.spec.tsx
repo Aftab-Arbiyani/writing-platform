@@ -115,7 +115,7 @@ describe('ContentRenderer', () => {
       />,
     );
 
-    const prose = container.querySelector('.qalam-prose');
+    const prose = container.querySelector('.umberleaf-prose');
     expect(prose).toHaveAttribute('dir', 'rtl');
     // Nastaliq is clamped to 2.1 even at the default 'normal' (1.7) preference — docs/06 §7
     // makes the floor non-negotiable, so a reader's spacing choice cannot go under it.
@@ -128,7 +128,7 @@ describe('ContentRenderer', () => {
       <ContentRenderer content={doc({ type: 'paragraph', content: [text('hello')] })} />,
     );
 
-    const style = container.querySelector('.qalam-prose')?.getAttribute('style');
+    const style = container.querySelector('.umberleaf-prose')?.getAttribute('style');
     expect(style).toContain('--q-prose-size: 1.5rem');
     expect(style).toContain('--q-prose-leading: 1.5');
   });

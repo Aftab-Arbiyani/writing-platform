@@ -67,7 +67,7 @@ export function EditorPage({ assistant }: { assistant?: ReactNode } = {}): React
       content: EMPTY_DOC,
       editorProps: {
         attributes: {
-          class: 'qalam-prose min-h-[50vh] focus:outline-none',
+          class: 'umberleaf-prose min-h-[50vh] focus:outline-none',
           // A contenteditable div has no implicit ARIA role, so `aria-label` alone is a
           // prohibited-attribute a11y violation. `role="textbox"` + `aria-multiline` give the
           // rich-text surface a valid, screen-reader-announceable role for the label.

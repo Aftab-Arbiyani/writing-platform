@@ -1,6 +1,6 @@
 import { Column, Entity, Index } from 'typeorm';
 
-import { QalamBaseEntity } from '../../../common/base/base.entity';
+import { AppBaseEntity } from '../../../common/base/base.entity';
 
 /**
  * Seeded RBAC role (docs 04 §3.8): `user(0) < moderator(50) < admin(80) <
@@ -8,7 +8,7 @@ import { QalamBaseEntity } from '../../../common/base/base.entity';
  * `@Roles(Role.Moderator)`. Seeded idempotently by natural key `name` (§9).
  */
 @Entity('roles')
-export class Role extends QalamBaseEntity {
+export class Role extends AppBaseEntity {
   @Index('uq_roles_name', { unique: true })
   @Column({ type: 'citext' })
   name!: string;

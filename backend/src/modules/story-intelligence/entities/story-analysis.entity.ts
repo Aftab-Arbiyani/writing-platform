@@ -1,7 +1,7 @@
 import type { StoryAnalysisKind, StoryAnalysisScope, StoryAnalysisStatus } from '@umberleaf/shared';
 import { Column, Entity, Index } from 'typeorm';
 
-import { QalamAppendOnlyEntity } from '../../../common/base/append-only.entity';
+import { AppAppendOnlyEntity } from '../../../common/base/append-only.entity';
 import type { StoryEvidenceRef } from '../story.types';
 
 /**
@@ -16,7 +16,7 @@ import type { StoryEvidenceRef } from '../story.types';
 @Entity('story_analyses')
 @Index('idx_story_analyses_graph_created', ['graphId', 'createdAt'])
 @Index('idx_story_analyses_user_created', ['userId', 'createdAt'])
-export class StoryAnalysis extends QalamAppendOnlyEntity {
+export class StoryAnalysis extends AppAppendOnlyEntity {
   @Column({ type: 'uuid' })
   graphId!: string;
 

@@ -24,7 +24,7 @@ export class ReaderPage {
 
   /** The rendered body. Class-based by necessity — prose has no role of its own. */
   get body(): Locator {
-    return this.page.locator('.qalam-prose');
+    return this.page.locator('.umberleaf-prose');
   }
 
   get settingsTrigger(): Locator {
@@ -168,7 +168,7 @@ export class ReaderPage {
    */
   async proseFontSize(): Promise<string> {
     const size = await this.page.evaluate(
-      "getComputedStyle(document.querySelector('.qalam-prose')).fontSize",
+      "getComputedStyle(document.querySelector('.umberleaf-prose')).fontSize",
     );
     return String(size);
   }

@@ -1,7 +1,7 @@
 import { Column, Entity, Index } from 'typeorm';
 import type { PlanTier, SubscriptionEventType, SubscriptionStatus } from '@umberleaf/shared';
 
-import { QalamAppendOnlyEntity } from '../../../common/base/append-only.entity';
+import { AppAppendOnlyEntity } from '../../../common/base/append-only.entity';
 
 /**
  * One entry of a subscription's lifecycle history (AF5) — append-only. The Subscription
@@ -23,7 +23,7 @@ import { QalamAppendOnlyEntity } from '../../../common/base/append-only.entity';
  * on an append-only table, so the index is part of the fix rather than an optimisation after it.
  */
 @Index('idx_subscription_event_user_created', ['userId', 'createdAt'])
-export class SubscriptionEvent extends QalamAppendOnlyEntity {
+export class SubscriptionEvent extends AppAppendOnlyEntity {
   @Column({ type: 'uuid' })
   subscriptionId!: string;
 

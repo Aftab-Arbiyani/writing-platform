@@ -1,6 +1,6 @@
 import { Column, Entity, Index } from 'typeorm';
 
-import { QalamBaseEntity } from '../../../common/base/base.entity';
+import { AppBaseEntity } from '../../../common/base/base.entity';
 
 /**
  * User-created tag (docs 04 §3.3). Created via `#hashtags` in the editor —
@@ -8,7 +8,7 @@ import { QalamBaseEntity } from '../../../common/base/base.entity';
  * count for tag pages/autocomplete (maintained when engagement/feeds ship).
  */
 @Entity('tags')
-export class Tag extends QalamBaseEntity {
+export class Tag extends AppBaseEntity {
   @Index('uq_tags_slug', { unique: true })
   @Column({ type: 'citext' })
   slug!: string;

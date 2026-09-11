@@ -1,6 +1,6 @@
 import { Column, Entity, Index } from 'typeorm';
 
-import { QalamBaseEntity } from '../../../common/base/base.entity';
+import { AppBaseEntity } from '../../../common/base/base.entity';
 
 /**
  * The catalogue of concrete permissions (PBAC). One row per capability
@@ -10,7 +10,7 @@ import { QalamBaseEntity } from '../../../common/base/base.entity';
  * (admin UI, introspection); authorization decisions read the grant tables.
  */
 @Entity('permissions')
-export class Permission extends QalamBaseEntity {
+export class Permission extends AppBaseEntity {
   @Column({ type: 'varchar', length: 120 })
   name!: string;
 

@@ -1,7 +1,7 @@
 import { Column, Entity, Index } from 'typeorm';
 import type { AiGenerationParams, AiProvider } from '@umberleaf/shared';
 
-import { QalamBaseEntity } from '../../../../common/base/base.entity';
+import { AppBaseEntity } from '../../../../common/base/base.entity';
 
 /**
  * A user's personal AI overrides (AF1) — one row per user, all fields optional;
@@ -10,7 +10,7 @@ import { QalamBaseEntity } from '../../../../common/base/base.entity';
  */
 @Entity('ai_config_overrides')
 @Index('uq_ai_config_overrides_user', ['userId'], { unique: true })
-export class AiConfigOverride extends QalamBaseEntity {
+export class AiConfigOverride extends AppBaseEntity {
   @Column({ type: 'uuid' })
   userId!: string;
 

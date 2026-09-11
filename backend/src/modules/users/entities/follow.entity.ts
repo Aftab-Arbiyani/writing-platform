@@ -1,13 +1,13 @@
 import { FollowStatus } from '@umberleaf/shared';
 import { Check, Column, Entity, Index, Unique } from 'typeorm';
 
-import { QalamBaseEntity } from '../../../common/base/base.entity';
+import { AppBaseEntity } from '../../../common/base/base.entity';
 
 /**
  * A follow edge (docs 04 §3.6). `status` is the pending flag the doc anticipated
  * for approved-follows: a `pending` row is a follow request awaiting a private
  * account's approval; `accepted` is an active follow. This makes `follows`
- * mutable (accept flips the status), hence `updated_at` from QalamBaseEntity.
+ * mutable (accept flips the status), hence `updated_at` from AppBaseEntity.
  *
  * `follower_id`/`followee_id` are plain FK columns (constraints + `ON DELETE
  * CASCADE` in the migration). Self-follows are blocked by a CHECK; duplicate
@@ -19,7 +19,7 @@ import { QalamBaseEntity } from '../../../common/base/base.entity';
 @Index('idx_follows_follower', ['followerId', 'createdAt']) // following list
 @Index('idx_follows_followee', ['followeeId', 'createdAt']) // followers list + feed fan-in
 @Index('idx_follows_pending', ['followeeId', 'status']) // incoming follow-request queue
-export class Follow extends QalamBaseEntity {
+export class Follow extends AppBaseEntity {
   @Column({ type: 'uuid' })
   followerId!: string;
 

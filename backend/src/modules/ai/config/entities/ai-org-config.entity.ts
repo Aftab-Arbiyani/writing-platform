@@ -1,7 +1,7 @@
 import { Column, Entity } from 'typeorm';
 import type { AiGenerationParams, AiProvider } from '@umberleaf/shared';
 
-import { QalamBaseEntity } from '../../../../common/base/base.entity';
+import { AppBaseEntity } from '../../../../common/base/base.entity';
 
 /**
  * Organization-wide AI defaults (AF1) — a single admin-owned row that overrides
@@ -9,7 +9,7 @@ import { QalamBaseEntity } from '../../../../common/base/base.entity';
  * their own override. Absent row => env baseline is used as-is.
  */
 @Entity('ai_org_config')
-export class AiOrgConfig extends QalamBaseEntity {
+export class AiOrgConfig extends AppBaseEntity {
   @Column({ type: 'varchar', length: 40 })
   provider!: AiProvider;
 

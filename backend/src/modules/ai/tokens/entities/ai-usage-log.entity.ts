@@ -1,7 +1,7 @@
 import { Column, Entity, Index } from 'typeorm';
 import type { AiFeature, AiProvider } from '@umberleaf/shared';
 
-import { QalamAppendOnlyEntity } from '../../../../common/base/append-only.entity';
+import { AppAppendOnlyEntity } from '../../../../common/base/append-only.entity';
 
 /**
  * One AI call's token accounting row (AF1) — append-only (never mutated): every
@@ -12,7 +12,7 @@ import { QalamAppendOnlyEntity } from '../../../../common/base/append-only.entit
 @Entity('ai_usage_logs')
 @Index('idx_ai_usage_user_created', ['userId', 'createdAt'])
 @Index('idx_ai_usage_feature', ['feature'])
-export class AiUsageLog extends QalamAppendOnlyEntity {
+export class AiUsageLog extends AppAppendOnlyEntity {
   @Column({ type: 'uuid' })
   userId!: string;
 

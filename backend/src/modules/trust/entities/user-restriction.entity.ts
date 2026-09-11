@@ -2,7 +2,7 @@ import { RestrictionScope } from '@umberleaf/shared';
 import type { RestrictionScope as RestrictionScopeType, RestrictionType } from '@umberleaf/shared';
 import { Column, Entity, Index } from 'typeorm';
 
-import { QalamBaseEntity } from '../../../common/base/base.entity';
+import { AppBaseEntity } from '../../../common/base/base.entity';
 
 /**
  * An active or historical restriction on a user's account (AF6). A restriction is
@@ -14,7 +14,7 @@ import { QalamBaseEntity } from '../../../common/base/base.entity';
  */
 @Entity('user_restrictions')
 @Index('idx_user_restrictions_user', ['userId'])
-export class UserRestriction extends QalamBaseEntity {
+export class UserRestriction extends AppBaseEntity {
   @Column({ type: 'uuid' })
   userId!: string;
 

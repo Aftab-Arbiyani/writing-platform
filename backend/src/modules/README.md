@@ -27,7 +27,7 @@ responsibility:
 
 ```
 modules/<name>/
-├── entities/               # TypeORM entities — extend QalamBaseEntity (common/base)
+├── entities/               # TypeORM entities — extend AppBaseEntity (common/base)
 ├── dto/                    # Request/response DTOs — class-validator owns validation
 ├── <name>.controller.ts    # HTTP only: routing, DTOs, Swagger decorators
 ├── <name>.service.ts       # Business logic; the module's exported surface

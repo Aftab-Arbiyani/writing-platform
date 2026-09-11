@@ -1,14 +1,14 @@
 import type { NotificationEntityType, NotificationType } from '@umberleaf/shared';
 import { Column, Entity, Index } from 'typeorm';
 
-import { QalamAuditEntity } from '../../../common/base/audit.entity';
+import { AppAuditEntity } from '../../../common/base/audit.entity';
 
 /**
  * A single in-app notification delivered to one recipient (E9; docs 04 §3.7).
  * Follows the docs design: a polymorphic target (`entity_type`/`entity_id`) plus
  * a denormalized `data` payload (actor username, piece title/slug at emit time)
  * so the inbox renders WITHOUT joins. Extended beyond the docs baseline with
- * `archived_at` (Archived state) and soft delete via {@link QalamAuditEntity}
+ * `archived_at` (Archived state) and soft delete via {@link AppAuditEntity}
  * `deleted_at` (Deleted state) — status is DERIVED from these + `read_at`, never
  * a stored column (docs 16 §1.3).
  *
@@ -20,7 +20,7 @@ import { QalamAuditEntity } from '../../../common/base/audit.entity';
 @Entity('notifications')
 @Index('idx_notifications_inbox', ['recipientId', 'createdAt'])
 @Index('idx_notifications_recipient_type', ['recipientId', 'type'])
-export class Notification extends QalamAuditEntity {
+export class Notification extends AppAuditEntity {
   @Column({ type: 'uuid' })
   recipientId!: string;
 

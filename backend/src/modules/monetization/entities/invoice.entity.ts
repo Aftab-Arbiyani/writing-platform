@@ -1,7 +1,7 @@
 import { Column, Entity, Index } from 'typeorm';
 import type { InvoiceStatus, PaymentProvider } from '@umberleaf/shared';
 
-import { QalamBaseEntity } from '../../../common/base/base.entity';
+import { AppBaseEntity } from '../../../common/base/base.entity';
 
 /**
  * A billing document per period (AF5). Mutable because status transitions
@@ -12,7 +12,7 @@ import { QalamBaseEntity } from '../../../common/base/base.entity';
 @Entity('invoices')
 @Index('idx_invoice_user_created', ['userId', 'createdAt'])
 @Index('uq_invoice_number', ['number'], { unique: true })
-export class Invoice extends QalamBaseEntity {
+export class Invoice extends AppBaseEntity {
   @Column({ type: 'uuid' })
   userId!: string;
 

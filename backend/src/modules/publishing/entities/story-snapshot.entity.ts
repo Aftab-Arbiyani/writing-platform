@@ -1,7 +1,7 @@
 import { Column, Entity, Index } from 'typeorm';
 import type { SnapshotReason } from '@umberleaf/shared';
 
-import { QalamAppendOnlyEntity } from '../../../common/base/append-only.entity';
+import { AppAppendOnlyEntity } from '../../../common/base/append-only.entity';
 
 /**
  * An immutable, read-only content version of a story (AF6). Captured on publish
@@ -9,14 +9,14 @@ import { QalamAppendOnlyEntity } from '../../../common/base/append-only.entity';
  * request, or on restore — so a writer can revert to an earlier version.
  *
  * Append-only: a snapshot is INSERTed once and only ever pruned (never UPDATEd),
- * so it extends {@link QalamAppendOnlyEntity} (id/created_at, no updated_at).
+ * so it extends {@link AppAppendOnlyEntity} (id/created_at, no updated_at).
  * `version` is a per-story monotonically increasing counter assigned in the
  * service. `publish`/`review` snapshots are kept forever; oldest manual ones are
  * pruned past `MAX_SNAPSHOTS_PER_STORY`.
  */
 @Entity('story_snapshots')
 @Index('idx_story_snapshot_story_version', ['storyId', 'version'])
-export class StorySnapshot extends QalamAppendOnlyEntity {
+export class StorySnapshot extends AppAppendOnlyEntity {
   /** The story (piece) this snapshot belongs to — `story_id === piece_id`. */
   @Column({ type: 'uuid' })
   storyId!: string;

@@ -8,7 +8,7 @@ import type {
 } from '@umberleaf/shared';
 import { Column, Entity, Index } from 'typeorm';
 
-import { QalamBaseEntity } from '../../../common/base/base.entity';
+import { AppBaseEntity } from '../../../common/base/base.entity';
 
 /**
  * A user report against a piece, comment, response, or user (Moderation module).
@@ -26,7 +26,7 @@ import { QalamBaseEntity } from '../../../common/base/base.entity';
 @Index('idx_reports_entity', ['entityType', 'entityId'])
 @Index('idx_reports_reported_user', ['reportedUserId'])
 @Index('idx_reports_assignee', ['assignedModeratorId'])
-export class Report extends QalamBaseEntity {
+export class Report extends AppBaseEntity {
   @Column({ type: 'uuid' })
   reporterId!: string;
 

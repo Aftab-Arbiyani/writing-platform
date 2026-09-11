@@ -1,11 +1,11 @@
 import { Visibility } from '@umberleaf/shared';
 import { Column, Entity, Index, Unique } from 'typeorm';
 
-import { QalamAuditEntity } from '../../../common/base/audit.entity';
+import { AppAuditEntity } from '../../../common/base/audit.entity';
 
 /**
  * A user-curated collection of pieces (docs 04 §3.5). Soft-deletable
- * ({@link QalamAuditEntity}) — curated over months, accidental deletion must be
+ * ({@link AppAuditEntity}) — curated over months, accidental deletion must be
  * recoverable (§1.5). Owner-scoped and private in Phase 1 (E7 scope): reads are
  * owner-only; the `visibility` column is kept for the eventual public-showcase
  * feature but is not browsable yet.
@@ -18,7 +18,7 @@ import { QalamAuditEntity } from '../../../common/base/audit.entity';
 @Entity('collections')
 @Unique('uq_collections_owner_slug', ['ownerId', 'slug'])
 @Index('idx_collections_owner', ['ownerId', 'createdAt'])
-export class Collection extends QalamAuditEntity {
+export class Collection extends AppAuditEntity {
   @Column({ type: 'uuid' })
   ownerId!: string;
 

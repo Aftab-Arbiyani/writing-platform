@@ -9,7 +9,7 @@ import type { TipTapDoc } from '../types/piece.types';
 /**
  * Read-only render of a TipTap document — used by the preview. Reuses the SAME extension set as
  * the editor (so rendering is faithful and never diverges from what was written) with
- * `editable:false`. The `.qalam-prose` styles are shared with the editing surface.
+ * `editable:false`. The `.umberleaf-prose` styles are shared with the editing surface.
  */
 export function PieceContentView({
   content,
@@ -23,7 +23,7 @@ export function PieceContentView({
     extensions: buildEditorExtensions(),
     content,
     editorProps: {
-      attributes: { class: 'qalam-prose', dir: direction ?? 'auto' },
+      attributes: { class: 'umberleaf-prose', dir: direction ?? 'auto' },
     },
   });
 

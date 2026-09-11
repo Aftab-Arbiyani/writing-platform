@@ -1,7 +1,7 @@
 import { TextDirection } from '@umberleaf/shared';
 import { Column, Entity, Index } from 'typeorm';
 
-import { QalamBaseEntity } from '../../../common/base/base.entity';
+import { AppBaseEntity } from '../../../common/base/base.entity';
 
 /**
  * Supported content language (docs 04 §3.3). Reference data — seeded (§9),
@@ -9,7 +9,7 @@ import { QalamBaseEntity } from '../../../common/base/base.entity';
  * drives the `dir` attribute end-to-end (Urdu = rtl).
  */
 @Entity('languages')
-export class Language extends QalamBaseEntity {
+export class Language extends AppBaseEntity {
   @Index('uq_languages_code', { unique: true })
   @Column({ type: 'varchar', length: 10 })
   code!: string;

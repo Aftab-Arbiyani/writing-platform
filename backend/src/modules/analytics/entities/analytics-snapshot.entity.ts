@@ -1,6 +1,6 @@
 import { Column, Entity, Index } from 'typeorm';
 
-import { QalamBaseEntity } from '../../../common/base/base.entity';
+import { AppBaseEntity } from '../../../common/base/base.entity';
 
 /**
  * Point-in-time metric snapshots (E10) powering "growth over time" / "growth
@@ -12,7 +12,7 @@ import { QalamBaseEntity } from '../../../common/base/base.entity';
 @Entity('analytics_snapshot')
 @Index('uq_analytics_snapshot', ['scope', 'subjectId', 'period', 'periodStart'], { unique: true })
 @Index('idx_analytics_snapshot_lookup', ['scope', 'subjectId', 'period', 'periodStart'])
-export class AnalyticsSnapshot extends QalamBaseEntity {
+export class AnalyticsSnapshot extends AppBaseEntity {
   /** `platform` | `writer` | `piece` (AnalyticsScope). */
   @Column({ type: 'varchar', length: 20 })
   scope!: string;

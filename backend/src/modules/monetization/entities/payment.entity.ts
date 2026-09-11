@@ -1,7 +1,7 @@
 import { Column, Entity, Index } from 'typeorm';
 import type { PaymentMethodType, PaymentProvider, PaymentStatus } from '@umberleaf/shared';
 
-import { QalamAppendOnlyEntity } from '../../../common/base/append-only.entity';
+import { AppAppendOnlyEntity } from '../../../common/base/append-only.entity';
 
 /**
  * One payment attempt / event (AF5) — append-only ledger. A charge, a refund (negative
@@ -16,7 +16,7 @@ import { QalamAppendOnlyEntity } from '../../../common/base/append-only.entity';
   unique: true,
   where: '"provider_payment_id" IS NOT NULL',
 })
-export class Payment extends QalamAppendOnlyEntity {
+export class Payment extends AppAppendOnlyEntity {
   @Column({ type: 'uuid' })
   userId!: string;
 

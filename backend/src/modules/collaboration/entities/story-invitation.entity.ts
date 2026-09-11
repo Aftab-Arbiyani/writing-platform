@@ -2,7 +2,7 @@ import { Column, Entity, Index } from 'typeorm';
 import { InvitationStatus } from '@umberleaf/shared';
 import type { StoryRole } from '@umberleaf/shared';
 
-import { QalamBaseEntity } from '../../../common/base/base.entity';
+import { AppBaseEntity } from '../../../common/base/base.entity';
 
 /**
  * A pending/settled invitation to collaborate on a story (AF6). Created by a
@@ -19,7 +19,7 @@ import { QalamBaseEntity } from '../../../common/base/base.entity';
 @Index('uq_story_invitation_token', ['token'], { unique: true })
 @Index('idx_story_invitation_invitee', ['inviteeId', 'status'])
 @Index('idx_story_invitation_story', ['storyId', 'status'])
-export class StoryInvitation extends QalamBaseEntity {
+export class StoryInvitation extends AppBaseEntity {
   @Column({ type: 'uuid' })
   storyId!: string;
 

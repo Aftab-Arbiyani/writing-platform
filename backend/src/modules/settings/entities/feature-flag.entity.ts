@@ -1,6 +1,6 @@
 import { Column, Entity, Index } from 'typeorm';
 
-import { QalamBaseEntity } from '../../../common/base/base.entity';
+import { AppBaseEntity } from '../../../common/base/base.entity';
 
 /**
  * A feature flag (E12.8) — the richer, per-flag rollout model that complements
@@ -14,7 +14,7 @@ import { QalamBaseEntity } from '../../../common/base/base.entity';
  */
 @Entity('feature_flags')
 @Index('idx_feature_flags_enabled', ['enabled'])
-export class FeatureFlag extends QalamBaseEntity {
+export class FeatureFlag extends AppBaseEntity {
   /** Dot-cased flag key, e.g. `feature.ai.enabled`. */
   @Column({ type: 'varchar', length: 120, unique: true })
   key!: string;

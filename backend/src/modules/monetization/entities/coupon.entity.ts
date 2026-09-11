@@ -1,7 +1,7 @@
 import { Column, Entity, Index } from 'typeorm';
 import type { BillingInterval, PlanTier, PromotionType } from '@umberleaf/shared';
 
-import { QalamBaseEntity } from '../../../common/base/base.entity';
+import { AppBaseEntity } from '../../../common/base/base.entity';
 
 /**
  * A coupon / promotion code (AF5). Mutable because `redemptions` increments and admins
@@ -13,7 +13,7 @@ import { QalamBaseEntity } from '../../../common/base/base.entity';
 @Entity('coupons')
 @Index('uq_coupon_code', ['code'], { unique: true })
 @Index('idx_coupon_campaign', ['campaign'])
-export class Coupon extends QalamBaseEntity {
+export class Coupon extends AppBaseEntity {
   /** Normalized (upper-cased) code. */
   @Column({ type: 'varchar', length: 40 })
   code!: string;

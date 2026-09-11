@@ -1,7 +1,7 @@
 import { Column, Entity, Index } from 'typeorm';
 import type { PromotionType } from '@umberleaf/shared';
 
-import { QalamAppendOnlyEntity } from '../../../common/base/append-only.entity';
+import { AppAppendOnlyEntity } from '../../../common/base/append-only.entity';
 
 /**
  * A record that a user redeemed a coupon (AF5) — append-only. Powers the per-user
@@ -12,7 +12,7 @@ import { QalamAppendOnlyEntity } from '../../../common/base/append-only.entity';
 @Entity('promotion_redemptions')
 @Index('idx_promo_redemption_coupon_user', ['couponId', 'userId'])
 @Index('idx_promo_redemption_user', ['userId'])
-export class PromotionRedemption extends QalamAppendOnlyEntity {
+export class PromotionRedemption extends AppAppendOnlyEntity {
   @Column({ type: 'uuid' })
   couponId!: string;
 

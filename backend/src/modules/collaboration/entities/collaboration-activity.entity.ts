@@ -1,10 +1,10 @@
 import { Column, Entity, Index } from 'typeorm';
 
-import { QalamBaseEntity } from '../../../common/base/base.entity';
+import { AppBaseEntity } from '../../../common/base/base.entity';
 
 /**
  * One event in a story's collaboration activity feed (AF6). Append-only in feel
- * (inserted once, never updated) though it extends {@link QalamBaseEntity} for a
+ * (inserted once, never updated) though it extends {@link AppBaseEntity} for a
  * time-ordered UUIDv7 id and `created_at`. `type` is an open catalogue string
  * (`CollaborationActivity` in @umberleaf/shared) so new event kinds land without a
  * migration; `metadata` carries per-event context (role changed to, comment id,
@@ -12,7 +12,7 @@ import { QalamBaseEntity } from '../../../common/base/base.entity';
  */
 @Entity('collaboration_activities')
 @Index('idx_collab_activity_story', ['storyId', 'createdAt'])
-export class CollaborationActivity extends QalamBaseEntity {
+export class CollaborationActivity extends AppBaseEntity {
   @Column({ type: 'uuid' })
   storyId!: string;
 

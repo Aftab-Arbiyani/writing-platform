@@ -6,7 +6,7 @@ import type {
 } from '@umberleaf/shared';
 import { Column, Entity, Index } from 'typeorm';
 
-import { QalamAppendOnlyEntity } from '../../../common/base/append-only.entity';
+import { AppAppendOnlyEntity } from '../../../common/base/append-only.entity';
 
 /**
  * One retrieval request's telemetry (AF4) — append-only. Backs internal observability +
@@ -20,7 +20,7 @@ import { QalamAppendOnlyEntity } from '../../../common/base/append-only.entity';
 @Index('idx_retrieval_logs_created', ['createdAt'])
 @Index('idx_retrieval_logs_user_created', ['userId', 'createdAt'])
 @Index('idx_retrieval_logs_intent_created', ['intent', 'createdAt'])
-export class RetrievalQueryLog extends QalamAppendOnlyEntity {
+export class RetrievalQueryLog extends AppAppendOnlyEntity {
   /** `null` for an anonymous search — the query surface is public since D5. */
   @Column({ type: 'uuid', nullable: true })
   userId!: string | null;

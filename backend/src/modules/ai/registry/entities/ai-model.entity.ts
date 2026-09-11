@@ -1,7 +1,7 @@
 import { Column, Entity, Index, Unique } from 'typeorm';
 import type { AiModelAvailability, AiModelCapability, AiProvider } from '@umberleaf/shared';
 
-import { QalamBaseEntity } from '../../../../common/base/base.entity';
+import { AppBaseEntity } from '../../../../common/base/base.entity';
 
 /**
  * A registered AI model (AF1). The TypeScript model catalogue is the source of
@@ -16,7 +16,7 @@ import { QalamBaseEntity } from '../../../../common/base/base.entity';
 @Entity('ai_models')
 @Unique('uq_ai_models_provider_model', ['provider', 'modelId'])
 @Index('idx_ai_models_provider', ['provider'])
-export class AiModel extends QalamBaseEntity {
+export class AiModel extends AppBaseEntity {
   /** Provider that serves this model (`AiProvider`). */
   @Column({ type: 'varchar', length: 40 })
   provider!: AiProvider;

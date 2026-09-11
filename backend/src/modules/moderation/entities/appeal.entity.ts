@@ -1,7 +1,7 @@
 import type { AppealStatus } from '@umberleaf/shared';
 import { Column, Entity, Index } from 'typeorm';
 
-import { QalamBaseEntity } from '../../../common/base/base.entity';
+import { AppBaseEntity } from '../../../common/base/base.entity';
 
 /**
  * An appeal filed by a moderated user against a resolved report's decision.
@@ -12,7 +12,7 @@ import { QalamBaseEntity } from '../../../common/base/base.entity';
 @Index('uq_appeals_report', ['reportId'], { unique: true })
 @Index('idx_appeals_status', ['status', 'createdAt'])
 @Index('idx_appeals_appellant', ['appellantId'])
-export class Appeal extends QalamBaseEntity {
+export class Appeal extends AppBaseEntity {
   @Column({ type: 'uuid' })
   reportId!: string;
 

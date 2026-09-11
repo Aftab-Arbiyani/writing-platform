@@ -1,11 +1,11 @@
 import { UserStatus } from '@umberleaf/shared';
 import { Check, Column, Entity, Index } from 'typeorm';
 
-import { QalamAuditEntity } from '../../../common/base/audit.entity';
+import { AppAuditEntity } from '../../../common/base/audit.entity';
 
 /**
  * Account root aggregate (docs 04 §3.1). Soft-deletable (extends
- * {@link QalamAuditEntity}) — account deactivation is reversible for a grace
+ * {@link AppAuditEntity}) — account deactivation is reversible for a grace
  * window; erasure is a separate hard-delete job.
  *
  * Deliberate modelling (docs 04 §3.1, do not "fix" into the brief's flat shape):
@@ -20,7 +20,7 @@ import { QalamAuditEntity } from '../../../common/base/audit.entity';
  */
 @Entity('users')
 @Check('chk_users_username_format', "username ~ '^[a-z0-9_]{3,30}$'")
-export class User extends QalamAuditEntity {
+export class User extends AppAuditEntity {
   @Index('uq_users_email', { unique: true })
   @Column({ type: 'citext' })
   email!: string;
