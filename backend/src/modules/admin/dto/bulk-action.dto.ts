@@ -25,7 +25,7 @@ export type BulkUserAction = (typeof BULK_USER_ACTIONS)[number];
 
 /**
  * Bulk user operation (`POST /admin/users/bulk-actions`). Processed
- * synchronously over a bounded id set (≤ ADMIN_BULK_MAX) — Qalam has no existing
+ * synchronously over a bounded id set (≤ ADMIN_BULK_MAX) — Umberleaf has no existing
  * admin-job queue, so per-item results are returned inline (partial success is
  * expected and reported, never all-or-nothing).
  */

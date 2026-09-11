@@ -26,7 +26,7 @@ describe('<Seo>', () => {
     );
     expect(document.querySelector('meta[property="og:title"]')).toHaveAttribute(
       'content',
-      'Discover · Qalam',
+      'Discover · Umberleaf',
     );
     expect(document.querySelector('meta[name="twitter:card"]')).toHaveAttribute(
       'content',
@@ -49,7 +49,7 @@ describe('<Seo>', () => {
   });
 
   it('renders JSON-LD structured data when provided', async () => {
-    renderSeo(<Seo title="Qalam" jsonLd={websiteJsonLd()} />);
+    renderSeo(<Seo title="Umberleaf" jsonLd={websiteJsonLd()} />);
     await waitFor(() => {
       const script = document.querySelector('script[type="application/ld+json"]');
       expect(script).not.toBeNull();

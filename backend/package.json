@@ -2,7 +2,7 @@
   "name": "backend",
   "version": "0.0.1",
   "private": true,
-  "description": "Qalam API \u2014 NestJS modular monolith + BullMQ workers",
+  "description": "Umberleaf API \u2014 NestJS modular monolith + BullMQ workers",
   "engines": {
     "node": ">=22"
   },

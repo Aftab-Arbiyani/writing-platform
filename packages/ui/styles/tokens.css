@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Qalam design tokens — "warm paper and ink" (ADR §7, canonical values).
+   Umberleaf design tokens — "warm paper and ink" (ADR §7, canonical values).
    Single source of truth for BOTH Tailwind (styles/tailwind.css) and AntD
    (src/theme/antd-theme.ts — hexes mirrored there; keep in sync until the
    Phase 1.5 token build step generates all three from one definition).

@@ -19,7 +19,7 @@ export interface GoogleProfile {
   emailVerified: boolean;
 }
 
-/** Result of resolving a Google profile to a Qalam account. */
+/** Result of resolving a Google profile to a Umberleaf account. */
 export interface GoogleResolution {
   userId: string;
   /** True when an existing password account was auto-linked (docs 13 §3.5). */

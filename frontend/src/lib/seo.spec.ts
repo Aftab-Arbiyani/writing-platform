@@ -4,8 +4,8 @@ import { absoluteUrl, formatTitle, profileJsonLd, siteOrigin, websiteJsonLd } fr
 
 describe('seo helpers', () => {
   it('formats the document/OG title', () => {
-    expect(formatTitle('Discover')).toBe('Discover · Qalam');
-    expect(formatTitle()).toBe('Qalam');
+    expect(formatTitle('Discover')).toBe('Discover · Umberleaf');
+    expect(formatTitle()).toBe('Umberleaf');
   });
 
   it('falls back to window.location.origin when no site URL is configured', () => {
@@ -23,7 +23,7 @@ describe('seo helpers', () => {
   it('builds a WebSite JSON-LD node', () => {
     const node = websiteJsonLd();
     expect(node['@type']).toBe('WebSite');
-    expect(node.name).toBe('Qalam');
+    expect(node.name).toBe('Umberleaf');
   });
 
   it('builds a ProfilePage JSON-LD node with the person entity', () => {

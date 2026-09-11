@@ -57,7 +57,7 @@ export function AppearancePage(): ReactElement {
     <div className="flex flex-col gap-8">
       <section>
         <h2 className="mb-1 font-serif text-xl font-semibold text-ink">Appearance</h2>
-        <p className="text-sm text-ink-secondary">How Qalam looks and what you hear about.</p>
+        <p className="text-sm text-ink-secondary">How Umberleaf looks and what you hear about.</p>
       </section>
 
       {/* Theme — always available (local store). */}

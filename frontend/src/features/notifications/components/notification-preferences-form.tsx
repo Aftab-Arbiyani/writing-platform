@@ -28,7 +28,11 @@ const CATEGORIES: readonly {
   { key: 'reaction', label: 'Claps & likes', hint: 'When readers clap for or like your pieces.' },
   { key: 'mention', label: 'Mentions', hint: 'When someone @mentions you in a piece or comment.' },
   { key: 'response', label: 'Responses', hint: 'When someone publishes a response to your piece.' },
-  { key: 'system', label: 'Announcements', hint: 'Product updates and announcements from Qalam.' },
+  {
+    key: 'system',
+    label: 'Announcements',
+    hint: 'Product updates and announcements from Umberleaf.',
+  },
 ];
 
 export function NotificationPreferencesForm({

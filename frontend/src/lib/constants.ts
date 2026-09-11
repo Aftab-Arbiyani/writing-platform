@@ -1,6 +1,6 @@
 /** App-level constants. Domain vocabulary (enums, limits, error codes) lives in @umberleaf/shared. */
 
-export const APP_NAME = 'Qalam';
+export const APP_NAME = 'Umberleaf';
 
 /** localStorage keys owned by this app (docs/12 §3). */
 export const STORAGE_KEYS = {

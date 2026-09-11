@@ -27,7 +27,7 @@ export function absoluteUrl(pathOrUrl?: string): string | undefined {
 /** The default social-share image (a static branded card in /public). */
 export const DEFAULT_OG_IMAGE = '/og-image.svg';
 
-/** Format a page title as `"{title} · Qalam"` (or just the app name). Mirrors use-page-title. */
+/** Format a page title as `"{title} · Umberleaf"` (or just the app name). Mirrors use-page-title. */
 export function formatTitle(title?: string): string {
   return title ? `${title} · ${APP_NAME}` : APP_NAME;
 }

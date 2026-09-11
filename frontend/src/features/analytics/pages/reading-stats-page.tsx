@@ -45,7 +45,7 @@ export function ReadingStatsPage(): ReactElement {
         <div>
           <h1 className="font-serif text-2xl font-semibold text-ink">Your reading</h1>
           <p className="text-sm text-ink-secondary">
-            What you have read on Qalam — updated nightly. Only you can see this.
+            What you have read on Umberleaf — updated nightly. Only you can see this.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -64,7 +64,7 @@ export function ReadingStatsPage(): ReactElement {
             <ExportMenu
               rows={readerExportRows(reader.data, bookmarksCount)}
               json={{ reader: reader.data, bookmarks: bookmarksCount }}
-              filenameBase="qalam-reading"
+              filenameBase="umberleaf-reading"
             />
           ) : null}
         </div>

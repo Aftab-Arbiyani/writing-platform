@@ -33,7 +33,7 @@ export function FeedPage(): ReactElement {
     <div className="mx-auto grid w-full max-w-[1080px] gap-8 px-4 py-6 sm:px-6 lg:grid-cols-[minmax(0,680px)_320px] lg:justify-center">
       <Seo
         title="Home"
-        description="Your reading feed on Qalam — the latest and trending writing from voices you follow."
+        description="Your reading feed on Umberleaf — the latest and trending writing from voices you follow."
         canonicalPath={ROUTES.feed}
       />
       <div className="flex min-w-0 flex-col gap-4">

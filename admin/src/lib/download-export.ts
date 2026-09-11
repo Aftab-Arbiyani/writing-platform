@@ -51,5 +51,5 @@ export async function downloadExport(options: {
 
 /** Standard export filename: `qalam-<kind>-<YYYY-MM-DD>.<format>`. */
 export function exportFilename(kind: string, format: 'csv' | 'json'): string {
-  return `qalam-${kind}-${new Date().toISOString().slice(0, 10)}.${format}`;
+  return `umberleaf-${kind}-${new Date().toISOString().slice(0, 10)}.${format}`;
 }

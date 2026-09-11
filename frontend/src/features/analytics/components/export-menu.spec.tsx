@@ -32,24 +32,24 @@ describe('ExportMenu', () => {
       <ExportMenu
         rows={[{ metric: 'Views', value: 10 }]}
         json={{ views: 10 }}
-        filenameBase="qalam"
+        filenameBase="umberleaf"
       />,
     );
     fireEvent.click(screen.getByRole('button', { name: 'Export' }));
     fireEvent.click(await screen.findByText('Export CSV'));
     expect(downloadFile).toHaveBeenCalledWith(
-      'qalam.csv',
+      'umberleaf.csv',
       expect.stringContaining('Views,10'),
       expect.stringContaining('csv'),
     );
   });
 
   it('downloads JSON', async () => {
-    renderWithProviders(<ExportMenu rows={[]} json={{ views: 10 }} filenameBase="qalam" />);
+    renderWithProviders(<ExportMenu rows={[]} json={{ views: 10 }} filenameBase="umberleaf" />);
     fireEvent.click(screen.getByRole('button', { name: 'Export' }));
     fireEvent.click(await screen.findByText('Export JSON'));
     expect(downloadFile).toHaveBeenCalledWith(
-      'qalam.json',
+      'umberleaf.json',
       expect.stringContaining('"views": 10'),
       expect.stringContaining('json'),
     );

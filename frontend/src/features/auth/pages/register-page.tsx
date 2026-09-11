@@ -63,7 +63,7 @@ export function RegisterPage(): ReactElement {
         username: values.username,
         password: values.password,
       });
-      toast.success('Welcome to Qalam', {
+      toast.success('Welcome to Umberleaf', {
         description: 'Check your inbox to verify your email.',
       });
       void navigate(ROUTES.verifyEmail, { replace: true, state: { email: data.user.email } });

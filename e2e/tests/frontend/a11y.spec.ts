@@ -725,7 +725,7 @@ test.describe('@phase5 @a11y frontend accessibility (authenticated)', () => {
     await discover.goto();
     await discover.expectRecommendationShelf(
       'Recommended for you',
-      'Recommended for you from across Qalam',
+      'Recommended for you from across Umberleaf',
     );
     await expectNoSeriousA11yViolations(page, { label: 'frontend /discover + shelves' });
   });

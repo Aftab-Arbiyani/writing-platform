@@ -20,7 +20,7 @@ export function Unauthorized(): ReactElement {
       <QEmptyState
         icon={LogIn}
         title="Please sign in to continue."
-        description="This page is part of your private space on Qalam."
+        description="This page is part of your private space on Umberleaf."
         action={
           <QButton
             variant="primary"

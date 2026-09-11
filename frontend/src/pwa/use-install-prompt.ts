@@ -21,7 +21,7 @@ export interface InstallPrompt {
  * PWA install-prompt architecture (Epic F10) — the plumbing only; no UI is wired.
  *
  * Captures the browser's `beforeinstallprompt` so a later epic can surface a custom
- * "Install Qalam" affordance at the right moment (instead of the browser's default mini-infobar).
+ * "Install Umberleaf" affordance at the right moment (instead of the browser's default mini-infobar).
  * `canInstall` flips true when install is available; `promptInstall()` triggers the native dialog;
  * `installed` tracks the `appinstalled` event. Safe to call anywhere — it only listens.
  */

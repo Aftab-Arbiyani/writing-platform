@@ -41,7 +41,7 @@ function RankedList({
 }
 
 /**
- * "Trending on Qalam" (docs: Performance Trends context) — the platform-wide trending pieces +
+ * "Trending on Umberleaf" (docs: Performance Trends context) — the platform-wide trending pieces +
  * genres from `/analytics/trending` (public). Context for the writer, not their own numbers. Hides
  * a group when it's empty; the whole card is skipped by the page when nothing is trending.
  */
@@ -49,7 +49,7 @@ export function TrendingSection(): ReactElement {
   const { data, isLoading } = useAnalyticsTrending();
 
   return (
-    <AnalyticsCard title="Trending on Qalam" description="What readers are drawn to right now.">
+    <AnalyticsCard title="Trending on Umberleaf" description="What readers are drawn to right now.">
       {isLoading ? (
         <QSkeleton variant="text" lines={5} />
       ) : (

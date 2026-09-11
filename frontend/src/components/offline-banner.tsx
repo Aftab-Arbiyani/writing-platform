@@ -21,7 +21,7 @@ export function OfflineBanner(): ReactElement | null {
   return (
     <div role="status" className="bg-warning/12 py-1.5 text-center text-sm text-warning-on-tint">
       You&rsquo;re offline &mdash; reconnecting&hellip; Likes, bookmarks and follows aren&rsquo;t
-      saved while you&rsquo;re offline here; the Qalam mobile app queues them and syncs when you
+      saved while you&rsquo;re offline here; the Umberleaf mobile app queues them and syncs when you
       reconnect.
     </div>
   );

@@ -27,7 +27,7 @@ function downloadJson(rows: Array<Record<string, unknown>>): void {
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement('a');
   anchor.href = url;
-  anchor.download = `qalam-users-selected-${new Date().toISOString().slice(0, 10)}.json`;
+  anchor.download = `umberleaf-users-selected-${new Date().toISOString().slice(0, 10)}.json`;
   document.body.append(anchor);
   anchor.click();
   anchor.remove();

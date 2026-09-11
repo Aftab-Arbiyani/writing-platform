@@ -58,7 +58,7 @@ export function AnalyticsDashboardPage(): ReactElement {
         <div>
           <h1 className="font-serif text-2xl font-semibold text-ink">Your stats</h1>
           <p className="text-sm text-ink-secondary">
-            Your writing’s reach on Qalam — updated nightly.
+            Your writing’s reach on Umberleaf — updated nightly.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -77,7 +77,7 @@ export function AnalyticsDashboardPage(): ReactElement {
             <ExportMenu
               rows={writerExportRows(writer, followers)}
               json={{ writer, followers }}
-              filenameBase="qalam-analytics"
+              filenameBase="umberleaf-analytics"
             />
           ) : null}
         </div>

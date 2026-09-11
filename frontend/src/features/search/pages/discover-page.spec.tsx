@@ -166,7 +166,7 @@ describe('DiscoverPage', () => {
                     object: {},
                     score: 0.9,
                     confidence: 0.9,
-                    reason: 'Recommended for you from across Qalam',
+                    reason: 'Recommended for you from across Umberleaf',
                     influencedBy: [],
                     evidence: [],
                     navigation: { kind: 'piece', ref: 'a-recommended-piece' },
@@ -192,7 +192,7 @@ describe('DiscoverPage', () => {
       ).toBeInTheDocument();
       expect(screen.getByText('Recommended for you')).toBeInTheDocument();
       // Every recommendation explains itself — that is AF4's design law, not a nicety.
-      expect(screen.getByText(/Recommended for you from across Qalam/)).toBeInTheDocument();
+      expect(screen.getByText(/Recommended for you from across Umberleaf/)).toBeInTheDocument();
       // The empty kind stays silent rather than printing a hollow heading.
       await waitFor(() => {
         expect(screen.queryByText('Pick up next')).not.toBeInTheDocument();

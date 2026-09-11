@@ -19,7 +19,7 @@ export function Landing(): ReactElement {
         canonicalPath="/"
         jsonLd={websiteJsonLd()}
       />
-      <h1 className="font-serif text-4xl font-semibold text-ink sm:text-5xl">Qalam</h1>
+      <h1 className="font-serif text-4xl font-semibold text-ink sm:text-5xl">Umberleaf</h1>
       <p className="text-xl text-ink-secondary">A premium writing sanctuary.</p>
       <p className="max-w-[46ch] text-sm text-ink-muted">
         Warm paper and ink for Hindi and Urdu writers first, the world next. The foundation is in

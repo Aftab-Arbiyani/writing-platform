@@ -1,5 +1,5 @@
 /*
- * Qalam global stylesheet — Tailwind v4 CSS-first setup.
+ * Umberleaf global stylesheet — Tailwind v4 CSS-first setup.
  *
  * Tailwind's preflight is deliberately NOT imported: AntD 5 ships its own reset
  * (via cssinjs), and loading preflight on top causes base-element fights

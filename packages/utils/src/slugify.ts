@@ -1,7 +1,7 @@
 /**
  * Unicode-aware slug generation.
  *
- * Qalam slugs are public URL identifiers for pieces (`/p/:slug`) and must work
+ * Umberleaf slugs are public URL identifiers for pieces (`/p/:slug`) and must work
  * for Hindi (Devanagari) and Urdu (Arabic script) titles, so the allowed set
  * is `\p{L}\p{M}\p{N}` — letters, combining marks (matras, nukta, harakat),
  * and digits in ANY script — never `[a-z0-9]`.

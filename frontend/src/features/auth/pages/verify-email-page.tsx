@@ -73,7 +73,7 @@ export function VerifyEmailPage(): ReactElement {
         }
         footer={
           <Link to={ROUTES.feed} className="font-medium text-accent hover:underline">
-            Continue to Qalam
+            Continue to Umberleaf
           </Link>
         }
       >
@@ -110,7 +110,7 @@ export function VerifyEmailPage(): ReactElement {
     return (
       <AuthCard
         title="Email verified"
-        subtitle="Thank you — your email address is confirmed. Everything on Qalam is open to you now."
+        subtitle="Thank you — your email address is confirmed. Everything on Umberleaf is open to you now."
       >
         <div className="flex justify-center py-2 text-success">
           <CheckCircle2 size={40} strokeWidth={1.25} aria-hidden />
@@ -123,7 +123,7 @@ export function VerifyEmailPage(): ReactElement {
             void navigate(isAuthenticated ? ROUTES.feed : ROUTES.login, { replace: true });
           }}
         >
-          {isAuthenticated ? 'Continue to Qalam' : 'Sign in'}
+          {isAuthenticated ? 'Continue to Umberleaf' : 'Sign in'}
         </QButton>
       </AuthCard>
     );

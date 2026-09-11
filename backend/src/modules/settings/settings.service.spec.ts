@@ -102,7 +102,7 @@ describe('SettingsService — reads & cache', () => {
         settingRow({
           key: 'platform.name',
           dataType: 'string',
-          value: 'Qalam',
+          value: 'Umberleaf',
           category: 'general',
         }),
       ]),
@@ -119,7 +119,7 @@ describe('SettingsService — reads & cache', () => {
   });
 
   it('getAllSettings serves the cached value without hitting the repo', async () => {
-    const cached = [{ key: 'platform.name', value: 'Qalam' }];
+    const cached = [{ key: 'platform.name', value: 'Umberleaf' }];
     const { service, repo } = makeService({}, cached);
     const result = await service.getAllSettings();
     expect(result).toBe(cached);

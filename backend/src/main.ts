@@ -1,5 +1,5 @@
 /**
- * Qalam API — application bootstrap. Order matters: logger first so boot logs
+ * Umberleaf API — application bootstrap. Order matters: logger first so boot logs
  * are structured, then security middleware, then request shaping (prefix /
  * versioning / validation), then the response contract (filter + interceptor),
  * then docs.
@@ -186,10 +186,10 @@ async function bootstrap(): Promise<void> {
   // build artifact feeding the @umberleaf/api-types codegen pipeline (ADR §3).
   if (config.nodeEnv !== 'production') {
     const swaggerConfig = new DocumentBuilder()
-      .setTitle('Qalam API')
+      .setTitle('Umberleaf API')
       .setDescription(
         [
-          'Qalam backend REST API (URI-versioned under `/api/v1`).',
+          'Umberleaf backend REST API (URI-versioned under `/api/v1`).',
           '',
           'Every success response is wrapped in `{ success: true, data, meta? }`;',
           'list endpoints add `meta.pagination`. Every error is',

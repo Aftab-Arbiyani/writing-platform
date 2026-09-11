@@ -73,7 +73,7 @@ export function InviteDialog({ storyId, open, onClose }: InviteDialogProps): Rea
       open={open}
       onClose={reset}
       title="Invite a collaborator"
-      description="Invite someone by their Qalam handle, then choose what they can do."
+      description="Invite someone by their Umberleaf handle, then choose what they can do."
       footer={
         <div className="flex justify-end gap-2">
           <QButton variant="secondary" onClick={reset}>

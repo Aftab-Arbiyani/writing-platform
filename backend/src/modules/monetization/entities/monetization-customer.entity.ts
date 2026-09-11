@@ -4,7 +4,7 @@ import type { PaymentMethodType, PaymentProvider } from '@umberleaf/shared';
 import { AppBaseEntity } from '../../../common/base/base.entity';
 
 /**
- * Maps a Qalam user to their provider-side customer record (AF5). One row per user
+ * Maps a Umberleaf user to their provider-side customer record (AF5). One row per user
  * per provider is possible, but the common case is one; `uq` is (userId, provider).
  * Holds only NON-sensitive display data (card brand/last4) — never a PAN, never a raw
  * token (PCI-conscious: card data lives with the provider, docs 13). The Billing

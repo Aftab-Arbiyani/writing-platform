@@ -1,5 +1,5 @@
 /**
- * Canonical Prettier configuration for the Qalam monorepo.
+ * Canonical Prettier configuration for the Umberleaf monorepo.
  *
  * This file is the single source of truth for formatting. The shared preset
  * `@umberleaf/config/prettier` re-exports this exact shape so workspace packages

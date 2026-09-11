@@ -24,11 +24,11 @@ function layout(heading: string, body: string, cta: { label: string; url: string
 export function verificationEmail(appUrl: string, rawToken: string): EmailContent {
   const url = `${appUrl}/auth/verify-email?token=${encodeURIComponent(rawToken)}`;
   return {
-    subject: 'Verify your Qalam email',
-    text: `Welcome to Qalam. Verify your email within 24 hours: ${url}`,
+    subject: 'Verify your Umberleaf email',
+    text: `Welcome to Umberleaf. Verify your email within 24 hours: ${url}`,
     html: layout(
       'Verify your email',
-      'Welcome to Qalam — a premium writing sanctuary. Confirm your email address to start writing. This link expires in 24 hours.',
+      'Welcome to Umberleaf — a premium writing sanctuary. Confirm your email address to start writing. This link expires in 24 hours.',
       { label: 'Verify email', url },
     ),
   };
@@ -37,8 +37,8 @@ export function verificationEmail(appUrl: string, rawToken: string): EmailConten
 export function passwordResetEmail(appUrl: string, rawToken: string): EmailContent {
   const url = `${appUrl}/auth/reset-password?token=${encodeURIComponent(rawToken)}`;
   return {
-    subject: 'Reset your Qalam password',
-    text: `Reset your Qalam password within 60 minutes: ${url}. If you didn't request this, ignore this email.`,
+    subject: 'Reset your Umberleaf password',
+    text: `Reset your Umberleaf password within 60 minutes: ${url}. If you didn't request this, ignore this email.`,
     html: layout(
       'Reset your password',
       "We received a request to reset your password. This link expires in 60 minutes. If you didn't request it, you can safely ignore this email.",

@@ -64,7 +64,7 @@ export function LoginPage(): ReactElement {
       subtitle="Sign in to keep writing."
       footer={
         <>
-          New to Qalam?{' '}
+          New to Umberleaf?{' '}
           <Link to={ROUTES.register} className="font-medium text-accent hover:underline">
             Create an account
           </Link>

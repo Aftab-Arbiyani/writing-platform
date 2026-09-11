@@ -88,7 +88,7 @@ export function DiscoverPage(): ReactElement {
     <div className="mx-auto flex w-full max-w-[1000px] flex-col gap-10 px-4 py-6 sm:px-6">
       <Seo
         title="Discover"
-        description="New voices, trending writing, and the themes readers are drawn to right now on Qalam."
+        description="New voices, trending writing, and the themes readers are drawn to right now on Umberleaf."
         canonicalPath={ROUTES.discover}
       />
       <header className="flex flex-col gap-3">

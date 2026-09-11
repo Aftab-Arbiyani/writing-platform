@@ -140,7 +140,7 @@ export class AdminAnalyticsController {
     const stamp = new Date().toISOString().slice(0, 10);
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename="qalam-analytics-${query.dataset}-${stamp}.${asJson ? 'json' : 'csv'}"`,
+      `attachment; filename="umberleaf-analytics-${query.dataset}-${stamp}.${asJson ? 'json' : 'csv'}"`,
     );
 
     if (asJson) {

@@ -73,7 +73,7 @@ export function SearchPage(): ReactElement {
     <div className="mx-auto flex w-full max-w-[860px] flex-col gap-5 px-4 py-6 sm:px-6">
       <Seo
         title="Search"
-        description="Search writers, pieces, tags, genres, and languages across Qalam."
+        description="Search writers, pieces, tags, genres, and languages across Umberleaf."
         canonicalPath={ROUTES.search}
       />
       {/* Page-level heading for SR/document outline; the search field is the visual entry point. */}

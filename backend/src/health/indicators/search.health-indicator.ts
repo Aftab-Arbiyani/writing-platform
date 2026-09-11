@@ -5,7 +5,7 @@ import type { HealthIndicatorResult } from '@nestjs/terminus';
 import { DataSource } from 'typeorm';
 
 /**
- * Search health (P7.1). Qalam search is Postgres full-text — there is no
+ * Search health (P7.1). Umberleaf search is Postgres full-text — there is no
  * separate search engine — so this probe verifies the FTS path is functional
  * (`to_tsvector`/`tsquery`), which is a tighter signal than a bare `SELECT 1`
  * because it exercises the text-search operators the search module depends on.

@@ -117,7 +117,7 @@ export const envSchema = z.object({
   DATABASE_REPLICA_URL: z.string().default(''),
 
   // ── Mail ───────────────────────────────────────────────────────────────
-  MAIL_FROM: z.string().default('Qalam <no-reply@qalam.local>'),
+  MAIL_FROM: z.string().default('Umberleaf <no-reply@qalam.local>'),
 
   // ── AI platform (AF1 — Phase 2). Provider API keys are secrets with NO
   //    default beyond '' (blank = provider not configured → the whole AI

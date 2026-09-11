@@ -44,7 +44,9 @@ export function AdminShell(): ReactElement {
           <span className="flex size-7 items-center justify-center rounded-md bg-accent text-sm font-semibold text-[var(--q-accent-contrast,#fff)]">
             Q
           </span>
-          {!collapsed ? <span className="text-sm font-semibold text-ink">Qalam Admin</span> : null}
+          {!collapsed ? (
+            <span className="text-sm font-semibold text-ink">Umberleaf Admin</span>
+          ) : null}
         </div>
         <AppSidebar collapsed={collapsed} />
       </aside>
@@ -53,7 +55,7 @@ export function AdminShell(): ReactElement {
       <Drawer
         open={mobileOpen}
         onClose={() => setMobileOpen(false)}
-        title="Qalam Admin"
+        title="Umberleaf Admin"
         placement="left"
         width={260}
       >

@@ -118,7 +118,7 @@ export class RecommendationService {
         const reason =
           dto.kind === RecommendationKind.ContinueReading
             ? 'Popular reads to pick up next'
-            : 'Recommended for you from across Qalam';
+            : 'Recommended for you from across Umberleaf';
         return page.items.map((p, i) =>
           this.pieceRec(p, dto.kind, reason, [], positional(i, page.items.length)),
         );

@@ -65,7 +65,7 @@ export class StripeAdapter implements PaymentProviderAdapter {
       // Ad-hoc price for a one-time / credit purchase (no pre-created Stripe price).
       params['line_items[0][price_data][currency]'] = input.currency;
       params['line_items[0][price_data][unit_amount]'] = String(input.amount ?? 0);
-      params['line_items[0][price_data][product_data][name]'] = `Qalam ${input.kind}`;
+      params['line_items[0][price_data][product_data][name]'] = `Umberleaf ${input.kind}`;
       params['line_items[0][quantity]'] = '1';
     }
 

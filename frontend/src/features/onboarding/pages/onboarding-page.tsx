@@ -30,7 +30,7 @@ const SLIDES: readonly OnboardingSlideData[] = [
   {
     icon: BookOpen,
     title: 'A place for your words',
-    body: 'Qalam is a quiet writing sanctuary — warm paper and ink, for Hindi and Urdu writers first.',
+    body: 'Umberleaf is a quiet writing sanctuary — warm paper and ink, for Hindi and Urdu writers first.',
   },
   {
     icon: BookOpenText,
@@ -71,7 +71,7 @@ export function OnboardingPage(): ReactElement {
   return (
     <div className="flex min-h-dvh flex-col">
       <header className="flex items-center px-4 py-3">
-        <span className="text-ink font-serif text-lg font-semibold">Qalam</span>
+        <span className="text-ink font-serif text-lg font-semibold">Umberleaf</span>
         <QButton variant="ghost" size="sm" className="ms-auto" onClick={finish}>
           Skip
         </QButton>

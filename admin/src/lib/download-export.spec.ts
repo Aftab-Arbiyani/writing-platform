@@ -5,10 +5,10 @@ import { downloadExport, exportFilename } from './download-export';
 vi.mock('@/lib/api-client', () => ({ getAccessToken: () => 'tok-123' }));
 
 describe('exportFilename', () => {
-  it('builds qalam-<kind>-<date>.<format>', () => {
-    expect(exportFilename('users', 'csv')).toMatch(/^qalam-users-\d{4}-\d{2}-\d{2}\.csv$/);
+  it('builds umberleaf-<kind>-<date>.<format>', () => {
+    expect(exportFilename('users', 'csv')).toMatch(/^umberleaf-users-\d{4}-\d{2}-\d{2}\.csv$/);
     expect(exportFilename('analytics-overview', 'json')).toMatch(
-      /^qalam-analytics-overview-.*\.json$/,
+      /^umberleaf-analytics-overview-.*\.json$/,
     );
   });
 });

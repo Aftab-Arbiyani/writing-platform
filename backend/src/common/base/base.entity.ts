@@ -2,7 +2,7 @@ import { BeforeInsert, CreateDateColumn, PrimaryColumn, UpdateDateColumn } from 
 import { v7 as uuidv7 } from 'uuid';
 
 /**
- * Base class for every Qalam entity. NOT an `@Entity()` itself — domain
+ * Base class for every Umberleaf entity. NOT an `@Entity()` itself — domain
  * entities extend it in Phase 1 (`class User extends AppBaseEntity`).
  *
  * Named `AppBaseEntity` (not `BaseEntity`) on purpose: TypeORM ships its own
