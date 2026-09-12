@@ -99,15 +99,15 @@ jobs:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_USER: qalam
-          POSTGRES_PASSWORD: qalam
-          POSTGRES_DB: qalam
+          POSTGRES_USER: umberleaf
+          POSTGRES_PASSWORD: umberleaf
+          POSTGRES_DB: umberleaf
         ports: ['5432:5432']
         options: >-
-          --health-cmd "pg_isready -U qalam"
+          --health-cmd "pg_isready -U umberleaf"
           --health-interval 10s --health-timeout 5s --health-retries 5
     env:
-      DATABASE_URL: postgresql://qalam:qalam@localhost:5432/qalam
+      DATABASE_URL: postgresql://umberleaf:umberleaf@localhost:5432/umberleaf
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -148,7 +148,7 @@ jobs:
           context: .
           file: infrastructure/docker/backend.Dockerfile
           push: false
-          tags: qalam-backend:ci-${{ github.sha }}
+          tags: umberleaf-backend:ci-${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -164,7 +164,7 @@ jobs:
       # Gate the cosign seam on secret presence so it is a no-op on forks/PRs
       # and until an org signing key is provisioned.
       HAS_COSIGN: ${{ secrets.COSIGN_KEY != '' }}
-      IMAGE_REF: qalam-backend:scan-${{ github.sha }}
+      IMAGE_REF: umberleaf-backend:scan-${{ github.sha }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5

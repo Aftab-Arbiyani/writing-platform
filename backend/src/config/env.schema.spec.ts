@@ -3,7 +3,7 @@ import { isDevPlaceholderSecret, isProtectedEnvironment, validateEnv } from './e
 /** A minimal environment that passes validation, for targeted mutation. */
 function baseEnv(overrides: Record<string, string> = {}): Record<string, string> {
   return {
-    DATABASE_URL: 'postgres://qalam:pw@db.internal:5432/qalam',
+    DATABASE_URL: 'postgres://umberleaf:pw@db.internal:5432/umberleaf',
     JWT_ACCESS_SECRET: 'a'.repeat(40),
     JWT_REFRESH_SECRET: 'b'.repeat(40),
     S3_ACCESS_KEY: 'AKIAREAL0000',
@@ -16,7 +16,7 @@ describe('validateEnv', () => {
   it('accepts local dev with placeholder secrets (no protected-env constraints)', () => {
     // Placeholder secrets + localhost DB are allowed off protected tiers.
     const env = validateEnv({
-      DATABASE_URL: 'postgres://localhost:5432/qalam',
+      DATABASE_URL: 'postgres://localhost:5432/umberleaf',
       JWT_ACCESS_SECRET: `dev-only-${'x'.repeat(30)}`,
       JWT_REFRESH_SECRET: `dev-only-${'y'.repeat(30)}`,
     });
@@ -84,7 +84,7 @@ describe('validateEnv', () => {
   it('rejects a localhost DATABASE_URL and pretty logs in production', () => {
     expect(() =>
       validateEnv(
-        baseEnv({ NODE_ENV: 'production', DATABASE_URL: 'postgres://localhost:5432/qalam' }),
+        baseEnv({ NODE_ENV: 'production', DATABASE_URL: 'postgres://localhost:5432/umberleaf' }),
       ),
     ).toThrow(/localhost/);
     expect(() => validateEnv(baseEnv({ NODE_ENV: 'production', LOG_PRETTY: 'true' }))).toThrow(

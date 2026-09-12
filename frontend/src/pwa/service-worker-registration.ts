@@ -16,7 +16,7 @@ export function registerServiceWorker(): void {
     void navigator.serviceWorker.register('/sw.js').catch((error: unknown) => {
       // Registration failure must never break the app — the SPA works fully without a worker.
 
-      console.warn('[qalam] service worker registration failed', error);
+      console.warn('[umberleaf] service worker registration failed', error);
     });
   });
 }

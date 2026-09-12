@@ -50,7 +50,7 @@ jobs:
     env:
       REGISTRY: ghcr.io
       HAS_DEPLOY: ${{ secrets.SSH_HOST != '' }}
-      DEPLOY_DIR: ${{ vars.DEPLOY_DIR || '/opt/qalam' }}
+      DEPLOY_DIR: ${{ vars.DEPLOY_DIR || '/opt/umberleaf' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -60,7 +60,7 @@ jobs:
         env:
           INPUT_TAG: ${{ github.event.inputs.image_tag }}
         run: |
-          IMAGE="${REGISTRY}/${GITHUB_REPOSITORY_OWNER}/qalam-backend"
+          IMAGE="${REGISTRY}/${GITHUB_REPOSITORY_OWNER}/umberleaf-backend"
           IMAGE="$(echo "$IMAGE" | tr '[:upper:]' '[:lower:]')"
           echo "backend_image=${IMAGE}:${INPUT_TAG}" >> "$GITHUB_OUTPUT"
 

@@ -25,12 +25,12 @@ const envSchema = z.object({
   // Empty string (the .env.example default) means "Sentry disabled".
   VITE_SENTRY_DSN: optionalUrl,
   // Collaboration / publishing / trust (AF6, W3). Dark-launched OFF, mirroring mobile's
-  // default-off QALAM_ENABLE_COLLABORATION so neither client is reachable ahead of the other
+  // default-off UMBERLEAF_ENABLE_COLLABORATION so neither client is reachable ahead of the other
   // (docs/49 §2.2). A CLIENT KILL SWITCH ONLY — authorization is always the server's decision
   // via the Policy Engine capability map. E2E runs with it 'true'.
   VITE_ENABLE_COLLABORATION: z.enum(['true', 'false']).default('false'),
   // Monetization / subscriptions / AI credits (AF5, W4). Dark-launched OFF, mirroring mobile's
-  // default-off QALAM_ENABLE_MONETIZATION so neither client is reachable ahead of the other.
+  // default-off UMBERLEAF_ENABLE_MONETIZATION so neither client is reachable ahead of the other.
   // A CLIENT KILL SWITCH ONLY — every premium decision is the server's, via the Entitlement
   // Service, and the platform has its own `feature.payments.enabled` master flag underneath this
   // one. E2E runs with it 'true'.
@@ -46,7 +46,7 @@ if (!parsed.success) {
     .map((issue) => `  - ${issue.path.join('.')}: ${issue.message}`)
     .join('\n');
   throw new Error(
-    `[qalam] Invalid environment configuration:\n${issues}\n` +
+    `[umberleaf] Invalid environment configuration:\n${issues}\n` +
       'Compare your .env against frontend/.env.example.',
   );
 }

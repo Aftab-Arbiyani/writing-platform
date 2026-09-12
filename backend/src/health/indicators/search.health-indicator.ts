@@ -22,7 +22,7 @@ export class SearchHealthIndicator {
     try {
       await this.dataSource.query(
         `SELECT to_tsvector('simple', $1) @@ plainto_tsquery('simple', $1) AS ok`,
-        ['qalam-health-probe'],
+        ['umberleaf-health-probe'],
       );
       return indicator.up({ engine: 'postgres-fts' });
     } catch (error) {

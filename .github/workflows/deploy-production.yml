@@ -58,7 +58,7 @@ jobs:
       REGISTRY: ghcr.io
       HAS_DEPLOY: ${{ secrets.SSH_HOST != '' }}
       HAS_SENTRY: ${{ secrets.SENTRY_AUTH_TOKEN != '' }}
-      DEPLOY_DIR: ${{ vars.DEPLOY_DIR || '/opt/qalam' }}
+      DEPLOY_DIR: ${{ vars.DEPLOY_DIR || '/opt/umberleaf' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -73,7 +73,7 @@ jobs:
         run: |
           SHORT_SHA="${GITHUB_SHA:0:12}"
           TAG="${INPUT_TAG:-sha-${SHORT_SHA}}"
-          IMAGE="${REGISTRY}/${GITHUB_REPOSITORY_OWNER}/qalam-backend"
+          IMAGE="${REGISTRY}/${GITHUB_REPOSITORY_OWNER}/umberleaf-backend"
           IMAGE="$(echo "$IMAGE" | tr '[:upper:]' '[:lower:]')"
           # Expected /version: explicit input, else the tag name (v1.2.3).
           EXPECTED="${INPUT_VERSION:-${GITHUB_REF_NAME}}"
@@ -120,14 +120,14 @@ jobs:
           rsync -az --delete scripts infrastructure "$SSH_USER@$SSH_HOST:$DEPLOY_DIR/"
 
       # Capture the image currently running so a failed deploy can roll back to
-      # it. Best-effort: assumes the backend container is named `qalam-backend`.
+      # it. Best-effort: assumes the backend container is named `umberleaf-backend`.
       - name: Capture current image (rollback target)
         if: env.HAS_DEPLOY == 'true'
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USER: ${{ secrets.SSH_USER }}
         run: |
-          PREV="$(ssh "$SSH_USER@$SSH_HOST" "docker inspect --format '{{.Config.Image}}' qalam-backend 2>/dev/null || true")"
+          PREV="$(ssh "$SSH_USER@$SSH_HOST" "docker inspect --format '{{.Config.Image}}' umberleaf-backend 2>/dev/null || true")"
           echo "PREVIOUS_IMAGE=${PREV}" >> "$GITHUB_ENV"
           echo "Current image: ${PREV:-<none>}"
 

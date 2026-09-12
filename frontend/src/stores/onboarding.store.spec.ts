@@ -28,7 +28,7 @@ describe('onboarding store', () => {
     expect(persisted).toEqual({ complete: true });
   });
 
-  it('is stored under the qalam-* key convention', () => {
+  it('is stored under the umberleaf-* key convention', () => {
     expect(useOnboardingStore.persist.getOptions().name).toBe('umberleaf-onboarding');
   });
 });

@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Qalam — development stack
+# Umberleaf — development stack
 #
 # Default profile = infrastructure only (postgres, redis, minio, mailpit).
 # Apps run on the host via `pnpm dev` for hot reload.
@@ -10,7 +10,7 @@
 # Compose-level env vars are documented in .env.example (copy to .env).
 # ─────────────────────────────────────────────────────────────────────────────
 
-name: qalam
+name: umberleaf
 
 services:
   # ── Infrastructure (default profile) ───────────────────────────────────────
@@ -18,20 +18,20 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-qalam}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-qalam}
-      POSTGRES_DB: ${POSTGRES_DB:-qalam}
+      POSTGRES_USER: ${POSTGRES_USER:-umberleaf}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-umberleaf}
+      POSTGRES_DB: ${POSTGRES_DB:-umberleaf}
     ports:
       - '${POSTGRES_PORT:-5432}:5432'
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-qalam} -d ${POSTGRES_DB:-qalam}']
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-umberleaf} -d ${POSTGRES_DB:-umberleaf}']
       interval: 5s
       timeout: 5s
       retries: 10
     networks:
-      - qalam
+      - umberleaf
 
   redis:
     image: redis:7-alpine
@@ -47,14 +47,14 @@ services:
       timeout: 5s
       retries: 10
     networks:
-      - qalam
+      - umberleaf
 
   minio:
     image: minio/minio
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-qalam}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-qalamqalam}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-umberleaf}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-umberleafumberleaf}
     ports:
       - '${MINIO_PORT:-9000}:9000' # S3 API
       - '${MINIO_CONSOLE_PORT:-9001}:9001' # web console
@@ -66,9 +66,9 @@ services:
       timeout: 5s
       retries: 10
     networks:
-      - qalam
+      - umberleaf
 
-  # One-shot job: creates the qalam-media bucket, then exits.
+  # One-shot job: creates the umberleaf-media bucket, then exits.
   minio-init:
     image: minio/mc
     depends_on:
@@ -76,12 +76,12 @@ services:
         condition: service_healthy
     entrypoint: >
       /bin/sh -c "
-        mc alias set qalam http://minio:9000 ${MINIO_ROOT_USER:-qalam} ${MINIO_ROOT_PASSWORD:-qalamqalam} &&
-        mc mb --ignore-existing qalam/qalam-media &&
-        echo 'bucket qalam-media ready'
+        mc alias set umberleaf http://minio:9000 ${MINIO_ROOT_USER:-umberleaf} ${MINIO_ROOT_PASSWORD:-umberleafumberleaf} &&
+        mc mb --ignore-existing umberleaf/umberleaf-media &&
+        echo 'bucket umberleaf-media ready'
       "
     networks:
-      - qalam
+      - umberleaf
 
   mailpit:
     image: axllent/mailpit
@@ -89,7 +89,7 @@ services:
       - '${MAILPIT_SMTP_PORT:-1025}:1025' # SMTP
       - '${MAILPIT_UI_PORT:-8025}:8025' # web UI
     networks:
-      - qalam
+      - umberleaf
 
   # ── Applications (opt-in: --profile full) ──────────────────────────────────
   # Build context is the repo root — the Dockerfiles copy the whole monorepo
@@ -103,7 +103,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 4000
-      DATABASE_URL: postgresql://${POSTGRES_USER:-qalam}:${POSTGRES_PASSWORD:-qalam}@postgres:5432/${POSTGRES_DB:-qalam}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-umberleaf}:${POSTGRES_PASSWORD:-umberleaf}@postgres:5432/${POSTGRES_DB:-umberleaf}
       REDIS_URL: redis://redis:6379
     ports:
       - '4000:4000'
@@ -113,7 +113,7 @@ services:
       redis:
         condition: service_healthy
     networks:
-      - qalam
+      - umberleaf
 
   frontend:
     profiles: ['full']
@@ -127,7 +127,7 @@ services:
     depends_on:
       - backend
     networks:
-      - qalam
+      - umberleaf
 
   admin:
     profiles: ['full']
@@ -139,7 +139,7 @@ services:
     depends_on:
       - backend
     networks:
-      - qalam
+      - umberleaf
 
   # Edge reverse proxy for the fully containerized stack. reverse-proxy.conf.template
   # is a real production vhost but requires envsubst rendering + TLS certs, so it
@@ -153,13 +153,13 @@ services:
     ports:
       - '8080:80'
     volumes:
-      - ./infrastructure/nginx/reverse-proxy.conf.template:/opt/qalam/reverse-proxy.conf.template:ro
+      - ./infrastructure/nginx/reverse-proxy.conf.template:/opt/umberleaf/reverse-proxy.conf.template:ro
     depends_on:
       - backend
       - frontend
       - admin
     networks:
-      - qalam
+      - umberleaf
 
 volumes:
   postgres-data:
@@ -167,4 +167,4 @@ volumes:
   minio-data:
 
 networks:
-  qalam:
+  umberleaf:

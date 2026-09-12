@@ -49,7 +49,7 @@ export async function downloadExport(options: {
   setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
-/** Standard export filename: `qalam-<kind>-<YYYY-MM-DD>.<format>`. */
+/** Standard export filename: `umberleaf-<kind>-<YYYY-MM-DD>.<format>`. */
 export function exportFilename(kind: string, format: 'csv' | 'json'): string {
   return `umberleaf-${kind}-${new Date().toISOString().slice(0, 10)}.${format}`;
 }

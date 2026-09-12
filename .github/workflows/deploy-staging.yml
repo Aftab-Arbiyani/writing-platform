@@ -43,7 +43,7 @@ jobs:
       REGISTRY: ghcr.io
       HAS_DEPLOY: ${{ secrets.SSH_HOST != '' }}
       HAS_SENTRY: ${{ secrets.SENTRY_AUTH_TOKEN != '' }}
-      DEPLOY_DIR: ${{ vars.DEPLOY_DIR || '/opt/qalam' }}
+      DEPLOY_DIR: ${{ vars.DEPLOY_DIR || '/opt/umberleaf' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -52,7 +52,7 @@ jobs:
         id: meta
         run: |
           SHORT_SHA="${GITHUB_SHA:0:12}"
-          IMAGE="${REGISTRY}/${GITHUB_REPOSITORY_OWNER}/qalam-backend"
+          IMAGE="${REGISTRY}/${GITHUB_REPOSITORY_OWNER}/umberleaf-backend"
           IMAGE="$(echo "$IMAGE" | tr '[:upper:]' '[:lower:]')"
           {
             echo "short_sha=${SHORT_SHA}"

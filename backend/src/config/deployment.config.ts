@@ -31,7 +31,7 @@ export const CONFIG_VERSION = '1.0.0';
 const STARTED_AT = new Date().toISOString();
 
 export const deploymentConfig = registerAs('deployment', () => ({
-  serviceName: process.env.SERVICE_NAME ?? 'qalam-backend',
+  serviceName: process.env.SERVICE_NAME ?? 'umberleaf-backend',
   environment: process.env.NODE_ENV ?? 'development',
   version: process.env.APP_VERSION ?? '0.0.0',
   gitSha: process.env.GIT_SHA ?? '',
@@ -47,12 +47,12 @@ export const deploymentConfig = registerAs('deployment', () => ({
   startedAt: STARTED_AT,
   /**
    * Human release tag, matching the Sentry release convention
-   * `qalam-<app>@<sha>` from docs/14. Empty sha → version only.
+   * `umberleaf-<app>@<sha>` from docs/14. Empty sha → version only.
    */
   get releaseTag(): string {
     const sha = process.env.GIT_SHA ?? '';
     return sha.length > 0
-      ? `${process.env.SERVICE_NAME ?? 'qalam-backend'}@${sha.slice(0, 12)}`
-      : `${process.env.SERVICE_NAME ?? 'qalam-backend'}@${process.env.APP_VERSION ?? '0.0.0'}`;
+      ? `${process.env.SERVICE_NAME ?? 'umberleaf-backend'}@${sha.slice(0, 12)}`
+      : `${process.env.SERVICE_NAME ?? 'umberleaf-backend'}@${process.env.APP_VERSION ?? '0.0.0'}`;
   },
 }));

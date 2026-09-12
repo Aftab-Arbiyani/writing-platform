@@ -162,19 +162,19 @@ export class MediaStorageService {
         LifecycleConfiguration: {
           Rules: [
             {
-              ID: 'qalam-expire-tmp',
+              ID: 'umberleaf-expire-tmp',
               Status: 'Enabled',
               Filter: { Prefix: 'tmp/' },
               Expiration: { Days: 1 },
             },
             {
-              ID: 'qalam-expire-quarantine',
+              ID: 'umberleaf-expire-quarantine',
               Status: 'Enabled',
               Filter: { Prefix: 'quarantine/' },
               Expiration: { Days: 7 },
             },
             {
-              ID: 'qalam-abort-incomplete-mpu',
+              ID: 'umberleaf-abort-incomplete-mpu',
               Status: 'Enabled',
               Filter: { Prefix: '' },
               AbortIncompleteMultipartUpload: { DaysAfterInitiation: 3 },

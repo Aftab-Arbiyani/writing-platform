@@ -28,7 +28,7 @@ import { redisConfig } from '../config/redis.config';
             db: redis.queuesDb,
             maxRetriesPerRequest: null,
           },
-          prefix: 'qalam:queues',
+          prefix: 'umberleaf:queues',
         };
       },
     }),

@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 # ─────────────────────────────────────────────────────────────────────────────
-# Qalam backend (NestJS API + BullMQ workers)
+# Umberleaf backend (NestJS API + BullMQ workers)
 #
 # Strategy: SIMPLE and reliable over clever. We install once against the
 # committed lockfile, build with turbo, then use `pnpm deploy` to produce a
@@ -69,7 +69,7 @@ ARG BUILD_NUMBER=0
 ARG RELEASE_CHANNEL=production
 
 ENV NODE_ENV=production \
-    SERVICE_NAME=qalam-backend \
+    SERVICE_NAME=umberleaf-backend \
     APP_VERSION=$BUILD_VERSION \
     GIT_SHA=$GIT_SHA \
     BUILD_TIME=$BUILD_TIME \
@@ -78,8 +78,8 @@ ENV NODE_ENV=production \
 
 # OCI image labels — mirror the build identity so registries/scanners and
 # `docker inspect` can trace an image back to its source commit and build.
-LABEL org.opencontainers.image.title="qalam-backend" \
-      org.opencontainers.image.description="Qalam backend API (NestJS + BullMQ workers)" \
+LABEL org.opencontainers.image.title="umberleaf-backend" \
+      org.opencontainers.image.description="Umberleaf backend API (NestJS + BullMQ workers)" \
       org.opencontainers.image.source="https://github.com/qalam/qalam" \
       org.opencontainers.image.version="$BUILD_VERSION" \
       org.opencontainers.image.revision="$GIT_SHA" \

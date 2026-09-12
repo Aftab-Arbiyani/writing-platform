@@ -34,7 +34,7 @@ if (dsn !== '') {
   });
   // Tag every event with the build/instance so errors are attributable (P7.1).
   Sentry.setTags({
-    service: process.env.SERVICE_NAME ?? 'qalam-backend',
+    service: process.env.SERVICE_NAME ?? 'umberleaf-backend',
     'app.version': process.env.APP_VERSION ?? '0.0.0',
     'app.commit': (process.env.GIT_SHA ?? '').slice(0, 12),
     'app.instance': process.env.INSTANCE_ID ?? '',

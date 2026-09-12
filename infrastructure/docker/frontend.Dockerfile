@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 # ─────────────────────────────────────────────────────────────────────────────
-# Qalam frontend (React + Vite reader/writer app)
+# Umberleaf frontend (React + Vite reader/writer app)
 #
 # Build stage compiles the static bundle with pnpm + turbo; runtime stage is
 # nginx serving the bundle with SPA fallback (infrastructure/nginx/spa.conf).
@@ -43,8 +43,8 @@ FROM nginx:1.27-alpine AS runtime
 ARG BUILD_VERSION=0.0.0-dev
 ARG GIT_SHA=unknown
 ARG BUILD_TIME=
-LABEL org.opencontainers.image.title="qalam-frontend" \
-      org.opencontainers.image.description="Qalam reader/writer SPA (React + Vite) served by nginx" \
+LABEL org.opencontainers.image.title="umberleaf-frontend" \
+      org.opencontainers.image.description="Umberleaf reader/writer SPA (React + Vite) served by nginx" \
       org.opencontainers.image.source="https://github.com/qalam/qalam" \
       org.opencontainers.image.version="$BUILD_VERSION" \
       org.opencontainers.image.revision="$GIT_SHA" \

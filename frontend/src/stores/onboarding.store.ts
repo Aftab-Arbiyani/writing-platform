@@ -21,7 +21,7 @@ import { persist } from 'zustand/middleware';
  * intro is not a trade worth making — being shown a 20-second introduction twice is a small cost,
  * and it is the same cost mobile pays on a reinstall.
  *
- * Persisted under `qalam-onboarding`, matching `theme.store`'s `qalam-*` key convention.
+ * Persisted under `umberleaf-onboarding`, matching `theme.store`'s `umberleaf-*` key convention.
  */
 interface OnboardingState {
   /** False until Skip or Get started is pressed. Persisted; nothing else here is. */

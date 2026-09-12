@@ -1,4 +1,4 @@
-# Qalam Operations Scripts (P7.1)
+# Umberleaf Operations Scripts (P7.1)
 
 Cloud-agnostic operational tooling for deployment, database operations, backup,
 and disaster recovery. Every script is `bash`, `set -euo pipefail`, sources the
@@ -34,8 +34,8 @@ deploy host.
 **Deploy (staging/production), what the CD workflow runs:**
 
 ```bash
-export BACKEND_IMAGE=ghcr.io/qalam/qalam-backend:sha-abc1234
-export ENV_FILE=/opt/qalam/.env.production DATABASE_URL=…
+export BACKEND_IMAGE=ghcr.io/qalam/umberleaf-backend:sha-abc1234
+export ENV_FILE=/opt/umberleaf/.env.production DATABASE_URL=…
 scripts/deploy/preflight.sh
 scripts/db/backup.sh                       # pre-deploy checkpoint (prod)
 scripts/deploy/deploy.sh                    # migrate + health-gated switch
@@ -53,14 +53,14 @@ EXPECTED_VERSION=1.4.2 SMOKE_BASE_URL=https://api.example.com scripts/deploy/smo
 **Rollback (deterministic):**
 
 ```bash
-ROLLBACK_IMAGE=ghcr.io/qalam/qalam-backend:sha-prev123 scripts/deploy/rollback.sh
+ROLLBACK_IMAGE=ghcr.io/qalam/umberleaf-backend:sha-prev123 scripts/deploy/rollback.sh
 ```
 
 **Backup + monthly restore drill:**
 
 ```bash
 DATABASE_URL=… scripts/db/backup.sh
-VERIFY_DATABASE_URL=postgres://…/qalam_scratch \
+VERIFY_DATABASE_URL=postgres://…/umberleaf_scratch \
   DATABASE_URL=… scripts/dr/drill.sh          # records RTO in dr/DRILL_LOG.md
 ```
 

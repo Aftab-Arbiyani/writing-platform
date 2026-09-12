@@ -28,12 +28,12 @@ jobs:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_USER: qalam
-          POSTGRES_PASSWORD: qalam
-          POSTGRES_DB: qalam
+          POSTGRES_USER: umberleaf
+          POSTGRES_PASSWORD: umberleaf
+          POSTGRES_DB: umberleaf
         ports: ['5432:5432']
         options: >-
-          --health-cmd "pg_isready -U qalam"
+          --health-cmd "pg_isready -U umberleaf"
           --health-interval 10s --health-timeout 5s --health-retries 5
       redis:
         image: redis:7-alpine
@@ -43,13 +43,13 @@ jobs:
           --health-interval 10s --health-timeout 5s --health-retries 5
     env:
       NODE_ENV: test
-      DATABASE_URL: postgresql://qalam:qalam@localhost:5432/qalam
+      DATABASE_URL: postgresql://umberleaf:umberleaf@localhost:5432/umberleaf
       REDIS_URL: redis://localhost:6379
       JWT_ACCESS_SECRET: ci-access-secret-not-a-real-secret-000000
       JWT_REFRESH_SECRET: ci-refresh-secret-not-a-real-secret-00000
       S3_ENDPOINT: http://localhost:9000
       S3_REGION: us-east-1
-      S3_BUCKET: qalam-media
+      S3_BUCKET: umberleaf-media
       S3_ACCESS_KEY: minioadmin
       S3_SECRET_KEY: minioadmin
       SMTP_URL: smtp://localhost:1025
@@ -79,7 +79,7 @@ jobs:
           for i in $(seq 1 30); do
             curl -sf http://localhost:9000/minio/health/ready && break || sleep 2
           done
-          aws --endpoint-url http://localhost:9000 s3 mb s3://qalam-media || true
+          aws --endpoint-url http://localhost:9000 s3 mb s3://umberleaf-media || true
         env:
           AWS_ACCESS_KEY_ID: minioadmin
           AWS_SECRET_ACCESS_KEY: minioadmin
