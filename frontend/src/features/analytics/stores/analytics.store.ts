@@ -65,7 +65,7 @@ export const useAnalyticsStore = create<AnalyticsState>()(
         set({ chartStyle });
       },
     }),
-    { name: 'qalam-analytics' },
+    { name: 'umberleaf-analytics' },
   ),
 );
 

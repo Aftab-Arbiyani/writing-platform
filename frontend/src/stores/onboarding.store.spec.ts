@@ -29,6 +29,6 @@ describe('onboarding store', () => {
   });
 
   it('is stored under the qalam-* key convention', () => {
-    expect(useOnboardingStore.persist.getOptions().name).toBe('qalam-onboarding');
+    expect(useOnboardingStore.persist.getOptions().name).toBe('umberleaf-onboarding');
   });
 });

@@ -20,5 +20,5 @@ export const RATE_LIMIT_HEADERS = {
  * auth module when refresh issuance lands (Epic 1 t4); this name is fixed now so
  * the path constant and the module stay in sync.
  */
-export const REFRESH_TOKEN_COOKIE = 'qalam_rt';
+export const REFRESH_TOKEN_COOKIE = 'umberleaf_rt';
 export const REFRESH_TOKEN_COOKIE_PATH = '/api/v1/auth';

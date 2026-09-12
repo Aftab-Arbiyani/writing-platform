@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware';
 
 /**
  * Theme slice (client state → Zustand per docs/00 §6). Persisted under
- * 'qalam-admin-theme' — the same key the anti-flash script in index.html reads
+ * 'umberleaf-admin-theme' — the same key the anti-flash script in index.html reads
  * before first paint. Dark mode is class-strategy: `data-theme` on <html>,
  * consumed by @umberleaf/ui tokens.css and the AntD dark algorithm.
  */
@@ -38,7 +38,7 @@ export const useThemeStore = create<ThemeState>()(
       },
     }),
     {
-      name: 'qalam-admin-theme',
+      name: 'umberleaf-admin-theme',
       onRehydrateStorage: () => (state) => {
         if (state) applyTheme(state.mode);
       },

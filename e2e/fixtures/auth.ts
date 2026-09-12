@@ -4,7 +4,7 @@ import { type Page, expect } from '@playwright/test';
  * Per-test fresh authentication (docs/e2e/03). The backend uses **rotating refresh
  * tokens with reuse-detection** (token.service `rotate`): a refresh token is single-use,
  * and presenting an already-used one revokes the whole family. The web app keeps its
- * access token in memory and re-derives it from the httpOnly `qalam_rt` cookie on every
+ * access token in memory and re-derives it from the httpOnly `umberleaf_rt` cookie on every
  * cold load — so a single static `storageState` shared across tests is consumed by the
  * first test's boot-refresh and rejected for every later test (→ the login screen).
  *
@@ -29,7 +29,7 @@ export type AuthRole = keyof typeof CREDENTIALS;
 
 /**
  * Authenticate `page`'s context by logging in fresh as `role`. Call in a `beforeEach`
- * of authenticated specs BEFORE the first navigation — the `qalam_rt` cookie lands in
+ * of authenticated specs BEFORE the first navigation — the `umberleaf_rt` cookie lands in
  * the context jar so the app boots signed in.
  */
 export async function freshLogin(page: Page, role: AuthRole): Promise<void> {

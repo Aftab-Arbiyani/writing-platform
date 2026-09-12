@@ -50,7 +50,7 @@ const config = {
     accessTtl: '15m',
     refreshSecret: 'refresh-secret-that-is-at-least-32-characters',
     refreshTtl: '30d',
-    issuer: 'qalam',
+    issuer: 'umberleaf',
   },
 } as unknown as ConfigType<typeof authConfig>;
 

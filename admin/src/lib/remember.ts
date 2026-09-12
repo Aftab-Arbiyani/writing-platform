@@ -5,7 +5,7 @@
  * sensitive data ever touches localStorage** (the access token stays in memory, the refresh token in
  * an httpOnly cookie).
  */
-const KEY = 'qalam-admin-remember';
+const KEY = 'umberleaf-admin-remember';
 
 export function getRemember(): boolean {
   try {

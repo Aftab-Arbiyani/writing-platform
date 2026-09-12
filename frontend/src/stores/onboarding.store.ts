@@ -42,7 +42,7 @@ export const useOnboardingStore = create<OnboardingState>()(
       },
     }),
     {
-      name: 'qalam-onboarding',
+      name: 'umberleaf-onboarding',
       partialize: (state) => ({ complete: state.complete }),
     },
   ),

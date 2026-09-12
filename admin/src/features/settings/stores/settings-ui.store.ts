@@ -26,6 +26,6 @@ export const useSettingsUi = create<SettingsUiState>()(
       lastSection: DEFAULT_SECTION,
       setLastSection: (section) => set({ lastSection: section }),
     }),
-    { name: 'qalam-admin-settings' },
+    { name: 'umberleaf-admin-settings' },
   ),
 );

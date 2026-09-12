@@ -48,7 +48,7 @@ export const useNotificationsStore = create<NotificationsState>()(
       },
     }),
     {
-      name: 'qalam-notifications',
+      name: 'umberleaf-notifications',
       // Persist the preference only; popover open-state is session chrome.
       partialize: (state) => ({ toastsEnabled: state.toastsEnabled }),
     },

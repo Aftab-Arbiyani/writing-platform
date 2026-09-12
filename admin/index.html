@@ -8,10 +8,10 @@
     <title>Umberleaf Admin</title>
     <script>
       // Anti-flash: resolve the persisted theme (zustand persist envelope under
-      // 'qalam-admin-theme') and stamp data-theme on <html> before first paint.
+      // 'umberleaf-admin-theme') and stamp data-theme on <html> before first paint.
       (function () {
         try {
-          var raw = localStorage.getItem('qalam-admin-theme');
+          var raw = localStorage.getItem('umberleaf-admin-theme');
           var mode = raw ? JSON.parse(raw).state.mode : 'system';
           var dark =
             mode === 'dark' ||

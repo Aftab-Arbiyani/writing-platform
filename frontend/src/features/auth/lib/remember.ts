@@ -7,7 +7,7 @@ import { local } from '@/lib/storage';
  * so the session is not auto-restored on the next visit (the user signs in again). No token is
  * ever stored here — only this boolean preference (docs/12 §7).
  */
-const REMEMBER_KEY = 'qalam.auth.remember';
+const REMEMBER_KEY = 'umberleaf.auth.remember';
 
 export function getRememberSession(): boolean {
   return local.get<boolean>(REMEMBER_KEY, true);

@@ -35,6 +35,6 @@ export const useDashboardStore = create<DashboardUiState>()(
             : [...state.collapsedWidgets, id],
         })),
     }),
-    { name: 'qalam-admin-dashboard' },
+    { name: 'umberleaf-admin-dashboard' },
   ),
 );

@@ -36,7 +36,7 @@ export const useAnalyticsFilters = create<FiltersState>()(
           platform: undefined,
         }),
     }),
-    { name: 'qalam-admin-analytics-filters' },
+    { name: 'umberleaf-admin-analytics-filters' },
   ),
 );
 

@@ -4,11 +4,11 @@ export const APP_NAME = 'Umberleaf';
 
 /** localStorage keys owned by this app (docs/12 §3). */
 export const STORAGE_KEYS = {
-  theme: 'qalam-theme',
+  theme: 'umberleaf-theme',
   /** Device-local recent searches (mirrors the server list for authed users; sole list for guests). */
-  recentSearches: 'qalam-recent-searches',
+  recentSearches: 'umberleaf-recent-searches',
   /** Reader typography (text size / line spacing / column width) — device-scoped, never synced. */
-  readerPreferences: 'qalam-reader',
+  readerPreferences: 'umberleaf-reader',
   /**
    * Last server-authoritative entitlement snapshot (AF5 W4) — a HINT cache so premium gating renders
    * instantly and survives being offline. Never authoritative: the floor is deny and the server
@@ -19,7 +19,7 @@ export const STORAGE_KEYS = {
    * typography belong to the browser, but an entitlement belongs to an account, and the next account
    * to use this browser must not inherit the last one's plan.
    */
-  entitlements: 'qalam.monetization.entitlements',
+  entitlements: 'umberleaf.monetization.entitlements',
   /**
    * Prompt Library (AF2 W8) — favourites, custom presets and instruction history. Device-scoped like
    * theme and recent searches, not account-scoped: the frozen v1 has no server surface for user
@@ -27,7 +27,7 @@ export const STORAGE_KEYS = {
    * sign-out leaves it alone — losing a writer's saved prompts on logout would be data loss, not
    * hygiene, and nothing in it is another account's to see.
    */
-  promptLibrary: 'qalam.ai.prompt-library',
+  promptLibrary: 'umberleaf.ai.prompt-library',
 } as const;
 
 /** Cursor pagination sizes (docs/05 §5). */

@@ -7,7 +7,7 @@ import type { AuthResponse, LoginPayload } from '../types/auth.types';
 /**
  * The auth feature's `api/` layer — the only place these endpoints are named (docs/32 §10). All go
  * through the shared `api-client` (fetch wrapper with the auth interceptor + single-flight refresh);
- * no HTTP config is duplicated. Refresh sends an EMPTY body — the httpOnly `qalam_rt` cookie rides
+ * no HTTP config is duplicated. Refresh sends an EMPTY body — the httpOnly `umberleaf_rt` cookie rides
  * along (docs/32 §3). Callers receive the unwrapped `data` (never the envelope).
  */
 export const authApi = {

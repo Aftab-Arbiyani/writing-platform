@@ -34,7 +34,7 @@ export class Purchase extends AppAppendOnlyEntity {
   @Column({ type: 'varchar', length: 255, nullable: true })
   providerRef!: string | null;
 
-  /** Store product id (e.g. `com.qalam.pro.monthly`, `credits_5000`). */
+  /** Store product id (e.g. `com.umberleaf.pro.monthly`, `credits_5000`). */
   @Column({ type: 'varchar', length: 255, nullable: true })
   productId!: string | null;
 
