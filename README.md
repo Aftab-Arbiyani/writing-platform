@@ -1,6 +1,6 @@
 <div align="center">
 
-# Qalam · قلم · क़लम
+# Umberleaf
 
 **A premium writing sanctuary.**
 
@@ -13,7 +13,7 @@ designed from day one for the world's scripts.
 
 ## What this is
 
-Qalam is a long-form creative writing platform: a calm, literary home where writers draft,
+Umberleaf is a long-form creative writing platform: a calm, literary home where writers draft,
 publish, and grow an audience, and readers discover work by writer, tag, genre, and
 language. The writing is always the hero — minimal chrome, generous whitespace, serious
 typography (including Nastaliq), dark mode and RTL from day one.

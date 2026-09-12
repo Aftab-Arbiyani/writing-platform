@@ -84,7 +84,7 @@ deploys — already decided in ADR §1's system diagram.
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐
-│ Qalam ✒        [ Search…              ]          ✍ Write   🔔(3)   (👤)  │
+│ Umberleaf ✒        [ Search…              ]          ✍ Write   🔔(3)   (👤)  │
 └──────────────────────────────────────────────────────────────────────────┘
    logo→/         →/search suggestions           /write   panel    user menu
 ```

@@ -1,4 +1,4 @@
-# Qalam Admin — Deployment Guide
+# Umberleaf Admin — Deployment Guide
 
 The admin app is a **static SPA** — `pnpm --filter admin build` emits a hashed,
 cache-friendly `dist/` served by any static host / CDN / nginx behind TLS. It is

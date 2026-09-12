@@ -1,6 +1,6 @@
 # Performance & Load Testing (P7.3)
 
-The repeatable performance harness for the Qalam API. It pairs with the
+The repeatable performance harness for the Umberleaf API. It pairs with the
 **Performance Platform** (`src/modules/performance`), which measures live traffic
 and verifies it against the same budget catalogue these tests use.
 

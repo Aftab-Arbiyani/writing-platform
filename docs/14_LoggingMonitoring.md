@@ -155,7 +155,7 @@ routing; one org-level view.
 
 ### 2.2 Releases & Sourcemaps
 
-- `release: qalam-<app>@<git-sha>` — the same sha that tags Docker images
+- `release: umberleaf-<app>@<git-sha>` — the same sha that tags Docker images
   (doc 15 §2.3), so "which build threw this" is one lookup.
 - CI (doc 15 §4): Vite builds emit hidden sourcemaps → `sentry-cli sourcemaps upload`
   during the build job → **sourcemaps are deleted from the deployed bundle** (never
@@ -189,10 +189,10 @@ routing; one org-level view.
 `@nestjs/terminus` (Phase 1, per ADR §9), no auth (they leak nothing but
 up/down), excluded from rate limiting and access-log sampling:
 
-| Endpoint            | Purpose                                        | Checks                                                                                                                                                                                                 | Consumer                                              |
-| ------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------- |
-| `GET /health`       | **Liveness** — is the process alive?           | Event loop responds; nothing external (a DB outage must NOT restart the API)                                                                                                                           | Container runtime restart policy                      |
-| `GET /health/ready` | **Readiness** — should traffic be routed here? | Postgres `SELECT 1` (2 s timeout) · Redis `PING` (DB 0) · storage `HEAD` on `qalam-media` bucket (5 s, degraded-not-dead: reports `degraded` but stays ready if only storage fails — reads still work) | nginx upstream gating, deploy health gate (doc 15 §6) |
+| Endpoint            | Purpose                                        | Checks                                                                                                                                                                                                     | Consumer                                              |
+| ------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| `GET /health`       | **Liveness** — is the process alive?           | Event loop responds; nothing external (a DB outage must NOT restart the API)                                                                                                                               | Container runtime restart policy                      |
+| `GET /health/ready` | **Readiness** — should traffic be routed here? | Postgres `SELECT 1` (2 s timeout) · Redis `PING` (DB 0) · storage `HEAD` on `umberleaf-media` bucket (5 s, degraded-not-dead: reports `degraded` but stays ready if only storage fails — reads still work) | nginx upstream gating, deploy health gate (doc 15 §6) |
 
 External **uptime monitoring** (any ping service): `GET /health/ready` on API +
 `GET /` on both SPAs from outside our network, 60 s interval, alert after 2

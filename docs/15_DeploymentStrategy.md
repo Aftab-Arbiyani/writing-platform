@@ -13,17 +13,17 @@
 
 ## 1. Environments
 
-|                | local                                                       | staging                                    | production                                            |
-| -------------- | ----------------------------------------------------------- | ------------------------------------------ | ----------------------------------------------------- |
-| API            | `http://localhost:4000/api/v1` (docs at `/docs`)            | `https://api.staging.qalam.example/api/v1` | `https://api.qalam.example/api/v1` (`/docs` disabled) |
-| Frontend       | `http://localhost:5173`                                     | `https://app.staging.qalam.example`        | `https://app.qalam.example`                           |
-| Admin          | `http://localhost:5174`                                     | `https://admin.staging.qalam.example`      | `https://admin.qalam.example`                         |
-| Media          | `http://localhost:9000/qalam-media` (MinIO; console `9001`) | `https://media.staging.qalam.example`      | `https://media.qalam.example` (CDN, §8)               |
-| Postgres       | `localhost:5432`, db `qalam`, user `qalam`                  | managed/VM instance, private network only  | same, + PITR backups (§9)                             |
-| Redis          | `localhost:6379` (DB 0–3 per ADR map)                       | private network only                       | same                                                  |
-| Mail           | mailpit SMTP `1025`, UI `8025`                              | real SMTP, staging sender domain           | real SMTP                                             |
-| Deploy trigger | `pnpm dev` / compose                                        | **auto on merge to `main`**                | **tag `v*` + manual approval**                        |
-| Secrets source | `.env` (git-ignored)                                        | GitHub Environment `staging`               | GitHub Environment `production` (protected)           |
+|                | local                                                           | staging                                    | production                                            |
+| -------------- | --------------------------------------------------------------- | ------------------------------------------ | ----------------------------------------------------- |
+| API            | `http://localhost:4000/api/v1` (docs at `/docs`)                | `https://api.staging.qalam.example/api/v1` | `https://api.qalam.example/api/v1` (`/docs` disabled) |
+| Frontend       | `http://localhost:5173`                                         | `https://app.staging.qalam.example`        | `https://app.qalam.example`                           |
+| Admin          | `http://localhost:5174`                                         | `https://admin.staging.qalam.example`      | `https://admin.qalam.example`                         |
+| Media          | `http://localhost:9000/umberleaf-media` (MinIO; console `9001`) | `https://media.staging.qalam.example`      | `https://media.qalam.example` (CDN, §8)               |
+| Postgres       | `localhost:5432`, db `umberleaf`, user `umberleaf`              | managed/VM instance, private network only  | same, + PITR backups (§9)                             |
+| Redis          | `localhost:6379` (DB 0–3 per ADR map)                           | private network only                       | same                                                  |
+| Mail           | mailpit SMTP `1025`, UI `8025`                                  | real SMTP, staging sender domain           | real SMTP                                             |
+| Deploy trigger | `pnpm dev` / compose                                            | **auto on merge to `main`**                | **tag `v*` + manual approval**                        |
+| Secrets source | `.env` (git-ignored)                                            | GitHub Environment `staging`               | GitHub Environment `production` (protected)           |
 
 `*.qalam.example` domains are placeholders until the production domain is purchased —
 every config derives them from `APP_URL` / `API_URL` / `VITE_API_URL` env vars, so the
@@ -62,10 +62,10 @@ RUN pnpm --filter=backend deploy --prod /out   # prunes to prod deps, self-conta
 
 # ── 4. runtime: minimal, non-root ─────────────────────────────────────────
 FROM node:24-alpine AS runtime
-RUN addgroup -S qalam && adduser -S qalam -G qalam
+RUN addgroup -S umberleaf && adduser -S umberleaf -G umberleaf
 WORKDIR /app
-COPY --from=build --chown=qalam:qalam /out .
-USER qalam
+COPY --from=build --chown=umberleaf:umberleaf /out .
+USER umberleaf
 EXPOSE 4000
 CMD ["node", "dist/main.js"]                # exec form: node is PID 1, receives SIGTERM (§6)
 ```
@@ -76,7 +76,7 @@ proves the lockfile is complete (supply-chain tripwire, doc 13 §12).
 **`pnpm deploy --prod`** — the runtime image carries zero devDependencies and no
 workspace symlink surprises. **alpine over distroless** (choosing within the ADR's
 "distroless/alpine" latitude): `sharp`/`argon2` ship musl prebuilds, and a shell in
-the container is worth its 5 MB during incidents. **Non-root `qalam` user** — container
+the container is worth its 5 MB during incidents. **Non-root `umberleaf` user** — container
 escape ≠ root. Workers run from the **same image** with a different command
 (`node dist/worker.js`) once extracted (§10) — one build, two roles.
 
@@ -108,7 +108,7 @@ indirection we don't need at two environments.
 
 ### 2.3 Image Tagging Scheme
 
-Registry: GHCR (`ghcr.io/<org>/qalam-{backend,frontend,admin}`).
+Registry: GHCR (`ghcr.io/<org>/umberleaf-{backend,frontend,admin}`).
 
 | Tag                     | Applied when       | Meaning                                                 |
 | ----------------------- | ------------------ | ------------------------------------------------------- |
@@ -117,7 +117,7 @@ Registry: GHCR (`ghcr.io/<org>/qalam-{backend,frontend,admin}`).
 | `staging`               | on merge to `main` | Moving pointer, convenience only                        |
 | `latest`                | never              | Banned — "latest" deploys are unauditable               |
 
-The git sha also feeds Sentry release names (`qalam-<app>@<sha>`, doc 14 §2.2) —
+The git sha also feeds Sentry release names (`umberleaf-<app>@<sha>`, doc 14 §2.2) —
 one identifier across image, deploy log, and error tracker.
 
 ### 2.4 `.dockerignore` Policy
@@ -134,9 +134,9 @@ Per ADR §9: **default profile = infra only**; apps run on the host for hot relo
 ```yaml
 # docker-compose.yml (shape, not full file)
 services:
-  postgres: # postgres:16-alpine, port 5432, db/user qalam, volume pgdata
+  postgres: # postgres:16-alpine, port 5432, db/user umberleaf, volume pgdata
   redis: # redis:7-alpine, port 6379, appendonly yes
-  minio: # ports 9000/9001, bucket qalam-media created by init job
+  minio: # ports 9000/9001, bucket umberleaf-media created by init job
   mailpit: # SMTP 1025, UI 8025
   backend:
     { profiles: ['full'], build: infrastructure/docker/backend.Dockerfile, ports: ['4000:4000'] }
@@ -285,7 +285,7 @@ Key config decisions (values in the conf templates):
 
 ## 8. Media & CDN
 
-Per ADR §3: MinIO in dev, S3-compatible (S3 or R2) in prod, bucket `qalam-media`,
+Per ADR §3: MinIO in dev, S3-compatible (S3 or R2) in prod, bucket `umberleaf-media`,
 API never proxies bytes. Production layout:
 
 ```
@@ -306,12 +306,12 @@ API never proxies bytes. Production layout:
 
 ## 9. Backups & Disaster Recovery
 
-| What                                  | Method                                                                                                                                                                                  | Schedule                       | Retention                                         |
-| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ | ------------------------------------------------- |
-| Postgres                              | **Daily base backup + continuous WAL archiving** (pgBackRest or wal-g → object storage, separate bucket + credentials from app S3 keys)                                                 | base 02:00 UTC; WAL continuous | 30 days of PITR window; weekly bases kept 90 days |
-| Object storage (`qalam-media/public`) | Bucket replication to second region/provider                                                                                                                                            | continuous                     | mirror                                            |
-| Redis                                 | **Not backed up.** DB 0 cache (rebuildable), DB 2 rate-limit (ephemeral), DB 1 queues + DB 3 auth accept loss: in-flight jobs re-enqueue from domain state; auth loss = forced re-login | —                              | —                                                 |
-| Config/secrets                        | GitHub Environments + sealed copy in team password manager                                                                                                                              | on change                      | —                                                 |
+| What                                      | Method                                                                                                                                                                                  | Schedule                       | Retention                                         |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ | ------------------------------------------------- |
+| Postgres                                  | **Daily base backup + continuous WAL archiving** (pgBackRest or wal-g → object storage, separate bucket + credentials from app S3 keys)                                                 | base 02:00 UTC; WAL continuous | 30 days of PITR window; weekly bases kept 90 days |
+| Object storage (`umberleaf-media/public`) | Bucket replication to second region/provider                                                                                                                                            | continuous                     | mirror                                            |
+| Redis                                     | **Not backed up.** DB 0 cache (rebuildable), DB 2 rate-limit (ephemeral), DB 1 queues + DB 3 auth accept loss: in-flight jobs re-enqueue from domain state; auth loss = forced re-login | —                              | —                                                 |
+| Config/secrets                            | GitHub Environments + sealed copy in team password manager                                                                                                                              | on change                      | —                                                 |
 
 - **PITR** (point-in-time recovery) is the reason for WAL archiving: "restore to
   13:47, right before the bad migration" — see §5 rollback playbook.

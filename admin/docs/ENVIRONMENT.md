@@ -1,4 +1,4 @@
-# Qalam Admin — Environment Setup
+# Umberleaf Admin — Environment Setup
 
 ## Prerequisites
 

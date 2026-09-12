@@ -8,9 +8,21 @@
 
 ## 0. Product Identity
 
-- **Working codename:** **Qalam** (قلم / क़लम — _"the pen"_). Chosen because it is shared
-  vocabulary between Urdu and Hindi, our launch audiences. Rename is a find/replace on the
-  `@umberleaf/*` package scope; nothing else couples to it.
+- **Name:** **Umberleaf**. An umber leaf is an autumn leaf, and a leaf is a page. It replaced
+  the working codename Umberleaf ("the pen", shared vocabulary between Urdu and Hindi) in
+  2026-09; that name was crowded and expensive to rank for. The mark moved with it, because
+  the old one was the letter qāf — the first letter of the word being retired. The palette did
+  **not** move: `#9E4B28` and the warm-paper grounds are the part of the identity that
+  survived, and no token value was edited anywhere in the rename.
+- **This entry used to claim a rename was "a find/replace on the package scope; nothing else
+  couples to it." That was wrong, and it is recorded rather than quietly deleted because the
+  estimate is the kind of thing that gets planned against.** The rename touched ~4,000 lines
+  across three repos and required: a settings DATA migration (catalogue defaults are dead code
+  on any booted DB — `syncDefinitions` uses `.orIgnore()`), deleting and re-minting 104 visual
+  baselines (a wordmark change lands under the 2% diff gate, so it is invisible to both
+  verification and `--update-snapshots`), three AI system prompts (a model-behaviour change,
+  not copy), every store identifier on mobile, and care around a GitHub team namespace that is
+  spelled exactly like the npm scope but silently assigns NOBODY when renamed.
 - **Product:** A global creative writing platform — _"a premium writing sanctuary."_
 - **Launch audience:** Hindi and Urdu writers. **Urdu is RTL — right-to-left support is a
   day-one architectural requirement, not a Phase 2 retrofit.**
@@ -256,8 +268,8 @@ Sentry scrubbing + Pino redaction of PII/tokens. Full threat model in
 ## 10. Canonical Reference (contract for all documents & scaffold)
 
 **Ports/URLs (dev):** API `4000` (`/api/v1`, docs at `/docs`) · frontend `5173` ·
-admin `5174` · postgres `5432` (`qalam` / user `qalam`) · redis `6379` · MinIO `9000`
-(console `9001`, bucket `qalam-media`) · mailpit SMTP `1025` / UI `8025`.
+admin `5174` · postgres `5432` (`umberleaf` / user `umberleaf`) · redis `6379` · MinIO `9000`
+(console `9001`, bucket `umberleaf-media`) · mailpit SMTP `1025` / UI `8025`.
 
 **Env vars (backend):** `NODE_ENV`, `PORT`, `APP_URL`, `ADMIN_URL` (CORS allowlist),
 `API_URL`, `DATABASE_URL`, `REDIS_URL`, `JWT_ACCESS_SECRET`, `JWT_ACCESS_TTL`,

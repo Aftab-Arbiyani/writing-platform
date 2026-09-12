@@ -62,7 +62,7 @@ describe('Auth (e2e)', () => {
       .expect(201);
 
     const cookies = res.headers['set-cookie'] as unknown as string[];
-    expect(cookies.some((c) => c.startsWith('qalam_rt=') && c.includes('HttpOnly'))).toBe(true);
+    expect(cookies.some((c) => c.startsWith('umberleaf_rt=') && c.includes('HttpOnly'))).toBe(true);
     expect(res.body.data.refreshToken).toBeUndefined(); // not in body for web
   });
 

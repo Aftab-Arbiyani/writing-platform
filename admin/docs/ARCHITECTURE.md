@@ -1,6 +1,6 @@
-# Qalam Admin — Architecture Summary
+# Umberleaf Admin — Architecture Summary
 
-The Qalam **admin** application is the internal operations console for the Qalam
+The Umberleaf **admin** application is the internal operations console for the Umberleaf
 writing platform. It is a single-page React app that consumes the frozen `v1`
 backend API. It shares design tokens, vocabulary, and utilities with the reader
 app through workspace packages but is a wholly separate deployable.

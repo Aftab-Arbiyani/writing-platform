@@ -39,7 +39,7 @@
 ### 1.2 Availability
 
 `VITE_ENABLE_MONETIZATION`, added to `config/env.ts` with the same zod `default('false')` pattern as
-`VITE_ENABLE_COLLABORATION`, mirroring mobile's `QALAM_ENABLE_MONETIZATION`. The settings nav shows
+`VITE_ENABLE_COLLABORATION`, mirroring mobile's `UMBERLEAF_ENABLE_MONETIZATION`. The settings nav shows
 **Billing** only while it is on, exactly as `SAFETY_SECTION` does. E2E runs it `true`.
 
 Routes are registered unconditionally and each page renders its own "not available yet" state when the

@@ -176,7 +176,7 @@ The live run surfaced — and this effort fixed — three real defects (exactly 
    The feed (and search / notifications / profile / drafts, which share the hook) never loaded page 2 on a
    fresh visit. Fixed by switching the hook to a **callback ref** so it binds when the sentinel mounts.
 2. **`storageState` reuse is incompatible with the rotating-refresh + reuse-detection auth model.** The app
-   keeps its access token in memory and boot-refreshes from the `qalam_rt` cookie; that cookie is single-use,
+   keeps its access token in memory and boot-refreshes from the `umberleaf_rt` cookie; that cookie is single-use,
    so the first test consumed it and later tests reusing the static file hit the login screen. Fixed with a
    **per-test fresh login** ([03 §fresh-login](./03_AuthStrategy.md), `e2e/fixtures/auth.ts`) — each test
    mints its own token family in its own context. This is the standing pattern for authenticated specs.

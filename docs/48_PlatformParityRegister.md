@@ -1056,7 +1056,7 @@ uses it, so regional pricing was reachable from the API and invisible to every t
 The frontend's local override is now a plain alias of the package type.
 
 > **Class closed 2026-08-05** — this instance plus W4-5 and W5-1 are now held by a package-wide guard:
-> [§3.11](#311-w4-2--w4-5--w5-1--class-closed-2026-08-05--qalamapi-types-drifting-from-the-dtos).
+> [§3.11](#311-w4-2--w4-5--w5-1--class-closed-2026-08-05--umberleafapi-types-drifting-from-the-dtos).
 
 ### W4-3 · see [§5.2](#52-the-monetization-catalogue-sells-eight-features-and-the-backend-enforces-one-opened-2026-07-29-during-w4)
 
@@ -1157,7 +1157,7 @@ suite failed as it should, and it was reverted.
 > **Class closed 2026-08-05.** The pin described above was module-scoped and hand-listed six pairs, so it
 > could not see W5-1 coming. It is superseded by a package-wide guard that discovers its own pairs and
 > refuses to let a new export arrive unpinned:
-> [§3.11](#311-w4-2--w4-5--w5-1--class-closed-2026-08-05--qalamapi-types-drifting-from-the-dtos).
+> [§3.11](#311-w4-2--w4-5--w5-1--class-closed-2026-08-05--umberleafapi-types-drifting-from-the-dtos).
 
 ---
 
@@ -1210,7 +1210,7 @@ All three items, and the placement follows §5.2 rather than the widget's own am
    checks instead of grepping.
 
 **One consequence had to be handled, not just noted.** With the gate in place, a build with
-`QALAM_ENABLE_MONETIZATION` down would have shown a paywall over an unreleased feature — the snapshot
+`UMBERLEAF_ENABLE_MONETIZATION` down would have shown a paywall over an unreleased feature — the snapshot
 answers the free-tier default in that mode, which denies everything. `entitlementSnapshot` now
 short-circuits to that default without issuing a request when the flag is down (web's
 `enabled: isMonetizationEnabled()`), and the credit dashboard opens with the flag-off empty state web's
@@ -1268,7 +1268,7 @@ noting because the two read almost identically at a glance.
 
 ### M5-4 · ~~**low**~~ · **CLOSED 2026-08-03** · four of mobile's five monetization screens ignore the dark-launch flag (opened 2026-08-03, during M5-1)
 
-`QALAM_ENABLE_MONETIZATION` gated exactly one thing on mobile: whether the **Premium section appeared
+`UMBERLEAF_ENABLE_MONETIZATION` gated exactly one thing on mobile: whether the **Premium section appeared
 in the settings hub**. The `/billing/*` routes are registered unconditionally, so every one of them
 stayed deep-linkable in a dark build, and `plans_screen`, `subscription_screen`,
 `usage_dashboard_screen` and `billing_history_screen` rendered normally when reached — issuing live
@@ -1616,7 +1616,7 @@ drifting from the DTO it mirrors. **This is FIX-THEN-PORT: api-types must be cor
 layer is written**, or W5 ships a search whose filter path 400s.
 
 > **Closed 2026-08-03** (the flat shape, before the web API layer was written). The _class_ — W4-2 + W4-5 +
-> this — is closed by a guard as of 2026-08-05: [§3.11](#311-w4-2--w4-5--w5-1--class-closed-2026-08-05--qalamapi-types-drifting-from-the-dtos).
+> this — is closed by a guard as of 2026-08-05: [§3.11](#311-w4-2--w4-5--w5-1--class-closed-2026-08-05--umberleafapi-types-drifting-from-the-dtos).
 
 ### W5-2 · ~~**medium**~~ · ✅ **CLOSED (backend + web + mobile)** · backend/web 2026-08-04 during W5, mobile 2026-08-07 · `pieceId` was documented on both sides of the wire and read by nothing
 
@@ -1933,11 +1933,11 @@ Recorded because each is a pattern, not a one-off:
 Three separate findings, one defect. Each was closed on its own; nothing stopped a fourth, and a fourth
 was already sitting there (see "what it found on its first run" below).
 
-|                                                                                                                          | drift                                                                                                                                    | how it failed                                        | closed     |
-| ------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- | ---------- |
-| [W4-2](#w4-2--medium--closed-2026-07-29--qalamapi-types-declares-the-wrong-shape-for-purchasesrestore)                   | `RestorePurchasesResponse` declared `{restored, subscription, creditsGranted}`; the handler returns `{restored, providerRef, expiresAt}` | two fields read `undefined`, a third invisible       | 2026-07-29 |
-| [W4-5](#w4-5--medium--closed-2026-07-29--qalamapi-types-declares-a-couponcode-on-changeplanrequest-that-the-dto-rejects) | `ChangePlanRequest` declared `couponCode`; `ChangePlanDto` has no such property                                                          | **400 `VALIDATION_FAILED` on every plan change**     | 2026-07-29 |
-| [W5-1](#w5-1--high--qalamapi-types-declares-a-search-filter-shape-the-dto-rejects-outright)                              | `SemanticSearchRequest` declared a nested `filters` object; the DTO takes them flat with `tags` comma-separated                          | **400 `VALIDATION_FAILED` on every filtered search** | 2026-08-03 |
+|                                                                                                                              | drift                                                                                                                                    | how it failed                                        | closed     |
+| ---------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- | ---------- |
+| [W4-2](#w4-2--medium--closed-2026-07-29--umberleafapi-types-declares-the-wrong-shape-for-purchasesrestore)                   | `RestorePurchasesResponse` declared `{restored, subscription, creditsGranted}`; the handler returns `{restored, providerRef, expiresAt}` | two fields read `undefined`, a third invisible       | 2026-07-29 |
+| [W4-5](#w4-5--medium--closed-2026-07-29--umberleafapi-types-declares-a-couponcode-on-changeplanrequest-that-the-dto-rejects) | `ChangePlanRequest` declared `couponCode`; `ChangePlanDto` has no such property                                                          | **400 `VALIDATION_FAILED` on every plan change**     | 2026-07-29 |
+| [W5-1](#w5-1--high--umberleafapi-types-declares-a-search-filter-shape-the-dto-rejects-outright)                              | `SemanticSearchRequest` declared a nested `filters` object; the DTO takes them flat with `tags` comma-separated                          | **400 `VALIDATION_FAILED` on every filtered search** | 2026-08-03 |
 
 **Why it kept happening.** The package is handwritten — its own `generate` script still exits 1
 (`"openapi.json not yet emitted by backend (Phase 1)"`) — while the DTOs are the SSOT. Nothing connected
@@ -3845,7 +3845,7 @@ orderedList, listItem, hardBreak, footnote, mention, hashtag`
 > - **`:161` was a spec arranged on another test's side effect — the sharpest instance of that pattern
 >   yet, because the arrangement was invisible in the file.** `browser.newContext()` **inherits the
 >   project's `use` options**, `storageState` included, and for every `frontend-*` project that is
->   `.auth/frontend.json` — a file whose single cookie is the writer's httpOnly `qalam_rt`. So the
+>   `.auth/frontend.json` — a file whose single cookie is the writer's httpOnly `umberleaf_rt`. So the
 >   "fresh context with no session" booted, refreshed, and landed **signed in**. Traced: on the failing
 >   run `POST /auth/refresh` answered **200** and the frame never left `/me/reading`. It normally
 >   bounced only because the stored refresh token had usually already been consumed by another test,
@@ -5381,7 +5381,7 @@ subscriber's plan is computed correctly and then ignored on every route but the 
 
 ### D5 — the AI surface is removed; the tools stay (owner, 2026-09-02)
 
-**The decision.** Qalam's audience — literary writers, and poets above all — rejects products that
+**The decision.** Umberleaf's audience — literary writers, and poets above all — rejects products that
 lead with "AI", and rejects two things specifically: prose _generation_, and manuscripts being used
 covertly. The product as built led with both. The paid headline was the Writing Assistant's
 `continue` / `rewrite` / `expand` / `tone` / `freeform`; "AI" appeared on the settings nav, the plan
@@ -6252,7 +6252,7 @@ rather than in a commit message, which is the whole reason this section exists.
    - **The reader aggregate was MOVED, not built.** This is the finding that re-scoped row 4. All seven
      `ReaderAnalyticsDto` fields were **already rendering on web** — `reader-insights.tsx`, fed by
      `useDashboard()` through `GET /analytics/dashboard` (which returns `{writer, reader}`). They were
-     mounted inside the WRITER dashboard at `/me/stats`, a page headed "Your writing's reach on Qalam",
+     mounted inside the WRITER dashboard at `/me/stats`, a page headed "Your writing's reach on Umberleaf",
      including in its no-published-pieces branch. So the gap was **placement, not data**: a reader who
      had never published was sent to a dashboard about pieces they had not written in order to see what
      they had read. W7c gave them `/me/reading`, split the read (`GET /analytics/readers/me` — the
@@ -6260,7 +6260,7 @@ rather than in a commit message, which is the whole reason this section exists.
      the writer page. The row's premise — "web has writer + per-piece analytics only" — was wrong, and
      §2 row 6 now says so.
    - **The writer export was split in two.** `buildExportRows` appended four reader rows to
-     `qalam-analytics.csv`; those moved to `qalam-reading.csv` via `readerExportRows`. An export named
+     `umberleaf-analytics.csv`; those moved to `qalam-reading.csv` via `readerExportRows`. An export named
      for a writer that silently mixed in what the user had READ was the same audience confusion on
      disk. Both builders moved out of the page components into `lib/export-analytics.ts` — where they
      are directly unit-testable, and where a page component no longer exports a non-component.
@@ -6852,7 +6852,7 @@ subject is another row's recorded debt rather than a new surface.
 > deliberately did not repeat it (§6.16); **B9** fixed the 18 and corrected this line. Do not read a
 > "clean" in this document as evidence that the command was run.
 
-**The browser suite was NOT executed for this row.** No Qalam stack is running on this machine and the
+**The browser suite was NOT executed for this row.** No Umberleaf stack is running on this machine and the
 visual job's pinned image is CI-only, so what is verified here is that the specs typecheck, lint, and
 collect — not that they pass. That is the same standing position as every row since the E2E deferral
 (§3, "E2E browser testing"), and it is stated rather than implied because two of the new specs assert
@@ -6981,8 +6981,8 @@ browser commit, and a Phase 0 that changed the shape of the UI before any of it 
 `vite build` passes on its own; the `tsc -b` half of `build` fails on the same 18. Reporting "typecheck
 clean" here would have been repeating §6.15's mistake rather than finding it.
 
-**The browser suite was NOT executed for this row.** No Qalam stack runs on this machine (nothing on
-:4000 or :5174, and no Qalam containers) and the visual job's pinned image is CI-only, so what is
+**The browser suite was NOT executed for this row.** No Umberleaf stack runs on this machine (nothing on
+:4000 or :5174, and no Umberleaf containers) and the visual job's pinned image is CI-only, so what is
 verified is that the specs typecheck, lint and collect — not that they pass. Same standing position as
 every row since the E2E deferral (§3, "E2E browser testing"), stated rather than implied.
 
@@ -7173,7 +7173,7 @@ this row's and nothing drifted in between. Admin gained +2 spec files' worth of 
 (+16 across four existing specs). `admin-dark` is unchanged because this row added no a11y or visual
 test — it changed what two existing ones arrange.
 
-**The browser suite was NOT executed for this row.** No Qalam stack is running on this machine and the
+**The browser suite was NOT executed for this row.** No Umberleaf stack is running on this machine and the
 visual job's pinned image is CI-only, so what is verified is that the specs typecheck, lint, and
 collect — not that they pass. Same standing position as A1, B8 and A2. One thing this row can state
 positively: `admin-trust.png` was never minted by A2 either, so the panel gaining a strike list makes no

@@ -80,7 +80,7 @@ The entry sequence is already scaffolded. New work extends it; it does not repla
 
 ```
 index.html
-  └─ inline <head> script: reads localStorage["qalam-theme"], sets data-theme
+  └─ inline <head> script: reads localStorage["umberleaf-theme"], sets data-theme
      on <html> BEFORE the bundle loads  → zero theme flash (07 §3, 12 §3)
         │
 main.tsx  (src/main.tsx)

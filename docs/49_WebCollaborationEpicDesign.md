@@ -47,7 +47,7 @@ the same shape on 2026-07-28**, using this as its reference; M-1 is closed
 
 ### 2.2 Availability: dark-launched, mirroring mobile
 
-Mobile gates AF6 behind the compile-time `QALAM_ENABLE_COLLABORATION`, **default off**, with 5 screens
+Mobile gates AF6 behind the compile-time `UMBERLEAF_ENABLE_COLLABORATION`, **default off**, with 5 screens
 self-gating. Web mirrors it: **`VITE_ENABLE_COLLABORATION`, default `false`** in `config/env.ts`, with
 routes/pages self-gating the same way. Playwright's `webServer` block sets it `true`, so E2E covers
 everything while the shipped default stays dark. Availability parity is preserved, so this needs no
@@ -250,7 +250,7 @@ never actually created; running it outside the sandbox brought the stack up norm
 | E2E **run + baselines**             | ❌ **not run** — see below                                                                                                                                                                                                          |
 
 **Why E2E did not run.** `pnpm e2e:up` cannot bring the stack up in the current sandbox: `docker
-compose up --wait` reports the qalam containers healthy, but they are not visible to `docker ps` and
+compose up --wait` reports the umberleaf containers healthy, but they are not visible to `docker ps` and
 the published Postgres port (`5434`, from `.env`) refuses connections, so `migration:run` fails with
 `ECONNREFUSED` and neither the seeds nor the backend start. With no backend there is no run and no
 baseline generation — and baselines must be produced in the pinned Playwright image anyway

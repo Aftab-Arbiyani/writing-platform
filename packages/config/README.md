@@ -1,6 +1,6 @@
 # @umberleaf/config
 
-Build presets for the Qalam monorepo — _how we build_, nothing else (ADR §2).
+Build presets for the Umberleaf monorepo — _how we build_, nothing else (ADR §2).
 
 - `tsconfig/base.json` · `nest.json` · `react.json` — strict TS bases (extend via `"extends": "@umberleaf/config/tsconfig/base.json"`).
 - `eslint/base` · `eslint/react` · `eslint/nest` — ESLint 9 flat-config presets (import in `eslint.config.mjs`).

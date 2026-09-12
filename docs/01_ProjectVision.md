@@ -1,19 +1,18 @@
 # 01 — Project Vision
 
 > **Derives from:** `00_ArchitectureDecisions.md` (the master ADR). This document explains
-> _why Qalam exists_ and _what winning looks like_. Where this document and the ADR appear
+> _why Umberleaf exists_ and _what winning looks like_. Where this document and the ADR appear
 > to disagree, the ADR wins and this document gets fixed.
 
 ---
 
 ## 1. Vision Statement
 
-**Qalam is a premium writing sanctuary** — a global creative writing platform where the
+**Umberleaf is a premium writing sanctuary** — a global creative writing platform where the
 work itself is the product, not the engagement metrics around it.
 
-The name — **Qalam** (قلم / क़लम, _"the pen"_) — is shared vocabulary between Urdu and
-Hindi, our two launch audiences. It signals the promise: this is a place built around the
-instrument of writing, not around a feed algorithm.
+The name — **Umberleaf** — is an autumn leaf, and a leaf is a page. It signals the promise:
+this is a place built around the written page, not around a feed algorithm.
 
 Every product and architectural decision flows from one sentence:
 
@@ -23,7 +22,7 @@ Every product and architectural decision flows from one sentence:
 **Why "sanctuary" and not "network."** The dominant platforms treat writing as content
 inventory for an attention marketplace. Writers who care about craft — poets especially —
 experience those platforms as hostile: their scripts render badly, their line breaks are
-mangled, their work is ranked below reaction bait. Qalam inverts the priority order:
+mangled, their work is ranked below reaction bait. Umberleaf inverts the priority order:
 typography, reading experience, and the writer's control over presentation come first;
 distribution mechanics come second and are designed to _respect the work_ (see Pillars, §4).
 
@@ -62,7 +61,7 @@ competitor has attempted.
 
 Urdu is properly written in **Nastaliq**, a calligraphic style with steep vertical stacking
 and contextual letterforms. Most platforms fall back to Naskh (which Urdu readers register
-as "not really Urdu") or break the script entirely. Qalam commits to Nastaliq from day one:
+as "not really Urdu") or break the script entirely. Umberleaf commits to Nastaliq from day one:
 
 - Reading face: **Noto Nastaliq Urdu**, self-hosted via @fontsource (ADR §6 — no CDN).
 - **Line-height ≥ 2 and a larger base size** for Nastaliq (ADR §7) — the script is
@@ -105,33 +104,33 @@ Three personas anchor Phase 1 scope. Every feature must serve at least one of th
 
 ### Persona 1 — Farheen, the Urdu poet
 
-|                          |                                                                                                                                                                                                                                                                                       |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Profile**              | 34, Lahore/Lucknow diaspora, writes ghazals and nazms nightly. Publishes to a WhatsApp circle of ~200 and an Instagram account where poems are posted _as images_ because text posts destroy Nastaliq.                                                                                |
-| **Goals**                | See her work typeset in true Nastaliq with correct line breaks and generous spacing. Build a findable body of work under one pen name. Reach readers beyond her circle. Attach footnotes for difficult words. Share a beautifully rendered card of a couplet.                         |
-| **Frustrations**         | Every platform renders Urdu as cramped Naskh or breaks it entirely. Screenshots are not searchable, not accessible, not hers. Engagement on image posts rewards the image, not the poem. No platform understands what a _ghazal_ is.                                                  |
-| **What Qalam gives her** | Nastaliq reading face with line-height ≥ 2, RTL-correct editor and reading view, footnotes as a first-class editor extension, genre/tag taxonomy that knows her forms, share cards (`card_templates`) generated from real text, a permanent `@username` plus one changeable pen name. |
-| **Success looks like**   | She stops posting screenshots. Her Qalam profile becomes the canonical home of her work.                                                                                                                                                                                              |
+|                              |                                                                                                                                                                                                                                                                                       |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Profile**                  | 34, Lahore/Lucknow diaspora, writes ghazals and nazms nightly. Publishes to a WhatsApp circle of ~200 and an Instagram account where poems are posted _as images_ because text posts destroy Nastaliq.                                                                                |
+| **Goals**                    | See her work typeset in true Nastaliq with correct line breaks and generous spacing. Build a findable body of work under one pen name. Reach readers beyond her circle. Attach footnotes for difficult words. Share a beautifully rendered card of a couplet.                         |
+| **Frustrations**             | Every platform renders Urdu as cramped Naskh or breaks it entirely. Screenshots are not searchable, not accessible, not hers. Engagement on image posts rewards the image, not the poem. No platform understands what a _ghazal_ is.                                                  |
+| **What Umberleaf gives her** | Nastaliq reading face with line-height ≥ 2, RTL-correct editor and reading view, footnotes as a first-class editor extension, genre/tag taxonomy that knows her forms, share cards (`card_templates`) generated from real text, a permanent `@username` plus one changeable pen name. |
+| **Success looks like**       | She stops posting screenshots. Her Umberleaf profile becomes the canonical home of her work.                                                                                                                                                                                          |
 
 ### Persona 2 — Ravi, the Hindi short-story writer
 
-|                          |                                                                                                                                                                                                                                                                                                                                                  |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Profile**              | 27, Indore, writes 2,000–5,000-word short stories in Hindi. Serious about craft; wants readers, feedback, and evidence that people actually finish his stories.                                                                                                                                                                                  |
-| **Goals**                | A calm long-form editor that doesn't fight Devanagari input. Draft → preview → publish with real metadata (title, subtitle, cover, featured quote, genre, tags). Schedule releases. See honest analytics: reads, reading time, **completion** — not vanity impressions.                                                                          |
-| **Frustrations**         | Blog platforms treat Hindi as an edge case (broken word counts, wrong reading-time estimates). Social platforms bury long-form. He has no idea whether anyone reads past paragraph three.                                                                                                                                                        |
-| **What Qalam gives him** | TipTap editor with the Phase 1 marks he actually needs (bold, italic, underline, alignment, blockquote, lists) plus footnotes/mentions/hashtags; scheduled publishing via the `scheduled-publish` queue; per-piece analytics (views, reads, reading time, completion, shares — ADR §10); Noto Serif Devanagari reading face at a 65–72ch column. |
-| **Success looks like**   | He publishes weekly, watches completion rates improve as he edits tighter, and gains followers who arrive via search and the Following feed rather than luck.                                                                                                                                                                                    |
+|                              |                                                                                                                                                                                                                                                                                                                                                  |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Profile**                  | 27, Indore, writes 2,000–5,000-word short stories in Hindi. Serious about craft; wants readers, feedback, and evidence that people actually finish his stories.                                                                                                                                                                                  |
+| **Goals**                    | A calm long-form editor that doesn't fight Devanagari input. Draft → preview → publish with real metadata (title, subtitle, cover, featured quote, genre, tags). Schedule releases. See honest analytics: reads, reading time, **completion** — not vanity impressions.                                                                          |
+| **Frustrations**             | Blog platforms treat Hindi as an edge case (broken word counts, wrong reading-time estimates). Social platforms bury long-form. He has no idea whether anyone reads past paragraph three.                                                                                                                                                        |
+| **What Umberleaf gives him** | TipTap editor with the Phase 1 marks he actually needs (bold, italic, underline, alignment, blockquote, lists) plus footnotes/mentions/hashtags; scheduled publishing via the `scheduled-publish` queue; per-piece analytics (views, reads, reading time, completion, shares — ADR §10); Noto Serif Devanagari reading face at a 65–72ch column. |
+| **Success looks like**       | He publishes weekly, watches completion rates improve as he edits tighter, and gains followers who arrive via search and the Following feed rather than luck.                                                                                                                                                                                    |
 
 ### Persona 3 — Sana, the reader / curator
 
-|                          |                                                                                                                                                                                                                                                                                                          |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Profile**              | 41, Delhi, reads in Hindi, Urdu, and English. Doesn't publish. Maintains reading lists for friends and a private habit of collecting couplets. The platform's demand side — and its taste engine.                                                                                                        |
-| **Goals**                | A distraction-free reading experience in three scripts with dark mode for night reading. Discover new writers by genre/tag/language. Curate: bookmarks for herself, reading lists and collections to share, reposts and quote-reposts to signal taste.                                                   |
-| **Frustrations**         | Feeds optimized for outrage. No serious multilingual discovery anywhere — following Urdu poetry _and_ Hindi fiction means living on two platforms. Curation tools are afterthoughts.                                                                                                                     |
-| **What Qalam gives her** | Feed tabs she controls (Following / Trending / Latest / Discover — tab in the URL, shareable); search by writer, title, tag, genre, and language on Postgres FTS; bookmarks, reading lists, collections, repost and quote as first-class social objects; dark mode and per-script typography on day one. |
-| **Success looks like**   | Her reading lists become destinations. Writers she curates gain followers — curation becomes a contribution.                                                                                                                                                                                             |
+|                              |                                                                                                                                                                                                                                                                                                          |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Profile**                  | 41, Delhi, reads in Hindi, Urdu, and English. Doesn't publish. Maintains reading lists for friends and a private habit of collecting couplets. The platform's demand side — and its taste engine.                                                                                                        |
+| **Goals**                    | A distraction-free reading experience in three scripts with dark mode for night reading. Discover new writers by genre/tag/language. Curate: bookmarks for herself, reading lists and collections to share, reposts and quote-reposts to signal taste.                                                   |
+| **Frustrations**             | Feeds optimized for outrage. No serious multilingual discovery anywhere — following Urdu poetry _and_ Hindi fiction means living on two platforms. Curation tools are afterthoughts.                                                                                                                     |
+| **What Umberleaf gives her** | Feed tabs she controls (Following / Trending / Latest / Discover — tab in the URL, shareable); search by writer, title, tag, genre, and language on Postgres FTS; bookmarks, reading lists, collections, repost and quote as first-class social objects; dark mode and per-script typography on day one. |
+| **Success looks like**       | Her reading lists become destinations. Writers she curates gain followers — curation becomes a contribution.                                                                                                                                                                                             |
 
 **Why a non-writing persona:** feeds, search, collections, and reading lists — half the
 Phase 1 module map — exist for Sana. A writing platform with no deliberate reader
@@ -191,7 +190,7 @@ Phase 3 a market expansion instead of a rewrite.
 
 ## 6. Success Metrics
 
-Metrics come from Qalam's own analytics pipeline (`analytics_events` → BullMQ
+Metrics come from Umberleaf's own analytics pipeline (`analytics_events` → BullMQ
 `analytics-rollup` → `analytics_daily`, ADR §4) — no third-party analytics required to
 run the business.
 
@@ -293,6 +292,6 @@ Named so nobody relitigates them casually. Changing any of these means changing 
 
 ## 8. One-Line Summary
 
-**Qalam wins by taking Hindi and Urdu writers seriously before anyone else does — and by
+**Umberleaf wins by taking Hindi and Urdu writers seriously before anyone else does — and by
 building the typography, direction-handling, and calm that "seriously" requires into the
 foundation, so that going global later is expansion, not repair.**

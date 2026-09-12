@@ -1,4 +1,4 @@
-# Qalam Admin — Shared Package Usage
+# Umberleaf Admin — Shared Package Usage
 
 The admin app maximizes reuse of workspace packages (apps import packages, never
 the reverse; packages never import apps). Nothing that belongs in a package is

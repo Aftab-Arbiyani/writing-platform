@@ -1,6 +1,6 @@
 # @umberleaf/ui
 
-The look of Qalam, and nothing else (charter: `docs/08_ComponentLibrary.md`).
+The look of Umberleaf, and nothing else (charter: `docs/08_ComponentLibrary.md`).
 
 - `styles/tokens.css` — the `--q-*` design tokens (light + `[data-theme='dark']`).
   **Single source of truth** for color, type, spacing, radii, elevation, motion.

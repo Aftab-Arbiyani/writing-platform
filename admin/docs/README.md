@@ -1,6 +1,6 @@
-# Qalam Admin — Documentation Index
+# Umberleaf Admin — Documentation Index
 
-Production documentation for the Qalam **admin** operations console. Generated /
+Production documentation for the Umberleaf **admin** operations console. Generated /
 finalized in Epic A9 (production readiness).
 
 ## Documents

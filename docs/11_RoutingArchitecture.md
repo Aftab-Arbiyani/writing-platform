@@ -270,14 +270,14 @@ RootErrorBoundary (frontend)                 AdminErrorBoundary
 **Document titles** — each route module exports a title handle; a single effect in
 RootLayout applies it (SPA — no SSR head management needed):
 
-| Surface       | Pattern                                                                                      |
-| ------------- | -------------------------------------------------------------------------------------------- |
-| Piece         | `{title} — {penName} · Qalam` (title in its own script — Nastaliq titles stay Nastaliq)      |
-| Profile       | `{penName} (@{username}) · Qalam`                                                            |
-| Sections      | `{Section} · Qalam` (`Feed`, `Search "ghazal"`, `Drafts`, `Settings`)                        |
-| Editor        | `{draft title ∥ "Untitled"} — Draft · Qalam` (+ `•` unsaved-dot prefix mirroring save state) |
-| Admin         | `{Section} · Qalam Admin` (+ `[staging]` env prefix outside prod)                            |
-| Notifications | Unread count prefixes the title (`(3) Feed · Qalam`)                                         |
+| Surface       | Pattern                                                                                          |
+| ------------- | ------------------------------------------------------------------------------------------------ |
+| Piece         | `{title} — {penName} · Umberleaf` (title in its own script — Nastaliq titles stay Nastaliq)      |
+| Profile       | `{penName} (@{username}) · Umberleaf`                                                            |
+| Sections      | `{Section} · Umberleaf` (`Feed`, `Search "ghazal"`, `Drafts`, `Settings`)                        |
+| Editor        | `{draft title ∥ "Untitled"} — Draft · Umberleaf` (+ `•` unsaved-dot prefix mirroring save state) |
+| Admin         | `{Section} · Umberleaf Admin` (+ `[staging]` env prefix outside prod)                            |
+| Notifications | Unread count prefixes the title (`(3) Feed · Umberleaf`)                                         |
 
 ---
 

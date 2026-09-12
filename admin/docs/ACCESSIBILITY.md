@@ -1,4 +1,4 @@
-# Qalam Admin — Accessibility Guide (WCAG 2.1 AA)
+# Umberleaf Admin — Accessibility Guide (WCAG 2.1 AA)
 
 Accessibility is centralized in the `@umberleaf/ui` primitives and enforced by
 convention. This guide documents the patterns and the A9 audit result.

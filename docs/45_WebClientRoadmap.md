@@ -201,7 +201,7 @@ palette. The four specs that were missing (`story-publishing`, `settings-blocks`
 **No backend enabler** — every surface maps to an existing AF6 route (flow step 2's default).
 
 **Availability:** dark-launched behind `VITE_ENABLE_COLLABORATION` (default `false`), mirroring
-mobile's default-off `QALAM_ENABLE_COLLABORATION`; E2E runs with it enabled. The server's
+mobile's default-off `UMBERLEAF_ENABLE_COLLABORATION`; E2E runs with it enabled. The server's
 `feature.collaboration.enabled` **fails open**, so unlike W2's AI gap there is no untestable surface here.
 
 > ⚠️ **One reference was found broken, not missing.** Mobile's invite sends `{role, email}` where the

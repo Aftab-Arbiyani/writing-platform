@@ -328,7 +328,7 @@ review** — lint restricts `fetch` imports outside `lib/`.
 
   The only exemption: geometry that is genuinely physical, not directional (e.g. a
   cursor-position popover) — requires an inline
-  `// eslint-disable-next-line qalam/no-physical-direction -- reason` with the reason.
+  `// eslint-disable-next-line umberleaf/no-physical-direction -- reason` with the reason.
 
 - **Dark mode via tokens only.** Components reference `--q-*` variables (through the
   Tailwind theme mapping); the `data-theme` attribute flip does the rest. Raw hex values

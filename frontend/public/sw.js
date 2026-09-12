@@ -1,5 +1,5 @@
 /*
- * Qalam service worker — ARCHITECTURE PLACEHOLDER (Epic F10).
+ * Umberleaf service worker — ARCHITECTURE PLACEHOLDER (Epic F10).
  *
  * This file is NOT registered by default. The app ships no offline synchronization (out of the
  * F10 scope). It documents the intended worker shape for a future PWA epic and is only activated

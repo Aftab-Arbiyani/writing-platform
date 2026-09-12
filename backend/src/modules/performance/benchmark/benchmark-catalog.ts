@@ -24,8 +24,7 @@ export interface BenchmarkScenario {
   run(): void;
 }
 
-const SAMPLE_TEXT =
-  'قلم — the pen. A premium writing sanctuary for Hindi and Urdu writers. '.repeat(8);
+const SAMPLE_TEXT = 'قلم — कलम. A premium writing sanctuary for Hindi and Urdu writers. '.repeat(8);
 
 const SAMPLE_ENVELOPE = {
   success: true,

@@ -258,7 +258,7 @@ template for the package.
 - **Data-shaped props, not prop soup.** Product components accept the
   `@umberleaf/api-types` summary object (`piece={piece}`) rather than 14 scalar props — the
   wire contract is the design contract.
-- **Naming:** primitives are `Q`-prefixed (`QButton`) — they are Qalam's opinion of a
+- **Naming:** primitives are `Q`-prefixed (`QButton`) — they are Umberleaf's opinion of a
   generic control. Product components carry plain domain names (`PieceCard`,
   `ClapButton`) — there is only one of each concept. Files: `QButton/QButton.tsx` +
   `QButton.stories.tsx` + `index.ts`; exports are named, no default exports.

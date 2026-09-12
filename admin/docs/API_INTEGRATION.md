@@ -1,4 +1,4 @@
-# Qalam Admin — API Integration
+# Umberleaf Admin — API Integration
 
 The admin app talks to the frozen `v1` backend at `${VITE_API_URL}` (default
 `http://localhost:4000/api/v1`). **All HTTP goes through one client** —

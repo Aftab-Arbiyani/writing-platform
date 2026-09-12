@@ -1,4 +1,4 @@
-# Qalam Admin — Performance Guide
+# Umberleaf Admin — Performance Guide
 
 The admin app is optimized for a fast, cache-friendly production load. This guide
 documents the strategies in place and the audit result (A9).

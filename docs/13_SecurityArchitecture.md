@@ -4,7 +4,7 @@
 > §10 (canonical reference). This document expands the baseline into a full design.
 > Nothing here re-decides; it makes the baseline implementable and reviewable.
 >
-> **Scope:** application security for the Qalam platform — API, both React apps,
+> **Scope:** application security for the Umberleaf platform — API, both React apps,
 > BullMQ workers, media pipeline. Infrastructure hardening (TLS termination, firewalling,
 > backups) lives in `15_DeploymentStrategy.md`.
 
@@ -12,7 +12,7 @@
 
 ## 1. Security Posture in One Paragraph
 
-Qalam is a public social platform: most content is _meant_ to be read by strangers.
+Umberleaf is a public social platform: most content is _meant_ to be read by strangers.
 The crown jewels are the things that are **not** public — account credentials,
 unpublished drafts, private-account content, the admin panel, and the original media
 users upload. Our posture: **default-deny at every boundary** (validation, authZ,
@@ -451,7 +451,7 @@ limited to `Authorization, Content-Type, X-Request-Id, X-Client, Idempotency-Key
 ## 7. Media Upload Security
 
 ADR: pre-signed URLs, API never proxies file bytes; `sharp` in the
-`media-processing` worker; MinIO dev / S3-R2 prod, bucket `qalam-media`.
+`media-processing` worker; MinIO dev / S3-R2 prod, bucket `umberleaf-media`.
 
 ```
  Client                    API                          Object storage           media-processing worker

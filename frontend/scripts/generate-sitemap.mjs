@@ -38,4 +38,4 @@ const outPath = join(dirname(fileURLToPath(import.meta.url)), '..', 'public', 's
 writeFileSync(outPath, xml, 'utf8');
 
 // eslint-disable-next-line no-console
-console.log(`[qalam] wrote ${outPath} for ${SITE_URL} (${PUBLIC_ROUTES.length} routes)`);
+console.log(`[umberleaf] wrote ${outPath} for ${SITE_URL} (${PUBLIC_ROUTES.length} routes)`);

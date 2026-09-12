@@ -9,7 +9,7 @@
 
 ## 1. System Context (C4 Level 1)
 
-Who and what touches Qalam, from ten thousand feet:
+Who and what touches Umberleaf, from ten thousand feet:
 
 ```
                  ┌──────────────┐   ┌──────────────┐   ┌──────────────────┐
@@ -22,7 +22,7 @@ Who and what touches Qalam, from ten thousand feet:
                         ▼                   ▼                   ▼
         ┌───────────────────────────────────────────────────────────────────┐
         │                                                                   │
-        │                        QALAM  PLATFORM                            │
+        │                        UMBERLEAF  PLATFORM                        │
         │        "a premium writing sanctuary" — publish, discover,         │
         │      engage with Hindi/Urdu (later global) creative writing       │
         │                                                                   │
@@ -67,10 +67,10 @@ availability and privacy liability; the MVP keeps only what cannot be self-built
                                        ┌────────────────────────────▼─┐  ┌─────▼──────┐  ┌▼─────────────────┐
                                        │ PostgreSQL 16          :5432 │  │ Redis 7    │  │ S3/MinIO   :9000 │
                                        │ system of record · FTS       │  │      :6379 │  │ bucket:          │
-                                       │ (tsvector+GIN, simple+       │  │ DB0 cache  │  │  qalam-media     │
+                                       │ (tsvector+GIN, simple+       │  │ DB0 cache  │  │  umberleaf-media     │
                                        │  unaccent+pg_trgm) ·         │  │ DB1 queues │  │ pre-signed       │
                                        │ analytics partitions ·       │  │ DB2 ratelim│  │ upload/download  │
-                                       │ db: qalam / user: qalam      │  │ DB3 auth   │  │ (console :9001)  │
+                                       │ db: umberleaf / user: umberleaf      │  │ DB3 auth   │  │ (console :9001)  │
                                        └──────────────────────────────┘  └────────────┘  └──────────────────┘
 ```
 
@@ -227,7 +227,7 @@ knows a piece can be hidden, `moderation` knows why and by whom.
 **`media`** — Pre-signed upload issuance (content-type and size validated _before_
 signing), media records, and the `media-processing` worker: sharp re-encoding — which
 strips EXIF/GPS as a security property, not a nicety — plus variant generation into the
-`qalam-media` bucket. The API never proxies file bytes in either direction.
+`umberleaf-media` bucket. The API never proxies file bytes in either direction.
 
 **`prompts`** — Daily writing prompts (`daily_prompts`): admin-curated, scheduled
 publication, and the linkage from prompt to the pieces written in response. Small on
@@ -364,7 +364,7 @@ for traceability (ADR §9).
 ### 6.6 Media upload (pre-signed)
 
 ```
-Writer(FE)            API (media)                S3/MinIO (qalam-media)     media-processing queue/Worker
+Writer(FE)            API (media)                S3/MinIO (umberleaf-media)     media-processing queue/Worker
    │ POST /media/upload-url                            │                         │
    │ { contentType, size, purpose }                    │                         │
    ├─────────────────►│                                │                         │

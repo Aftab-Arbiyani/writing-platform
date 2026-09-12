@@ -1,4 +1,4 @@
-# Qalam Admin — Component Inventory
+# Umberleaf Admin — Component Inventory
 
 Shared, cross-feature components live in `src/components` (thin adapters over
 `@umberleaf/ui` primitives + admin-specific composites). Feature-specific components

@@ -1,4 +1,4 @@
-# `.claude/` — Qalam project rules for Claude Code
+# `.claude/` — Umberleaf project rules for Claude Code
 
 This folder turns the **Hard rules** in the root `CLAUDE.md` into automation that
 runs while Claude Code works in this repo. It is committed and shared by the whole

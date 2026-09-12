@@ -1,6 +1,6 @@
-# CLAUDE.md — Qalam Engineering Handbook
+# CLAUDE.md — Umberleaf Engineering Handbook
 
-**Qalam** (قلم / क़लम — "the pen") is a global creative writing platform: a premium writing
+**Umberleaf** (an autumn leaf; a leaf is a page) is a global creative writing platform: a premium writing
 sanctuary for Hindi and Urdu writers first, global multilingual writers later. This file is
 the permanent engineering handbook for humans and AI alike. When in doubt, the master ADR
 wins: **`docs/00_ArchitectureDecisions.md`**.

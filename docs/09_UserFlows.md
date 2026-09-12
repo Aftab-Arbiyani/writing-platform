@@ -73,7 +73,7 @@
 **Preconditions:** Visitor on `/auth/login` or `/auth/register`. Authorization-code + PKCE (ADR §3).
 
 ```
-Browser                          Google                     Qalam API
+Browser                          Google                     Umberleaf API
    │ click "Continue with Google"  │                            │
    ├── redirect (client_id, state, │                            │
    │   code_challenge) ───────────▶│                            │
