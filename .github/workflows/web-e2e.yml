@@ -47,6 +47,19 @@ concurrency:
 # the browser builds (and thus visual rendering) are identical to what produced the baselines.
 env:
   PLAYWRIGHT_IMAGE: mcr.microsoft.com/playwright:v1.61.1-noble
+  # MinIO from quay.io, NOT Docker Hub, and pinned.
+  #
+  # `minio/minio` on Docker Hub now answers anonymous pulls with "pull access denied …
+  # repository does not exist or may require 'docker login'". It broke every job in this
+  # workflow at the first step, and the message reads like a typo'd image name, so the
+  # obvious "fix" is to retype `minio/minio` — which is exactly what does not work.
+  # quay.io is MinIO's own registry and still serves the community images anonymously.
+  #
+  # Pinned rather than `:latest` for the same reason PLAYWRIGHT_IMAGE is: an unpinned infra
+  # image is a dependency that can change under you between two runs of the same commit.
+  # Used by BOTH jobs below — one definition, because two copies of an image tag is the kind
+  # of pair that silently drifts.
+  MINIO_IMAGE: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
 
 jobs:
   web-e2e:
@@ -135,7 +148,7 @@ jobs:
         run: |
           docker run -d --name minio -p 9000:9000 \
             -e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=minioadmin \
-            minio/minio server /data
+            "$MINIO_IMAGE" server /data
           for i in $(seq 1 30); do
             curl -sf http://localhost:9000/minio/health/ready && break || sleep 2
           done
@@ -335,7 +348,7 @@ jobs:
         run: |
           docker run -d --name minio -p 9000:9000 \
             -e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=minioadmin \
-            minio/minio server /data
+            "$MINIO_IMAGE" server /data
           for i in $(seq 1 30); do
             curl -sf http://localhost:9000/minio/health/ready && break || sleep 2
           done
