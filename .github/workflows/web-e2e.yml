@@ -420,8 +420,25 @@ jobs:
       # webkit's a11y failures hid in exactly that gap for two runs).
       - name: Run @visual in the pinned image
         run: |
+          # `=all`, NOT a bare `--update-snapshots`. In Playwright 1.49+ the bare flag means
+          # mode `changed`, and "changed" is judged by the SAME comparator the tests use — so a
+          # baseline only gets rewritten if it already exceeds `maxDiffPixelRatio: 0.02`.
+          #
+          # That makes any sub-threshold change invisible to BOTH verification and regeneration,
+          # permanently. This is not hypothetical: the Qalam→Umberleaf rename changed the
+          # wordmark in the top bar of every frontend page, and 64 visual tests still PASSED,
+          # because a wordmark is a small fraction of a full-page screenshot. A regenerate run
+          # would have rewritten nothing, uploaded an artifact of untouched baselines, and
+          # reported success while leaving the old brand asserted as correct.
+          #
+          # It is also how the whole set rotted once before: 71 of 104 baselines were found stale
+          # in 2026-09, which is why they were deleted and re-minted rather than updated.
+          #
+          # `all` rewrites every baseline from the actual render, unconditionally. That is the
+          # only mode that makes "regenerate" mean regenerate. Review the artifact — `all` will
+          # happily bake in a real regression too.
           UPDATE=""
-          if [ "${{ inputs.update_visual_baselines }}" = "true" ]; then UPDATE="--update-snapshots"; fi
+          if [ "${{ inputs.update_visual_baselines }}" = "true" ]; then UPDATE="--update-snapshots=all"; fi
           docker run --rm --network host --user "$(id -u):$(id -g)" -e HOME=/tmp \
             -e CI=1 -e E2E_REUSE_SERVER=1 \
             -e E2E_API_URL=http://localhost:4000/api/v1 \
