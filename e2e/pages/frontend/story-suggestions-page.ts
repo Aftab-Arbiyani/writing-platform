@@ -35,9 +35,30 @@ export class StorySuggestionsPage {
     await expect(this.heading).toBeVisible({ timeout: 30_000 });
   }
 
+  /**
+   * Wait until the page has actually SETTLED — not merely until nothing has gone wrong.
+   *
+   * The two `toHaveCount(0)` checks below are absences, and both are satisfied by the loading
+   * skeleton: while the request is in flight there is no error text and no "Collaboration is
+   * off" gate, so this helper used to return with placeholder bars still on screen. That is
+   * invisible in the functional specs — they go on to click a row, which auto-waits — but the
+   * visual spec screenshots whatever is there, and it caught the skeleton: two re-mints of the
+   * same commit produced webkit baselines 23% apart, one of loading bars and one of the real
+   * card. A baseline that records a loading state is worse than no baseline, because it is
+   * reproducible often enough to look deliberate.
+   *
+   * So the last assertion is POSITIVE: either a suggestion row rendered, or the empty state did.
+   * Either is a settled page; neither is true of the skeleton.
+   */
   async expectResolved(): Promise<void> {
     await expect(this.loadError).toHaveCount(0);
     await expect(this.page.getByText('Collaboration is off')).toHaveCount(0);
+    await expect(
+      this.list
+        .getByRole('listitem')
+        .first()
+        .or(this.page.getByText('No suggestions yet', { exact: true })),
+    ).toBeVisible();
   }
 
   async expectEmpty(): Promise<void> {
