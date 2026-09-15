@@ -6,7 +6,7 @@ import type {
   StoryEdgeType,
   StoryEventKind,
   StoryNodeType,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 /** Grounding reference for a structured claim. */
 export class StoryEvidenceDto {

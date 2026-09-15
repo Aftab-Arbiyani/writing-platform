@@ -4,7 +4,7 @@ import {
   AVATAR_IMAGE_MAX_MB,
   COVER_IMAGE_MAX_MB,
   ERROR_CODES,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 import sharp from 'sharp';
 
 import { AppException } from '../common/exceptions/app.exception';

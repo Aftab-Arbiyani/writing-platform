@@ -1,4 +1,4 @@
-import { QAvatar, QButton } from '@qalam/ui';
+import { QAvatar, QButton } from '@umberleaf/ui';
 import { Monitor, Smartphone, X } from 'lucide-react';
 import { useEffect, type ReactElement } from 'react';
 

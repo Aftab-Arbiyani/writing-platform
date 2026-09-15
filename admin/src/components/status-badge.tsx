@@ -1,4 +1,4 @@
-import { QTag, type QTagColor } from '@qalam/ui';
+import { QTag, type QTagColor } from '@umberleaf/ui';
 import type { ReactElement } from 'react';
 
 /**

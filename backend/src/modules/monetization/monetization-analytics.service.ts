@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { PaymentStatus, SubscriptionEventType } from '@qalam/shared';
+import { PaymentStatus, SubscriptionEventType } from '@umberleaf/shared';
 import { Repository } from 'typeorm';
 
 import { UsageService as AiUsageService } from '../ai';

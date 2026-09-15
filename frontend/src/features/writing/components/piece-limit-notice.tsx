@@ -1,4 +1,4 @@
-import { QButton, QCard } from '@qalam/ui';
+import { QButton, QCard } from '@umberleaf/ui';
 import { Lock } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { useNavigate } from 'react-router';
@@ -14,7 +14,7 @@ export const PIECE_LIMIT_NOTICE_ID = 'piece-limit-notice';
  * The author is at (or past) their plan's piece cap (B4, docs/45 §4.9).
  *
  * Follows the shape W4 established for a premium refusal — say what happened in the server's own
- * terms, then offer the action that actually helps — but is built from `@qalam/ui` primitives here
+ * terms, then offer the action that actually helps — but is built from `@umberleaf/ui` primitives here
  * rather than importing monetization's `FeatureLockCard`, because a feature may not import another
  * feature (docs/26 §4). It is a lock in kind, not in code.
  *

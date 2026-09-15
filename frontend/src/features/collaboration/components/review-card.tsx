@@ -1,5 +1,5 @@
-import { POLICY_ACTIONS } from '@qalam/shared';
-import { QButton, QCard, QTag, QTextArea, useToast } from '@qalam/ui';
+import { POLICY_ACTIONS } from '@umberleaf/shared';
+import { QButton, QCard, QTag, QTextArea, useToast } from '@umberleaf/ui';
 import { type ReactElement, useState } from 'react';
 
 import { getErrorMessage } from '@/lib/errors';

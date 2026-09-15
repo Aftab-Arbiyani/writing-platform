@@ -1,4 +1,4 @@
-import { QTag } from '@qalam/ui';
+import { QTag } from '@umberleaf/ui';
 import type { LucideIcon } from 'lucide-react';
 import type { ReactElement, ReactNode } from 'react';
 import { Link } from 'react-router';

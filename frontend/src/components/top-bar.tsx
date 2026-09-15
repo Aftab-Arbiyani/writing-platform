@@ -1,4 +1,4 @@
-import { QButton } from '@qalam/ui';
+import { QButton } from '@umberleaf/ui';
 import { PenLine } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { Link, useNavigate } from 'react-router';
@@ -29,9 +29,9 @@ export function TopBar(): ReactElement {
         <Link
           to={ROUTES.landing}
           className="font-serif text-xl font-semibold text-ink"
-          aria-label="Qalam home"
+          aria-label="Umberleaf home"
         >
-          Qalam
+          Umberleaf
         </Link>
         <div className="hidden flex-1 justify-center md:flex">
           <div className="w-full max-w-[480px]">

@@ -1,6 +1,6 @@
 import { Column, Entity, Index } from 'typeorm';
 
-import { QalamBaseEntity } from '../../../common/base/base.entity';
+import { AppBaseEntity } from '../../../common/base/base.entity';
 
 /**
  * Public-facing writer profile — 1:1 with {@link User} (docs 04 §3.1). Not
@@ -14,7 +14,7 @@ import { QalamBaseEntity } from '../../../common/base/base.entity';
  * the migration for search prep — never read through this entity.
  */
 @Entity('profiles')
-export class Profile extends QalamBaseEntity {
+export class Profile extends AppBaseEntity {
   @Index('uq_profiles_user', { unique: true })
   @Column({ type: 'uuid' })
   userId!: string;

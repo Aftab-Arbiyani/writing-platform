@@ -1,5 +1,5 @@
-import { ReportEntityType, ReportReason } from '@qalam/shared';
-import { QButton, QDialog, QTextArea, useToast } from '@qalam/ui';
+import { ReportEntityType, ReportReason } from '@umberleaf/shared';
+import { QButton, QDialog, QTextArea, useToast } from '@umberleaf/ui';
 import { type ReactElement, useState } from 'react';
 
 import {

@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { AiProvider } from '@qalam/shared';
+import type { AiProvider } from '@umberleaf/shared';
 
 import { AiProviderNotConfiguredException } from '../ai.exceptions';
 import { AI_PROVIDER_ADAPTERS } from './ai-provider.port';

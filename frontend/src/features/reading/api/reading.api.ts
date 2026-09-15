@@ -1,4 +1,4 @@
-import type { RecommendationResponse } from '@qalam/api-types';
+import type { RecommendationResponse } from '@umberleaf/api-types';
 
 import { del, get, getPage, post, type CursorPage } from '@/lib/api-client';
 import { buildQueryString } from '@/lib/http';

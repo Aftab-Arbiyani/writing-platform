@@ -1,4 +1,4 @@
-import { QButton, useToast } from '@qalam/ui';
+import { QButton, useToast } from '@umberleaf/ui';
 import { ImagePlus } from 'lucide-react';
 import { useRef, useState, type ReactElement } from 'react';
 

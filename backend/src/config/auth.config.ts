@@ -1,5 +1,10 @@
 import { registerAs } from '@nestjs/config';
 
+import {
+  REFRESH_TOKEN_COOKIE,
+  REFRESH_TOKEN_COOKIE_PATH,
+} from '../common/constants/http.constants';
+
 /**
  * Auth config namespace (docs 13 §3). Consumers inject
  * `ConfigType<typeof authConfig>`. Secrets/TTLs come from validated env
@@ -13,7 +18,7 @@ export const authConfig = registerAs('auth', () => ({
     accessTtl: process.env.JWT_ACCESS_TTL ?? '15m',
     refreshSecret: process.env.JWT_REFRESH_SECRET as string,
     refreshTtl: process.env.JWT_REFRESH_TTL ?? '30d',
-    issuer: 'qalam',
+    issuer: 'umberleaf',
   },
 
   // Argon2id parameters (docs 13 §3.1). Above OWASP minimums; encoded in the
@@ -45,9 +50,16 @@ export const authConfig = registerAs('auth', () => ({
 
   // Web refresh cookie (docs 13 §3.3): httpOnly, Secure (prod), SameSite=Lax,
   // scoped to the auth routes so it never rides on other requests.
+  //
+  // The name and path are IMPORTED, not repeated. They used to be typed out here
+  // as well as in http.constants.ts — two unlinked literals that had to agree for
+  // refresh to work at all, with nothing to catch it if they ever diverged: the
+  // guard would read one cookie name while the controller wrote the other, and
+  // every refresh would fail as an ordinary 401. Importing makes the drift
+  // unrepresentable rather than merely tested for.
   refreshCookie: {
-    name: 'qalam_rt',
-    path: '/api/v1/auth',
+    name: REFRESH_TOKEN_COOKIE,
+    path: REFRESH_TOKEN_COOKIE_PATH,
     sameSite: 'lax' as const,
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,

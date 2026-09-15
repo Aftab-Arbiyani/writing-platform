@@ -44,7 +44,7 @@ function declarationsFor(css: string, mode: 'light' | 'dark'): Map<string, strin
   return found;
 }
 
-const TOKENS_CSS = readFileSync(require.resolve('@qalam/ui/styles/tokens.css'), 'utf8');
+const TOKENS_CSS = readFileSync(require.resolve('@umberleaf/ui/styles/tokens.css'), 'utf8');
 
 describe('chart fallbacks mirror tokens.css (T-5)', () => {
   for (const mode of ['light', 'dark'] as const) {

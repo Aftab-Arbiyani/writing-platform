@@ -1,4 +1,4 @@
-import { RankingSignal, RetrievalSource } from '@qalam/shared';
+import { RankingSignal, RetrievalSource } from '@umberleaf/shared';
 import { plainToInstance } from 'class-transformer';
 import { validateSync } from 'class-validator';
 

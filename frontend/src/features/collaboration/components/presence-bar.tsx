@@ -1,5 +1,5 @@
-import { PresenceState } from '@qalam/shared';
-import { QAvatar } from '@qalam/ui';
+import { PresenceState } from '@umberleaf/shared';
+import { QAvatar } from '@umberleaf/ui';
 import type { ReactElement } from 'react';
 
 import { mediaUrl } from '@/lib/media';

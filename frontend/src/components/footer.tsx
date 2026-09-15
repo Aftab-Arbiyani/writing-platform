@@ -7,7 +7,7 @@ export function Footer(): ReactElement {
       data-print-hidden
       className="border-line border-t py-6 text-center text-xs text-ink-secondary"
     >
-      <p>© {String(new Date().getFullYear())} Qalam — a writing sanctuary.</p>
+      <p>© {String(new Date().getFullYear())} Umberleaf — a writing sanctuary.</p>
     </footer>
   );
 }

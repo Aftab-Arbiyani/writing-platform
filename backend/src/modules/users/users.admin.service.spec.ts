@@ -1,4 +1,4 @@
-import { UserStatus } from '@qalam/shared';
+import { UserStatus } from '@umberleaf/shared';
 
 import type { User } from './entities/user.entity';
 import { UserNotFoundException, UserStatusConflictException } from './exceptions/users.exceptions';

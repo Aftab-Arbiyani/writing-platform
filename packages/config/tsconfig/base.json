@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
-  // Strict base for every Qalam workspace. Nest/React variants extend this.
+  // Strict base for every Umberleaf workspace. Nest/React variants extend this.
   "compilerOptions": {
     "strict": true,
     "target": "ES2022",

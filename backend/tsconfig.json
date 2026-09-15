@@ -1,5 +1,5 @@
 {
-  "extends": "@qalam/config/tsconfig/nest.json",
+  "extends": "@umberleaf/config/tsconfig/nest.json",
   "compilerOptions": {
     "outDir": "./dist",
     "baseUrl": "./",

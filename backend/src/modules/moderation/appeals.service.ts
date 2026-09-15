@@ -5,7 +5,7 @@ import {
   ReportResolution,
   ReportStatus,
   UserStatus,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 import { buildOffsetMeta } from '../../common/pagination/pagination.helper';
 import type { OffsetPage } from '../../common/types/paginated-result';

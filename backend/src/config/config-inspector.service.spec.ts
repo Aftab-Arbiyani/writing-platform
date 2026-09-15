@@ -13,7 +13,7 @@ function makeInspector(environment: string): ConfigInspectorService {
 
 const REAL_SECRETS: NodeJS.ProcessEnv = {
   NODE_ENV: 'production',
-  DATABASE_URL: 'postgres://u:p@db:5432/qalam',
+  DATABASE_URL: 'postgres://u:p@db:5432/umberleaf',
   JWT_ACCESS_SECRET: 'a'.repeat(40),
   JWT_REFRESH_SECRET: 'b'.repeat(40),
   REDIS_URL: 'redis://cache:6379',

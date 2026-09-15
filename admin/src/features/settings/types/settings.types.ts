@@ -1,7 +1,7 @@
 /**
  * Wire types for the System Settings feature (A7), mirroring the E12.8 backend
  * DTOs (`backend/src/modules/settings/dto/*`). Hand-authored until
- * `@qalam/api-types` is regenerated for the new endpoints —
+ * `@umberleaf/api-types` is regenerated for the new endpoints —
  * TODO(aftab): drop for generated types once `openapi.json` includes them.
  */
 

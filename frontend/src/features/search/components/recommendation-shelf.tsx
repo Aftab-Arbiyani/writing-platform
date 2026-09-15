@@ -1,5 +1,5 @@
-import type { RecommendationItem, RecommendationKind } from '@qalam/api-types';
-import { QCard, QSkeleton, QTag } from '@qalam/ui';
+import type { RecommendationItem, RecommendationKind } from '@umberleaf/api-types';
+import { QCard, QSkeleton, QTag } from '@umberleaf/ui';
 import type { LucideIcon } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { Link } from 'react-router';

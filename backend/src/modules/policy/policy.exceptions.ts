@@ -1,5 +1,5 @@
 import { HttpStatus } from '@nestjs/common';
-import { ERROR_CODES, PolicyEffect, type PolicyDecision } from '@qalam/shared';
+import { ERROR_CODES, PolicyEffect, type PolicyDecision } from '@umberleaf/shared';
 
 import { AppException } from '../../common/exceptions/app.exception';
 

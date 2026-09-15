@@ -5,8 +5,8 @@ import {
   MAX_STORY_COLLABORATORS,
   POLICY_ACTIONS,
   StoryRole,
-} from '@qalam/shared';
-import type { StoryRole as StoryRoleType } from '@qalam/shared';
+} from '@umberleaf/shared';
+import type { StoryRole as StoryRoleType } from '@umberleaf/shared';
 
 import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { AuditService } from '../audit/audit.service';

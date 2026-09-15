@@ -1,10 +1,10 @@
-import { ExplorerView } from '@qalam/shared';
+import { ExplorerView } from '@umberleaf/shared';
 import type {
   ExplorerViewResponse,
   StoryGraphEdge,
   StoryGraphNode,
   StoryMapStreamEvent,
-} from '@qalam/api-types';
+} from '@umberleaf/api-types';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 

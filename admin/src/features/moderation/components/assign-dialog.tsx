@@ -1,4 +1,4 @@
-import { QButton, useToast } from '@qalam/ui';
+import { QButton, useToast } from '@umberleaf/ui';
 import { Select } from 'antd';
 import { useState, type ReactElement } from 'react';
 

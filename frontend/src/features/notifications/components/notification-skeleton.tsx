@@ -1,4 +1,4 @@
-import { QSkeleton } from '@qalam/ui';
+import { QSkeleton } from '@umberleaf/ui';
 import type { ReactElement } from 'react';
 
 /** Skeleton-first loading (docs/06 §4.1) — a row echoing the notification layout. */

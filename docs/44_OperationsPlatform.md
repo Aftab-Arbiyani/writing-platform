@@ -25,7 +25,7 @@ platfrom/
 │  │  ├─ operations.constants.ts         #   SLO/alert/incident/cost/log catalogues + metric/redis taxonomy
 │  │  ├─ operations.types.ts             #   all read-model shapes + the resolved OperationalSignals
 │  │  ├─ operations.util.ts              #   nowIso/opsId + readSignal (the single metric→signal mapping)
-│  │  ├─ operations.exceptions.ts        #   domain exceptions (@qalam/shared ERROR_CODES)
+│  │  ├─ operations.exceptions.ts        #   domain exceptions (@umberleaf/shared ERROR_CODES)
 │  │  ├─ collector/operations-registry.service.ts # the observer sink (ops signal counters + metric lines)
 │  │  ├─ collector/signal-collector.service.ts     # resolves OperationalSignals from the reused platforms
 │  │  ├─ tracing/operations-tracer.service.ts      # the Tracer impl (bounded in-memory trace store)

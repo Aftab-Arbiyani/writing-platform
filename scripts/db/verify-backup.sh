@@ -50,9 +50,9 @@ fi
 # Resolve the dump: explicit arg, else newest in BACKUP_DIR.
 DUMP="${1:-}"
 if [ -z "${DUMP}" ]; then
-  DUMP="$(find "${BACKUP_DIR}" -maxdepth 1 -type f -name "qalam-${BACKUP_ENV}-*.dump" 2>/dev/null \
+  DUMP="$(find "${BACKUP_DIR}" -maxdepth 1 -type f -name "umberleaf-${BACKUP_ENV}-*.dump" 2>/dev/null \
     | sort | tail -n1)"
-  [ -n "${DUMP}" ] || die "no dump found in ${BACKUP_DIR} (name qalam-${BACKUP_ENV}-*.dump)"
+  [ -n "${DUMP}" ] || die "no dump found in ${BACKUP_DIR} (name umberleaf-${BACKUP_ENV}-*.dump)"
 fi
 [ -f "${DUMP}" ] || die "dump not found: ${DUMP}"
 log "verifying dump: ${DUMP}"

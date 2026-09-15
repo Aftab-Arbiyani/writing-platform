@@ -19,7 +19,7 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { PERMISSIONS } from '@qalam/shared';
+import { PERMISSIONS } from '@umberleaf/shared';
 import { Type } from 'class-transformer';
 import { IsInt, IsOptional, Max, Min } from 'class-validator';
 

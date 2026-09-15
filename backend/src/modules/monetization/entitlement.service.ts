@@ -12,8 +12,8 @@ import {
   SubscriptionStatus,
   entitlementAllows,
   subscriptionStatusToEntitlement,
-} from '@qalam/shared';
-import type { EntitlementDecision, EntitlementSnapshot, PlanLimits } from '@qalam/shared';
+} from '@umberleaf/shared';
+import type { EntitlementDecision, EntitlementSnapshot, PlanLimits } from '@umberleaf/shared';
 import { Repository } from 'typeorm';
 
 import { CacheService } from '../../infrastructure/cache/cache.service';

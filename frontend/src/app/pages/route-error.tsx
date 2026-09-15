@@ -1,4 +1,4 @@
-import { QErrorState, QPageContainer } from '@qalam/ui';
+import { QErrorState, QPageContainer } from '@umberleaf/ui';
 import { useEffect, type ReactElement } from 'react';
 import { isRouteErrorResponse, useNavigate, useRouteError } from 'react-router';
 

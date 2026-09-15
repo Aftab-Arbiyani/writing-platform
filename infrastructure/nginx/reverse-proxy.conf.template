@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Qalam — production edge reverse proxy TEMPLATE (nginx)
+# Umberleaf — production edge reverse proxy TEMPLATE (nginx)
 #
 # A single TLS-terminating vhost that serves the SPA bundle and proxies the API
 # paths (/api, /health, /metrics) to the NestJS backend. It is a TEMPLATE, not a
@@ -13,9 +13,9 @@
 #          API_UPSTREAM=backend:4000 \
 #          SSL_CERTIFICATE=/etc/letsencrypt/live/app.example.com/fullchain.pem \
 #          SSL_CERTIFICATE_KEY=/etc/letsencrypt/live/app.example.com/privkey.pem \
-#          SPA_ROOT=/var/www/qalam/frontend
+#          SPA_ROOT=/var/www/umberleaf/frontend
 #   envsubst '${SERVER_NAME} ${API_UPSTREAM} ${SSL_CERTIFICATE} ${SSL_CERTIFICATE_KEY} ${SPA_ROOT}' \
-#     < reverse-proxy.conf.template > /etc/nginx/conf.d/qalam.conf
+#     < reverse-proxy.conf.template > /etc/nginx/conf.d/umberleaf.conf
 #   nginx -t && nginx -s reload
 #
 # TLS certs: provision via certbot or out-of-band; point the two SSL_* vars at
@@ -23,14 +23,14 @@
 # ─────────────────────────────────────────────────────────────────────────────
 
 # ── API upstream (http context: lands inside conf.d → http{}) ───────────────
-upstream qalam_api {
+upstream umberleaf_api {
     # docker network: service name; bare metal: 127.0.0.1
     server ${API_UPSTREAM};
     keepalive 32;
 }
 
 # ── Rate-limit zone — 10r/s per client IP, 20MB of state (~320k IPs) ────────
-limit_req_zone $binary_remote_addr zone=qalam_api:20m rate=10r/s;
+limit_req_zone $binary_remote_addr zone=umberleaf_api:20m rate=10r/s;
 
 # ── http → https redirect (also answers ACME http-01 challenges) ────────────
 server {
@@ -98,19 +98,19 @@ server {
 
     # ── API ──────────────────────────────────────────────────────────────────
     location /api {
-        limit_req zone=qalam_api burst=20 nodelay;
-        proxy_pass http://qalam_api;
+        limit_req zone=umberleaf_api burst=20 nodelay;
+        proxy_pass http://umberleaf_api;
     }
 
     # ── Health probes (unthrottled so a rate-limit never hides an outage) ───
     location /health {
-        proxy_pass http://qalam_api;
+        proxy_pass http://umberleaf_api;
     }
 
     # ── Prometheus metrics — INTERNAL ONLY. Restrict to your scrape network. ─
     location /metrics {
         # allow 10.0.0.0/8; deny all;   # ← uncomment + set your monitoring CIDR
-        proxy_pass http://qalam_api;
+        proxy_pass http://umberleaf_api;
     }
 
     # ── SPA (static bundle) ──────────────────────────────────────────────────

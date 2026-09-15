@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { ShareChannel } from '@qalam/shared';
+import type { ShareChannel } from '@umberleaf/shared';
 
 import { TransactionRunner } from '../../common/database/transaction-runner';
 import { DomainEventBus } from '../../common/events/domain-event-bus';

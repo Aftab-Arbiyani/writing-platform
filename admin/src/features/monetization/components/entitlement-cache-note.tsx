@@ -1,4 +1,4 @@
-import { ENTITLEMENT_CACHE_TTL_SECONDS } from '@qalam/shared';
+import { ENTITLEMENT_CACHE_TTL_SECONDS } from '@umberleaf/shared';
 import { Info } from 'lucide-react';
 import type { ReactElement } from 'react';
 

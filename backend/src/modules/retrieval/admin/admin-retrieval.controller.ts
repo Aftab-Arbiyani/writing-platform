@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Put, Query, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { PERMISSIONS, SEARCH_ANALYTICS_DEFAULT_WINDOW_DAYS } from '@qalam/shared';
+import { PERMISSIONS, SEARCH_ANALYTICS_DEFAULT_WINDOW_DAYS } from '@umberleaf/shared';
 import type { Request } from 'express';
 
 import { RateLimit } from '../../../common/decorators/rate-limit.decorator';

@@ -1,4 +1,4 @@
-import { QAvatar } from '@qalam/ui';
+import { QAvatar } from '@umberleaf/ui';
 import { Dropdown, type MenuProps } from 'antd';
 import { LogOut } from 'lucide-react';
 import { createElement, type ReactElement } from 'react';

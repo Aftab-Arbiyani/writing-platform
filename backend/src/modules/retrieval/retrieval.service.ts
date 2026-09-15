@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { ERROR_CODES, RetrievalFailureReason } from '@qalam/shared';
+import { ERROR_CODES, RetrievalFailureReason } from '@umberleaf/shared';
 
 import { AppException } from '../../common/exceptions/app.exception';
 import { ContextAssemblerService } from './context/context-assembler.service';

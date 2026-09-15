@@ -150,7 +150,7 @@ orchestrator reuses it for history + persistence; no feature re-implements it.
 aggregates per **user** and per **feature** over **daily / monthly / lifetime**
 windows, and enforces per-user daily+monthly **token caps** (org defaults from
 `aiConfig`; 0 = unlimited) via `assertWithinLimits` before a call. Cost math is
-the single shared `estimateAiCostUsd` (`@qalam/shared`) so client + server agree.
+the single shared `estimateAiCostUsd` (`@umberleaf/shared`) so client + server agree.
 Authoritative counts come from provider `usage`; a heuristic pre-count guards
 input length + context window.
 
@@ -196,7 +196,7 @@ endpoints are `text/event-stream` (outside the envelope by design, like `/metric
 
 Permissions: `ai.use` (user), `ai.manage` (admin). New rate tier `aiCompletion`
 (20/min/user). New error codes: `AI_*` (append-only). Clients consume the wire
-types from `@qalam/api-types` (`ai.ts`).
+types from `@umberleaf/api-types` (`ai.ts`).
 
 ## 11. Test coverage
 

@@ -1,4 +1,4 @@
-import { SearchSort, SearchType, SEARCH_QUERY_MIN } from '@qalam/shared';
+import { SearchSort, SearchType, SEARCH_QUERY_MIN } from '@umberleaf/shared';
 import { useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router';
 

@@ -1,4 +1,4 @@
-import { QCard, QSkeleton } from '@qalam/ui';
+import { QCard, QSkeleton } from '@umberleaf/ui';
 import { Tooltip } from 'antd';
 import { Info } from 'lucide-react';
 import { memo, type ReactElement } from 'react';

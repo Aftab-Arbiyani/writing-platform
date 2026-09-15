@@ -1,4 +1,4 @@
-# Qalam Admin — API Integration
+# Umberleaf Admin — API Integration
 
 The admin app talks to the frozen `v1` backend at `${VITE_API_URL}` (default
 `http://localhost:4000/api/v1`). **All HTTP goes through one client** —
@@ -11,7 +11,7 @@ call `api.*` and feature hooks call those.
   `Promise<ApiResult<T>> = { data, meta }`. Unwraps the envelope
   `{ success, data, meta } | { success:false, error:{ code, message, … } }`.
 - Throws a typed **`ApiError`** on any non-success — branch on `.code` (from
-  `@qalam/shared` `ERROR_CODES`), never on message. `.status`, `.details`,
+  `@umberleaf/shared` `ERROR_CODES`), never on message. `.status`, `.details`,
   `.requestId` are available.
 - **Auth**: the access token is held **in memory only** (never localStorage); the
   refresh token rides an httpOnly cookie sent via `credentials:'include'`.

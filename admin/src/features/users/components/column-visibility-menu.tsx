@@ -2,7 +2,7 @@ import { Checkbox, Popover } from 'antd';
 import { Columns3 } from 'lucide-react';
 import type { ReactElement } from 'react';
 
-import { QButton } from '@qalam/ui';
+import { QButton } from '@umberleaf/ui';
 
 import { REQUIRED_COLUMNS, USER_COLUMNS } from '../users.constants';
 import { useUsersTablePrefs } from '../stores/users-table-prefs.store';

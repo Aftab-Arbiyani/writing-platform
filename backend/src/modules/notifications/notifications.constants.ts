@@ -1,5 +1,5 @@
-import type { NotificationType } from '@qalam/shared';
-import { NotificationType as NType } from '@qalam/shared';
+import type { NotificationType } from '@umberleaf/shared';
+import { NotificationType as NType } from '@umberleaf/shared';
 
 /** Redis (DB 0) keys for the cached unread badge count. */
 export const NOTIFICATION_CACHE_KEYS = {

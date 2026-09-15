@@ -1,6 +1,6 @@
 import { HttpStatus } from '@nestjs/common';
-import { ERROR_CODES, QuotaWindow } from '@qalam/shared';
-import type { PremiumFeature } from '@qalam/shared';
+import { ERROR_CODES, QuotaWindow } from '@umberleaf/shared';
+import type { PremiumFeature } from '@umberleaf/shared';
 
 import { AppException } from '../../common/exceptions/app.exception';
 

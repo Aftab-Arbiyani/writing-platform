@@ -1,5 +1,5 @@
-import { PERMISSIONS } from '@qalam/shared';
-import { QButton } from '@qalam/ui';
+import { PERMISSIONS } from '@umberleaf/shared';
+import { QButton } from '@umberleaf/ui';
 import { type TableColumnsType } from 'antd';
 import { Plus } from 'lucide-react';
 import { useState, type ReactElement } from 'react';

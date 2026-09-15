@@ -1,4 +1,4 @@
-import { SEARCH_QUERY_MAX } from '@qalam/shared';
+import { SEARCH_QUERY_MAX } from '@umberleaf/shared';
 
 import { decodeCursor, type CursorPayload } from '../../common/pagination/cursor.util';
 import { SearchInvalidCursorException } from './search.exceptions';

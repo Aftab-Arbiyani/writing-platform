@@ -1,4 +1,4 @@
-import { QButton } from '@qalam/ui';
+import { QButton } from '@umberleaf/ui';
 import { RotateCcw, Save } from 'lucide-react';
 import type { ReactElement } from 'react';
 

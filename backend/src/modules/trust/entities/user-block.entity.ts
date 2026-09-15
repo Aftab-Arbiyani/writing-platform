@@ -1,6 +1,6 @@
 import { Column, Entity, Index } from 'typeorm';
 
-import { QalamBaseEntity } from '../../../common/base/base.entity';
+import { AppBaseEntity } from '../../../common/base/base.entity';
 import type { BlockKind } from '../trust.constants';
 
 /**
@@ -12,7 +12,7 @@ import type { BlockKind } from '../trust.constants';
  */
 @Entity('user_blocks')
 @Index('uq_user_blocks', ['blockerId', 'blockedId', 'kind'], { unique: true })
-export class UserBlock extends QalamBaseEntity {
+export class UserBlock extends AppBaseEntity {
   @Column({ type: 'uuid' })
   blockerId!: string;
 

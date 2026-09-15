@@ -1,4 +1,4 @@
-import type { DiscoverPieceKind, WriterKind } from '@qalam/shared';
+import type { DiscoverPieceKind, WriterKind } from '@umberleaf/shared';
 
 import { getPage, type CursorPage } from '@/lib/api-client';
 import { buildQueryString } from '@/lib/http';

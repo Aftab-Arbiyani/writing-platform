@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { QButton, useToast } from '@qalam/ui';
+import { QButton, useToast } from '@umberleaf/ui';
 import { Input, InputNumber, Select, Switch } from 'antd';
 import type { ReactElement } from 'react';
 import { Controller, useForm } from 'react-hook-form';

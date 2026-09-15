@@ -1,4 +1,4 @@
-# Qalam Admin — Testing Guide
+# Umberleaf Admin — Testing Guide
 
 Tests use **Vitest + Testing Library + jsdom**, colocated as `*.spec.ts(x)` next
 to the code they cover. The suite is deterministic (retries off) and runs in CI as

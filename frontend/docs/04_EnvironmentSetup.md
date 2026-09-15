@@ -52,4 +52,4 @@ pnpm sitemap      # SITE_URL=https://… node scripts/generate-sitemap.mjs → p
 
 - Files kebab-case; components PascalCase; constants SCREAMING_SNAKE; booleans `is/has/can`.
 - Strict TypeScript — no `any` (use `unknown` + narrowing); no non-null assertions outside tests.
-- Prettier + ESLint via `@qalam/config` presets. Run `pnpm lint` before pushing.
+- Prettier + ESLint via `@umberleaf/config` presets. Run `pnpm lint` before pushing.

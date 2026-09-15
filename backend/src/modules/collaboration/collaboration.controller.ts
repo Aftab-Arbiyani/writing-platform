@@ -18,8 +18,8 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { PERMISSIONS } from '@qalam/shared';
-import type { CursorMeta } from '@qalam/shared';
+import { PERMISSIONS } from '@umberleaf/shared';
+import type { CursorMeta } from '@umberleaf/shared';
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';

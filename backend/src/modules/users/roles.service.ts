@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Role as RoleName, ROLE_RANK } from '@qalam/shared';
+import { Role as RoleName, ROLE_RANK } from '@umberleaf/shared';
 import type { EntityManager } from 'typeorm';
 
 import { RolesRepository } from './roles.repository';

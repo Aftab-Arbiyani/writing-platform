@@ -1,4 +1,4 @@
-import { QPageLoader } from '@qalam/ui';
+import { QPageLoader } from '@umberleaf/ui';
 import type { ReactElement } from 'react';
 import { Navigate, Outlet } from 'react-router';
 

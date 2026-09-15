@@ -83,7 +83,7 @@ const FONT_UI = [
 ].join(', ');
 
 /**
- * AntD theme derived from the Qalam tokens, one per mode. Feed the result to
+ * AntD theme derived from the Umberleaf tokens, one per mode. Feed the result to
  * `<ConfigProvider theme={getAntdTheme(mode)}>`; Tailwind reads the same
  * tokens via styles/tailwind.css, so both systems stay on one palette.
  */

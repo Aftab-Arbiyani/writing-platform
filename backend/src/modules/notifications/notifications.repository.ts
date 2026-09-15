@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { NotificationStatus } from '@qalam/shared';
-import type { NotificationEntityType, NotificationType } from '@qalam/shared';
+import { NotificationStatus } from '@umberleaf/shared';
+import type { NotificationEntityType, NotificationType } from '@umberleaf/shared';
 import { DataSource, Repository } from 'typeorm';
 import type { SelectQueryBuilder } from 'typeorm';
 

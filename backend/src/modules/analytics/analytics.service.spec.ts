@@ -1,4 +1,4 @@
-import { AnalyticsPeriod, TrendType } from '@qalam/shared';
+import { AnalyticsPeriod, TrendType } from '@umberleaf/shared';
 
 import type { DomainEventBus } from '../../common/events/domain-event-bus';
 import { DomainEventType } from '../../common/events/domain-events';

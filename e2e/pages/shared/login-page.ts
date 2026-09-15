@@ -2,7 +2,7 @@ import { type Locator, type Page, expect } from '@playwright/test';
 
 /**
  * Login page object — shared by both apps (docs/e2e/05). Frontend and admin
- * render the same `@qalam/ui` inputs (labels "Email"/"Password", submit "Sign in"),
+ * render the same `@umberleaf/ui` inputs (labels "Email"/"Password", submit "Sign in"),
  * differing only in route and the "Remember me" label.
  */
 export interface LoginPageConfig {

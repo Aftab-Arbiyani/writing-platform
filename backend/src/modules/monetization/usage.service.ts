@@ -4,8 +4,8 @@ import {
   QuotaWindow,
   quotaRuleForAiFeature,
   resolvePlanLimit,
-} from '@qalam/shared';
-import type { AiFeature } from '@qalam/shared';
+} from '@umberleaf/shared';
+import type { AiFeature } from '@umberleaf/shared';
 
 import { UsageService as AiUsageService } from '../ai';
 import { EntitlementService } from './entitlement.service';

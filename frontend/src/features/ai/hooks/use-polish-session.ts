@@ -1,4 +1,4 @@
-import { AiFeature } from '@qalam/shared';
+import { AiFeature } from '@umberleaf/shared';
 import { useCallback } from 'react';
 
 import {

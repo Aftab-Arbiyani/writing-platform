@@ -4,7 +4,7 @@ import type { HealthStatus } from '@/components/status-indicator';
  * Wire + view types for the System / Ops feature (P7.1). Mirror the backend
  * `/admin/system/*` DTOs (`backend/src/infrastructure/monitoring/system.controller.ts`
  * + `backend/src/config/config-inspector.service.ts`) and the public `/version`
- * and `/health/deep` probes. Hand-authored until `@qalam/api-types` covers them —
+ * and `/health/deep` probes. Hand-authored until `@umberleaf/api-types` covers them —
  * only the fields the views read are declared (extra response fields are ignored
  * by structural typing).
  */

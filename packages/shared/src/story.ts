@@ -1,7 +1,7 @@
 /**
  * Story Intelligence vocabulary (AF3) — the provider-agnostic domain language for the
  * structured **story knowledge graph** and the analyses that populate it. Like the rest
- * of `@qalam/shared` this is zero-dependency pure vocabulary: `as const` objects + union
+ * of `@umberleaf/shared` this is zero-dependency pure vocabulary: `as const` objects + union
  * types (JSON-safe wire strings), plus pure helpers. The graph is the single source of
  * truth every client renders from and every future AI feature reuses (docs/34 §13); this
  * file is the shared shape of that truth. Node/edge/kind sets are deliberately OPEN

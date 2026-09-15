@@ -1,4 +1,4 @@
-import { PERMISSIONS } from '@qalam/shared';
+import { PERMISSIONS } from '@umberleaf/shared';
 import { Database, HardDrive, ListChecks, Server, Workflow, Zap } from 'lucide-react';
 import { memo, type ReactElement } from 'react';
 

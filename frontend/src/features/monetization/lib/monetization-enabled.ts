@@ -3,7 +3,7 @@ import { env } from '@/config/env';
 /**
  * The client kill switch for monetization (AF5, W4).
  *
- * Dark by default, mirroring mobile's `QALAM_ENABLE_MONETIZATION`, so neither client becomes
+ * Dark by default, mirroring mobile's `UMBERLEAF_ENABLE_MONETIZATION`, so neither client becomes
  * reachable ahead of the other. Playwright's `webServer` sets it `true`, so E2E exercises the real
  * surfaces rather than the disabled state.
  *

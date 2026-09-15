@@ -1,4 +1,4 @@
-import { POLICY_ACTIONS, Role, SnapshotReason, Visibility } from '@qalam/shared';
+import { POLICY_ACTIONS, Role, SnapshotReason, Visibility } from '@umberleaf/shared';
 
 import type { AuditService } from '../audit/audit.service';
 import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';

@@ -29,7 +29,7 @@ describe('formatMoney', () => {
   });
 
   it('uses the right symbol for each supported currency', () => {
-    // SUPPORTED_CURRENCIES in @qalam/shared. Mobile hand-maps these five and falls back to a bare
+    // SUPPORTED_CURRENCIES in @umberleaf/shared. Mobile hand-maps these five and falls back to a bare
     // code for anything else; Intl knows them all, which is the point of using it.
     expect(formatMoney(1499, 'eur')).toContain('14.99');
     expect(formatMoney(1499, 'gbp')).toBe('£14.99');

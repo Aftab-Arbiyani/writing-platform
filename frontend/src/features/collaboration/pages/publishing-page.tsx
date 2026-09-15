@@ -1,5 +1,5 @@
-import { POLICY_ACTIONS } from '@qalam/shared';
-import { QEmptyState, QSectionHeader } from '@qalam/ui';
+import { POLICY_ACTIONS } from '@umberleaf/shared';
+import { QEmptyState, QSectionHeader } from '@umberleaf/ui';
 import { Send } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { useParams } from 'react-router';

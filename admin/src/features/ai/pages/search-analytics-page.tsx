@@ -2,8 +2,8 @@ import {
   PERMISSIONS,
   RETRIEVAL_CONFIG_BOUNDS,
   SEARCH_ANALYTICS_DEFAULT_WINDOW_DAYS,
-} from '@qalam/shared';
-import { QCard, QSectionHeader } from '@qalam/ui';
+} from '@umberleaf/shared';
+import { QCard, QSectionHeader } from '@umberleaf/ui';
 import { Alert, Select } from 'antd';
 import { Activity, Gauge, Search, Timer, TriangleAlert, Zap } from 'lucide-react';
 import { useState } from 'react';

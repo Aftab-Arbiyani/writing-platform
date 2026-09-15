@@ -1,4 +1,4 @@
-import { QCard, QSectionHeader, QTag } from '@qalam/ui';
+import { QCard, QSectionHeader, QTag } from '@umberleaf/ui';
 import type { ReactElement } from 'react';
 
 import { formatDateTime } from '@/lib/format';

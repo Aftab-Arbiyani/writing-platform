@@ -1,5 +1,5 @@
-import { QPageLoader } from '@qalam/ui';
-import type { Role } from '@qalam/shared';
+import { QPageLoader } from '@umberleaf/ui';
+import type { Role } from '@umberleaf/shared';
 import type { ReactElement } from 'react';
 import { Navigate, Outlet } from 'react-router';
 

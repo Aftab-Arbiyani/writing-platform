@@ -4,7 +4,7 @@
 > §10 (canonical reference). This document expands the baseline into a full design.
 > Nothing here re-decides; it makes the baseline implementable and reviewable.
 >
-> **Scope:** application security for the Qalam platform — API, both React apps,
+> **Scope:** application security for the Umberleaf platform — API, both React apps,
 > BullMQ workers, media pipeline. Infrastructure hardening (TLS termination, firewalling,
 > backups) lives in `15_DeploymentStrategy.md`.
 
@@ -12,7 +12,7 @@
 
 ## 1. Security Posture in One Paragraph
 
-Qalam is a public social platform: most content is _meant_ to be read by strangers.
+Umberleaf is a public social platform: most content is _meant_ to be read by strangers.
 The crown jewels are the things that are **not** public — account credentials,
 unpublished drafts, private-account content, the admin panel, and the original media
 users upload. Our posture: **default-deny at every boundary** (validation, authZ,
@@ -451,7 +451,7 @@ limited to `Authorization, Content-Type, X-Request-Id, X-Client, Idempotency-Key
 ## 7. Media Upload Security
 
 ADR: pre-signed URLs, API never proxies file bytes; `sharp` in the
-`media-processing` worker; MinIO dev / S3-R2 prod, bucket `qalam-media`.
+`media-processing` worker; MinIO dev / S3-R2 prod, bucket `umberleaf-media`.
 
 ```
  Client                    API                          Object storage           media-processing worker
@@ -515,7 +515,7 @@ keyed per user id when authenticated, per IP otherwise. Responses carry
 
 **Why sliding window over fixed window:** fixed windows admit 2× bursts at boundaries;
 the sorted-set sliding window is exact, and at our request volume the extra Redis cost
-is irrelevant. Limits live in `@qalam/shared` next to the other domain limits.
+is irrelevant. Limits live in `@umberleaf/shared` next to the other domain limits.
 
 ---
 
@@ -526,7 +526,7 @@ is irrelevant. Limits live in `@qalam/shared` next to the other domain limits.
 | A01 | Broken Access Control                    | Global default-deny guard + `@Public()` opt-out (§4.3); single `VisibilityService` (§4.2); repository visibility scopes; service-layer ownership checks; admin capability matrix (§4.1)                                                       |
 | A02 | Cryptographic Failures                   | Argon2id (§3.1); TLS everywhere (HSTS preload); JWT secrets ≥ 256-bit random, separate per token type; no PII in JWT claims; UUIDv7 not used as a secret                                                                                      |
 | A03 | Injection                                | Parameterized TypeORM only + lint ban on interpolation (§6); `websearch_to_tsquery`; DTO whitelist validation (§5.1); TipTap schema rejection (§5.2)                                                                                          |
-| A04 | Insecure Design                          | This document's threat model (§2), re-reviewed per module; abuse-case rows in every feature design doc; limits catalogued in `@qalam/shared`                                                                                                  |
+| A04 | Insecure Design                          | This document's threat model (§2), re-reviewed per module; abuse-case rows in every feature design doc; limits catalogued in `@umberleaf/shared`                                                                                              |
 | A05 | Security Misconfiguration                | Zod env fail-fast at boot; helmet + CSP (§5.4); Swagger `/docs` disabled in prod (ADR §3); non-root distroless/alpine containers; `synchronize: false` always                                                                                 |
 | A06 | Vulnerable & Outdated Components         | `pnpm-lock.yaml` committed; `pnpm audit --prod` gate in CI; Renovate scheduled post-launch (§12); pinned major versions per ADR §10                                                                                                           |
 | A07 | Identification & Authentication Failures | Rate-limit tiers (§8); rotation + family reuse detection (§3.2); breached-password check; no enumeration; fresh-session requirement on sensitive ops (§3.5)                                                                                   |

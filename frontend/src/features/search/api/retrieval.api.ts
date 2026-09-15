@@ -6,7 +6,7 @@ import type {
   SearchSuggestionsResponse,
   SemanticSearchRequest,
   SemanticSearchResponse,
-} from '@qalam/api-types';
+} from '@umberleaf/api-types';
 
 import { del, get, post } from '@/lib/api-client';
 import { buildQueryString } from '@/lib/http';
@@ -24,7 +24,7 @@ import { buildQueryString } from '@/lib/http';
  *
  * The one shape worth reading twice is the search filter set: `language`/`genre`/`tags` are FLAT
  * fields and `tags` is a **comma-separated string**, because that is what `SemanticSearchDto`
- * accepts. `@qalam/api-types` used to declare a nested `filters` object, which the global
+ * accepts. `@umberleaf/api-types` used to declare a nested `filters` object, which the global
  * `forbidNonWhitelisted` pipe rejects outright — corrected before this client was written
  * (48 §3.9, W5-1).
  */

@@ -1,4 +1,4 @@
-import { QCard, QSectionHeader } from '@qalam/ui';
+import { QCard, QSectionHeader } from '@umberleaf/ui';
 import { Banknote, CalendarRange, Receipt, Undo2 } from 'lucide-react';
 import type { ReactElement } from 'react';
 

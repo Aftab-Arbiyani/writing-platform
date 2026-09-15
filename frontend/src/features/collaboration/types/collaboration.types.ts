@@ -18,14 +18,14 @@ import type {
   TrustLevel,
   TrustStatus,
   Visibility,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 /**
  * Wire types for the collaboration surface (AF6, W3a — docs/49 §4). One-to-one with the
  * backend DTOs in `collaboration-response.dto.ts`.
  *
  * The **vocabulary** (`StoryRole`, `PolicyEffect`, `InvitationStatus`, …) is imported from
- * `@qalam/shared` and never re-declared here — the wire is authoritative, and a second copy of
+ * `@umberleaf/shared` and never re-declared here — the wire is authoritative, and a second copy of
  * a role list is a second thing to get out of step with the server.
  */
 
@@ -291,7 +291,7 @@ export interface TrustSummary {
  * `block` severs interaction both ways; `mute` hides someone from the viewer only.
  *
  * Declared here rather than imported: `BlockKind` lives in the backend's own
- * `trust.constants.ts` and is **not** exported from `@qalam/shared`, so there is nothing to import.
+ * `trust.constants.ts` and is **not** exported from `@umberleaf/shared`, so there is nothing to import.
  * Recorded as a parity note in docs/48 §3.3 — this is the one piece of AF6 vocabulary a client has
  * to restate.
  */

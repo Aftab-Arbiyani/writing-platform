@@ -5,7 +5,7 @@ import {
   Role,
   ROLE_RANK,
   permissionSatisfies,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 import { PERMISSIONS_KEY } from '../../common/constants/metadata.constants';
 import { PublishingController } from './publishing.controller';

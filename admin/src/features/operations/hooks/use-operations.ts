@@ -1,4 +1,4 @@
-import { PERMISSIONS } from '@qalam/shared';
+import { PERMISSIONS } from '@umberleaf/shared';
 import {
   useMutation,
   useQuery,

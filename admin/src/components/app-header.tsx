@@ -1,4 +1,4 @@
-import { QButton } from '@qalam/ui';
+import { QButton } from '@umberleaf/ui';
 import { Menu as MenuIcon, PanelLeftClose, PanelLeftOpen, Plus, Search } from 'lucide-react';
 import type { ReactElement } from 'react';
 

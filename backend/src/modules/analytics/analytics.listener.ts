@@ -4,7 +4,7 @@ import {
   READ_MIN_COMPLETION_PCT,
   READ_MIN_DWELL_SECONDS,
   ShareChannel,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 import { DomainEventBus } from '../../common/events/domain-event-bus';
 import {

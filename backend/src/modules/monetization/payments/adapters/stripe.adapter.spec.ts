@@ -2,7 +2,7 @@ import { createHmac } from 'node:crypto';
 
 import type { ConfigType } from '@nestjs/config';
 
-import { PaymentProvider, PurchaseKind } from '@qalam/shared';
+import { PaymentProvider, PurchaseKind } from '@umberleaf/shared';
 
 import type { paymentsConfig } from '../../../../config/payments.config';
 import { PaymentProviderNotConfiguredException } from '../../monetization.exceptions';

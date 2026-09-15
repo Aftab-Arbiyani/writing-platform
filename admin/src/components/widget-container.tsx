@@ -1,4 +1,4 @@
-import { QErrorState } from '@qalam/ui';
+import { QErrorState } from '@umberleaf/ui';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import type { ReactElement, ReactNode } from 'react';
 

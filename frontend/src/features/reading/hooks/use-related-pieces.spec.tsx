@@ -1,4 +1,4 @@
-import type { RecommendationResponse } from '@qalam/api-types';
+import type { RecommendationResponse } from '@umberleaf/api-types';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
 import type { ReactElement, ReactNode } from 'react';

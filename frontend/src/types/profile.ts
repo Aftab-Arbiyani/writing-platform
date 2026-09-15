@@ -1,11 +1,11 @@
-import type { FollowStatus, ThemePreference, Visibility } from '@qalam/shared';
+import type { FollowStatus, ThemePreference, Visibility } from '@umberleaf/shared';
 
 /**
  * Shared profile / follow / settings wire types (docs/32 §10) — mirror the frozen `v1` DTOs
  * (`backend/src/modules/users/dto/*`). These live app-level (not in a single feature) because
  * both `features/profile` (view + follow) and `features/settings` (edit) consume them, and a
  * feature must never import another feature (docs/26 §4). Replace with generated
- * `@qalam/api-types` once the backend emits `openapi.json`.
+ * `@umberleaf/api-types` once the backend emits `openapi.json`.
  *
  * Media fields (`avatarKey`, `coverKey`) are S3 KEYS, never URLs — build the URL via
  * `lib/media.ts` `mediaUrl()` (docs/32 §6). Counts that are hardcoded `0` server-side pending

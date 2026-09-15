@@ -4,7 +4,7 @@ import {
   STORY_GRAPH_TITLE_MAX,
   StoryAnalysisKind,
   StoryAnalysisScope,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 import { Type } from 'class-transformer';
 import { IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min, MinLength } from 'class-validator';
 

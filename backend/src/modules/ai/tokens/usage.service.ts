@@ -1,8 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { AiUsageWindow } from '@qalam/shared';
-import type { AiFeature, AiProvider, AiTokenUsage } from '@qalam/shared';
+import { AiUsageWindow } from '@umberleaf/shared';
+import type { AiFeature, AiProvider, AiTokenUsage } from '@umberleaf/shared';
 import { Repository } from 'typeorm';
 
 import { aiConfig } from '../../../config/ai.config';

@@ -6,6 +6,6 @@ import { registerAs } from '@nestjs/config';
  */
 export const mailConfig = registerAs('mail', () => ({
   smtpUrl: process.env.SMTP_URL ?? 'smtp://localhost:1025',
-  from: process.env.MAIL_FROM ?? 'Qalam <no-reply@qalam.example>',
+  from: process.env.MAIL_FROM ?? 'Umberleaf <no-reply@qalam.example>',
   appUrl: process.env.APP_URL ?? 'http://localhost:5173',
 }));

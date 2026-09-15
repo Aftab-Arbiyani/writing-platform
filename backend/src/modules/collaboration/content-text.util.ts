@@ -3,12 +3,12 @@
  * space a suggestion's `anchor.from`/`anchor.to` index into — plus the write-back
  * that edits it. {@link anchorText} reads it; {@link replaceTextRange} writes it.
  *
- * ## Why this is NOT `@qalam/utils` `extractPlainText`
+ * ## Why this is NOT `@umberleaf/utils` `extractPlainText`
  *
  * Both flatten a document to a string, and they deliberately produce DIFFERENT
  * strings. They are two projections for two jobs, not a duplicate to consolidate:
  *
- * | | `@qalam/utils` `extractPlainText` | `anchorText` (here) |
+ * | | `@umberleaf/utils` `extractPlainText` | `anchorText` (here) |
  * | --- | --- | --- |
  * | Between text nodes | inserts `' '` | inserts nothing |
  * | Whitespace | collapsed + trimmed | verbatim |
@@ -37,7 +37,7 @@ interface RichTextNode {
 /**
  * A text leaf. Both the read and the write use this one predicate — if they ever
  * disagreed about what counts as text, offsets and edits would address different
- * documents. Matches `@qalam/utils`: `type: 'text'` with a string `text`.
+ * documents. Matches `@umberleaf/utils`: `type: 'text'` with a string `text`.
  */
 function isTextLeaf(node: RichTextNode): boolean {
   return node.type === 'text' && typeof node.text === 'string';
@@ -46,7 +46,7 @@ function isTextLeaf(node: RichTextNode): boolean {
 /**
  * Concatenates every text leaf, verbatim and with no separator — the coordinate
  * space suggestion anchors are expressed in. See the file header before reaching
- * for `@qalam/utils` `extractPlainText` instead; they are not interchangeable.
+ * for `@umberleaf/utils` `extractPlainText` instead; they are not interchangeable.
  */
 export function anchorText(doc: unknown): string {
   const parts: string[] = [];

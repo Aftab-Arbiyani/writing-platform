@@ -1,4 +1,4 @@
-import type { Role } from '@qalam/shared';
+import type { Role } from '@umberleaf/shared';
 import type { ReactElement, ReactNode } from 'react';
 
 import { usePermissions } from '@/hooks/use-permissions';

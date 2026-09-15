@@ -1,5 +1,5 @@
-import { PERMISSIONS } from '@qalam/shared';
-import { QButton, QCard, QTag } from '@qalam/ui';
+import { PERMISSIONS } from '@umberleaf/shared';
+import { QButton, QCard, QTag } from '@umberleaf/ui';
 import { Table, type TableColumnsType } from 'antd';
 import { BellRing, BookOpen, CalendarClock, Plus } from 'lucide-react';
 import { useState, type ReactElement } from 'react';

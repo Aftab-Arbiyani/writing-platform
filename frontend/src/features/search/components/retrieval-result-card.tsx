@@ -1,5 +1,5 @@
-import type { SearchResultItem } from '@qalam/api-types';
-import { QCard, QTag } from '@qalam/ui';
+import type { SearchResultItem } from '@umberleaf/api-types';
+import { QCard, QTag } from '@umberleaf/ui';
 import type { ReactElement } from 'react';
 import { Link } from 'react-router';
 

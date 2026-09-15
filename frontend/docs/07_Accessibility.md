@@ -40,11 +40,11 @@ baseline. This guide records the practices, the audit result, and the one known 
 ## Known gap (tracked)
 
 - **`--q-text-muted` contrast** — the muted text token is ~3.3:1 (light) / ~4.0:1 (dark), below the
-  4.5:1 AA threshold for normal text. It lives in `@qalam/ui` (`packages/ui/styles/tokens.css`), which
+  4.5:1 AA threshold for normal text. It lives in `@umberleaf/ui` (`packages/ui/styles/tokens.css`), which
   is **outside the F10 frontend scope** and shared with the admin app, so it was not changed here.
   **Recommended fix:** darken the light token / lighten the dark token to ≥4.5:1 (a one-line change that
   resolves every `text-ink-muted` usage), or restrict `text-ink-muted` to large text only. Track as a
-  design-system (`@qalam/ui`) follow-up.
+  design-system (`@umberleaf/ui`) follow-up.
 
 ## Testing
 

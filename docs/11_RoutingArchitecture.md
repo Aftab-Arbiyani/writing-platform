@@ -109,7 +109,7 @@ export function loader({ params }: LoaderFunctionArgs) {
 _Why not `/u/:username`:_ `/@name` is the identity contract promised in the signup flow and
 the IA (docs 09 §1, 10 §5) — the router bends, not the URL. Reserved words (`feed`,
 `search`, `me`, `settings`, `auth`, `write`, `p`, `tag`, `genre`) can never collide with
-handles because usernames matching them are rejected at registration (`@qalam/shared`
+handles because usernames matching them are rejected at registration (`@umberleaf/shared`
 reserved-username list) _and_ static routes match first anyway. Defense in both layers.
 
 ---
@@ -270,14 +270,14 @@ RootErrorBoundary (frontend)                 AdminErrorBoundary
 **Document titles** — each route module exports a title handle; a single effect in
 RootLayout applies it (SPA — no SSR head management needed):
 
-| Surface       | Pattern                                                                                      |
-| ------------- | -------------------------------------------------------------------------------------------- |
-| Piece         | `{title} — {penName} · Qalam` (title in its own script — Nastaliq titles stay Nastaliq)      |
-| Profile       | `{penName} (@{username}) · Qalam`                                                            |
-| Sections      | `{Section} · Qalam` (`Feed`, `Search "ghazal"`, `Drafts`, `Settings`)                        |
-| Editor        | `{draft title ∥ "Untitled"} — Draft · Qalam` (+ `•` unsaved-dot prefix mirroring save state) |
-| Admin         | `{Section} · Qalam Admin` (+ `[staging]` env prefix outside prod)                            |
-| Notifications | Unread count prefixes the title (`(3) Feed · Qalam`)                                         |
+| Surface       | Pattern                                                                                          |
+| ------------- | ------------------------------------------------------------------------------------------------ |
+| Piece         | `{title} — {penName} · Umberleaf` (title in its own script — Nastaliq titles stay Nastaliq)      |
+| Profile       | `{penName} (@{username}) · Umberleaf`                                                            |
+| Sections      | `{Section} · Umberleaf` (`Feed`, `Search "ghazal"`, `Drafts`, `Settings`)                        |
+| Editor        | `{draft title ∥ "Untitled"} — Draft · Umberleaf` (+ `•` unsaved-dot prefix mirroring save state) |
+| Admin         | `{Section} · Umberleaf Admin` (+ `[staging]` env prefix outside prod)                            |
+| Notifications | Unread count prefixes the title (`(3) Feed · Umberleaf`)                                         |
 
 ---
 
@@ -318,7 +318,7 @@ explicit wall gets reported.
   from the landing page) · `editor` (largest — TipTap + extensions; **never** in the
   visitor-critical path) · `me/*` · `settings` · per-section admin chunks.
 - Shared vendor chunks (`react`, router, TanStack Query, AntD core) split by Vite
-  `manualChunks`; `@qalam/ui` tokens ship in the entry CSS so first paint is on-theme in
+  `manualChunks`; `@umberleaf/ui` tokens ship in the entry CSS so first paint is on-theme in
   both light and dark (ADR §6 dark mode is day one).
 
 ---

@@ -4,11 +4,11 @@ import {
   RetrievalSource,
   type RankingSignal as RankingSignalType,
   type RetrievalSource as RetrievalSourceType,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 import { z } from 'zod';
 
 /**
- * The retrieval-config form (A3). Every bound is `RETRIEVAL_CONFIG_BOUNDS` from `@qalam/shared` —
+ * The retrieval-config form (A3). Every bound is `RETRIEVAL_CONFIG_BOUNDS` from `@umberleaf/shared` —
  * the same constant `UpdateRetrievalConfigDto` validates against — so the form cannot submit a
  * value the route will reject, and a bound only ever moves in one place.
  *

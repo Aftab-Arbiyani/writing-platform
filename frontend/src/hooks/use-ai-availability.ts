@@ -1,5 +1,5 @@
-import type { AiFeature } from '@qalam/shared';
-import type { AiFeaturesResponse } from '@qalam/api-types';
+import type { AiFeature } from '@umberleaf/shared';
+import type { AiFeaturesResponse } from '@umberleaf/api-types';
 import { useQuery } from '@tanstack/react-query';
 
 import { resolveAvailability, type AiAvailability } from '@/lib/ai-availability';

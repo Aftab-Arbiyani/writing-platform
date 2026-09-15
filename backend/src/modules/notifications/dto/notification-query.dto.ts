@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { NotificationStatus, NotificationType } from '@qalam/shared';
+import { NotificationStatus, NotificationType } from '@umberleaf/shared';
 import { IsEnum, IsOptional } from 'class-validator';
 
 import { CursorPaginationDto } from '../../../common/dto/cursor-pagination.dto';

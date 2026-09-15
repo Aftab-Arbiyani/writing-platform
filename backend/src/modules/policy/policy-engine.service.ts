@@ -1,5 +1,10 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
-import { PolicyEffect, StoryRole, policyEffectAllows, type PolicyDecision } from '@qalam/shared';
+import {
+  PolicyEffect,
+  StoryRole,
+  policyEffectAllows,
+  type PolicyDecision,
+} from '@umberleaf/shared';
 
 import { AuditService } from '../audit/audit.service';
 import { PermissionResolver } from '../permissions/permission.resolver';

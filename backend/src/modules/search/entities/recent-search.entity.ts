@@ -1,6 +1,6 @@
 import { Column, Entity, Index } from 'typeorm';
 
-import { QalamBaseEntity } from '../../../common/base/base.entity';
+import { AppBaseEntity } from '../../../common/base/base.entity';
 
 /**
  * A signed-in reader's recent search terms (E8). Per-user history capped at
@@ -18,7 +18,7 @@ import { QalamBaseEntity } from '../../../common/base/base.entity';
 @Entity('recent_searches')
 @Index('uq_recent_searches_user_query', ['userId', 'query'], { unique: true })
 @Index('idx_recent_searches_user_recent', ['userId', 'updatedAt'])
-export class RecentSearch extends QalamBaseEntity {
+export class RecentSearch extends AppBaseEntity {
   @Column({ type: 'uuid' })
   userId!: string;
 

@@ -1,4 +1,4 @@
-import { PieceStatus } from '@qalam/shared';
+import { PieceStatus } from '@umberleaf/shared';
 import { useInfiniteQuery } from '@tanstack/react-query';
 
 import { qk } from '@/lib/query-keys';

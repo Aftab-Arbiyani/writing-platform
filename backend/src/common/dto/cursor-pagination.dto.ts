@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { PAGE_SIZE_DEFAULT, PAGE_SIZE_MAX } from '@qalam/shared';
+import { PAGE_SIZE_DEFAULT, PAGE_SIZE_MAX } from '@umberleaf/shared';
 import { Type } from 'class-transformer';
 import { IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 

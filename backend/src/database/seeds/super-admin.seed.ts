@@ -1,5 +1,5 @@
 import { Logger } from '@nestjs/common';
-import { Role, USERNAME_REGEX } from '@qalam/shared';
+import { Role, USERNAME_REGEX } from '@umberleaf/shared';
 
 import { TransactionRunner } from '../../common/database/transaction-runner';
 import { PasswordService } from '../../modules/auth/services/password.service';

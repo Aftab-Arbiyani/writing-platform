@@ -270,11 +270,11 @@ Only trivially reversible actions are optimistic (doc 09 cross-flow invariant 1)
 `features/<name>/stores/`; app-wide slices live in `src/stores/`. Stores never import each
 other (_Why:_ a web of store→store imports is Redux-without-the-devtools).
 
-| Store               | State                                                                                                   | Persisted?                                                                                                                                                                                 |
-| ------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `useThemeStore`     | `theme: "light" \| "dark" \| "system"`, resolved theme                                                  | **Yes** — the _only_ persisted store (`persist` middleware → `localStorage["qalam-theme"]`); an inline head script applies it pre-paint to prevent theme flash (ADR §6: dark mode day one) |
-| `useSessionUiStore` | active modal id, dismissed banner ids, mobile-nav open                                                  | No — session-scoped by design                                                                                                                                                              |
-| `useEditorUiStore`  | save status (`saved \| saving \| offline-error`), focus mode, publish-sheet step, active footnote panel | No — and **never document content** (§5)                                                                                                                                                   |
+| Store               | State                                                                                                   | Persisted?                                                                                                                                                                                     |
+| ------------------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `useThemeStore`     | `theme: "light" \| "dark" \| "system"`, resolved theme                                                  | **Yes** — the _only_ persisted store (`persist` middleware → `localStorage["umberleaf-theme"]`); an inline head script applies it pre-paint to prevent theme flash (ADR §6: dark mode day one) |
+| `useSessionUiStore` | active modal id, dismissed banner ids, mobile-nav open                                                  | No — session-scoped by design                                                                                                                                                                  |
+| `useEditorUiStore`  | save status (`saved \| saving \| offline-error`), focus mode, publish-sheet step, active footnote panel | No — and **never document content** (§5)                                                                                                                                                       |
 
 Rules:
 
@@ -294,10 +294,10 @@ Rules:
 
 - **Schema colocated with the form**, in the feature: `features/auth/schemas/register.schema.ts`.
   The component imports the schema; the schema imports domain atoms (`USERNAME_REGEX`,
-  limits) from `@qalam/shared`. Where the backend validates the same shape, the schema is
-  built from **shared primitives via `@qalam/api-types`** so FE and BE cannot drift —
+  limits) from `@umberleaf/shared`. Where the backend validates the same shape, the schema is
+  built from **shared primitives via `@umberleaf/api-types`** so FE and BE cannot drift —
   the request _types_ are generated from OpenAPI; the Zod _rules_ share the same
-  `@qalam/shared` constants both sides import. One vocabulary, two enforcers (ADR §3: Zod
+  `@umberleaf/shared` constants both sides import. One vocabulary, two enforcers (ADR §3: Zod
   everywhere).
 - `useForm({ resolver: zodResolver(schema), mode: "onTouched" })` — validate on blur first,
   then on change after first error (calm, not naggy).

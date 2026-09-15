@@ -104,7 +104,7 @@ belongs in an auth spec (§6) that opts out of stored state.
 
 **Discovered live (2026-07-23):** a single static `storageState` shared across many tests does **not** work
 with this backend's auth model, and this was the top cause of Phase-2 failures. The web app keeps its access
-token **in memory** and re-derives it from the httpOnly `qalam_rt` cookie on every cold load; the backend
+token **in memory** and re-derives it from the httpOnly `umberleaf_rt` cookie on every cold load; the backend
 uses **rotating refresh tokens with reuse-detection** (`token.service.rotate`). So the first test's boot-
 refresh rotates (consumes) the snapshot's cookie, and every later test that restores the same snapshot
 presents an already-used token → the family is revoked → the app drops to the login screen.
@@ -115,12 +115,12 @@ first navigation, minting its own token family. Use the helper and a `beforeEach
 ```ts
 // e2e/fixtures/auth.ts → freshLogin(page, 'writer' | 'admin')
 test.beforeEach(async ({ page }) => {
-  await freshLogin(page, 'writer'); // page.request login → qalam_rt in this context's jar
+  await freshLogin(page, 'writer'); // page.request login → umberleaf_rt in this context's jar
 });
 ```
 
-The setup projects + `storageState` are still declared (they also carry the `qalam-admin-remember` /
-`qalam-*` localStorage the app needs to attempt the boot-refresh); `freshLogin` simply replaces the stale
+The setup projects + `storageState` are still declared (they also carry the `umberleaf-admin-remember` /
+`umberleaf-*` localStorage the app needs to attempt the boot-refresh); `freshLogin` simply replaces the stale
 cookie with an unused one so the boot-refresh succeeds and no test can invalidate another's session. **Why
 not disable rotation for tests:** reuse-detection is a security property under test — weakening it in the
 E2E backend would hide the very behaviour we ship.

@@ -1,4 +1,4 @@
-import { Role } from '@qalam/shared';
+import { Role } from '@umberleaf/shared';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import type * as ReactRouter from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';

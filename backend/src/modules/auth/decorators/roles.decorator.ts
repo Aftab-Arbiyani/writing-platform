@@ -1,6 +1,6 @@
 import { SetMetadata } from '@nestjs/common';
 import type { CustomDecorator } from '@nestjs/common';
-import type { Role } from '@qalam/shared';
+import type { Role } from '@umberleaf/shared';
 
 import { ROLES_KEY } from '../../../common/constants/metadata.constants';
 

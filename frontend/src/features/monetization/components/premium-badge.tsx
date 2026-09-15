@@ -1,4 +1,4 @@
-import { QTag } from '@qalam/ui';
+import { QTag } from '@umberleaf/ui';
 import { Sparkles } from 'lucide-react';
 import type { ReactElement } from 'react';
 

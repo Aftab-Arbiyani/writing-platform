@@ -1,9 +1,9 @@
-import type { BillingInterval, PlanDefinition, PlanTier } from '@qalam/shared';
+import type { BillingInterval, PlanDefinition, PlanTier } from '@umberleaf/shared';
 
 /**
  * Internal monetization types (AF5) — the resolved config shapes and service-layer
  * contracts. Wire shapes (request/response) live in DTOs; the client contract in
- * `@qalam/api-types`. This file is backend-internal.
+ * `@umberleaf/api-types`. This file is backend-internal.
  */
 
 /** Cross-cutting monetization config (the `monetization.config` JSON setting, resolved). */

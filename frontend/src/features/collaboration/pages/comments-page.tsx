@@ -1,5 +1,5 @@
-import { CommentStatus, POLICY_ACTIONS } from '@qalam/shared';
-import { QButton, QEmptyState, QErrorState, QSectionHeader, QSkeleton } from '@qalam/ui';
+import { CommentStatus, POLICY_ACTIONS } from '@umberleaf/shared';
+import { QButton, QEmptyState, QErrorState, QSectionHeader, QSkeleton } from '@umberleaf/ui';
 import { MessagesSquare } from 'lucide-react';
 import { type ReactElement, useState } from 'react';
 import { useParams } from 'react-router';

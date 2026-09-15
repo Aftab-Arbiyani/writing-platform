@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
-import { PASSWORD_MAX, PASSWORD_MIN } from '@qalam/shared';
+import { PASSWORD_MAX, PASSWORD_MIN } from '@umberleaf/shared';
 import * as argon2 from 'argon2';
 
 import { authConfig } from '../../../config/auth.config';

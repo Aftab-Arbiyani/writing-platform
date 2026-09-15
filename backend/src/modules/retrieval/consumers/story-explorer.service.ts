@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ExplorerView } from '@qalam/shared';
+import { ExplorerView } from '@umberleaf/shared';
 
 import type {
   StoryEdgeDto,

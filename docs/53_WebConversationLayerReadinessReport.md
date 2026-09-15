@@ -233,7 +233,7 @@ stashing). Fixed rather than worked around: a gate that is already red cannot ve
 
 **M7-1** (low, unowned): `comment_composer.dart` hardcodes `maxLength: 2000` where
 `COMMENT_MAX_LENGTH` is the shared constant the DTO validates against. Agrees today; a drift waiting to
-happen, of the class [48 §3.11](./48_PlatformParityRegister.md) closed for `@qalam/api-types`. Web reads
+happen, of the class [48 §3.11](./48_PlatformParityRegister.md) closed for `@umberleaf/api-types`. Web reads
 the shared constant.
 
 ---

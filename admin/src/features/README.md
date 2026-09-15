@@ -22,7 +22,7 @@ Each feature owns its own `api/` (query hooks over `@/lib/api-client`),
 `components/`, `hooks/`, and `stores/` as needed. Rules:
 
 - A feature must be deletable with one `rm -rf` — no other feature may import
-  from it. Cross-cutting pieces move up to `src/components/` or `@qalam/ui`.
+  from it. Cross-cutting pieces move up to `src/components/` or `@umberleaf/ui`.
 - Server state stays in TanStack Query inside the feature's `api/` hooks —
   never mirrored into Zustand.
 - Routes register in `src/app/router.tsx` behind `RequireRole` guards (Phase 1,

@@ -1,5 +1,5 @@
-import { AiFinishReason } from '@qalam/shared';
-import type { AiProvider, AiTokenUsage } from '@qalam/shared';
+import { AiFinishReason } from '@umberleaf/shared';
+import type { AiProvider, AiTokenUsage } from '@umberleaf/shared';
 
 import {
   AiProviderErrorException,

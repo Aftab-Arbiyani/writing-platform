@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactElement, ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { Visibility } from '@qalam/shared';
+import { Visibility } from '@umberleaf/shared';
 
 import { piecesApi } from '../api/pieces.api';
 import type { Piece } from '../types/piece.types';

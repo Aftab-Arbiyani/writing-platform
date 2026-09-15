@@ -1,4 +1,4 @@
-import { QButton, QEmptyState, QPageContainer } from '@qalam/ui';
+import { QButton, QEmptyState, QPageContainer } from '@umberleaf/ui';
 import { LogIn } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { useNavigate } from 'react-router';
@@ -20,7 +20,7 @@ export function Unauthorized(): ReactElement {
       <QEmptyState
         icon={LogIn}
         title="Please sign in to continue."
-        description="This page is part of your private space on Qalam."
+        description="This page is part of your private space on Umberleaf."
         action={
           <QButton
             variant="primary"

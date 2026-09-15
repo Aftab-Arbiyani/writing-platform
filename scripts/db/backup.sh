@@ -3,7 +3,7 @@
 # scripts/db/backup.sh — Postgres logical backup (pg_dump custom format)
 #
 # Produces a portable, dependency-light base backup:
-#   ${BACKUP_DIR}/qalam-<env>-<UTC-timestamp>.dump   (pg_dump -Fc)
+#   ${BACKUP_DIR}/umberleaf-<env>-<UTC-timestamp>.dump   (pg_dump -Fc)
 #   + a .sha256 checksum sidecar (integrity for restore/verify)
 # then prunes dumps older than BACKUP_RETENTION_DAYS and (optionally) uploads
 # to BACKUP_S3_URI. Prints the backup path on stdout (only the path).
@@ -59,7 +59,7 @@ sha256_of() {
 
 mkdir -p "${BACKUP_DIR}"
 STAMP="$(utc_stamp)"
-DUMP="${BACKUP_DIR}/qalam-${BACKUP_ENV}-${STAMP}.dump"
+DUMP="${BACKUP_DIR}/umberleaf-${BACKUP_ENV}-${STAMP}.dump"
 SIDECAR="${DUMP}.sha256"
 
 log "backing up $(redact_dsn "${DATABASE_URL}") -> ${DUMP}"
@@ -83,7 +83,7 @@ while IFS= read -r old; do
   rm -f "${old}" "${old}.sha256"
   log "pruned ${old}"
   pruned=$((pruned + 1))
-done < <(find "${BACKUP_DIR}" -maxdepth 1 -type f -name "qalam-${BACKUP_ENV}-*.dump" \
+done < <(find "${BACKUP_DIR}" -maxdepth 1 -type f -name "umberleaf-${BACKUP_ENV}-*.dump" \
   -mtime "+${BACKUP_RETENTION_DAYS}" 2>/dev/null)
 log "pruned ${pruned} old backup(s)"
 

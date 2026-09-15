@@ -1,6 +1,6 @@
 # shellcheck shell=bash
 # ══════════════════════════════════════════════════════════════════════════
-# scripts/lib/common.sh — shared helpers for Qalam ops scripts (P7.1)
+# scripts/lib/common.sh — shared helpers for Umberleaf ops scripts (P7.1)
 #
 # This file is SOURCED, never executed. Source it from every script:
 #
@@ -34,10 +34,10 @@
 # ══════════════════════════════════════════════════════════════════════════
 
 # Idempotent source guard — safe to `.` this file more than once.
-if [ -n "${__QALAM_COMMON_SH:-}" ]; then
+if [ -n "${__UMBERLEAF_COMMON_SH:-}" ]; then
   return 0 2>/dev/null || true
 fi
-__QALAM_COMMON_SH=1
+__UMBERLEAF_COMMON_SH=1
 
 COMMON_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # scripts/lib -> scripts -> repo root

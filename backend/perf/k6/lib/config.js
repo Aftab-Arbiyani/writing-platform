@@ -1,5 +1,5 @@
 /**
- * Shared k6 configuration for the Qalam load-testing suite (P7.3).
+ * Shared k6 configuration for the Umberleaf load-testing suite (P7.3).
  *
  * Thresholds are the SAME numbers as the server-side performance budget
  * catalogue (`backend/src/modules/performance/performance.constants.ts`) so a

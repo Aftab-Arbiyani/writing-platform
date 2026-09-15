@@ -5,7 +5,7 @@
  * The request/response shapes over `/api/v1/monetization/*`, `/api/v1/billing/*`, and
  * the `/api/v1/admin/monetization/*` surface. The provider-agnostic VOCABULARY (plan
  * tiers, statuses, entitlement decisions, payment/invoice/credit enums) lives in
- * `@qalam/shared` and is re-exported here so a client imports everything monetization-
+ * `@umberleaf/shared` and is re-exported here so a client imports everything monetization-
  * related from one package. Handwritten until the backend emits `openapi.json` (same
  * policy as `./ai`, `./story`, `./retrieval`).
  *
@@ -35,7 +35,7 @@ export type {
   SubscriptionEventType,
   SubscriptionStatus,
   UsageMetric,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 import type {
   BillingInterval,
@@ -51,7 +51,7 @@ import type {
   PurchaseStatus,
   QuotaWindow,
   SubscriptionStatus,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 // ── Subscription ─────────────────────────────────────────────────────────────
 

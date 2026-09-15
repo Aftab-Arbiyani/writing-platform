@@ -32,7 +32,7 @@ usage() {
   cat <<'EOF'
 provision.sh — validate bucket, enable versioning, apply lifecycle rules.
 
-Usage: S3_BUCKET=qalam-media [S3_ENDPOINT=…] provision.sh [--help]
+Usage: S3_BUCKET=umberleaf-media [S3_ENDPOINT=…] provision.sh [--help]
 Requires the `aws` CLI + standard AWS_* credentials. Idempotent.
 EOF
 }
@@ -74,11 +74,11 @@ else
   cat >"${lc_json}" <<'JSON'
 {
   "Rules": [
-    { "ID": "qalam-expire-tmp", "Status": "Enabled",
+    { "ID": "umberleaf-expire-tmp", "Status": "Enabled",
       "Filter": { "Prefix": "tmp/" }, "Expiration": { "Days": 1 } },
-    { "ID": "qalam-expire-quarantine", "Status": "Enabled",
+    { "ID": "umberleaf-expire-quarantine", "Status": "Enabled",
       "Filter": { "Prefix": "quarantine/" }, "Expiration": { "Days": 7 } },
-    { "ID": "qalam-abort-incomplete-mpu", "Status": "Enabled",
+    { "ID": "umberleaf-abort-incomplete-mpu", "Status": "Enabled",
       "Filter": { "Prefix": "" },
       "AbortIncompleteMultipartUpload": { "DaysAfterInitiation": 3 } }
   ]

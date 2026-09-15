@@ -19,7 +19,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
-import { PERMISSIONS } from '@qalam/shared';
+import { PERMISSIONS } from '@umberleaf/shared';
 
 import { CursorPaginationDto } from '../../common/dto/cursor-pagination.dto';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';

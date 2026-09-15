@@ -1,4 +1,4 @@
-# Qalam Admin — Route Inventory
+# Umberleaf Admin — Route Inventory
 
 Every section route is a **lazy** route module (`lazy: () => import(...)`), so each
 admin area is its own JS chunk (`src/app/router.tsx`). Guards are pathless layout

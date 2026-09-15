@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { FollowStatus } from '@qalam/shared';
+import { FollowStatus } from '@umberleaf/shared';
 import { DataSource } from 'typeorm';
 import type { EntityManager, Repository, SelectQueryBuilder } from 'typeorm';
 

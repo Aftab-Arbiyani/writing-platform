@@ -1,4 +1,4 @@
-import { FollowStatus } from '@qalam/shared';
+import { FollowStatus } from '@umberleaf/shared';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import type { ReactElement, ReactNode } from 'react';

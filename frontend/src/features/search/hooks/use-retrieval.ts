@@ -2,7 +2,7 @@ import type {
   RecommendationKind,
   SaveSearchRequest,
   SemanticSearchRequest,
-} from '@qalam/api-types';
+} from '@umberleaf/api-types';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { qk } from '@/lib/query-keys';

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { estimateAiCostUsd } from '@qalam/shared';
-import type { AiModelMetadata, AiTokenUsage } from '@qalam/shared';
+import { estimateAiCostUsd } from '@umberleaf/shared';
+import type { AiModelMetadata, AiTokenUsage } from '@umberleaf/shared';
 
 import { AI_CHARS_PER_TOKEN } from '../ai.constants';
 import type { ProviderMessage } from '../providers/provider.types';
@@ -11,7 +11,7 @@ import type { ProviderMessage } from '../providers/provider.types';
  * model's context window before a call); the AUTHORITATIVE counts always come
  * back from the provider's `usage` after the call and are what the usage
  * accountant bills. Centralized here so nothing else re-implements token math or
- * cost math (cost math itself lives in `@qalam/shared` so clients agree).
+ * cost math (cost math itself lives in `@umberleaf/shared` so clients agree).
  */
 @Injectable()
 export class TokenCounterService {

@@ -1,4 +1,4 @@
-import { QErrorState, QPageContainer } from '@qalam/ui';
+import { QErrorState, QPageContainer } from '@umberleaf/ui';
 import type { ReactElement } from 'react';
 import type { FallbackProps } from 'react-error-boundary';
 

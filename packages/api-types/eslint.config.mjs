@@ -1,3 +1,3 @@
-import base from '@qalam/config/eslint/base';
+import base from '@umberleaf/config/eslint/base';
 
 export default base;

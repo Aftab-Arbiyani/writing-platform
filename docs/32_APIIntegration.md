@@ -48,7 +48,7 @@ application/json`; sets `Content-Type: application/json` when there is a body an
 ```ts
 // The shape callers rely on (unchanged from the scaffold):
 export class ApiError extends Error {
-  readonly code: string; // @qalam/shared ERROR_CODES value — branch on THIS, never message
+  readonly code: string; // @umberleaf/shared ERROR_CODES value — branch on THIS, never message
   readonly status: number; // HTTP status
   readonly details: unknown[]; // VALIDATION_FAILED field errors (33); [] otherwise
   readonly requestId: string | undefined; // X-Request-Id of the failed request (support)
@@ -178,7 +178,7 @@ show NotFound, never leak existence); 409 = state conflict (already published, i
 in-flight); 422 = domain rule violated (schedule in past, clap cap, self-follow); 503 =
 dependency down, safe to retry with backoff.
 
-**The error-code catalogue** the UI maps comes from `@qalam/shared` `ERROR_CODES` (auth,
+**The error-code catalogue** the UI maps comes from `@umberleaf/shared` `ERROR_CODES` (auth,
 user, piece, feed, search, media, engagement, collection, comment, notification families —
 full list in the module surfaces). Unknown codes fall back to _"Something went wrong on our
 side. Your work is safe."_
@@ -262,8 +262,8 @@ Two models (`05` §5), never mixed on one endpoint. The reader app is almost ent
   }
   ```
   Read `res.meta.pagination.nextCursor` (`null` = end). **Do not** read `res.meta` as the
-  pagination object — the `@qalam/shared` `ApiSuccess.meta` type describes it that way, but the
-  runtime nests it. If `@qalam/api-types` disagrees, trust the runtime and file a codegen fix.
+  pagination object — the `@umberleaf/shared` `ApiSuccess.meta` type describes it that way, but the
+  runtime nests it. If `@umberleaf/api-types` disagrees, trust the runtime and file a codegen fix.
 - **Cursors are opaque**: never decode, construct, persist, or put in the URL (`11` §5,
   `12` §2.3). A stale/malformed cursor → `FEED_INVALID_CURSOR` (400) → restart from page one.
 - Wire into `useInfiniteQuery` with `getNextPageParam: (last) =>
@@ -304,7 +304,7 @@ Match the backend's DTO expectations (`05` §6):
 - Filters are **flat query params** named after the field (`?language=ur&genre=ghazal&
 tag=barish`); multi-value is **comma-separated, OR semantics** (`?language=hi,ur`).
 - **Booleans are literal `true`/`false`** strings; **dates are ISO-8601 UTC**; enum-ish params
-  (`tab`, `type`, `status`, `sort`, `kind`, `period`) validate against `@qalam/shared` enums.
+  (`tab`, `type`, `status`, `sort`, `kind`, `period`) validate against `@umberleaf/shared` enums.
 - **Unknown params are rejected** by the backend (`forbidNonWhitelisted`) — send only declared
   params. Sort uses `?sort=field` / `-field` from each endpoint's whitelist.
 - Build query strings in the feature `api/` layer with a small helper; never hand-concatenate
@@ -322,7 +322,7 @@ component ──uses──▶ feature query/mutation hook ──calls──▶ f
 - **Components never fetch**; hooks never build URLs by hand outside `api/`; `api/` is the only
   place endpoints are named (`16` §4.2, §4.5). This is lint-enforced (`fetch` restricted
   outside `lib/`).
-- **Types come from `@qalam/api-types`** (generated from `openapi.json`) — never hand-duplicate
+- **Types come from `@umberleaf/api-types`** (generated from `openapi.json`) — never hand-duplicate
   a wire type. When the backend contract changes, regenerate; CI fails on drift (`05` §10).
 - **Testing:** mock at the boundary you own — hooks mock the `api/` layer; integration tests
   use **MSW** at the `fetch` boundary (`16` §7.4). Never mock `api-client` internals.
@@ -340,5 +340,5 @@ component ──uses──▶ feature query/mutation hook ──calls──▶ f
 □ Uploads: FormData field "file", no manual Content-Type; response {key} → mediaUrl(key)
 □ Publish carries a per-intent Idempotency-Key; it is the only retried mutation
 □ AbortSignal forwarded from queryFn; AbortError never toasted
-□ Wire types from @qalam/api-types; query strings built in api/, enums from @qalam/shared
+□ Wire types from @umberleaf/api-types; query strings built in api/, enums from @umberleaf/shared
 ```

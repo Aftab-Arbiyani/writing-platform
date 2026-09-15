@@ -1,5 +1,5 @@
-import { POLICY_ACTIONS, type Visibility } from '@qalam/shared';
-import { QButton, QCard, QInput, useToast } from '@qalam/ui';
+import { POLICY_ACTIONS, type Visibility } from '@umberleaf/shared';
+import { QButton, QCard, QInput, useToast } from '@umberleaf/ui';
 import { type ReactElement, useState } from 'react';
 
 import { getErrorMessage } from '@/lib/errors';

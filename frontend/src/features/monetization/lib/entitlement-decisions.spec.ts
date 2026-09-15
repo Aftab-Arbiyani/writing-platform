@@ -1,4 +1,4 @@
-import { EntitlementReason, EntitlementStatus, PlanTier, PremiumFeature } from '@qalam/shared';
+import { EntitlementReason, EntitlementStatus, PlanTier, PremiumFeature } from '@umberleaf/shared';
 import { describe, expect, it } from 'vitest';
 
 import {

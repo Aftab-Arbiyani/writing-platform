@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { VIEW_DEDUP_COOLDOWN_SECONDS } from '@qalam/shared';
+import { VIEW_DEDUP_COOLDOWN_SECONDS } from '@umberleaf/shared';
 
 import { RedisService } from '../../redis/redis.service';
 import { ANALYTICS_CACHE_KEYS } from './analytics.constants';

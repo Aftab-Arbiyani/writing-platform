@@ -1,4 +1,4 @@
-# Qalam Documentation Index
+# Umberleaf Documentation Index
 
 The engineering source of truth. The **master ADR — [`00_ArchitectureDecisions.md`](./00_ArchitectureDecisions.md) — wins** any conflict.
 Root [`CLAUDE.md`](../CLAUDE.md) is the day-to-day handbook; [`CONTRIBUTING.md`](../CONTRIBUTING.md) is the workflow.

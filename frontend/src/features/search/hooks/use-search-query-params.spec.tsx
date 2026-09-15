@@ -1,4 +1,4 @@
-import { SearchSort, SearchType } from '@qalam/shared';
+import { SearchSort, SearchType } from '@umberleaf/shared';
 import { act, renderHook } from '@testing-library/react';
 import type { ReactElement, ReactNode } from 'react';
 import { MemoryRouter } from 'react-router';

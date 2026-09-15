@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { QuotaWindow } from '@qalam/shared';
+import { QuotaWindow } from '@umberleaf/shared';
 
 /** A user's subscription (`GET /monetization/subscription`). */
 export class SubscriptionDto {
@@ -133,7 +133,7 @@ export class PurchaseDto {
  * **Corrected in W4-2** (docs/48 §3.6). This declared `{ restored, subscription, creditsGranted }`
  * while the controller returned `{ restored, providerRef, expiresAt }` — and because the route carried
  * no `@ApiOkResponse`, the class was orphaned, so the drift was invisible: Swagger documented nothing
- * and this shape was never compared to anything. `@qalam/api-types` had copied the same wrong fields.
+ * and this shape was never compared to anything. `@umberleaf/api-types` had copied the same wrong fields.
  * The route now declares this DTO, and `monetization-contract.spec.ts` pins all three together.
  *
  * Named `RestoreResultDto` rather than `RestorePurchasesDto` because the REQUEST DTO already owns that

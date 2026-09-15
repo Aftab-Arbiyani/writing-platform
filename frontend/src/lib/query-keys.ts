@@ -11,7 +11,7 @@ import type {
   SuggestionStatus,
   TrendType,
   WriterKind,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 /**
  * Hierarchical query-key factory (docs/12 §2.1). One factory per app; ad-hoc key arrays

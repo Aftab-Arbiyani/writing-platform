@@ -1,4 +1,4 @@
-import { QAvatar } from '@qalam/ui';
+import { QAvatar } from '@umberleaf/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { Dropdown, type MenuProps } from 'antd';
 import {

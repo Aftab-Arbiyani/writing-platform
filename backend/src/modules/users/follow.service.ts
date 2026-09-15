@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { FollowStatus } from '@qalam/shared';
+import { FollowStatus } from '@umberleaf/shared';
 
 import { TransactionRunner } from '../../common/database/transaction-runner';
 import { DomainEventBus } from '../../common/events/domain-event-bus';

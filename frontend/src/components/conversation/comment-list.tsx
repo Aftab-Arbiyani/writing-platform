@@ -1,4 +1,4 @@
-import { QButton, QErrorState, QSkeleton, useToast } from '@qalam/ui';
+import { QButton, QErrorState, QSkeleton, useToast } from '@umberleaf/ui';
 import type { ReactElement } from 'react';
 import { Link } from 'react-router';
 

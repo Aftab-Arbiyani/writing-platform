@@ -1,4 +1,4 @@
-import { QButton, QSkeleton, QTag, useConfirm, useToast } from '@qalam/ui';
+import { QButton, QSkeleton, QTag, useConfirm, useToast } from '@umberleaf/ui';
 import type { ReactElement } from 'react';
 
 import { getErrorMessage } from '@/lib/errors';

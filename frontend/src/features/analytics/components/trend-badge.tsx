@@ -1,4 +1,4 @@
-import { cn } from '@qalam/ui';
+import { cn } from '@umberleaf/ui';
 import { Minus, TrendingDown, TrendingUp } from 'lucide-react';
 import type { ReactElement } from 'react';
 

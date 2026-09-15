@@ -14,9 +14,9 @@ export function AuthLayout(): ReactElement {
       <Link
         to={ROUTES.landing}
         className="font-serif text-2xl font-semibold text-ink"
-        aria-label="Qalam home"
+        aria-label="Umberleaf home"
       >
-        Qalam
+        Umberleaf
       </Link>
       <div className="w-full max-w-[400px]">
         <Outlet />

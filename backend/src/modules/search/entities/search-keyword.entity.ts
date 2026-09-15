@@ -1,6 +1,6 @@
 import { Column, Entity, Index } from 'typeorm';
 
-import { QalamBaseEntity } from '../../../common/base/base.entity';
+import { AppBaseEntity } from '../../../common/base/base.entity';
 
 /**
  * Aggregated popularity of free-text search terms (E8) — the source for
@@ -17,7 +17,7 @@ import { QalamBaseEntity } from '../../../common/base/base.entity';
 @Entity('search_keywords')
 @Index('uq_search_keywords_keyword', ['keyword'], { unique: true })
 @Index('idx_search_keywords_popularity', ['searchCount'])
-export class SearchKeyword extends QalamBaseEntity {
+export class SearchKeyword extends AppBaseEntity {
   /** Normalized (trimmed, whitespace-collapsed, lowercased) search term. */
   @Column({ type: 'varchar', length: 256 })
   keyword!: string;

@@ -24,7 +24,7 @@ export const useSidebarStore = create<SidebarState>()(
       setMobileOpen: (value) => set({ mobileOpen: value }),
     }),
     {
-      name: 'qalam-admin-sidebar',
+      name: 'umberleaf-admin-sidebar',
       // Only the desktop preference persists; the mobile drawer must always start closed.
       partialize: (state) => ({ collapsed: state.collapsed }),
     },

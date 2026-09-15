@@ -1,4 +1,4 @@
-import { PERMISSIONS, Role } from '@qalam/shared';
+import { PERMISSIONS, Role } from '@umberleaf/shared';
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 

@@ -1,5 +1,5 @@
 import { HttpStatus } from '@nestjs/common';
-import { ERROR_CODES, MAX_CLAPS_PER_USER_PER_PIECE, MAX_COMMENT_DEPTH } from '@qalam/shared';
+import { ERROR_CODES, MAX_CLAPS_PER_USER_PER_PIECE, MAX_COMMENT_DEPTH } from '@umberleaf/shared';
 
 import { AppException } from '../../../common/exceptions/app.exception';
 

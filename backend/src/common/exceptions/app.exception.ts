@@ -10,14 +10,14 @@ import type { HttpStatus } from '@nestjs/common';
  *     }
  *   }
  *
- * `code` must come from the ERROR_CODES catalogue in @qalam/shared
+ * `code` must come from the ERROR_CODES catalogue in @umberleaf/shared
  * (DOMAIN_REASON format, ADR §5 — e.g. AUTH_INVALID_CREDENTIALS) so clients
  * switch on stable identifiers, never on message text. The AllExceptionsFilter
  * maps instances onto the error envelope; the HTTP status stays meaningful.
  */
 export abstract class AppException extends HttpException {
   protected constructor(
-    /** Stable catalogue code from @qalam/shared ERROR_CODES. */
+    /** Stable catalogue code from @umberleaf/shared ERROR_CODES. */
     public readonly code: string,
     message: string,
     status: HttpStatus,

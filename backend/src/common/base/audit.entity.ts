@@ -1,12 +1,12 @@
 import { DeleteDateColumn } from 'typeorm';
 
-import { QalamBaseEntity } from './base.entity';
+import { AppBaseEntity } from './base.entity';
 
 /**
- * Base class for **recoverable** aggregates — {@link QalamBaseEntity} plus a
+ * Base class for **recoverable** aggregates — {@link AppBaseEntity} plus a
  * soft-delete column. Per docs 04 §1.5 soft delete exists only where the domain
  * needs recoverability: `users`, `pieces`, `collections`. Those entities extend
- * this; everything else extends {@link QalamBaseEntity} and hard-deletes.
+ * this; everything else extends {@link AppBaseEntity} and hard-deletes.
  *
  * `deletedAt` drives TypeORM's `@DeleteDateColumn`: `softRemove`/`softDelete`
  * set it, and the default find behavior excludes rows where it is non-null.
@@ -15,7 +15,7 @@ import { QalamBaseEntity } from './base.entity';
  * tables must add `deleted_at IS NULL` explicitly — the automatic filter only
  * applies to the entity-manager find APIs, not hand-written query builders.
  */
-export abstract class QalamAuditEntity extends QalamBaseEntity {
+export abstract class AppAuditEntity extends AppBaseEntity {
   @DeleteDateColumn({ type: 'timestamptz', nullable: true })
   deletedAt!: Date | null;
 }

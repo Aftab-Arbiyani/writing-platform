@@ -1,16 +1,16 @@
 import { Column, Entity, Index } from 'typeorm';
 
-import { QalamBaseEntity } from '../../../common/base/base.entity';
+import { AppBaseEntity } from '../../../common/base/base.entity';
 
 /**
  * The catalogue of concrete permissions (PBAC). One row per capability
  * (`module.action`); wildcards are NEVER catalogue rows — they only appear as
  * grants in `role_permissions`/`user_permissions`. Seeded from
- * `PERMISSION_CATALOGUE` (`@qalam/shared`) — this table is reference/documentation
+ * `PERMISSION_CATALOGUE` (`@umberleaf/shared`) — this table is reference/documentation
  * (admin UI, introspection); authorization decisions read the grant tables.
  */
 @Entity('permissions')
-export class Permission extends QalamBaseEntity {
+export class Permission extends AppBaseEntity {
   @Column({ type: 'varchar', length: 120 })
   name!: string;
 

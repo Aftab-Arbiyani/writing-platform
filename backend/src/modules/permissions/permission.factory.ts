@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { permissionSatisfies } from '@qalam/shared';
+import { permissionSatisfies } from '@umberleaf/shared';
 
 /**
  * The permission-matching engine (PBAC). Builds permission sets and evaluates a
  * required code against a granted set with wildcard support (`*`, `module.*`) —
- * delegating the pure rule to `@qalam/shared` so backend and clients agree.
+ * delegating the pure rule to `@umberleaf/shared` so backend and clients agree.
  * Injectable so the guard and any service can share one matcher.
  */
 @Injectable()

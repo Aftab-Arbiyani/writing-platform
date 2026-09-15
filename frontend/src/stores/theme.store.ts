@@ -9,7 +9,7 @@ export type ThemeMode = 'light' | 'dark' | 'system';
 export type ResolvedTheme = 'light' | 'dark';
 
 interface ThemeState {
-  /** User preference — persisted under the 'qalam-theme' key. */
+  /** User preference — persisted under the 'umberleaf-theme' key. */
   mode: ThemeMode;
   /** What is actually rendered ('system' resolved via matchMedia). Derived — not persisted. */
   resolved: ResolvedTheme;
@@ -38,7 +38,7 @@ export const useThemeStore = create<ThemeState>()(
       },
     }),
     {
-      name: 'qalam-theme',
+      name: 'umberleaf-theme',
       // Persist the preference only; `resolved` is recomputed on every boot.
       partialize: (state) => ({ mode: state.mode }),
       onRehydrateStorage: () => (state) => {

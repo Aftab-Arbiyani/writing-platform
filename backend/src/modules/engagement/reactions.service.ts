@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { MAX_CLAPS_PER_USER_PER_PIECE } from '@qalam/shared';
+import { MAX_CLAPS_PER_USER_PER_PIECE } from '@umberleaf/shared';
 
 import { TransactionRunner } from '../../common/database/transaction-runner';
 import { DomainEventBus } from '../../common/events/domain-event-bus';

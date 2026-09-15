@@ -9,7 +9,7 @@ import {
   RETRIEVAL_QUERY_MAX_CHARS,
   RETRIEVAL_QUERY_MIN_CHARS,
   SEARCH_ANALYTICS_DEFAULT_WINDOW_DAYS,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 import { Type } from 'class-transformer';
 import {
   IsIn,
@@ -199,7 +199,7 @@ export class IsRankingWeightTable implements ValidatorConstraintInterface {
 /**
  * `PUT /admin/ai/search-config` — partial admin update of retrieval config.
  *
- * Every bound comes from `RETRIEVAL_CONFIG_BOUNDS` in `@qalam/shared`, which the admin editor's
+ * Every bound comes from `RETRIEVAL_CONFIG_BOUNDS` in `@umberleaf/shared`, which the admin editor's
  * form schema reads too — so a control cannot offer a value this route rejects (A3).
  */
 export class UpdateRetrievalConfigDto {

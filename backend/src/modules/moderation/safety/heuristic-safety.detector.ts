@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ReportReason, ReportSeverity } from '@qalam/shared';
+import { ReportReason, ReportSeverity } from '@umberleaf/shared';
 
 import type { SafetyDetector, SafetyInput, SafetySignal } from './safety.types';
 

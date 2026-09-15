@@ -201,7 +201,7 @@ test.describe('@phase4 frontend reader analytics', () => {
  *    documented red herring.
  * 2. **`browser.newContext()` INHERITS the project's `use` options**, `storageState` included —
  *    which for every `frontend-*` project is `.auth/frontend.json`, a file whose single cookie is
- *    the writer's httpOnly `qalam_rt`. A bare `newContext()` was therefore never anonymous: it
+ *    the writer's httpOnly `umberleaf_rt`. A bare `newContext()` was therefore never anonymous: it
  *    booted, refreshed that cookie, and landed signed in. It only *usually* bounced because the
  *    stored refresh token had normally already been consumed by another test — reuse-detection
  *    then revokes the family and the app falls back to the login screen (see `fixtures/auth.ts`).

@@ -1,4 +1,4 @@
-import { Role } from '@qalam/shared';
+import { Role } from '@umberleaf/shared';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { getAccessToken } from '@/lib/api-client';

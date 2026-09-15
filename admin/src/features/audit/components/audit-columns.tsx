@@ -1,4 +1,4 @@
-import { QButton } from '@qalam/ui';
+import { QButton } from '@umberleaf/ui';
 import { Tag, type TableColumnsType } from 'antd';
 import { Eye } from 'lucide-react';
 

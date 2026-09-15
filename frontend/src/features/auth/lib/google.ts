@@ -8,7 +8,7 @@ import { session } from '@/lib/storage';
  * (`${APP_URL}/auth/callback?code=…`) and cannot carry our `returnTo`, so we stash it in
  * sessionStorage (per-tab) and the callback page reads it back.
  */
-const RETURN_TO_KEY = 'qalam.auth.oauthReturnTo';
+const RETURN_TO_KEY = 'umberleaf.auth.oauthReturnTo';
 
 export function startGoogleLogin(returnTo?: string): void {
   if (returnTo && returnTo.startsWith('/')) {

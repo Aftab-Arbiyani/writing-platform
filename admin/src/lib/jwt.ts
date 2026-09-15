@@ -1,4 +1,4 @@
-import { Role } from '@qalam/shared';
+import { Role } from '@umberleaf/shared';
 
 /**
  * Access-token JWT decoding — a UX-hint parser, NOT verification (docs/26 §8). The signature is
@@ -6,7 +6,7 @@ import { Role } from '@qalam/shared';
  * (the sole source of role — `/me` doesn't return it) and `exp` for display/expiry heuristics.
  *
  * Kept admin-local: the reader has its own copy (`frontend/src/lib/jwt.ts`) that A2 cannot touch,
- * and the shared *vocabulary* (`Role`) already lives in `@qalam/shared`. Extracting the parser to a
+ * and the shared *vocabulary* (`Role`) already lives in `@umberleaf/shared`. Extracting the parser to a
  * package would leave the reader's duplicate in place (frontend is out of scope), so it stays here.
  */
 export interface DecodedAccessToken {

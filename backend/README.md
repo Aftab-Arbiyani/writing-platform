@@ -1,4 +1,4 @@
-# Qalam Backend
+# Umberleaf Backend
 
 NestJS 11 modular monolith — REST API under `/api/v1` plus in-process BullMQ
 workers. This is the **foundation only**: bootstrap, Zod-validated env config,

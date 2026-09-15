@@ -1,5 +1,5 @@
-import { CommentKind, CommentStatus, POLICY_ACTIONS } from '@qalam/shared';
-import { QButton, QCard, QTag } from '@qalam/ui';
+import { CommentKind, CommentStatus, POLICY_ACTIONS } from '@umberleaf/shared';
+import { QButton, QCard, QTag } from '@umberleaf/ui';
 import { type ReactElement, useState } from 'react';
 
 import { formatRelativeTime } from '@/lib/format';

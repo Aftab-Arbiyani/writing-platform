@@ -1,5 +1,5 @@
-import { ERROR_CODES } from '@qalam/shared';
-import { QCard } from '@qalam/ui';
+import { ERROR_CODES } from '@umberleaf/shared';
+import { QCard } from '@umberleaf/ui';
 import { CreditCard } from 'lucide-react';
 import type { ReactElement } from 'react';
 

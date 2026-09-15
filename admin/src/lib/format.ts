@@ -1,7 +1,7 @@
 /**
  * Small, pure display formatters for admin surfaces (stat/metric cards, tables). Locale-aware via
  * Intl; centralised here so no component hand-rolls `toLocaleString`. Domain-pure helpers that
- * belong to the whole platform live in `@qalam/utils`; these are admin-display only.
+ * belong to the whole platform live in `@umberleaf/utils`; these are admin-display only.
  */
 
 /** Compact integer with grouping, e.g. 12345 → "12,345". */

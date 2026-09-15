@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ReportPriority, ReportResolution, ReportSeverity } from '@qalam/shared';
+import { ReportPriority, ReportResolution, ReportSeverity } from '@umberleaf/shared';
 import {
   ArrayMaxSize,
   ArrayNotEmpty,

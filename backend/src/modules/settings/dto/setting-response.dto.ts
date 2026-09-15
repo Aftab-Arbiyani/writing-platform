@@ -17,14 +17,14 @@ export class SettingDto {
 
   @ApiProperty({
     description: 'Current effective value; JSON shape follows `dataType`.',
-    example: 'Qalam',
+    example: 'Umberleaf',
   })
   value!: unknown;
 
   @ApiProperty({ enum: SETTING_DATA_TYPES, example: 'string' })
   dataType!: string;
 
-  @ApiProperty({ description: 'The value this setting resets to.', example: 'Qalam' })
+  @ApiProperty({ description: 'The value this setting resets to.', example: 'Umberleaf' })
   defaultValue!: unknown;
 
   @ApiProperty({

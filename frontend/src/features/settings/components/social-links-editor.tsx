@@ -1,5 +1,5 @@
-import { MAX_SOCIAL_LINKS } from '@qalam/shared';
-import { QButton } from '@qalam/ui';
+import { MAX_SOCIAL_LINKS } from '@umberleaf/shared';
+import { QButton } from '@umberleaf/ui';
 import { Plus, Trash2 } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { useFieldArray, type Control } from 'react-hook-form';

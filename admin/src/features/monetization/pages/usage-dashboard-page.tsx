@@ -1,4 +1,4 @@
-import { QCard, QSectionHeader } from '@qalam/ui';
+import { QCard, QSectionHeader } from '@umberleaf/ui';
 import { Table, type TableColumnsType } from 'antd';
 import { CalendarRange, CircleDollarSign, Cpu } from 'lucide-react';
 import type { ReactElement } from 'react';

@@ -1,4 +1,4 @@
-import { QSectionLoader, QSkeleton } from '@qalam/ui';
+import { QSectionLoader, QSkeleton } from '@umberleaf/ui';
 import type { ReactElement } from 'react';
 
 /**

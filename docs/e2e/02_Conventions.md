@@ -219,7 +219,7 @@ test('admin approves a reported piece and it disappears from the queue', async (
 
 - The `e2e/` package is `strict: true` like the rest of the monorepo (`docs/16 §1`). No `any`
   (`unknown` + narrow at boundaries). Explicit return types on exported PO methods.
-- Reuse `@qalam/api-types` for API-helper request/response shapes so E2E breaks at compile time when the
+- Reuse `@umberleaf/api-types` for API-helper request/response shapes so E2E breaks at compile time when the
   frozen `v1` contract changes. **Why:** a contract drift should fail `tsc`, not a mystery runtime 400.
 - ESLint + Prettier from the shared config apply; the post-edit hook formats on save.
 

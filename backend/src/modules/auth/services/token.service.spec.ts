@@ -1,6 +1,6 @@
 import { JwtService } from '@nestjs/jwt';
 import type { ConfigType } from '@nestjs/config';
-import { Role } from '@qalam/shared';
+import { Role } from '@umberleaf/shared';
 import type { Redis } from 'ioredis';
 
 import type { authConfig } from '../../../config/auth.config';
@@ -50,7 +50,7 @@ const config = {
     accessTtl: '15m',
     refreshSecret: 'refresh-secret-that-is-at-least-32-characters',
     refreshTtl: '30d',
-    issuer: 'qalam',
+    issuer: 'umberleaf',
   },
 } as unknown as ConfigType<typeof authConfig>;
 

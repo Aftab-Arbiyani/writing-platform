@@ -3,7 +3,7 @@
 > **Derives from:** `00_ArchitectureDecisions.md` §6–§7. The §7 token table is the
 > canonical seed; this document expands it into the full working system. Behavior specs
 > live in `06_UIUXSpecification.md`; component contracts in `08_ComponentLibrary.md`.
-> Implementation home: `packages/ui` (`@qalam/ui`).
+> Implementation home: `packages/ui` (`@umberleaf/ui`).
 
 ---
 
@@ -29,7 +29,7 @@ packages/ui/src/tokens/tokens.ts        ← single typed map, keyed by --q-* nam
 - Theme switching: `data-theme="light|dark"` on `<html>` swaps the CSS variables;
   the app re-renders `ConfigProvider` with `antdTheme(mode)`. Tailwind utilities are
   theme-reactive for free because they resolve to `var(--q-*)`.
-- Tailwind preflight is **disabled** (ADR §6); `@qalam/ui` ships a minimal reset that
+- Tailwind preflight is **disabled** (ADR §6); `@umberleaf/ui` ships a minimal reset that
   doesn't fight AntD.
 
 **Naming convention:** `--q-{category}-{role}[-{variant}][-{state}]`
@@ -43,7 +43,7 @@ packages/ui/src/tokens/tokens.ts        ← single typed map, keyed by --q-* nam
 | `font` / `text-size` / `leading`               | `--q-font-reading-ur`, `--q-text-xl`, `--q-leading-nastaliq`                       |
 | `space` / `radius` / `shadow` / `z` / `motion` | `--q-space-4`, `--q-radius-card`, `--q-shadow-2`, `--q-z-modal`, `--q-motion-base` |
 
-Rules: no raw hex/px/ms literals in app or `@qalam/ui` component code — an ESLint rule
+Rules: no raw hex/px/ms literals in app or `@umberleaf/ui` component code — an ESLint rule
 flags them; every value routes through a token. New tokens are added via the workflow in
 `08` §7.
 
@@ -268,7 +268,7 @@ Framer Motion; durations and reduced-motion policy locked by ADR §6.
 | `--q-ease-out`      | `cubic-bezier(0.16, 1, 0.3, 1)` | Entrances — decelerating, "settling on paper".     |
 | `--q-ease-in`       | `cubic-bezier(0.3, 0, 1, 1)`    | Exits only — things leave faster than they arrive. |
 
-**Standard variants** (exported from `@qalam/ui/motion` so every feature animates
+**Standard variants** (exported from `@umberleaf/ui/motion` so every feature animates
 identically):
 
 | Variant          | Spec                                                                                                      |
@@ -486,7 +486,7 @@ Layout details per screen: `06` §8.
 | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Contrast             | WCAG 2.1 AA minimum, enforced by the §2.4 table + token unit test. Muted-text and warning-text restrictions in §2.3 are load-bearing.                                                                                                                                                                                            |
 | Focus ring           | `outline: 2px solid var(--q-accent); outline-offset: 2px;` on `:focus-visible` for every interactive element. Inputs may substitute `box-shadow: 0 0 0 2px` ring outside the accent border. Never `outline: none` without replacement.                                                                                           |
-| Hit areas            | ≥ 44×44px on touch devices; visually smaller controls expand via pseudo-element (`::after` inset −6px pattern in `@qalam/ui`).                                                                                                                                                                                                   |
+| Hit areas            | ≥ 44×44px on touch devices; visually smaller controls expand via pseudo-element (`::after` inset −6px pattern in `@umberleaf/ui`).                                                                                                                                                                                               |
 | Keyboard             | Everything operable; roving tabindex in the editor toolbar and tab bars; `Esc` closes topmost layer; dialogs trap + restore focus; visible skip-link first.                                                                                                                                                                      |
 | ARIA                 | Tabs = `role="tablist"` (AntD Tabs compliant); feed = `role="feed"` + `aria-busy`; progress bar = `role="progressbar"` throttled `aria-valuenow`; toggles (like/bookmark/follow) = `aria-pressed`; toasts/autosave = `aria-live="polite"`; icons decorative by default (`aria-hidden`) with text or `aria-label` on the control. |
 | Language & direction | Every content node carries `lang` + `dir` from the piece; user strings wrapped in `<bdi>` (`06` §6).                                                                                                                                                                                                                             |
@@ -497,7 +497,7 @@ Layout details per screen: `06` §8.
 
 ## 10. AntD Theme Mapping
 
-`antdTheme(mode)` in `@qalam/ui` — the only file allowed to touch AntD theme keys.
+`antdTheme(mode)` in `@umberleaf/ui` — the only file allowed to touch AntD theme keys.
 
 | `--q-*` token                                             | AntD theme key                                                   |
 | --------------------------------------------------------- | ---------------------------------------------------------------- |
@@ -599,7 +599,7 @@ component contracts: `08`.
 - **An AntD widget's look → the theme** (`getAntdTheme(resolved)`, wired once in
   `providers.tsx`) — never restyle AntD internals with Tailwind/inline styles; fix the mapping
   in §10 if wrong.
-- **Guardrail (lint, review-blocking):** no raw hex/px/ms in app or `@qalam/ui` code — a hex
+- **Guardrail (lint, review-blocking):** no raw hex/px/ms in app or `@umberleaf/ui` code — a hex
   literal in a `.tsx` is a bug even when it looks right in both themes today.
 
 ### 12.2 Color decision procedure
@@ -647,7 +647,7 @@ wordmark/undo-redo do not. Verify every surface at `dir="rtl"` before merge.
 □ Works light AND dark (variable swap; dark: only for shadow→border)
 □ Logical CSS only; user strings <bdi>; @username LTR-isolated
 □ Correct font stack + on-scale size; Nastaliq rules honored on reading surfaces
-□ Motion/icons from @qalam/ui only (§13.x, §6)
+□ Motion/icons from @umberleaf/ui only (§13.x, §6)
 ```
 
 ---
@@ -705,7 +705,7 @@ lint; **axe CI-blocking** on every Storybook story; a manual keyboard + screen-r
 ## 14. Motion — implementation detail
 
 > **Extends §5** (durations, easings, standard variants). Stack: **Framer Motion**. All motion
-> is implemented **only** through the variants exported from `@qalam/ui/motion` and the
+> is implemented **only** through the variants exported from `@umberleaf/ui/motion` and the
 > `MotionProvider` — never inline `transition={{ duration }}` literals. Philosophy: motion
 > **clarifies, never entertains**; entrances decelerate, exits accelerate, **pages fade never
 > slide**.

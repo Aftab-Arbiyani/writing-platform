@@ -1,4 +1,4 @@
-import { QErrorState, QSkeleton } from '@qalam/ui';
+import { QErrorState, QSkeleton } from '@umberleaf/ui';
 import { useEffect, useMemo, type ReactElement, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router';
 
@@ -34,7 +34,7 @@ import { COLUMN_WIDTH_PX, useReaderPreferences } from '../stores/reader-preferen
  * only its author can open.
  *
  * Reading is the one surface where typography is the product: the article renders through the
- * shared `.qalam-prose` class (identical to the editor's), and both `dir` and leading come from
+ * shared `.umberleaf-prose` class (identical to the editor's), and both `dir` and leading come from
  * the piece's own language so Urdu/Nastaliq reads correctly rather than being force-fit to LTR.
  */
 /**

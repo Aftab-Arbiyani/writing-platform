@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { BIO_MAX, LOCATION_MAX, MAX_GENRES_PER_PROFILE } from '@qalam/shared';
-import { QErrorState, QSelect, QSpinner, useToast } from '@qalam/ui';
+import { BIO_MAX, LOCATION_MAX, MAX_GENRES_PER_PROFILE } from '@umberleaf/shared';
+import { QErrorState, QSelect, QSpinner, useToast } from '@umberleaf/ui';
 import { Switch } from 'antd';
 import { Lock } from 'lucide-react';
 import { useEffect, useState, type ReactElement } from 'react';

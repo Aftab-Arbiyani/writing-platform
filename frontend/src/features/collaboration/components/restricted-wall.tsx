@@ -1,5 +1,5 @@
-import { PolicyEffect, type PolicyActionCode } from '@qalam/shared';
-import { QCard, QTag } from '@qalam/ui';
+import { PolicyEffect, type PolicyActionCode } from '@umberleaf/shared';
+import { QCard, QTag } from '@umberleaf/ui';
 import { ShieldAlert } from 'lucide-react';
 import type { ReactElement, ReactNode } from 'react';
 

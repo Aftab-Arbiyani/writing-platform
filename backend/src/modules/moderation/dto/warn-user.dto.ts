@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ReportSeverity } from '@qalam/shared';
+import { ReportSeverity } from '@umberleaf/shared';
 import { IsEnum, IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
 
 /** Body for `POST /admin/users/:id/warn` — issue a formal warning to a user. */

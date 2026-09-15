@@ -1,6 +1,6 @@
 import { Column, Entity, Index } from 'typeorm';
 
-import { QalamBaseEntity } from '../../../common/base/base.entity';
+import { AppBaseEntity } from '../../../common/base/base.entity';
 
 /**
  * A read session (E10) — recorded on `ReadCompleted` with the reported dwell +
@@ -12,7 +12,7 @@ import { QalamBaseEntity } from '../../../common/base/base.entity';
 @Index('idx_read_event_reader_piece', ['readerId', 'pieceId'])
 @Index('idx_read_event_reader', ['readerId', 'createdAt'])
 @Index('idx_read_event_piece', ['pieceId'])
-export class ReadEvent extends QalamBaseEntity {
+export class ReadEvent extends AppBaseEntity {
   @Column({ type: 'uuid' })
   pieceId!: string;
 

@@ -75,7 +75,7 @@ Rules embedded in that flow:
 - The **PR title** carries the conventional-commit burden (§4); branch commits should
   still be honest one-liners ("wip" is tolerated, `git commit -m .` is not — you will
   need to bisect your own branch someday).
-- Generated files (`pnpm-lock.yaml`, `openapi.json`, `@qalam/api-types` output) commit
+- Generated files (`pnpm-lock.yaml`, `openapi.json`, `@umberleaf/api-types` output) commit
   **in the same commit** as the change that regenerated them — a lockfile-only follow-up
   commit means CI was red in between.
 
@@ -101,7 +101,7 @@ Rules embedded in that flow:
 | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
 | `auth`, `users`, `pieces`, `taxonomy`, `engagement`, `collections`, `feeds`, `search`, `notifications`, `analytics`, `moderation`, `media`, `prompts`, `admin` | Backend modules (ADR §3 module list)     |
 | `frontend`, `admin-app`                                                                                                                                        | The two React apps                       |
-| `ui`, `shared`, `api-types`, `utils`, `config`                                                                                                                 | `@qalam/*` packages                      |
+| `ui`, `shared`, `api-types`, `utils`, `config`                                                                                                                 | `@umberleaf/*` packages                  |
 | `infra`                                                                                                                                                        | Docker, nginx, compose, deploy workflows |
 | `docs`                                                                                                                                                         | `docs/**`, `CLAUDE.md`, READMEs          |
 | `deps`                                                                                                                                                         | Dependency updates                       |
@@ -135,7 +135,7 @@ halves of one feature land as two commits (or two PRs) with the same story refer
 | CI, on PR        | `ci.yml`                             | Re-runs lint + typecheck + test + build on the full graph (turbo-cached). **Why re-verify:** hooks are advisory — `--no-verify` exists, fresh clones miss hooks. CI is the actual gate.         |
 | CI, on PR        | PR-title check                       | The **PR title must itself be a valid conventional commit**, because squash-merge (§5) turns the title into the commit that lands on `main`. Branch commits can be messy WIP; the title cannot. |
 
-Reference configs (live in the repo root / `@qalam/config`):
+Reference configs (live in the repo root / `@umberleaf/config`):
 
 ```jsonc
 // .lintstagedrc.json — staged files only; full-repo checks belong to CI

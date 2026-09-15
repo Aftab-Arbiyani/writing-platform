@@ -1,5 +1,5 @@
 import { Logger } from '@nestjs/common';
-import { Role } from '@qalam/shared';
+import { Role } from '@umberleaf/shared';
 import type { EntityManager } from 'typeorm';
 
 import type { TransactionRunner } from '../../common/database/transaction-runner';
@@ -62,13 +62,13 @@ describe('seedSuperAdmin', () => {
   });
 
   it('uses env credentials when provided', async () => {
-    process.env.SUPER_ADMIN_EMAIL = 'Boss@Qalam.com';
+    process.env.SUPER_ADMIN_EMAIL = 'Boss@Umberleaf.com';
     process.env.SUPER_ADMIN_USERNAME = 'boss';
     process.env.SUPER_ADMIN_PASSWORD = 'a-strong-passphrase-123';
     const { deps, users } = makeDeps();
     await seedSuperAdmin(deps);
     expect(users.createLocalUser).toHaveBeenCalledWith(
-      expect.objectContaining({ email: 'boss@qalam.com', username: 'boss' }),
+      expect.objectContaining({ email: 'boss@umberleaf.com', username: 'boss' }),
       expect.anything(),
     );
   });

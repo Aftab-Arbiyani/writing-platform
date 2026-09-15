@@ -12,8 +12,8 @@ import {
   PlanTier,
   PremiumFeature,
   UNIVERSAL_PLAN_FEATURES,
-} from '@qalam/shared';
-import type { PlanDefinition } from '@qalam/shared';
+} from '@umberleaf/shared';
+import type { PlanDefinition } from '@umberleaf/shared';
 
 import { SettingsService } from '../settings/settings.service';
 import type { SettingsActor } from '../settings/settings.util';

@@ -1,5 +1,5 @@
-import { AiFeature, ERROR_CODES } from '@qalam/shared';
-import type { AiFeaturesResponse } from '@qalam/api-types';
+import { AiFeature, ERROR_CODES } from '@umberleaf/shared';
+import type { AiFeaturesResponse } from '@umberleaf/api-types';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -159,7 +159,7 @@ describe('availabilityFromErrorCode', () => {
    *
    * D5 dropped `INSUFFICIENT_CREDITS` from this case. The meter no longer raises it: B4 removed the
    * credit economy, so nothing debits a wallet and nothing can be short of one. The code itself
-   * survives in `@qalam/shared` until Phase V, and is deliberately NOT mapped here — a state that
+   * survives in `@umberleaf/shared` until Phase V, and is deliberately NOT mapped here — a state that
    * cannot be reached does not need a remedy.
    */
   it('maps the entitlement refusal to the upgrade state', () => {

@@ -1,4 +1,4 @@
-import { RestrictionType, TrustStatus } from '@qalam/shared';
+import { RestrictionType, TrustStatus } from '@umberleaf/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { qk } from '@/lib/query-keys';

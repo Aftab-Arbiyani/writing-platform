@@ -1,4 +1,4 @@
-import { ENTITLEMENT_CACHE_TTL_SECONDS, OverrideEffect, PremiumFeature } from '@qalam/shared';
+import { ENTITLEMENT_CACHE_TTL_SECONDS, OverrideEffect, PremiumFeature } from '@umberleaf/shared';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 

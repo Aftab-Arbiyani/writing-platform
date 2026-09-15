@@ -1,5 +1,5 @@
-import { NotificationStatus } from '@qalam/shared';
-import { QAvatar, cn } from '@qalam/ui';
+import { NotificationStatus } from '@umberleaf/shared';
+import { QAvatar, cn } from '@umberleaf/ui';
 import { Archive, Check, Trash2 } from 'lucide-react';
 import { memo, type ReactElement } from 'react';
 import { Link } from 'react-router';

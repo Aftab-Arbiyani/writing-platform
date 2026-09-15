@@ -1,5 +1,5 @@
-import { PlanTier } from '@qalam/shared';
-import { QButton, QEmptyState } from '@qalam/ui';
+import { PlanTier } from '@umberleaf/shared';
+import { QButton, QEmptyState } from '@umberleaf/ui';
 import { Gauge, Lock } from 'lucide-react';
 import type { ReactElement, ReactNode } from 'react';
 import { useNavigate } from 'react-router';

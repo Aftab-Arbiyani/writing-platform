@@ -1,4 +1,4 @@
-import { QButton } from '@qalam/ui';
+import { QButton } from '@umberleaf/ui';
 import { Dropdown, Select, type MenuProps } from 'antd';
 import { Download, FileJson, Printer, RefreshCw, Sheet } from 'lucide-react';
 import { createElement, type ReactElement } from 'react';

@@ -23,12 +23,12 @@ platfrom/                          # repo root (existing dir name kept — ADR �
 ├── backend/                       # NestJS API + BullMQ workers (one deployable) → §2
 ├── frontend/                      # Reader/writer app, React 19 + Vite 7      → §3
 ├── admin/                         # Admin panel, React 19 + Vite 7            → §3.3
-├── packages/                      # The five @qalam/* internal packages       → §4
-│   ├── shared/                    # @qalam/shared    — domain constants, enums, error codes
-│   ├── api-types/                 # @qalam/api-types — OpenAPI-generated + handwritten API types
-│   ├── ui/                        # @qalam/ui        — design tokens, AntD theme, primitives
-│   ├── config/                    # @qalam/config    — tsconfig/eslint/prettier presets
-│   └── utils/                     # @qalam/utils     — pure functions (slugify, readingTime…)
+├── packages/                      # The five @umberleaf/* internal packages       → §4
+│   ├── shared/                    # @umberleaf/shared    — domain constants, enums, error codes
+│   ├── api-types/                 # @umberleaf/api-types — OpenAPI-generated + handwritten API types
+│   ├── ui/                        # @umberleaf/ui        — design tokens, AntD theme, primitives
+│   ├── config/                    # @umberleaf/config    — tsconfig/eslint/prettier presets
+│   └── utils/                     # @umberleaf/utils     — pure functions (slugify, readingTime…)
 ├── infrastructure/
 │   ├── docker/                    # Dockerfiles per app: multi-stage pnpm fetch → build →
 │   │                              #   distroless/alpine runtime, non-root (ADR §9)
@@ -46,8 +46,8 @@ platfrom/                          # repo root (existing dir name kept — ADR �
 └── CLAUDE.md                      # engineering handbook (AI + human onboarding)
 ```
 
-**Why a monorepo:** the API contract (`@qalam/api-types`), design tokens (`@qalam/ui`),
-and domain vocabulary (`@qalam/shared`) are shared by three apps. In separate repos those
+**Why a monorepo:** the API contract (`@umberleaf/api-types`), design tokens (`@umberleaf/ui`),
+and domain vocabulary (`@umberleaf/shared`) are shared by three apps. In separate repos those
 would drift by version lag; in one workspace, a contract change and all its consumers
 change in a single reviewed PR. pnpm's strict `node_modules` means nothing can depend on
 a package it doesn't declare (no phantom dependencies — ADR §2).
@@ -107,7 +107,7 @@ backend/
 │
 ├── test/                          # e2e (Supertest; Testcontainers later — ADR §3)
 ├── package.json                   # NestJS ^11, TypeORM ^0.3, Jest 29, nestjs-pino…
-└── tsconfig.json                  # extends @qalam/config/tsconfig/nest
+└── tsconfig.json                  # extends @umberleaf/config/tsconfig/nest
 ```
 
 ### 2.1 The canonical module anatomy
@@ -176,7 +176,7 @@ frontend/
 │   │   #                          #   server state lives in TanStack Query, never mirrored)
 │   │
 │   ├── components/                # app-wide COMPOSITES shared across features (e.g.
-│   │                              #   PieceCard, UserBadge) — more specific than @qalam/ui
+│   │                              #   PieceCard, UserBadge) — more specific than @umberleaf/ui
 │   │                              #   primitives, less specific than any one feature
 │   ├── lib/
 │   │   └── api-client.ts          # centralized typed fetch wrapper: envelope unwrapping,
@@ -186,7 +186,7 @@ frontend/
 ├── index.html
 ├── package.json                   # React ^19, Vite ^7, TanStack Query ^5, Zustand ^5,
 │                                  #   RHF ^7, Zod ^4, TipTap ^3, Vitest ^3
-└── tsconfig.json                  # extends @qalam/config/tsconfig/react
+└── tsconfig.json                  # extends @umberleaf/config/tsconfig/react
 ```
 
 **Why feature-first, not type-first:** a `components/` + `hooks/` + `api/` split by _kind_
@@ -222,13 +222,13 @@ Turborepo's `dependsOn: ^build` guarantees packages build before their consumers
 built, not source-consumed:** source consumption breaks the NestJS tsc pipeline; building
 keeps every consumer — Vite, Nest, future RN/CLI — uniform (ADR §2).
 
-| Package            | One-line responsibility | Contains                                                                                                                                                                                                                     | Must NOT contain                                                   |
-| ------------------ | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `@qalam/shared`    | _What the domain knows_ | Enums (`PieceStatus`, `Visibility`, `Role`), error-code catalogue (`AUTH_INVALID_CREDENTIALS`, `PIECE_SCHEDULE_IN_PAST`…), limits (`MAX_CLAPS_PER_USER = 50`), regexes (`USERNAME_REGEX`)                                    | Functions with behavior; anything UI or wire-format                |
-| `@qalam/utils`     | _How to compute_        | Pure, dependency-free functions: `slugify`, `readingTime`, cursor helpers…                                                                                                                                                   | Domain constants; anything with I/O, framework, or runtime deps    |
-| `@qalam/api-types` | _The wire contract_     | Types generated from the backend's exported `openapi.json` (`openapi-typescript`) + handwritten request/response helpers. Flutter generates Dart models from the same spec — one contract, three consumers                   | Runtime logic; UI types; duplicated enums (re-use `@qalam/shared`) |
-| `@qalam/ui`        | _How it looks_          | Design tokens as CSS variables (`--q-*`, ADR §7), the AntD theme object, the Tailwind preset, shared primitives. The **single token source** feeding both AntD `ConfigProvider` and Tailwind — no drift, no specificity wars | Feature components; API calls; app state                           |
-| `@qalam/config`    | _How we build_          | `tsconfig/{base,nest,react}`, `eslint/{base,nest,react}` (ESLint 9 flat), `prettier` preset                                                                                                                                  | Anything imported at runtime                                       |
+| Package                | One-line responsibility | Contains                                                                                                                                                                                                                     | Must NOT contain                                                       |
+| ---------------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `@umberleaf/shared`    | _What the domain knows_ | Enums (`PieceStatus`, `Visibility`, `Role`), error-code catalogue (`AUTH_INVALID_CREDENTIALS`, `PIECE_SCHEDULE_IN_PAST`…), limits (`MAX_CLAPS_PER_USER = 50`), regexes (`USERNAME_REGEX`)                                    | Functions with behavior; anything UI or wire-format                    |
+| `@umberleaf/utils`     | _How to compute_        | Pure, dependency-free functions: `slugify`, `readingTime`, cursor helpers…                                                                                                                                                   | Domain constants; anything with I/O, framework, or runtime deps        |
+| `@umberleaf/api-types` | _The wire contract_     | Types generated from the backend's exported `openapi.json` (`openapi-typescript`) + handwritten request/response helpers. Flutter generates Dart models from the same spec — one contract, three consumers                   | Runtime logic; UI types; duplicated enums (re-use `@umberleaf/shared`) |
+| `@umberleaf/ui`        | _How it looks_          | Design tokens as CSS variables (`--q-*`, ADR §7), the AntD theme object, the Tailwind preset, shared primitives. The **single token source** feeding both AntD `ConfigProvider` and Tailwind — no drift, no specificity wars | Feature components; API calls; app state                               |
+| `@umberleaf/config`    | _How we build_          | `tsconfig/{base,nest,react}`, `eslint/{base,nest,react}` (ESLint 9 flat), `prettier` preset                                                                                                                                  | Anything imported at runtime                                           |
 
 **The disjointness rule:** each piece of knowledge has exactly one package that may own
 it. The test for placement is the italicized question — _what the domain knows / how to
@@ -248,24 +248,24 @@ review; violations are build failures, not style notes.
             │           │             │
             ▼           ▼             ▼
         ┌────────────────────────────────────┐
-        │  @qalam/ui     @qalam/api-types    │       ← may use shared/utils
+        │  @umberleaf/ui     @umberleaf/api-types    │       ← may use shared/utils
         │        │             │             │
         │        ▼             ▼             │
-        │  @qalam/shared   @qalam/utils      │       ← dependency-free floor
+        │  @umberleaf/shared   @umberleaf/utils      │       ← dependency-free floor
         └────────────────────────────────────┘
-             @qalam/config (build-time only — everyone extends it, nobody imports it at runtime)
+             @umberleaf/config (build-time only — everyone extends it, nobody imports it at runtime)
 ```
 
-| #   | Rule                                                                                                                                                                                                                | Why                                                                                                                                                                  |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | **Apps may import packages. Packages never import apps.** No exceptions.                                                                                                                                            | The moment a package knows about an app, every other consumer inherits that app's assumptions and the package is no longer shared — it's entangled.                  |
-| 2   | **Apps never import other apps.** Cross-app sharing goes _down_ into a package.                                                                                                                                     | frontend↔admin coupling would recreate the drift the monorepo exists to kill.                                                                                        |
-| 3   | **`@qalam/shared` and `@qalam/utils` are dependency-free** — no runtime deps, no workspace deps.                                                                                                                    | They are the floor of the graph; anything they pulled in, the entire platform (including Flutter-adjacent codegen tooling) would pull in.                            |
-| 4   | **`@qalam/ui` and `@qalam/api-types` may depend on `shared`/`utils` only** — never on each other.                                                                                                                   | Keeps look and wire-contract independent; keeps the graph a shallow tree, not a web.                                                                                 |
-| 5   | **`@qalam/config` is build-time only.**                                                                                                                                                                             | Presets are extended by tooling, not executed by apps.                                                                                                               |
-| 6   | **Backend: no cross-module entity/repository imports** — exported services or events only (ADR §1).                                                                                                                 | This is the modular monolith's load-bearing wall; see `02_SystemArchitecture.md` §3.                                                                                 |
-| 7   | **Frontend/admin: features never import from other features.** Shared UI moves down to `components/` (or `@qalam/ui`); shared logic to `lib/` or a package. `app/` composes features; features never import `app/`. | Preserves the `rm -rf` deletability test — a feature with inbound feature imports can't be deleted, and one importing `app/` has inverted the composition direction. |
-| 8   | **No ad-hoc `fetch` in components** — every request goes through `lib/api-client.ts` and per-feature query hooks typed by `@qalam/api-types`.                                                                       | One choke point for envelope handling, auth refresh, error-code mapping, and request-ID propagation.                                                                 |
+| #   | Rule                                                                                                                                                                                                                    | Why                                                                                                                                                                  |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **Apps may import packages. Packages never import apps.** No exceptions.                                                                                                                                                | The moment a package knows about an app, every other consumer inherits that app's assumptions and the package is no longer shared — it's entangled.                  |
+| 2   | **Apps never import other apps.** Cross-app sharing goes _down_ into a package.                                                                                                                                         | frontend↔admin coupling would recreate the drift the monorepo exists to kill.                                                                                        |
+| 3   | **`@umberleaf/shared` and `@umberleaf/utils` are dependency-free** — no runtime deps, no workspace deps.                                                                                                                | They are the floor of the graph; anything they pulled in, the entire platform (including Flutter-adjacent codegen tooling) would pull in.                            |
+| 4   | **`@umberleaf/ui` and `@umberleaf/api-types` may depend on `shared`/`utils` only** — never on each other.                                                                                                               | Keeps look and wire-contract independent; keeps the graph a shallow tree, not a web.                                                                                 |
+| 5   | **`@umberleaf/config` is build-time only.**                                                                                                                                                                             | Presets are extended by tooling, not executed by apps.                                                                                                               |
+| 6   | **Backend: no cross-module entity/repository imports** — exported services or events only (ADR §1).                                                                                                                     | This is the modular monolith's load-bearing wall; see `02_SystemArchitecture.md` §3.                                                                                 |
+| 7   | **Frontend/admin: features never import from other features.** Shared UI moves down to `components/` (or `@umberleaf/ui`); shared logic to `lib/` or a package. `app/` composes features; features never import `app/`. | Preserves the `rm -rf` deletability test — a feature with inbound feature imports can't be deleted, and one importing `app/` has inverted the composition direction. |
+| 8   | **No ad-hoc `fetch` in components** — every request goes through `lib/api-client.ts` and per-feature query hooks typed by `@umberleaf/api-types`.                                                                       | One choke point for envelope handling, auth refresh, error-code mapping, and request-ID propagation.                                                                 |
 
 ---
 
@@ -294,10 +294,10 @@ Described, not implemented. These are the recipes reviewers hold PRs against.
 7. Needs async work (e.g. scheduled prompt publication)? Add a processor under
    `processors/` against an existing queue, or add a queue to the ADR §3 catalogue
    _first_ — the ADR is the queue registry.
-8. New error codes go to the `DOMAIN_REASON` catalogue in `@qalam/shared` (e.g.
+8. New error codes go to the `DOMAIN_REASON` catalogue in `@umberleaf/shared` (e.g.
    `PROMPT_NOT_FOUND`); new domain enums likewise.
 9. Tests: Jest unit tests beside the code; e2e in `backend/test/`.
-10. Regenerate `openapi.json` → `@qalam/api-types` so all consumers see the new contract
+10. Regenerate `openapi.json` → `@umberleaf/api-types` so all consumers see the new contract
     in the same PR.
 
 ### 6.2 Adding frontend feature Y (example: `prompts` UI)
@@ -305,15 +305,15 @@ Described, not implemented. These are the recipes reviewers hold PRs against.
 1. Create `frontend/src/features/prompts/` with `api/`, `components/`, `hooks/` (and
    `stores/` only if it has real client state — server state stays in TanStack Query).
 2. `api/` gets query/mutation hooks built on `lib/api-client.ts`, typed by the freshly
-   regenerated `@qalam/api-types`. No fetch calls anywhere else.
-3. Components use `@qalam/ui` primitives and tokens; **CSS logical properties only**
+   regenerated `@umberleaf/api-types`. No fetch calls anywhere else.
+3. Components use `@umberleaf/ui` primitives and tokens; **CSS logical properties only**
    (`ms-*`/`me-*` — `ml-*`/`mr-*` are lint-banned) so the feature is RTL-correct by
    construction; both themes verified (tokens make this nearly automatic).
 4. Route lands in `app/router/` with the URL carrying any tab/filter state (URL is the
    source of truth — ADR §6).
 5. Forms: React Hook Form + Zod resolver, schema shared with the API layer.
 6. Cross-feature reuse discovered mid-build? Move the shared piece _down_ — to
-   `components/` if visual and app-specific, to `@qalam/ui` if a primitive, to a package
+   `components/` if visual and app-specific, to `@umberleaf/ui` if a primitive, to a package
    if universal. Never import across `features/`.
 7. Vitest + Testing Library specs beside the code.
 8. **Exit check:** `rm -rf src/features/prompts` plus deleting its route entries must be

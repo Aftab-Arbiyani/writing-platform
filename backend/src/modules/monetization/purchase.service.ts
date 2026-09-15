@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { PaymentProvider, PurchaseKind, PurchaseStatus } from '@qalam/shared';
+import { PaymentProvider, PurchaseKind, PurchaseStatus } from '@umberleaf/shared';
 import { Repository } from 'typeorm';
 
 import type { CursorPayload } from '../../common/pagination/cursor.util';

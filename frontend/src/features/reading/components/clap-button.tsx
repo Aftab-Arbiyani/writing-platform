@@ -1,5 +1,5 @@
-import { MAX_CLAPS_PER_USER_PER_PIECE } from '@qalam/shared';
-import { QButton } from '@qalam/ui';
+import { MAX_CLAPS_PER_USER_PER_PIECE } from '@umberleaf/shared';
+import { QButton } from '@umberleaf/ui';
 import { Hand } from 'lucide-react';
 import type { ReactElement } from 'react';
 

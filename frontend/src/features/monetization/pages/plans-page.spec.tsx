@@ -4,7 +4,7 @@ import {
   PaymentProvider,
   PlanTier,
   SubscriptionStatus,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 

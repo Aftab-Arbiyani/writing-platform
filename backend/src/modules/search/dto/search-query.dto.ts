@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { GLOBAL_SEARCH_GROUP_SIZE, PAGE_SIZE_MAX, SearchType } from '@qalam/shared';
+import { GLOBAL_SEARCH_GROUP_SIZE, PAGE_SIZE_MAX, SearchType } from '@umberleaf/shared';
 import { Type } from 'class-transformer';
 import { IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, Max, Min } from 'class-validator';
 

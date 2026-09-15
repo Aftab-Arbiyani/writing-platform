@@ -1,4 +1,4 @@
-import { QSelect } from '@qalam/ui';
+import { QSelect } from '@umberleaf/ui';
 import type { ReactElement } from 'react';
 
 import { RANGE_WINDOWS, useAnalyticsStore, type RangePreset } from '../stores/analytics.store';

@@ -22,7 +22,7 @@ import {
   ApiProduces,
   ApiTags,
 } from '@nestjs/swagger';
-import { PERMISSIONS, ReportStatus } from '@qalam/shared';
+import { PERMISSIONS, ReportStatus } from '@umberleaf/shared';
 import type { Request, Response } from 'express';
 
 import { RateLimit } from '../../common/decorators/rate-limit.decorator';
@@ -147,7 +147,7 @@ export class AdminReportsController {
     const stamp = new Date().toISOString().slice(0, 10);
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename="qalam-reports-${stamp}.${asJson ? 'json' : 'csv'}"`,
+      `attachment; filename="umberleaf-reports-${stamp}.${asJson ? 'json' : 'csv'}"`,
     );
     if (asJson) {
       res.setHeader('Content-Type', 'application/json; charset=utf-8');

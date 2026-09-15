@@ -1,5 +1,5 @@
-import { SearchType } from '@qalam/shared';
-import { QButton, QErrorState } from '@qalam/ui';
+import { SearchType } from '@umberleaf/shared';
+import { QButton, QErrorState } from '@umberleaf/ui';
 import { ArrowRight } from 'lucide-react';
 import type { ReactElement, ReactNode } from 'react';
 

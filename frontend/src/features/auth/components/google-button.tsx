@@ -1,4 +1,4 @@
-import { QButton } from '@qalam/ui';
+import { QButton } from '@umberleaf/ui';
 import type { ReactElement } from 'react';
 
 /** Google's multicolour "G" as a self-contained SVG (no external asset — CSP-safe). */

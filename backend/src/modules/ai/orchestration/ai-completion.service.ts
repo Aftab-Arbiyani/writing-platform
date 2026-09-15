@@ -1,13 +1,13 @@
 import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
-import { AiFinishReason, AiMessageRole } from '@qalam/shared';
+import { AiFinishReason, AiMessageRole } from '@umberleaf/shared';
 import type {
   AiFeature,
   AiGenerationParams,
   AiProvider,
   AiResolvedConfig,
   AiTokenUsage,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 import { aiConfig } from '../../../config/ai.config';
 import { AiFeatureService } from '../ai-feature.service';

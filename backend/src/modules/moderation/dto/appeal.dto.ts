@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { AppealStatus } from '@qalam/shared';
+import { AppealStatus } from '@umberleaf/shared';
 import { IsEnum, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 
 import { OffsetPaginationDto } from '../../../common/dto/offset-pagination.dto';

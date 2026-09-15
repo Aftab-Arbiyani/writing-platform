@@ -147,8 +147,8 @@ curl -s -XPOST localhost:4000/api/v1/admin/cache/warm -H "Authorization: Bearer 
 #      inserts one row per recipient (job.completed queue=notifications)
 
 # 6. Inspect Redis:
-docker exec qalam-redis-1 redis-cli -n 1 --scan --pattern 'qalam:queues*repeat*'  # schedulers
-docker exec qalam-redis-1 redis-cli -n 0 dbsize                                    # cache keys
+docker exec umberleaf-redis-1 redis-cli -n 1 --scan --pattern 'umberleaf:queues*repeat*'  # schedulers
+docker exec umberleaf-redis-1 redis-cli -n 0 dbsize                                    # cache keys
 
 # 7. Retry / DLQ: a job that exhausts attempts lands in `failed`; replay it:
 curl -s -XPOST 'localhost:4000/api/v1/admin/jobs/retry/<jobId>?queue=<queue>' -H "Authorization: Bearer $TOKEN"

@@ -1,5 +1,5 @@
 /**
- * Shared Prettier preset for the Qalam monorepo.
+ * Shared Prettier preset for the Umberleaf monorepo.
  *
  * Canonical shape mirrors the root `prettier.config.mjs` (the single source of
  * truth for formatting) — if a value changes there, change it here too.

@@ -3,8 +3,8 @@ import {
   POLICY_ACTIONS,
   StoryRole,
   type StoryRole as Role,
-} from '@qalam/shared';
-import { QButton, QCard, QSelect } from '@qalam/ui';
+} from '@umberleaf/shared';
+import { QButton, QCard, QSelect } from '@umberleaf/ui';
 import type { ReactElement } from 'react';
 
 import { useMe } from '@/hooks/use-me';

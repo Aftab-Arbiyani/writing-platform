@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { normalizeStoryName, RetrievalSource } from '@qalam/shared';
+import { normalizeStoryName, RetrievalSource } from '@umberleaf/shared';
 
 import type { StoryEdgeDto, StoryNodeDto } from '../../story-intelligence/dto/story-response.dto';
 import { StoryIntelligenceService } from '../../story-intelligence/story-intelligence.service';

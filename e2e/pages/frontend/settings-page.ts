@@ -2,7 +2,7 @@ import { type Locator, type Page, expect } from '@playwright/test';
 
 /**
  * Settings → Edit profile (`/settings/profile`, `features/settings`). Fields are
- * `@qalam/ui` inputs with real `<label htmlFor>` (getByLabel works); a sticky Save bar
+ * `@umberleaf/ui` inputs with real `<label htmlFor>` (getByLabel works); a sticky Save bar
  * appears only when the form is dirty and confirms with a "Profile saved" toast.
  */
 export class EditProfilePage {

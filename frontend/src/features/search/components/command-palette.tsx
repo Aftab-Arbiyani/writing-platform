@@ -1,5 +1,5 @@
-import { SEARCH_QUERY_MIN } from '@qalam/shared';
-import { QAvatar, QSpinner } from '@qalam/ui';
+import { SEARCH_QUERY_MIN } from '@umberleaf/shared';
+import { QAvatar, QSpinner } from '@umberleaf/ui';
 import { Modal } from 'antd';
 import { CornerDownLeft, FileText, Hash, Search, Tag, TrendingUp, Clock } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';

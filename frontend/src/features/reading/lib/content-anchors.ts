@@ -7,7 +7,7 @@ import type { TipTapNode } from '../types/reading.types';
  * That space is every `type: 'text'` leaf of the raw document concatenated **verbatim with no
  * separator anywhere** — not between text runs and not between blocks
  * (`backend/src/modules/collaboration/content-text.util.ts`). It is deliberately NOT
- * `@qalam/utils` `extractPlainText`, which joins with `' '` and collapses whitespace: for
+ * `@umberleaf/utils` `extractPlainText`, which joins with `' '` and collapses whitespace: for
  * `{p:"first"}{p:"second"}` those are `"firstsecond"` (11) and `"first second"` (12), so every
  * block boundary shifts every later offset by one. `content-text.divergence.spec.ts` pins that
  * difference on the server side; this module is the client half of the same contract.

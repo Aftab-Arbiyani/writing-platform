@@ -1,4 +1,4 @@
-import { QCard } from '@qalam/ui';
+import { QCard } from '@umberleaf/ui';
 import { Table, type TableColumnsType } from 'antd';
 import { Target } from 'lucide-react';
 import type { ReactElement } from 'react';

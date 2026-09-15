@@ -1,4 +1,10 @@
-import { ReportEntityType, ReportPriority, ReportReason, ReportStatus, Role } from '@qalam/shared';
+import {
+  ReportEntityType,
+  ReportPriority,
+  ReportReason,
+  ReportStatus,
+  Role,
+} from '@umberleaf/shared';
 import { fireEvent, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 

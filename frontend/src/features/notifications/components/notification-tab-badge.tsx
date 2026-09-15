@@ -1,4 +1,4 @@
-import { QBadge } from '@qalam/ui';
+import { QBadge } from '@umberleaf/ui';
 import type { ReactElement, ReactNode } from 'react';
 
 import { useUnreadCount } from '../hooks/use-unread-count';

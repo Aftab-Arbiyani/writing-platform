@@ -3,7 +3,7 @@ import 'reflect-metadata';
 
 import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import { AI_QUOTA_RULES, Role, UNLIMITED_SEATS } from '@qalam/shared';
+import { AI_QUOTA_RULES, Role, UNLIMITED_SEATS } from '@umberleaf/shared';
 
 import { AppModule } from '../../app.module';
 import { TransactionRunner } from '../../common/database/transaction-runner';

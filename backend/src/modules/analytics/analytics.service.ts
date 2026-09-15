@@ -1,5 +1,5 @@
 import { Inject, Injectable, Optional } from '@nestjs/common';
-import { AnalyticsPeriod, AnalyticsScope, PieceStatus, TrendType } from '@qalam/shared';
+import { AnalyticsPeriod, AnalyticsScope, PieceStatus, TrendType } from '@umberleaf/shared';
 import { createHash } from 'node:crypto';
 
 import { DomainEventBus } from '../../common/events/domain-event-bus';

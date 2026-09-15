@@ -1,8 +1,8 @@
-import { QTag, cn } from '@qalam/ui';
+import { QTag, cn } from '@umberleaf/ui';
 import { Quote, TrendingUp } from 'lucide-react';
 import type { ReactElement } from 'react';
 
-import type { RelatedEntity, RetrievalEvidence } from '@qalam/api-types';
+import type { RelatedEntity, RetrievalEvidence } from '@umberleaf/api-types';
 
 /**
  * The grounding blocks every AF4 result and recommendation carries (W5, docs/36) — the reason it

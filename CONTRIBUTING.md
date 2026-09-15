@@ -1,4 +1,4 @@
-# Contributing to Qalam
+# Contributing to Umberleaf
 
 Thanks for contributing. This guide is the practical workflow; the engineering
 rules live in [`CLAUDE.md`](./CLAUDE.md) and the architecture in [`docs/`](./docs).

@@ -32,7 +32,7 @@ fi
 # `--wait` covers only the LONG-RUNNING services. `minio-init` is deliberately excluded:
 # it is a one-shot `mc` container that creates the bucket and exits 0, and current Compose
 # (tested on Docker 29.7.2 / Compose v5.4.0) treats an exited dependency as a `--wait`
-# FAILURE — it prints "container qalam-minio-init-1 exited (0)" and returns 1. With
+# FAILURE — it prints "container umberleaf-minio-init-1 exited (0)" and returns 1. With
 # `set -e` that killed this script before the migrations ran, so `pnpm e2e:up` never
 # produced a usable stack on a current Docker and every step after this line was
 # unreachable. That is very plausibly why five rows of specs were written and never run
@@ -57,7 +57,7 @@ INIT_CID="$(docker compose ps -aq minio-init 2>/dev/null || true)"
 if [ -n "${INIT_CID}" ]; then
   INIT_EXIT="$(docker inspect -f '{{.State.ExitCode}}' "${INIT_CID}" 2>/dev/null || echo '?')"
   if [ "${INIT_EXIT}" = "0" ]; then
-    echo "  ✓ minio-init completed (bucket qalam-media ready)."
+    echo "  ✓ minio-init completed (bucket umberleaf-media ready)."
   else
     echo "  ! minio-init exited ${INIT_EXIT} — media uploads may fail. Logs:"
     docker compose logs --no-log-prefix --tail 20 minio-init || true

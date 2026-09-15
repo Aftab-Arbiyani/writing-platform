@@ -3,8 +3,8 @@ import {
   COLLECTION_NAME_MAX,
   COLLECTION_NAME_MIN,
   Visibility,
-} from '@qalam/shared';
-import { QButton, QDialog, QInput, QTextArea, useToast } from '@qalam/ui';
+} from '@umberleaf/shared';
+import { QButton, QDialog, QInput, QTextArea, useToast } from '@umberleaf/ui';
 import { Checkbox } from 'antd';
 import { type ReactElement, useState } from 'react';
 
@@ -24,7 +24,7 @@ import type { Collection } from '@/types/collection';
  * with `COLLECTION_DEFAULT_IMMUTABLE`, so its callers hide the affordance instead of offering one
  * that gets refused — the same disabled-or-hidden-not-refused rule as W3c-1.
  *
- * Bounds come from `@qalam/shared`, the same constants `CreateCollectionDto` validates with.
+ * Bounds come from `@umberleaf/shared`, the same constants `CreateCollectionDto` validates with.
  */
 export interface CollectionFormDialogProps {
   open: boolean;

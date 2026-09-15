@@ -17,9 +17,9 @@ field is RHF; hand-rolled `useState` forms are banned (`16` §4.4).
 > version pins). Write v3 schemas; migrate when the resolver supports v4.
 
 **The rule:** the schema is the single client-side source of validation truth, and it is
-**built from `@qalam/shared` primitives** so the frontend and backend cannot drift (ADR §6).
-Request _types_ come from `@qalam/api-types` (generated from OpenAPI); the Zod _rules_ reuse
-the same `@qalam/shared` constants both sides import (`USERNAME_REGEX`, `PASSWORD_MIN`,
+**built from `@umberleaf/shared` primitives** so the frontend and backend cannot drift (ADR §6).
+Request _types_ come from `@umberleaf/api-types` (generated from OpenAPI); the Zod _rules_ reuse
+the same `@umberleaf/shared` constants both sides import (`USERNAME_REGEX`, `PASSWORD_MIN`,
 `TITLE_MAX`, `TAGS_MAX_PER_PIECE`, …). One vocabulary, two enforcers.
 
 ---
@@ -29,19 +29,19 @@ the same `@qalam/shared` constants both sides import (`USERNAME_REGEX`, `PASSWOR
 **Colocated with the form, inside the feature** (`12` §4):
 
 ```
-features/auth/schemas/register.schema.ts      # imports USERNAME_REGEX, PASSWORD_MIN from @qalam/shared
+features/auth/schemas/register.schema.ts      # imports USERNAME_REGEX, PASSWORD_MIN from @umberleaf/shared
 features/editor/schemas/publish.schema.ts
 features/settings/schemas/profile.schema.ts
 ```
 
-The component imports its schema; the schema imports domain atoms from `@qalam/shared`. A
+The component imports its schema; the schema imports domain atoms from `@umberleaf/shared`. A
 schema is never defined inline in a component, and never duplicated across features (if two
-forms share a shape, the shared atom lives in `@qalam/shared`, not a copied Zod object).
+forms share a shape, the shared atom lives in `@umberleaf/shared`, not a copied Zod object).
 
 ```ts
 // features/auth/schemas/register.schema.ts
 import { z } from 'zod';
-import { USERNAME_REGEX, PASSWORD_MIN, PASSWORD_MAX, PEN_NAME_MAX } from '@qalam/shared';
+import { USERNAME_REGEX, PASSWORD_MIN, PASSWORD_MAX, PEN_NAME_MAX } from '@umberleaf/shared';
 
 export const registerSchema = z.object({
   email: z.string().email(),
@@ -52,7 +52,7 @@ export const registerSchema = z.object({
 export type RegisterInput = z.infer<typeof registerSchema>;
 ```
 
-**Mirror the backend's real limits** (from `@qalam/shared/limits`, do not invent):
+**Mirror the backend's real limits** (from `@umberleaf/shared/limits`, do not invent):
 `PASSWORD 10..128`, `USERNAME 3..30` (`^[a-z0-9_]{3,30}$`), `PEN_NAME 1..50`, `BIO ≤500`,
 `LOCATION ≤100`, `WEBSITE_URL ≤255`, `TITLE ≤200`, `SUBTITLE ≤300`, `FEATURED_QUOTE ≤280`
 (validate at **280** though the DB column is 500), `TAGS ≤5/piece`, `COMMENT 1..2000`,
@@ -75,7 +75,7 @@ const form = useForm<RegisterInput>({
   `'onSubmit'`-only (surprises at the end).
 - **Always provide `defaultValues`** for every field (controlled from first render; avoids
   uncontrolled→controlled warnings).
-- **Enum/select fields** use the `@qalam/shared` enum as the Zod enum (`z.nativeEnum(Visibility)`)
+- **Enum/select fields** use the `@umberleaf/shared` enum as the Zod enum (`z.nativeEnum(Visibility)`)
   so the option list and the validator share one source.
 
 ---
@@ -131,15 +131,15 @@ Rules:
 
 ## 5. Reusable field components
 
-Fields wrap the `@qalam/ui` primitives (`08` §3.1) and bind to RHF via `Controller` (or
+Fields wrap the `@umberleaf/ui` primitives (`08` §3.1) and bind to RHF via `Controller` (or
 `register` for native inputs). Build a thin **feature-agnostic field set** (in `components/`
-or `@qalam/ui` if used by both apps) so every form looks and behaves identically:
+or `@umberleaf/ui` if used by both apps) so every form looks and behaves identically:
 
 | Field               | Wraps                  | Binds                   | Notes                                                                       |
 | ------------------- | ---------------------- | ----------------------- | --------------------------------------------------------------------------- |
 | `FormInput`         | `QInput`               | `register`/`Controller` | wires `error`, `hint`, `aria-invalid`, `aria-describedby` from `fieldState` |
 | `FormTextArea`      | `QTextArea`            | `Controller`            | `showCount` against the shared limit; `dir="auto"` for user content         |
-| `FormSelect`        | `QSelect`              | `Controller`            | options from a `@qalam/shared` enum                                         |
+| `FormSelect`        | `QSelect`              | `Controller`            | options from a `@umberleaf/shared` enum                                     |
 | `FormPasswordInput` | `QInput type=password` | `register`              | strength meter = quiet 3-segment line, no red/green bars (`06` §3.7)        |
 | `FormTagInput`      | `QTag` set             | `Controller`            | ≤5 tags (`TAGS_MAX_PER_PIECE`); removable tags carry `aria-label`           |
 | `FormError` (root)  | —                      | `errors.root.server`    | form-level banner                                                           |
@@ -206,11 +206,11 @@ Rules:
 
 ```
 □ RHF + zodResolver; mode 'onTouched'; defaultValues for every field
-□ Schema in features/<name>/schemas/, built from @qalam/shared atoms (real limits/regex)
-□ Enum fields use @qalam/shared enums for both options and validation
+□ Schema in features/<name>/schemas/, built from @umberleaf/shared atoms (real limits/regex)
+□ Enum fields use @umberleaf/shared enums for both options and validation
 □ Server errors mapped via applyServerErrors: field details → inline, code-only → root banner
 □ Copy keyed by error.code/rule from the catalogue — never hardcoded, never server .message
-□ Fields wrap @qalam/ui primitives; static labels; aria-invalid + aria-describedby; dir="auto" for user content
+□ Fields wrap @umberleaf/ui primitives; static labels; aria-invalid + aria-describedby; dir="auto" for user content
 □ Submit is a TanStack mutation; button loading; disabled while pending; publish carries Idempotency-Key
 □ Publish/schedule/delete not optimistic; wizard = one instance, per-step trigger, atomic submit
 □ On invalid submit: focus first invalid field; message region aria-live polite

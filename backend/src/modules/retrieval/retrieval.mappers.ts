@@ -1,4 +1,4 @@
-import type { RecommendationKind } from '@qalam/shared';
+import type { RecommendationKind } from '@umberleaf/shared';
 
 import type {
   RecommendationItemDto,

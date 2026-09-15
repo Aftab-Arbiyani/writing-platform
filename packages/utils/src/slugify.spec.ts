@@ -36,7 +36,7 @@ describe('slugify', () => {
   });
 
   it('handles mixed-script input', () => {
-    expect(slugify('Qalam — क़लम — قلم')).toBe(nfkd('qalam-क़लम-قلم'));
+    expect(slugify('Umberleaf — क़लम — قلم')).toBe(nfkd('umberleaf-क़लम-قلم'));
   });
 
   it('returns empty string for empty or symbol-only input', () => {

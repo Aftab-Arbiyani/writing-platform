@@ -1,4 +1,4 @@
-import { cn } from '@qalam/ui';
+import { cn } from '@umberleaf/ui';
 import type { ReactElement } from 'react';
 
 import { useEditorUiStore } from '../stores/editor-ui.store';

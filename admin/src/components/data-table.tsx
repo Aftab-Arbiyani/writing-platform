@@ -1,4 +1,4 @@
-import { QErrorState } from '@qalam/ui';
+import { QErrorState } from '@umberleaf/ui';
 import { Table, type CheckboxProps, type TableColumnsType, type TableProps } from 'antd';
 import type { AriaAttributes, Key, ReactElement } from 'react';
 

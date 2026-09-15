@@ -8,7 +8,7 @@
  * derives the Redis key from it: authenticated user id, else client IP).
  *
  * Vocabulary only — no enforcement lives here (that is the backend guard, Redis
- * DB 2). Kept in @qalam/shared so backend limits and any future client-side
+ * DB 2). Kept in @umberleaf/shared so backend limits and any future client-side
  * hinting agree on one table.
  */
 

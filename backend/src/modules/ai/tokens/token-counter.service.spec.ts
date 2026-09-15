@@ -1,5 +1,5 @@
-import { AiMessageRole } from '@qalam/shared';
-import type { AiModelMetadata } from '@qalam/shared';
+import { AiMessageRole } from '@umberleaf/shared';
+import type { AiModelMetadata } from '@umberleaf/shared';
 
 import { TokenCounterService } from './token-counter.service';
 

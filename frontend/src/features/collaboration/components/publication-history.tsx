@@ -1,4 +1,4 @@
-import { QCard, QSkeleton } from '@qalam/ui';
+import { QCard, QSkeleton } from '@umberleaf/ui';
 import type { ReactElement } from 'react';
 
 import { getErrorMessage } from '@/lib/errors';

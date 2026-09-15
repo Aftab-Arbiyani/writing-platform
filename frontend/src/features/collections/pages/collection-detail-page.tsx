@@ -6,7 +6,7 @@ import {
   QSkeleton,
   useConfirm,
   useToast,
-} from '@qalam/ui';
+} from '@umberleaf/ui';
 import { ArrowLeft, X } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { Link, useParams } from 'react-router';

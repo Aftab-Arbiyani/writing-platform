@@ -1,4 +1,4 @@
-import { QSkeleton } from '@qalam/ui';
+import { QSkeleton } from '@umberleaf/ui';
 import { memo, useEffect, useRef, useState, type ReactElement } from 'react';
 
 import type { ChartOption } from '../../lib/chart-options';

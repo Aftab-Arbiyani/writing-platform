@@ -1,4 +1,4 @@
-import { QDrawer, type QDrawerProps } from '@qalam/ui';
+import { QDrawer, type QDrawerProps } from '@umberleaf/ui';
 import type { ReactElement } from 'react';
 
 /**

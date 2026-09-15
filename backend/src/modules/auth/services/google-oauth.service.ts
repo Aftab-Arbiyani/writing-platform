@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
-import { AuthProvider } from '@qalam/shared';
+import { AuthProvider } from '@umberleaf/shared';
 import { CodeChallengeMethod, OAuth2Client } from 'google-auth-library';
 import type { Redis } from 'ioredis';
 import { randomBytes } from 'node:crypto';
@@ -19,7 +19,7 @@ export interface GoogleProfile {
   emailVerified: boolean;
 }
 
-/** Result of resolving a Google profile to a Qalam account. */
+/** Result of resolving a Google profile to a Umberleaf account. */
 export interface GoogleResolution {
   userId: string;
   /** True when an existing password account was auto-linked (docs 13 §3.5). */

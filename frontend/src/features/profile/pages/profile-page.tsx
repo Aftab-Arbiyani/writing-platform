@@ -1,4 +1,4 @@
-import { QErrorState, QSkeleton } from '@qalam/ui';
+import { QErrorState, QSkeleton } from '@umberleaf/ui';
 import { useState, type ReactElement } from 'react';
 import { useSearchParams } from 'react-router';
 
@@ -73,7 +73,7 @@ export function ProfilePage({ username }: { username: string }): ReactElement {
           title={notFound ? 'We couldn’t find that writer.' : 'Couldn’t load this profile.'}
           description={
             notFound
-              ? 'The handle may be misspelled, or the writer may have left Qalam.'
+              ? 'The handle may be misspelled, or the writer may have left Umberleaf.'
               : getErrorMessage(query.error)
           }
           requestId={getRequestId(query.error)}
@@ -100,7 +100,7 @@ export function ProfilePage({ username }: { username: string }): ReactElement {
         description={
           !profile.restricted && profile.bio
             ? profile.bio
-            : `${profile.penName} (@${profile.username}) on Qalam.`
+            : `${profile.penName} (@${profile.username}) on Umberleaf.`
         }
         canonicalPath={canonicalPath}
         image={avatarUrl}

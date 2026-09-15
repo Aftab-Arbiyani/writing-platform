@@ -51,7 +51,7 @@ export const SETTING_DEFINITIONS: readonly SettingDefinition[] = [
     key: 'platform.name',
     category: 'general',
     dataType: 'string',
-    defaultValue: 'Qalam',
+    defaultValue: 'Umberleaf',
     description: 'Public platform name.',
     validationRules: { minLength: 1, maxLength: 80 },
   }),
@@ -319,7 +319,7 @@ export const SETTING_DEFINITIONS: readonly SettingDefinition[] = [
     key: 'email.fromName',
     category: 'email',
     dataType: 'string',
-    defaultValue: 'Qalam',
+    defaultValue: 'Umberleaf',
     description: 'Display name on outbound email.',
     validationRules: { minLength: 1, maxLength: 80 },
   }),
@@ -665,7 +665,7 @@ export const FEATURE_FLAG_DEFINITIONS: readonly FeatureFlagDefinition[] = [
   },
   // Per-feature AI flags (AF1). Each rides the master `feature.ai.enabled` AND
   // its own switch, so a single feature can be dark-launched independently. All
-  // disabled at seed; keys match `aiFeatureFlagKey()` in @qalam/shared.
+  // disabled at seed; keys match `aiFeatureFlagKey()` in @umberleaf/shared.
   //
   // D5 removed five rows here: `grammar`, `rewrite` and `summarization` (never built), and
   // `semanticSearch` and `recommendations` (no longer AI features — search and

@@ -1,5 +1,5 @@
-import { POLICY_ACTIONS, SuggestionStatus } from '@qalam/shared';
-import { QButton, QCard, QTag, type QTagColor } from '@qalam/ui';
+import { POLICY_ACTIONS, SuggestionStatus } from '@umberleaf/shared';
+import { QButton, QCard, QTag, type QTagColor } from '@umberleaf/ui';
 import type { ReactElement } from 'react';
 
 import { formatRelativeTime } from '@/lib/format';

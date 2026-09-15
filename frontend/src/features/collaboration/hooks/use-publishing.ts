@@ -1,4 +1,4 @@
-import type { Visibility } from '@qalam/shared';
+import type { Visibility } from '@umberleaf/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { qk } from '@/lib/query-keys';

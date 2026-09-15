@@ -3,7 +3,7 @@ import {
   NOTIFICATION_UNREAD_DISPLAY_CAP,
   NotificationEntityType,
   NotificationType,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 import { JOB_ENQUEUER, type JobEnqueuer } from '../../common/queue/job-enqueuer.port';
 import { JOB } from '../../common/queue/queue.constants';

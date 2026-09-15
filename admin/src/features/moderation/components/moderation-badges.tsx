@@ -1,4 +1,4 @@
-import type { ReportPriority, ReportSeverity, ReportStatus } from '@qalam/shared';
+import type { ReportPriority, ReportSeverity, ReportStatus } from '@umberleaf/shared';
 import type { ReactElement } from 'react';
 
 import { StatusBadge } from '@/components/status-badge';

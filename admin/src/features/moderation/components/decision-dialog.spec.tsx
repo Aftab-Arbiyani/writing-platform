@@ -5,7 +5,7 @@ import {
   ReportResolution,
   ReportStatus,
   Role,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 import { fireEvent, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 

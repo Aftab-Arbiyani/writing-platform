@@ -63,7 +63,7 @@ test.describe('@phase4 frontend discover', () => {
     // them is what makes these recommendations rather than a second copy of the feed.
     await discover.expectRecommendationShelf(
       'Recommended for you',
-      'Recommended for you from across Qalam',
+      'Recommended for you from across Umberleaf',
     );
     await discover.expectRecommendationShelf('Pick up next', 'Popular reads to pick up next');
   });

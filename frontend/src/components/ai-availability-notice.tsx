@@ -1,4 +1,4 @@
-import { QButton, QEmptyState } from '@qalam/ui';
+import { QButton, QEmptyState } from '@umberleaf/ui';
 import { Ban, Gauge, Lock, PenOff } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { useNavigate } from 'react-router';

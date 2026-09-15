@@ -6,7 +6,7 @@ import {
   ROLE_RANK,
   UserStatus,
   type Role,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 import { buildOffsetMeta } from '../../common/pagination/pagination.helper';
 import type { OffsetPage } from '../../common/types/paginated-result';

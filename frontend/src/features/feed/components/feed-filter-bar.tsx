@@ -1,5 +1,5 @@
-import { FeedSort } from '@qalam/shared';
-import { QButton, QSelect } from '@qalam/ui';
+import { FeedSort } from '@umberleaf/shared';
+import { QButton, QSelect } from '@umberleaf/ui';
 import { RefreshCw, X } from 'lucide-react';
 import type { ReactElement } from 'react';
 

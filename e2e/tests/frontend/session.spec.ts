@@ -5,7 +5,7 @@ import { AppNav } from '../../pages/frontend/app-nav';
 /**
  * Frontend session — silent token refresh survives navigation (docs/e2e/06 Phase 3,
  * [03 §7]). A full reload drops the in-memory access token; on boot the app silently
- * refreshes from the httpOnly qalam_rt cookie (POST /auth/refresh) and stays signed in,
+ * refreshes from the httpOnly umberleaf_rt cookie (POST /auth/refresh) and stays signed in,
  * so guarded navigation continues to work with no visible login.
  */
 test.describe('@phase3 frontend session', () => {

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { FeedSort, FollowStatus, PieceStatus, Visibility } from '@qalam/shared';
+import { FeedSort, FollowStatus, PieceStatus, Visibility } from '@umberleaf/shared';
 import { DataSource } from 'typeorm';
 import type { SelectQueryBuilder } from 'typeorm';
 

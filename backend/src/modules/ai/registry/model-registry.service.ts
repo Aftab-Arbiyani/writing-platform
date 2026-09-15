@@ -1,8 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import type { OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { AiModelAvailability } from '@qalam/shared';
-import type { AiModelMetadata, AiProvider } from '@qalam/shared';
+import { AiModelAvailability } from '@umberleaf/shared';
+import type { AiModelMetadata, AiProvider } from '@umberleaf/shared';
 import { Repository } from 'typeorm';
 
 import { AiModelNotFoundException, AiModelUnavailableException } from '../ai.exceptions';

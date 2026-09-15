@@ -36,7 +36,7 @@ usage() {
   cat <<'EOF'
 rollback.sh — re-deploy a known-good immutable image tag.
 
-Usage: ROLLBACK_IMAGE=ghcr.io/qalam/qalam-backend:sha-abc123 rollback.sh [--help]
+Usage: ROLLBACK_IMAGE=ghcr.io/qalam/umberleaf-backend:sha-abc123 rollback.sh [--help]
 
 Key env: ROLLBACK_IMAGE (required), DEPLOY_HEALTH_TIMEOUT, EXPECTED_VERSION,
          ALLOW_MUTABLE_TAG=1, ASSUME_YES=1.

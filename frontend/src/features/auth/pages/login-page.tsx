@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { QButton } from '@qalam/ui';
+import { QButton } from '@umberleaf/ui';
 import { useEffect, type ReactElement } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate, useSearchParams } from 'react-router';
@@ -64,7 +64,7 @@ export function LoginPage(): ReactElement {
       subtitle="Sign in to keep writing."
       footer={
         <>
-          New to Qalam?{' '}
+          New to Umberleaf?{' '}
           <Link to={ROUTES.register} className="font-medium text-accent hover:underline">
             Create an account
           </Link>

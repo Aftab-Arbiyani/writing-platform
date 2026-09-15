@@ -1,4 +1,4 @@
-import { useToast } from '@qalam/ui';
+import { useToast } from '@umberleaf/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { Tabs } from 'antd';
 import { lazy, Suspense, useState, type ReactElement } from 'react';
@@ -115,7 +115,7 @@ export function AnalyticsPage(): ReactElement {
           {ANALYTICS_SECTIONS.find((s) => s.key === section)?.label ?? 'Overview'} analytics
         </h2>
         <p className="mb-4 hidden text-sm text-ink-secondary print:block">
-          Qalam platform analytics — {rangeLabel}
+          Umberleaf platform analytics — {rangeLabel}
         </p>
         <Suspense fallback={<AnalyticsSkeleton />}>
           {section === 'overview' && <OverviewSection filters={filters} />}

@@ -1,4 +1,4 @@
-import { QErrorState } from '@qalam/ui';
+import { QErrorState } from '@umberleaf/ui';
 import type { ReactElement, ReactNode } from 'react';
 
 import { LoadingState } from '@/components/loading-state';

@@ -3,9 +3,9 @@
  * pipeline: request → plan → candidates → ranked candidates → assembled context →
  * result + telemetry, plus the grounding/config/analytics shapes the services share.
  *
- * NOTE: the backend does NOT import `@qalam/api-types` (that package is the CLIENT wire
+ * NOTE: the backend does NOT import `@umberleaf/api-types` (that package is the CLIENT wire
  * contract, generated FROM this backend's OpenAPI). These interfaces are the backend's own
- * source of truth; the response DTOs (dto/) and the `@qalam/api-types` mirror match them.
+ * source of truth; the response DTOs (dto/) and the `@umberleaf/api-types` mirror match them.
  */
 import type {
   RankingSignal,
@@ -13,7 +13,7 @@ import type {
   RetrievalIntent,
   RetrievalQueryType,
   RetrievalSource,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 // ── Grounding shapes (carried on every candidate/result) ────────────────────────
 

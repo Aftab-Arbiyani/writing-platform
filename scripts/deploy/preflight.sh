@@ -30,7 +30,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=../lib/common.sh
 . "${SCRIPT_DIR}/../lib/common.sh"
 
-BACKEND_IMAGE="${BACKEND_IMAGE:-ghcr.io/qalam/qalam-backend:latest}"
+BACKEND_IMAGE="${BACKEND_IMAGE:-ghcr.io/qalam/umberleaf-backend:latest}"
 REQUIRED_ENV_VARS="${REQUIRED_ENV_VARS:-POSTGRES_PASSWORD DATABASE_URL}"
 IMAGE_CHECK="${IMAGE_CHECK:-manifest}"
 MIN_FREE_MB="${MIN_FREE_MB:-2048}"

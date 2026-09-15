@@ -6,7 +6,7 @@ import {
   TrustLevel,
   TrustStatus,
   UserStatus,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 import { screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 

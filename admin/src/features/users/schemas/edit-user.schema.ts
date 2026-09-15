@@ -1,4 +1,4 @@
-import { PEN_NAME_MAX, PEN_NAME_MIN, Role, UserStatus } from '@qalam/shared';
+import { PEN_NAME_MAX, PEN_NAME_MIN, Role, UserStatus } from '@umberleaf/shared';
 import { z } from 'zod';
 
 /**

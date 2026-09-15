@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ReportEntityType, ReportReason } from '@qalam/shared';
+import { ReportEntityType, ReportReason } from '@umberleaf/shared';
 import { IsEnum, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
 
 /** Body for `POST /reports` — any authenticated user reports a piece/comment/user/response. */

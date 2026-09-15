@@ -1,4 +1,4 @@
-import { PresenceState } from '@qalam/shared';
+import { PresenceState } from '@umberleaf/shared';
 import { screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 

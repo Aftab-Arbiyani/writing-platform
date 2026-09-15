@@ -1,4 +1,4 @@
-import { ERROR_CODES } from '@qalam/shared';
+import { ERROR_CODES } from '@umberleaf/shared';
 
 import { env } from '@/config/env';
 

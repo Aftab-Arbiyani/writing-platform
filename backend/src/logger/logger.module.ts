@@ -38,7 +38,7 @@ import { REDACT_CENSOR, REDACT_PATHS } from './redaction';
             // Deployment/service/env metadata on every line (P7.1 observability).
             base: {
               pid: process.pid,
-              service: process.env.SERVICE_NAME ?? 'qalam-backend',
+              service: process.env.SERVICE_NAME ?? 'umberleaf-backend',
               env: app.nodeEnv,
               version: process.env.APP_VERSION ?? '0.0.0',
               commit: (process.env.GIT_SHA ?? '').slice(0, 12),

@@ -60,6 +60,6 @@ export const useUsersTablePrefs = create<UsersTablePrefsState>()(
       removeFilter: (id) =>
         set((state) => ({ savedFilters: state.savedFilters.filter((f) => f.id !== id) })),
     }),
-    { name: 'qalam-admin-users-table' },
+    { name: 'umberleaf-admin-users-table' },
   ),
 );

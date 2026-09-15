@@ -5,7 +5,7 @@ import {
   ReportReason,
   ReportSeverity,
   ReportStatus,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 import { IsEnum, IsISO8601, IsOptional, IsString, IsUUID } from 'class-validator';
 
 import { OffsetPaginationDto } from '../../../common/dto/offset-pagination.dto';

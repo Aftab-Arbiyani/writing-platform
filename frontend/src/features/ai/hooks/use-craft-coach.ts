@@ -1,4 +1,4 @@
-import { AiFeature } from '@qalam/shared';
+import { AiFeature } from '@umberleaf/shared';
 import { useMutation } from '@tanstack/react-query';
 
 import { operandOf, useAiEditorTarget } from '@/stores/ai-editor-target.store';

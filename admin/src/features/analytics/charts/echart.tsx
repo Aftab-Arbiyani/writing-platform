@@ -1,4 +1,4 @@
-import { QSpinner } from '@qalam/ui';
+import { QSpinner } from '@umberleaf/ui';
 import { memo, useEffect, useRef, useState, type ReactElement } from 'react';
 
 import { loadECharts, type ChartInstance } from './echarts-loader';

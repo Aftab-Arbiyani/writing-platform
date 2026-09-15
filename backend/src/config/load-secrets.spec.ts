@@ -8,7 +8,7 @@ describe('loadContainerSecrets', () => {
   let dir: string;
 
   beforeEach(() => {
-    dir = mkdtempSync(join(tmpdir(), 'qalam-secrets-'));
+    dir = mkdtempSync(join(tmpdir(), 'umberleaf-secrets-'));
   });
 
   afterEach(() => {

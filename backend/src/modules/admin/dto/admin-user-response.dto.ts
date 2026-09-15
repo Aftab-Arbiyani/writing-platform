@@ -5,7 +5,7 @@ import { AuditLogDto, AuditSummaryDto } from '../../audit/dto/audit-log.dto';
 /**
  * One row of the admin user grid (`GET /admin/users`). `avatarKey` is the raw
  * S3 key (clients resolve it via `mediaUrl()`, matching the profile contract).
- * `lastActiveAt` is approximated by the last login — Qalam stores no separate
+ * `lastActiveAt` is approximated by the last login — Umberleaf stores no separate
  * activity signal (documented honestly rather than faked).
  */
 export class AdminUserListItemDto {
@@ -60,7 +60,7 @@ export class AdminUserStatisticsDto {
 }
 
 /**
- * Moderation snapshot. Qalam has no report/warning store yet, so `reports` and
+ * Moderation snapshot. Umberleaf has no report/warning store yet, so `reports` and
  * `warnings` are structurally present but zero; `statusChanges` is derived from
  * the real audit trail (honest, not faked — see module README).
  */
@@ -99,13 +99,13 @@ export class AdminUserDetailDto {
   @ApiProperty({ nullable: true }) deletedAt!: string | null;
 }
 
-/** A single login timestamp (the only login datum Qalam persists). */
+/** A single login timestamp (the only login datum Umberleaf persists). */
 export class LoginEventDto {
   @ApiProperty({ example: '2026-07-09T18:30:00.000Z' }) at!: string;
 }
 
 /**
- * Login history (`GET /admin/users/:id/login-history`). Qalam persists only the
+ * Login history (`GET /admin/users/:id/login-history`). Umberleaf persists only the
  * last successful login (`users.last_login_at`); failed attempts, devices, and
  * IPs are NOT stored (they exist only as ephemeral logs / expiring Redis
  * sessions), so those arrays are empty by design — surfaced honestly.

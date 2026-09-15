@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { SearchSort, Visibility } from '@qalam/shared';
+import { SearchSort, Visibility } from '@umberleaf/shared';
 import { Type } from 'class-transformer';
 import {
   IsEnum,

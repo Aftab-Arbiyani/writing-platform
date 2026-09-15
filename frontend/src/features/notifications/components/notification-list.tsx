@@ -1,4 +1,4 @@
-import { QErrorState, QSpinner } from '@qalam/ui';
+import { QErrorState, QSpinner } from '@umberleaf/ui';
 import type { ReactElement } from 'react';
 
 import { useInfiniteScroll } from '@/hooks/use-infinite-scroll';

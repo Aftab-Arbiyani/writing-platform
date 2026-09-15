@@ -1,4 +1,4 @@
-import type { Role } from '@qalam/shared';
+import type { Role } from '@umberleaf/shared';
 import type {
   PolicyDecision,
   StoryRole,
@@ -7,11 +7,11 @@ import type {
   Visibility,
   RestrictionScope,
   RestrictionType,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 /**
  * Server-internal Policy Engine types. The wire-facing decision shape
- * ({@link PolicyDecision}) lives in `@qalam/shared`; everything here is the
+ * ({@link PolicyDecision}) lives in `@umberleaf/shared`; everything here is the
  * engine's own vocabulary and never crosses the wire verbatim.
  */
 

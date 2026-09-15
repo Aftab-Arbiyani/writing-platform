@@ -3,7 +3,7 @@ import { env } from '@/config/env';
 /**
  * The admin panel's single, typed `fetch` wrapper (docs/32 §1–§5; ADR §6 freezes fetch — axios is
  * not a workspace dependency). No ad-hoc fetch in components: feature `api/` hooks call `api.*` with
- * response types from `@qalam/api-types`. Admin endpoints mount under `/api/v1/admin/*`.
+ * response types from `@umberleaf/api-types`. Admin endpoints mount under `/api/v1/admin/*`.
  *
  * Envelope (ADR §5): `{ success:true, data, meta }` | `{ success:false, error:{ code,message,… } }`.
  * Admin returns `{ data, meta }` (tables need `meta.pagination.total` — docs/32 §7.3 offset model).
@@ -51,7 +51,7 @@ export interface ApiResult<T> {
   meta: ApiMeta | undefined;
 }
 
-/** Thrown for any non-success response; branch on `.code` (from `@qalam/shared` ERROR_CODES), never `.message`. */
+/** Thrown for any non-success response; branch on `.code` (from `@umberleaf/shared` ERROR_CODES), never `.message`. */
 export class ApiError extends Error {
   readonly status: number;
   readonly code: string;

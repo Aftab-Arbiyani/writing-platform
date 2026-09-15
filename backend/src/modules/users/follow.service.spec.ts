@@ -1,4 +1,4 @@
-import { FollowStatus } from '@qalam/shared';
+import { FollowStatus } from '@umberleaf/shared';
 import type { EntityManager } from 'typeorm';
 
 import type { TransactionRunner } from '../../common/database/transaction-runner';

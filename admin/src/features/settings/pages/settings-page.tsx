@@ -1,4 +1,4 @@
-import { QButton } from '@qalam/ui';
+import { QButton } from '@umberleaf/ui';
 import { Select, Switch } from 'antd';
 import { AlertTriangle, WifiOff } from 'lucide-react';
 import { lazy, Suspense, useMemo, useState, type ReactElement } from 'react';

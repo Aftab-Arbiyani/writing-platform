@@ -1,9 +1,9 @@
-import type { TextDirection, Visibility } from '@qalam/shared';
+import type { TextDirection, Visibility } from '@umberleaf/shared';
 
 /**
  * Search & Discovery wire types (E8/E6, docs/32 §10) — mirror the frozen `v1` DTOs
  * (`backend/src/modules/search/dto/*`, `backend/src/modules/feed/dto/*`). Replace with generated
- * `@qalam/api-types` once the backend emits `openapi.json`. Media fields are S3 KEYS, never URLs
+ * `@umberleaf/api-types` once the backend emits `openapi.json`. Media fields are S3 KEYS, never URLs
  * — build the URL via `lib/media.ts` `mediaUrl()` (docs/32 §6).
  *
  * This feature is self-contained (docs/26 §4): it re-declares the piece/author shapes rather

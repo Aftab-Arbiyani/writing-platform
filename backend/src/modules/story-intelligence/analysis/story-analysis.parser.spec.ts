@@ -3,7 +3,7 @@ import {
   StoryAnalysisStatus,
   StoryEdgeType,
   StoryNodeType,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 import { parseStoryAnalysis } from './story-analysis.parser';
 

@@ -6,7 +6,7 @@ import {
   PolicyResourceType,
   ReviewDecision,
   ReviewState,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 import { AuditService } from '../audit/audit.service';
 import { NotificationsService } from '../notifications/notifications.service';

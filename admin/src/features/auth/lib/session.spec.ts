@@ -1,4 +1,4 @@
-import { Role } from '@qalam/shared';
+import { Role } from '@umberleaf/shared';
 import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 
 import { setRemember } from '@/lib/remember';

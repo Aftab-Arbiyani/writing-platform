@@ -1,5 +1,5 @@
-import { PERMISSIONS } from '@qalam/shared';
-import { QCard } from '@qalam/ui';
+import { PERMISSIONS } from '@umberleaf/shared';
+import { QCard } from '@umberleaf/ui';
 import { Table, type TableColumnsType } from 'antd';
 import { GitCommitHorizontal, Rocket, RotateCcw, Timer, TrendingUp } from 'lucide-react';
 import type { ReactElement } from 'react';

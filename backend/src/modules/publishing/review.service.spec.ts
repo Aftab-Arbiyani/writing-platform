@@ -8,7 +8,7 @@ import {
   TrustLevel,
   TrustStatus,
   Visibility,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 import type { AuditService } from '../audit/audit.service';
 import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';

@@ -1,4 +1,4 @@
-import type { Role } from '@qalam/shared';
+import type { Role } from '@umberleaf/shared';
 import { create } from 'zustand';
 
 import { setAccessToken } from '@/lib/api-client';

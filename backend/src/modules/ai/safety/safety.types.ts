@@ -1,4 +1,4 @@
-import type { AiFeature, AiSafetyStage, AiSafetyVerdict } from '@qalam/shared';
+import type { AiFeature, AiSafetyStage, AiSafetyVerdict } from '@umberleaf/shared';
 
 /**
  * Safety pipeline contracts (AF1). AF1 ships the HOOK ARCHITECTURE and a couple

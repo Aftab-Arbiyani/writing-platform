@@ -1,4 +1,4 @@
-import { QTextArea, type QTextAreaProps } from '@qalam/ui';
+import { QTextArea, type QTextAreaProps } from '@umberleaf/ui';
 import { Controller, type Control, type FieldPath, type FieldValues } from 'react-hook-form';
 
 /**

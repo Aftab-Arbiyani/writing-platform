@@ -1,4 +1,4 @@
-import type { Role } from '@qalam/shared';
+import type { Role } from '@umberleaf/shared';
 
 /**
  * The principal `JwtStrategy` attaches to `request.user`, read via

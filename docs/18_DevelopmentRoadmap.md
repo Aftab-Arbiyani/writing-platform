@@ -17,11 +17,11 @@ Everything that lets Phase 1 start on rails instead of gravel:
 
 | Deliverable                                                                                                                                          | State |
 | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
-| Monorepo: pnpm 9 workspaces + Turborepo 2, `@qalam/*` packages built with tsup                                                                       | ✅    |
+| Monorepo: pnpm 9 workspaces + Turborepo 2, `@umberleaf/*` packages built with tsup                                                                   | ✅    |
 | Architecture docs `00–18`, `CLAUDE.md` engineering handbook                                                                                          | ✅    |
 | Backend scaffold: NestJS 11 bootstrap (helmet, CORS, versioning, pipes, Swagger, Pino), Zod env validation, TypeORM data source + migration pipeline | ✅    |
 | Frontend/admin scaffold: React 19 + Vite 7, providers, router, api-client, theme/RTL wiring                                                          | ✅    |
-| `@qalam/config` (tsconfig/eslint/prettier presets incl. the physical-direction-class ban), `@qalam/ui` tokens + AntD theme + Tailwind preset         | ✅    |
+| `@umberleaf/config` (tsconfig/eslint/prettier presets incl. the physical-direction-class ban), `@umberleaf/ui` tokens + AntD theme + Tailwind preset | ✅    |
 | dev infra: docker-compose (postgres 16, redis 7, minio, mailpit), nginx templates, Dockerfiles                                                       | ✅    |
 | CI: `ci.yml` (lint → typecheck → test → build, turbo-cached), commit/PR-title enforcement, husky hooks                                               | ✅    |
 | Design system spec: tokens, type scale, fonts (Inter/Lora/Noto family incl. Nastaliq), spacing/radii/elevation (ADR §7)                              | ✅    |
@@ -155,19 +155,19 @@ canonical; `content_text`, `word_count`, `reading_time_seconds` derived on write
 
 **Tasks**
 
-| #   | Task                                                                                                              | Flag |
-| --- | ----------------------------------------------------------------------------------------------------------------- | ---- |
-| 1   | `pieces` entity (draft fields), `languages` seed, migrations                                                      | [J]  |
-| 2   | Draft CRUD endpoints + repository (author-scoped)                                                                 | [J]  |
-| 3   | TipTap document schema: allowed marks/nodes, server-side sanitization of stored JSON                              | [S]  |
-| 4   | Derivation pipeline: JSON → `content_text` / `word_count` / `reading_time_seconds` (in `@qalam/utils` where pure) | [J]  |
-| 5   | Editor shell: toolbar, language picker, `dir` switching, reading-font preview                                     | [S]  |
-| 6   | Autosave hook: debounce, retry, conflict detection (`PIECE_STALE_WRITE`)                                          | [S]  |
-| 7   | Footnotes extension (insert, render, reorder)                                                                     | [S]  |
-| 8   | Mentions extension + username-suggest endpoint                                                                    | [J]  |
-| 9   | Hashtags extension + parse-on-save into piece tag candidates                                                      | [J]  |
-| 10  | `/me/drafts` list with resume, delete (soft), duplicate                                                           | [J]  |
-| 11  | Editor unit/behavior tests incl. RTL alignment cases                                                              | [S]  |
+| #   | Task                                                                                                                  | Flag |
+| --- | --------------------------------------------------------------------------------------------------------------------- | ---- |
+| 1   | `pieces` entity (draft fields), `languages` seed, migrations                                                          | [J]  |
+| 2   | Draft CRUD endpoints + repository (author-scoped)                                                                     | [J]  |
+| 3   | TipTap document schema: allowed marks/nodes, server-side sanitization of stored JSON                                  | [S]  |
+| 4   | Derivation pipeline: JSON → `content_text` / `word_count` / `reading_time_seconds` (in `@umberleaf/utils` where pure) | [J]  |
+| 5   | Editor shell: toolbar, language picker, `dir` switching, reading-font preview                                         | [S]  |
+| 6   | Autosave hook: debounce, retry, conflict detection (`PIECE_STALE_WRITE`)                                              | [S]  |
+| 7   | Footnotes extension (insert, render, reorder)                                                                         | [S]  |
+| 8   | Mentions extension + username-suggest endpoint                                                                        | [J]  |
+| 9   | Hashtags extension + parse-on-save into piece tag candidates                                                          | [J]  |
+| 10  | `/me/drafts` list with resume, delete (soft), duplicate                                                               | [J]  |
+| 11  | Editor unit/behavior tests incl. RTL alignment cases                                                                  | [S]  |
 
 **Depends on:** E1 (author identity). Mentions link to E2 profiles but degrade to plain
 text until E2 ships.
@@ -231,7 +231,7 @@ tracking that feeds analytics: **views, reads, reading time, completion** (ADR �
 | 3   | Nastaliq QA harness: golden-sample pages (poetry, prose, mixed EN/UR) screenshot-diffed in CI | [S]  |
 | 4   | `analytics_events` partitioned table + ingestion endpoint (batched beacon)                    | [S]  |
 | 5   | Client tracking hook: visibility, scroll-depth, heartbeat, offline-tolerant flush             | [S]  |
-| 6   | View dedup + read/completion threshold rules (documented constants in `@qalam/shared`)        | [J]  |
+| 6   | View dedup + read/completion threshold rules (documented constants in `@umberleaf/shared`)    | [J]  |
 | 7   | Piece page chrome: author card, follow CTA, stats strip                                       | [J]  |
 | 8   | `analytics-rollup` job: events → `analytics_daily`                                            | [S]  |
 | 9   | A11y pass: keyboard nav, focus order, reduced motion, AA contrast in both themes              | [J]  |

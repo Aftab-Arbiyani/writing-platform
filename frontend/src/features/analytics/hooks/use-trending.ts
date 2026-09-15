@@ -1,4 +1,4 @@
-import { AnalyticsPeriod } from '@qalam/shared';
+import { AnalyticsPeriod } from '@umberleaf/shared';
 import { useQuery } from '@tanstack/react-query';
 
 import { qk } from '@/lib/query-keys';
@@ -8,7 +8,7 @@ import { analyticsApi } from '../api/analytics.api';
 /**
  * Platform-wide trending (`GET /analytics/trending`) — pieces / writers / genres / tags for a
  * window. Public + cached server-side, so a generous client staleTime fits. A small "Trending on
- * Qalam" widget on the dashboard (context for the writer, not their own numbers).
+ * Umberleaf" widget on the dashboard (context for the writer, not their own numbers).
  */
 export function useAnalyticsTrending(period: AnalyticsPeriod = AnalyticsPeriod.Weekly) {
   return useQuery({

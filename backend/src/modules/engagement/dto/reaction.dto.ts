@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { MAX_CLAPS_PER_USER_PER_PIECE } from '@qalam/shared';
+import { MAX_CLAPS_PER_USER_PER_PIECE } from '@umberleaf/shared';
 import { Type } from 'class-transformer';
 import { IsInt, IsOptional, Max, Min } from 'class-validator';
 

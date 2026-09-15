@@ -109,7 +109,7 @@ rows poison every query with extra predicates.
   `text_direction`, `repost_type`, `report_status`, `auth_provider`, `user_status`,
   `share_channel` (E7 — `internal | external | copy_link`).
   These change rarely; the DB-level guarantee is worth the `ALTER TYPE` on change.
-- **`varchar` + TypeScript catalogue in `@qalam/shared`** for open sets that grow with the
+- **`varchar` + TypeScript catalogue in `@umberleaf/shared`** for open sets that grow with the
   product: `notifications.type`, `analytics_events.event_type`, `audit_logs.action`,
   `reports.reason`. Adding a notification type must not require a migration.
 
@@ -403,13 +403,13 @@ Tags are user-created via `#hashtags` in the editor; get-or-create by `slug`.
 
 #### `piece_tags` (pure join — composite PK)
 
-| Column                                                                                     | Type   | Null | Default | Constraints / notes                 |
-| ------------------------------------------------------------------------------------------ | ------ | ---- | ------- | ----------------------------------- |
-| `piece_id`                                                                                 | `uuid` | no   | —       | FK → `pieces` **ON DELETE CASCADE** |
-| `tag_id`                                                                                   | `uuid` | no   | —       | FK → `tags` **ON DELETE CASCADE**   |
-| PK `(piece_id, tag_id)`. Index `idx_piece_tags_tag (tag_id, created_at DESC)` — tag pages. |
-| Max tags per piece is a service-layer rule (`MAX_TAGS_PER_PIECE` in `@qalam/shared`) — a   |
-| CHECK cannot count rows, and a trigger is not worth it.                                    |
+| Column                                                                                       | Type   | Null | Default | Constraints / notes                 |
+| -------------------------------------------------------------------------------------------- | ------ | ---- | ------- | ----------------------------------- |
+| `piece_id`                                                                                   | `uuid` | no   | —       | FK → `pieces` **ON DELETE CASCADE** |
+| `tag_id`                                                                                     | `uuid` | no   | —       | FK → `tags` **ON DELETE CASCADE**   |
+| PK `(piece_id, tag_id)`. Index `idx_piece_tags_tag (tag_id, created_at DESC)` — tag pages.   |
+| Max tags per piece is a service-layer rule (`MAX_TAGS_PER_PIECE` in `@umberleaf/shared`) — a |
+| CHECK cannot count rows, and a trigger is not worth it.                                      |
 
 ### 3.4 Engagement
 
@@ -435,7 +435,7 @@ CASCADE** (an engagement row without either side is garbage), append-only except
 | `count`    | `smallint` | no   | `1`        | `chk_claps_count_range CHECK (count BETWEEN 1 AND 50)` |
 
 `uq_claps_user_piece (user_id, piece_id)` — one **row** per user per piece holding the
-running count. Cap constant: `MAX_CLAPS_PER_USER = 50` in `@qalam/shared`; the CHECK is
+running count. Cap constant: `MAX_CLAPS_PER_USER = 50` in `@umberleaf/shared`; the CHECK is
 the database backstop. Canonical write path (single round trip, race-safe):
 
 ```sql
@@ -466,7 +466,7 @@ Not in the brief's original locked social list (ADR §10; 18 §risk-6 flagged co
 scope creep) — added as a first-class Phase-1 engagement surface (recorded in ADR §10 E7
 amendment). A **reply is a comment with a non-null `parent_id`** (adjacency list); no
 separate reply table — that is the only model supporting arbitrary nesting to
-`MAX_COMMENT_DEPTH = 3` (`@qalam/shared`).
+`MAX_COMMENT_DEPTH = 3` (`@umberleaf/shared`).
 
 | Column      | Type          | Null | Default    | Constraints / notes                                            |
 | ----------- | ------------- | ---- | ---------- | -------------------------------------------------------------- |
@@ -642,16 +642,16 @@ Index: `idx_reposts_user (user_id, created_at DESC)` — profile activity + Foll
 
 #### `notifications` (in-app only — ADR locked)
 
-| Column                                                                                    | Type          | Null | Default    | Constraints / notes                                                                                                                               |
-| ----------------------------------------------------------------------------------------- | ------------- | ---- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`                                                                                      | `uuid`        | no   | app UUIDv7 | PK                                                                                                                                                |
-| `recipient_id`                                                                            | `uuid`        | no   | —          | FK → `users` **ON DELETE CASCADE**                                                                                                                |
-| `actor_id`                                                                                | `uuid`        | yes  | `NULL`     | FK → `users` **ON DELETE SET NULL** — system notifications have no actor; erased actors don't destroy the recipient's history                     |
-| `type`                                                                                    | `varchar(40)` | no   | —          | open catalogue in `@qalam/shared`: `follow`, `like`, `clap`, `repost`, `quote`, `response`, `mention`, `follower_published`, `featured`, `system` |
-| `entity_type`                                                                             | `varchar(30)` | yes  | `NULL`     | polymorphic pointer (`piece`, `user`, …)                                                                                                          |
-| `entity_id`                                                                               | `uuid`        | yes  | `NULL`     |                                                                                                                                                   |
-| `data`                                                                                    | `jsonb`       | no   | `'{}'`     | denormalized render payload (piece title/slug, actor username _at emit time_) so listing never joins                                              |
-| `read_at`                                                                                 | `timestamptz` | yes  | `NULL`     |                                                                                                                                                   |
+| Column                                                                                    | Type          | Null | Default    | Constraints / notes                                                                                                                                   |
+| ----------------------------------------------------------------------------------------- | ------------- | ---- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                                                                                      | `uuid`        | no   | app UUIDv7 | PK                                                                                                                                                    |
+| `recipient_id`                                                                            | `uuid`        | no   | —          | FK → `users` **ON DELETE CASCADE**                                                                                                                    |
+| `actor_id`                                                                                | `uuid`        | yes  | `NULL`     | FK → `users` **ON DELETE SET NULL** — system notifications have no actor; erased actors don't destroy the recipient's history                         |
+| `type`                                                                                    | `varchar(40)` | no   | —          | open catalogue in `@umberleaf/shared`: `follow`, `like`, `clap`, `repost`, `quote`, `response`, `mention`, `follower_published`, `featured`, `system` |
+| `entity_type`                                                                             | `varchar(30)` | yes  | `NULL`     | polymorphic pointer (`piece`, `user`, …)                                                                                                              |
+| `entity_id`                                                                               | `uuid`        | yes  | `NULL`     |                                                                                                                                                       |
+| `data`                                                                                    | `jsonb`       | no   | `'{}'`     | denormalized render payload (piece title/slug, actor username _at emit time_) so listing never joins                                                  |
+| `read_at`                                                                                 | `timestamptz` | yes  | `NULL`     |                                                                                                                                                       |
 | Indexes: `idx_notifications_inbox (recipient_id, created_at DESC)` · partial              |
 | `idx_notifications_unread (recipient_id) WHERE read_at IS NULL` (unread badge counts this |
 | index only; cached in Redis, displayed capped "99+"). Written by the `notifications`      |
@@ -826,7 +826,7 @@ target. Index: `idx_analytics_daily_entity (entity_type, entity_id, day DESC)` �
 | Username immutable (belt-and-braces) | Optional trigger, below                                                | `USER_USERNAME_IMMUTABLE` error if attempted via any path                   |
 | Single pen name                      | one `pen_name` column on `profiles` (1:1) — the schema cannot hold two | changeable via profile update                                               |
 | One language per piece               | `pieces.language_id NOT NULL` FK, RESTRICT                             | language locked after publish (service rule)                                |
-| Claps ≤ 50/user/piece                | `CHECK (count BETWEEN 1 AND 50)` + unique `(user_id, piece_id)`        | `LEAST(…, 50)` upsert (§3.4); constant from `@qalam/shared`                 |
+| Claps ≤ 50/user/piece                | `CHECK (count BETWEEN 1 AND 50)` + unique `(user_id, piece_id)`        | `LEAST(…, 50)` upsert (§3.4); constant from `@umberleaf/shared`             |
 | Publish invariants                   | `chk_pieces_published` (slug, published_at, genre required)            | preview → publish flow validates everything first                           |
 | No self-follow / self-response       | CHECKs on `follows`, `responses`                                       | friendly 422 before the DB ever sees it                                     |
 | Private accounts                     | none (deliberately — ADR: no RLS)                                      | visibility guards in repositories; every piece/profile query is scoped      |
@@ -860,11 +860,11 @@ CREATE TRIGGER trg_users_username_immutable
   the database (and stored HTML is a persistent-XSS liability). Web and Flutter render
   from JSON with their own renderers; the JSON is what both can consume.
 - **Derived columns, recomputed on every content write** (same transaction, in the
-  service via `@qalam/utils`):
+  service via `@umberleaf/utils`):
   - `content_text` — flattened plain text; the only input FTS sees.
   - `word_count` — script-aware token count (whitespace-delimited for Latin/Devanagari;
     Urdu counted after NFC normalization).
-  - `reading_time_seconds` — words ÷ per-script WPM constants from `@qalam/shared`.
+  - `reading_time_seconds` — words ÷ per-script WPM constants from `@umberleaf/shared`.
 - Media inside content (cover, inline images) is referenced by **S3 object key**, resolved
   to CDN URLs at render time — buckets and CDNs can move without a data migration.
 
@@ -987,7 +987,7 @@ Denormalized counters and where they live:
 - `synchronize: false` **always** — including tests (Testcontainers run migrations).
 - Soft delete via `@DeleteDateColumn`; raw QueryBuilder in repositories must add
   `deleted_at IS NULL` explicitly (review checklist item).
-- UUIDv7 generated in `BaseEntity` `@BeforeInsert` (`uuidv7()` via `@qalam/utils`) —
+- UUIDv7 generated in `BaseEntity` `@BeforeInsert` (`uuidv7()` via `@umberleaf/utils`) —
   entities never rely on DB defaults for identity.
 - `analytics_events` partitions are DDL-managed (migrations + maintenance job); TypeORM
   maps the parent table only.

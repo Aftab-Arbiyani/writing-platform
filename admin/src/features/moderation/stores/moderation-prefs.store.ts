@@ -29,6 +29,6 @@ export const useModerationPrefs = create<ModerationPrefsState>()(
         })),
       setDensity: (density) => set({ density }),
     }),
-    { name: 'qalam-admin-moderation' },
+    { name: 'umberleaf-admin-moderation' },
   ),
 );

@@ -1,5 +1,5 @@
-import { PERMISSIONS, ReportStatus } from '@qalam/shared';
-import { QButton, useToast } from '@qalam/ui';
+import { PERMISSIONS, ReportStatus } from '@umberleaf/shared';
+import { QButton, useToast } from '@umberleaf/ui';
 import { Descriptions, Input, Popconfirm, Select, Tabs } from 'antd';
 import { ChevronsUp, Pencil, RotateCcw, Trash2, X } from 'lucide-react';
 import { useState, type ReactElement, type ReactNode } from 'react';

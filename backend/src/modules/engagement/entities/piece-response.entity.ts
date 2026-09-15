@@ -1,6 +1,6 @@
 import { Check, Entity, Index, Column, Unique } from 'typeorm';
 
-import { QalamAppendOnlyEntity } from '../../../common/base/append-only.entity';
+import { AppAppendOnlyEntity } from '../../../common/base/append-only.entity';
 
 /**
  * The link that makes one piece a response to another (docs 04 §3.2 `responses`
@@ -15,7 +15,7 @@ import { QalamAppendOnlyEntity } from '../../../common/base/append-only.entity';
 @Unique('uq_responses_piece', ['pieceId'])
 @Check('chk_responses_not_self', 'piece_id <> parent_piece_id')
 @Index('idx_responses_parent', ['parentPieceId', 'createdAt'])
-export class PieceResponse extends QalamAppendOnlyEntity {
+export class PieceResponse extends AppAppendOnlyEntity {
   @Column({ type: 'uuid' })
   pieceId!: string;
 

@@ -23,7 +23,7 @@ import type { TipTapNode } from '../types/reading.types';
  * one here means a schema change shipped without updating this renderer, and silently dropping
  * it is safer than rendering something unintended.
  *
- * Visual styling lives on the shared `.qalam-prose` class (`styles/global.css`), which the
+ * Visual styling lives on the shared `.umberleaf-prose` class (`styles/global.css`), which the
  * editor uses too — so what a writer composes is what a reader gets.
  */
 
@@ -186,7 +186,7 @@ export interface ContentRendererProps {
 /**
  * The prose column. Size and leading come from the reader's own preferences
  * ([`reader-preferences.store`](../stores/reader-preferences.store.ts)) and are applied as the
- * two CSS variables `.qalam-prose` indirects through, so the editor — which never sets them —
+ * two CSS variables `.umberleaf-prose` indirects through, so the editor — which never sets them —
  * is unaffected. Nastaliq clamps the leading up to its floor regardless of the preference.
  */
 export function ContentRenderer({
@@ -205,7 +205,7 @@ export function ContentRenderer({
   return (
     <div
       dir={dir}
-      className="qalam-prose"
+      className="umberleaf-prose"
       style={
         {
           '--q-prose-size': fontSize,

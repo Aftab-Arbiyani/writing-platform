@@ -5,7 +5,7 @@ import {
   ReportResolution,
   ReportSeverity,
   ReportStatus,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 /** URL filter keys for the report queue (pagination + these live in the URL). */
 export const REPORT_FILTER_KEYS = [

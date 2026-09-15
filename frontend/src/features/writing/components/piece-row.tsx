@@ -1,5 +1,5 @@
-import { PieceStatus } from '@qalam/shared';
-import { QButton, QCard, useConfirm, useToast } from '@qalam/ui';
+import { PieceStatus } from '@umberleaf/shared';
+import { QButton, QCard, useConfirm, useToast } from '@umberleaf/ui';
 import { Archive, ArchiveRestore, Copy, ExternalLink, PenLine, Trash2 } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { useNavigate } from 'react-router';

@@ -1,6 +1,6 @@
 /**
  * Retrieval Platform backend-internal constants (AF4). The shared, client-visible
- * guardrails live in `@qalam/shared` (`RETRIEVAL_*`); these are server tuning knobs.
+ * guardrails live in `@umberleaf/shared` (`RETRIEVAL_*`); these are server tuning knobs.
  * The admin-editable versions of the ranking weights / source toggles / budgets are
  * stored as `settings` rows (see settings.catalog additions + RetrievalConfigService),
  * so these are the compiled DEFAULTS the config layer falls back to.
@@ -12,7 +12,7 @@ import {
   RETRIEVAL_DEFAULT_CONTEXT_TOKENS,
   RETRIEVAL_DEFAULT_TIMEOUT_MS,
   RETRIEVAL_DEFAULT_TOP_K,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 import type { ResolvedRetrievalConfig } from './retrieval.types';
 

@@ -5,7 +5,7 @@ import {
   StrikeSeverity,
   TrustLevel,
   TrustStatus,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 

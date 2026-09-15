@@ -1,4 +1,4 @@
-import { ExplorerView } from '@qalam/shared';
+import { ExplorerView } from '@umberleaf/shared';
 
 /**
  * The eight Story Explorer views (W9), in mobile's order, with the copy each one's empty state
@@ -7,7 +7,7 @@ import { ExplorerView } from '@qalam/shared';
  * **The set is closed on the client on purpose.** `GET /ai/explorer/:storyId/:view` does not reject
  * an unknown view — `normalizeView` silently returns the whole graph instead
  * (`story-explorer.service.ts:53-57`) — so a view this list gets wrong would render a plausible
- * wrong answer rather than an error. Ordering it from `@qalam/shared`'s `ExplorerView` keeps the
+ * wrong answer rather than an error. Ordering it from `@umberleaf/shared`'s `ExplorerView` keeps the
  * values themselves owned by the wire contract.
  *
  * Each view's `empty` is written separately rather than derived from the label because the server

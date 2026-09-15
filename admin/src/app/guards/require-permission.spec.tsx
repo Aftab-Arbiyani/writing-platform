@@ -1,4 +1,4 @@
-import { PERMISSIONS, Role } from '@qalam/shared';
+import { PERMISSIONS, Role } from '@umberleaf/shared';
 import { screen } from '@testing-library/react';
 import { Route, Routes } from 'react-router';
 import { afterEach, describe, expect, it } from 'vitest';

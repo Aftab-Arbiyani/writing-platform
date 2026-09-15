@@ -1,5 +1,5 @@
-import { StoryRole } from '@qalam/shared';
-import { QTag, type QTagColor } from '@qalam/ui';
+import { StoryRole } from '@umberleaf/shared';
+import { QTag, type QTagColor } from '@umberleaf/ui';
 import type { ReactElement } from 'react';
 
 /**

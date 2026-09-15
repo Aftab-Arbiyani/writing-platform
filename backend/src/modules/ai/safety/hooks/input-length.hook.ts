@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { AI_MESSAGE_MAX_LENGTH, AiSafetyStage, AiSafetyVerdict } from '@qalam/shared';
+import { AI_MESSAGE_MAX_LENGTH, AiSafetyStage, AiSafetyVerdict } from '@umberleaf/shared';
 
 import type { SafetyHook, SafetyInput, SafetyResult } from '../safety.types';
 

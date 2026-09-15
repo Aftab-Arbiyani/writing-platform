@@ -7,7 +7,7 @@ import type {
   ReportResolution,
   ReportSeverity,
   ReportStatus,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 import { AuditLogDto } from '../../audit/dto/audit-log.dto';
 

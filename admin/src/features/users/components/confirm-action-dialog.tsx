@@ -1,4 +1,4 @@
-import { useToast } from '@qalam/ui';
+import { useToast } from '@umberleaf/ui';
 import { Input } from 'antd';
 import { useState, type ReactElement } from 'react';
 

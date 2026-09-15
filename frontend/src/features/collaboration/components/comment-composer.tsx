@@ -1,5 +1,5 @@
-import { MAX_COMMENT_BODY_LENGTH } from '@qalam/shared';
-import { QButton } from '@qalam/ui';
+import { MAX_COMMENT_BODY_LENGTH } from '@umberleaf/shared';
+import { QButton } from '@umberleaf/ui';
 import { type ReactElement, useState } from 'react';
 
 import { useMentionablePeople } from '../hooks/use-mentionable-people';

@@ -1,4 +1,4 @@
-import { QAvatar, QCard, QTag } from '@qalam/ui';
+import { QAvatar, QCard, QTag } from '@umberleaf/ui';
 import { Clock, Hand, Link2, Lock, MessageCircle } from 'lucide-react';
 import { memo, type ReactElement } from 'react';
 import { Link } from 'react-router';

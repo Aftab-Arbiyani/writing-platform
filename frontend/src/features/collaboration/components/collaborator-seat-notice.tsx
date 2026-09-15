@@ -1,4 +1,4 @@
-import { QButton, QCard } from '@qalam/ui';
+import { QButton, QCard } from '@umberleaf/ui';
 import { Lock, Sparkles } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { useNavigate } from 'react-router';
@@ -14,7 +14,7 @@ export const COLLABORATOR_SEAT_NOTICE_ID = 'collaborator-seat-notice';
  * The story is at (or has no) collaborator seats on its owner's plan (B6, docs/45 §4.11).
  *
  * Follows B4's `PieceLimitNotice` shape rather than importing it — a feature may not import another
- * feature (docs/26 §4), and the two say different things anyway. Built from `@qalam/ui` primitives
+ * feature (docs/26 §4), and the two say different things anyway. Built from `@umberleaf/ui` primitives
  * for the same reason the piece notice is: monetization's `FeatureLockCard` lives in another
  * feature. It is a lock in kind, not in code.
  *

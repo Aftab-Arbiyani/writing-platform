@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import type { TextDirection, Visibility } from '@qalam/shared';
+import type { TextDirection, Visibility } from '@umberleaf/shared';
 
 /** Author summary on a piece search result (single join, no N+1). */
 export class SearchAuthorDto {

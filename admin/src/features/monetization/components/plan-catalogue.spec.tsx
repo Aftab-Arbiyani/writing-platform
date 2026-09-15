@@ -5,7 +5,7 @@ import {
   PremiumFeature,
   UNLIMITED_SEATS,
   type PlanDefinition,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 import { screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 

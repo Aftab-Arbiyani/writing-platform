@@ -6,7 +6,7 @@ import type {
   SearchAnalytics,
   UpdateAiOrgDefaultsRequest,
   UpdateRetrievalAdminConfig,
-} from '@qalam/api-types';
+} from '@umberleaf/api-types';
 
 import { api } from '@/lib/api-client';
 

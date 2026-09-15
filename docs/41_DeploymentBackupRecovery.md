@@ -9,7 +9,7 @@ All commands assume the ops scripts in `scripts/` (see `scripts/README.md`). Eve
 ## 1. Infrastructure guide
 
 - **Runtime**: modular-monolith backend (NestJS) + in-process BullMQ workers, PostgreSQL 16, Redis 7, S3-compatible object storage, SPA frontend + admin behind nginx. Node 24, pnpm 9.12, turbo monorepo.
-- **Images** (built by `release.yml`, pushed to GHCR): `qalam-backend` (non-root, `/health` healthcheck, migration runner baked in), `qalam-frontend` + `qalam-admin` (non-root nginx :8080, `/healthz`). All carry OCI + build-metadata labels; tags are immutable `sha-<short>` (+ semver for releases).
+- **Images** (built by `release.yml`, pushed to GHCR): `umberleaf-backend` (non-root, `/health` healthcheck, migration runner baked in), `umberleaf-frontend` + `umberleaf-admin` (non-root nginx :8080, `/healthz`). All carry OCI + build-metadata labels; tags are immutable `sha-<short>` (+ semver for releases).
 - **Compose**: `docker-compose.yml` (dev infra + `--profile full`), `docker-compose.prod.yml` (postgres + redis + backend; storage/SMTP external; resource limits, restart, log rotation, `init:true`, grace period).
 - **Edge**: render `infrastructure/nginx/reverse-proxy.conf.template` with `envsubst` (TLS, HSTS, CSP, rate-limit, `X-Forwarded-*`/`X-Request-Id`, SPA + `/api` + `/health` proxy). Set `TRUST_PROXY_HOPS` on the backend to match the hop count.
 - **Cloud-agnostic / future-ready**: single-VM compose today; the image/health/config/deploy contracts map cleanly onto Kubernetes (probes → `startupProbe`/`livenessProbe`/`readinessProbe`), Helm, Terraform, GitOps, multi-region, and auto-scaling with no architectural change.
@@ -33,8 +33,8 @@ Secrets are GitHub **Environment secrets** (`SSH_HOST/USER/KEY`, `DATABASE_URL`,
 What `deploy-*.yml` runs on the VM (also runnable by hand):
 
 ```bash
-export BACKEND_IMAGE=ghcr.io/qalam/qalam-backend:sha-abc1234
-export ENV_FILE=/opt/qalam/.env.production DATABASE_URL=…
+export BACKEND_IMAGE=ghcr.io/qalam/umberleaf-backend:sha-abc1234
+export ENV_FILE=/opt/umberleaf/.env.production DATABASE_URL=…
 
 scripts/deploy/preflight.sh      # env present, image resolvable, DB reachable, disk, current /version
 scripts/db/backup.sh             # pre-deploy checkpoint (production)
@@ -54,7 +54,7 @@ scripts/deploy/post-deploy.sh    # short monitoring window; record success
 
 ```bash
 # Roll back to a known-good immutable image (production auto-does this on smoke failure).
-ROLLBACK_IMAGE=ghcr.io/qalam/qalam-backend:sha-prev123 \
+ROLLBACK_IMAGE=ghcr.io/qalam/umberleaf-backend:sha-prev123 \
   EXPECTED_VERSION=1.4.1 scripts/deploy/rollback.sh
 # or the pipeline: Actions → rollback.yml → {environment, image_tag, expected_version}
 ```
@@ -69,20 +69,20 @@ Rollback is deterministic because every deploy uses an **immutable** `sha-…` t
 
 ```bash
 # Backup (pg_dump -Fc + sha256 sidecar + retention prune + optional offsite):
-DATABASE_URL=… BACKUP_DIR=/var/backups/qalam BACKUP_S3_URI=s3://qalam-backups \
+DATABASE_URL=… BACKUP_DIR=/var/backups/umberleaf BACKUP_S3_URI=s3://umberleaf-backups \
   scripts/db/backup.sh
 
 # Restore (checksum-verified, guarded):
-RESTORE_DATABASE_URL=… scripts/db/restore.sh /var/backups/qalam/qalam-prod-<ts>.dump --clean
+RESTORE_DATABASE_URL=… scripts/db/restore.sh /var/backups/umberleaf/umberleaf-prod-<ts>.dump --clean
 
 # Restore VERIFICATION into a scratch DB (records an RTO sample):
-VERIFY_DATABASE_URL=postgres://…/qalam_scratch scripts/db/verify-backup.sh
+VERIFY_DATABASE_URL=postgres://…/umberleaf_scratch scripts/db/verify-backup.sh
 
 # Full DR DRILL (backup → restore-into-scratch → verify → log RTO/RPO):
-DATABASE_URL=… VERIFY_DATABASE_URL=…/qalam_scratch scripts/dr/drill.sh   # → scripts/dr/DRILL_LOG.md
+DATABASE_URL=… VERIFY_DATABASE_URL=…/umberleaf_scratch scripts/dr/drill.sh   # → scripts/dr/DRILL_LOG.md
 
 # Object storage recovery-readiness (versioning + lifecycle + bucket validation):
-S3_BUCKET=qalam-media S3_ENDPOINT=… scripts/storage/provision.sh
+S3_BUCKET=umberleaf-media S3_ENDPOINT=… scripts/storage/provision.sh
 ```
 
 - **Logical dumps** (above) are portable and power verification drills + dev/staging clones. **Production RPO/PITR** is met by continuous **WAL archiving** (pgBackRest/wal-g) to a separate bucket with separate credentials — infra-provisioned (docs 21 §3), rehearse PITR per docs 21 §3b.

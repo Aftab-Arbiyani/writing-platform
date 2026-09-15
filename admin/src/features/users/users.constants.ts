@@ -1,4 +1,4 @@
-import { Role, UserStatus } from '@qalam/shared';
+import { Role, UserStatus } from '@umberleaf/shared';
 
 /**
  * URL filter keys for the Users grid — passed to `useAdminTable` so pagination +

@@ -1,6 +1,6 @@
 import { Column, Entity, Index } from 'typeorm';
 
-import { QalamBaseEntity } from '../../../common/base/base.entity';
+import { AppBaseEntity } from '../../../common/base/base.entity';
 
 /**
  * Curated writing genre (docs 04 §3.3). Reference data — seeded (§9),
@@ -8,7 +8,7 @@ import { QalamBaseEntity } from '../../../common/base/base.entity';
  * profiles (writing genres) now and by pieces later.
  */
 @Entity('genres')
-export class Genre extends QalamBaseEntity {
+export class Genre extends AppBaseEntity {
   @Index('uq_genres_slug', { unique: true })
   @Column({ type: 'citext' })
   slug!: string;

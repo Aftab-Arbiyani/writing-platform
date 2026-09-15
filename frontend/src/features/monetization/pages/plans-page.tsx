@@ -1,5 +1,5 @@
-import { BillingInterval, PaymentProvider, PlanTier, isPlanDowngrade } from '@qalam/shared';
-import { QCard, QEmptyState, QSpinner } from '@qalam/ui';
+import { BillingInterval, PaymentProvider, PlanTier, isPlanDowngrade } from '@umberleaf/shared';
+import { QCard, QEmptyState, QSpinner } from '@umberleaf/ui';
 import { CreditCard } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
 
@@ -123,7 +123,7 @@ export function PlansPage(): ReactElement {
        * A promo code applies to a NEW subscription only, and the field is hidden from existing
        * subscribers rather than ignored for them.
        *
-       * `@qalam/api-types` declares `couponCode` on `ChangePlanRequest`, but the backend's
+       * `@umberleaf/api-types` declares `couponCode` on `ChangePlanRequest`, but the backend's
        * `ChangePlanDto` has no such property and the app runs
        * `ValidationPipe({ whitelist: true, forbidNonWhitelisted: true })` — so sending it would 400
        * the whole plan change, not be politely dropped. That is the same trap mobile's M-1 invite

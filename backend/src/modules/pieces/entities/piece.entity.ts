@@ -1,7 +1,7 @@
-import { PieceStatus, Visibility } from '@qalam/shared';
+import { PieceStatus, Visibility } from '@umberleaf/shared';
 import { Check, Column, Entity, Index } from 'typeorm';
 
-import { QalamAuditEntity } from '../../../common/base/audit.entity';
+import { AppAuditEntity } from '../../../common/base/audit.entity';
 
 /** SEO override metadata (E4 addition; docs 04 §3.2 didn't enumerate it). */
 export interface SeoMetadata {
@@ -10,12 +10,12 @@ export interface SeoMetadata {
 }
 
 /**
- * A written piece (docs 04 §3.2). Soft-deletable ({@link QalamAuditEntity}) —
+ * A written piece (docs 04 §3.2). Soft-deletable ({@link AppAuditEntity}) —
  * writers delete in frustration and ask for it back (docs §1.5).
  *
  * `content` (TipTap JSON) is the single source of truth (§5); HTML is never
  * stored. `content_text`, `word_count`, `reading_time_seconds` are DERIVED on
- * every content write (service, via @qalam/utils). `slug` is NULL until first
+ * every content write (service, via @umberleaf/utils). `slug` is NULL until first
  * publish and then permanent (§1.5). All FK columns are plain (constraints in
  * the migration) so the pieces module doesn't import other modules' entities
  * (docs 16 §3.1). `search_vector` (generated) + `archived_at`/`seo_metadata`
@@ -33,7 +33,7 @@ export interface SeoMetadata {
 @Index('idx_pieces_author_status', ['authorId', 'status', 'createdAt'])
 @Index('idx_pieces_language', ['languageId', 'publishedAt'])
 @Index('idx_pieces_genre', ['genreId', 'publishedAt'])
-export class Piece extends QalamAuditEntity {
+export class Piece extends AppAuditEntity {
   @Column({ type: 'uuid' })
   authorId!: string;
 

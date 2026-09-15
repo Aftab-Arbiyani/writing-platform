@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { PaymentProvider } from '@qalam/shared';
+import type { PaymentProvider } from '@umberleaf/shared';
 
 import { PaymentProviderNotConfiguredException } from '../monetization.exceptions';
 import { PAYMENT_PROVIDER_ADAPTERS } from './payment-provider.port';

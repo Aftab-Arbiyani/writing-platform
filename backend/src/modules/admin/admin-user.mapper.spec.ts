@@ -1,4 +1,4 @@
-import { Role, UserStatus } from '@qalam/shared';
+import { Role, UserStatus } from '@umberleaf/shared';
 
 import type { AdminUserRow } from '../users/users.repository';
 import type { AdminUserListQueryDto } from './dto/admin-user-query.dto';

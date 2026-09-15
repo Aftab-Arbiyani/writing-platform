@@ -1,11 +1,11 @@
-import type { Role, UserStatus } from '@qalam/shared';
+import type { Role, UserStatus } from '@umberleaf/shared';
 
 /**
  * Wire types for the Admin User Management feature (A4). These mirror the backend
  * E12.5 response DTOs (`backend/src/modules/admin/dto/*`). They are hand-authored
- * because `@qalam/api-types` has not yet been regenerated for the new `/admin/users*`
+ * because `@umberleaf/api-types` has not yet been regenerated for the new `/admin/users*`
  * surface — TODO(aftab): drop these for the generated types once `openapi.json` is
- * re-exported and `@qalam/api-types` picks up the admin tag.
+ * re-exported and `@umberleaf/api-types` picks up the admin tag.
  */
 
 /** One audit-trail entry (backend AuditLogDto). */

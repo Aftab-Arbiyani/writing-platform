@@ -1,6 +1,6 @@
 /**
  * Wire + view types for the Operations feature (P7.4). Mirror the backend Operations Platform DTOs
- * exposed under `/api/v1/admin/operations/*`. Hand-authored until `@qalam/api-types` covers them —
+ * exposed under `/api/v1/admin/operations/*`. Hand-authored until `@umberleaf/api-types` covers them —
  * only the fields the views read are declared (extra response fields are ignored by structural
  * typing). Read views require `admin.dashboard`; mutations require `settings.manage` (the server
  * re-checks every request). Never carries a secret — status/telemetry only.

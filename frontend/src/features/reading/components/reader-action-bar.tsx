@@ -1,5 +1,5 @@
-import { ReportEntityType, ShareChannel } from '@qalam/shared';
-import { QButton, useToast } from '@qalam/ui';
+import { ReportEntityType, ShareChannel } from '@umberleaf/shared';
+import { QButton, useToast } from '@umberleaf/ui';
 import { Dropdown, type MenuProps } from 'antd';
 import {
   Bookmark,

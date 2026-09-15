@@ -1,7 +1,7 @@
 import { Injectable, ForbiddenException } from '@nestjs/common';
 import type { CanActivate, ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { ROLE_RANK, type Role } from '@qalam/shared';
+import { ROLE_RANK, type Role } from '@umberleaf/shared';
 import type { Request } from 'express';
 
 import { ROLES_KEY } from '../../../common/constants/metadata.constants';

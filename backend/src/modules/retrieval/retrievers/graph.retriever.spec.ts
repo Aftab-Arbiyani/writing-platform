@@ -1,4 +1,4 @@
-import { RetrievalIntent, RetrievalQueryType, RetrievalSource } from '@qalam/shared';
+import { RetrievalIntent, RetrievalQueryType, RetrievalSource } from '@umberleaf/shared';
 
 import type { StoryGraphDto } from '../../story-intelligence/dto/story-response.dto';
 import type { StoryIntelligenceService } from '../../story-intelligence/story-intelligence.service';

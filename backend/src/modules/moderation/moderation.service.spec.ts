@@ -6,7 +6,7 @@ import {
   ReportStatus,
   Role,
   UserStatus,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 import type { AuditService } from '../audit/audit.service';
 import type { AuthService } from '../auth/auth.service';

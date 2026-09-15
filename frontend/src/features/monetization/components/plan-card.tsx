@@ -1,5 +1,5 @@
-import { BillingInterval, PlanTier, isPlanUpgrade } from '@qalam/shared';
-import { QButton, QCard, QTag } from '@qalam/ui';
+import { BillingInterval, PlanTier, isPlanUpgrade } from '@umberleaf/shared';
+import { QButton, QCard, QTag } from '@umberleaf/ui';
 import { Check } from 'lucide-react';
 import type { ReactElement } from 'react';
 

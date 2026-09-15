@@ -1,4 +1,4 @@
-import { RecommendationKind, RetrievalQueryType } from '@qalam/shared';
+import { RecommendationKind, RetrievalQueryType } from '@umberleaf/shared';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as apiClient from '@/lib/api-client';
@@ -16,7 +16,7 @@ const del = vi.mocked(apiClient.del);
  *
  * These assert the **wire**, not the client abstraction: the exact path, the exact body keys, and
  * the absence of keys the DTOs do not declare. That is the only level at which the defect this row
- * opened with is visible — `@qalam/api-types` declared a nested `filters` object that
+ * opened with is visible — `@umberleaf/api-types` declared a nested `filters` object that
  * `SemanticSearchDto` has never accepted, and because the global pipe runs `forbidNonWhitelisted`,
  * a client built on that type gets 400 on every filtered search rather than filters that quietly do
  * nothing (48 §3.9, W5-1). A test that only checked "search resolves" would have shipped it.

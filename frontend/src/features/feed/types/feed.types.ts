@@ -1,8 +1,8 @@
-import type { TextDirection, Visibility } from '@qalam/shared';
+import type { TextDirection, Visibility } from '@umberleaf/shared';
 
 /**
  * Feed wire types (docs/32 §10) — mirror the frozen `v1` DTOs
- * (`backend/src/modules/feed/dto/*`). Replace with generated `@qalam/api-types` once the
+ * (`backend/src/modules/feed/dto/*`). Replace with generated `@umberleaf/api-types` once the
  * backend emits `openapi.json`. A feed card carries ONLY what a card renders (docs/05 §11.4);
  * full content is fetched via the reading view. Note: there is **no** per-viewer bookmark flag
  * on a feed item, so a "saved" indicator cannot be shown from feed data alone.

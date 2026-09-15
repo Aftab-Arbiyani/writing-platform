@@ -1,4 +1,4 @@
-import type { TextDirection } from '@qalam/shared';
+import type { TextDirection } from '@umberleaf/shared';
 
 /**
  * Settings-feature-local types. Shared wire types (ProfileResponse, SettingsResponse, update

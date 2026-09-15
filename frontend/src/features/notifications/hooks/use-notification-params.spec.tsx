@@ -1,4 +1,4 @@
-import { NotificationStatus, NotificationType } from '@qalam/shared';
+import { NotificationStatus, NotificationType } from '@umberleaf/shared';
 import { act, renderHook } from '@testing-library/react';
 import type { ReactElement, ReactNode } from 'react';
 import { MemoryRouter } from 'react-router';

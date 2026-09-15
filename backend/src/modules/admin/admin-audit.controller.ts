@@ -10,7 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiProduces, ApiTags } from '@nestjs/swagger';
-import { PERMISSIONS } from '@qalam/shared';
+import { PERMISSIONS } from '@umberleaf/shared';
 import type { Request, Response } from 'express';
 
 import { RateLimit } from '../../common/decorators/rate-limit.decorator';
@@ -128,7 +128,7 @@ export class AdminAuditController {
     const stamp = new Date().toISOString().slice(0, 10);
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename="qalam-audit-${stamp}.${asJson ? 'json' : 'csv'}"`,
+      `attachment; filename="umberleaf-audit-${stamp}.${asJson ? 'json' : 'csv'}"`,
     );
     if (asJson) {
       res.setHeader('Content-Type', 'application/json; charset=utf-8');

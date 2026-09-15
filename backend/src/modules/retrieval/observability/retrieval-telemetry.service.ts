@@ -1,5 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import type { RetrievalFailureReason, RetrievalIntent, RetrievalQueryType } from '@qalam/shared';
+import type {
+  RetrievalFailureReason,
+  RetrievalIntent,
+  RetrievalQueryType,
+} from '@umberleaf/shared';
 
 import type { RetrievalTelemetry, SearchAnalyticsData } from '../retrieval.types';
 import { ANALYTICS_ROW_CAP, RetrievalLogRepository } from './retrieval-log.repository';

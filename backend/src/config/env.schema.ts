@@ -33,7 +33,7 @@ export const envSchema = z.object({
   //    version/system endpoints, log bindings and admin build-info views).
   //    Injected by the image build / CD pipeline; all optional so local dev
   //    and tests boot without them. ──────────────────────────────────────
-  SERVICE_NAME: z.string().default('qalam-backend'),
+  SERVICE_NAME: z.string().default('umberleaf-backend'),
   APP_VERSION: z.string().default('0.0.0'),
   GIT_SHA: z.string().default(''),
   BUILD_TIME: z.string().default(''),
@@ -64,7 +64,7 @@ export const envSchema = z.object({
   // ── Object storage (MinIO dev / S3-R2 prod) ────────────────────────────
   S3_ENDPOINT: z.string().url().default('http://localhost:9000'),
   S3_REGION: z.string().default('us-east-1'),
-  S3_BUCKET: z.string().default('qalam-media'),
+  S3_BUCKET: z.string().default('umberleaf-media'),
   S3_ACCESS_KEY: z.string().default('minioadmin'),
   S3_SECRET_KEY: z.string().default('minioadmin'),
   /** Public CDN origin for media (empty = clients build URLs from S3_ENDPOINT). */
@@ -117,7 +117,7 @@ export const envSchema = z.object({
   DATABASE_REPLICA_URL: z.string().default(''),
 
   // ── Mail ───────────────────────────────────────────────────────────────
-  MAIL_FROM: z.string().default('Qalam <no-reply@qalam.local>'),
+  MAIL_FROM: z.string().default('Umberleaf <no-reply@qalam.local>'),
 
   // ── AI platform (AF1 — Phase 2). Provider API keys are secrets with NO
   //    default beyond '' (blank = provider not configured → the whole AI

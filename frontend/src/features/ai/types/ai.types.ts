@@ -1,5 +1,5 @@
 /**
- * AI wire types (AF1). Re-exported from `@qalam/api-types` (the single wire
+ * AI wire types (AF1). Re-exported from `@umberleaf/api-types` (the single wire
  * contract) so this feature imports everything AI-related from one local path —
  * never redefining a shape the backend owns.
  */
@@ -20,4 +20,4 @@ export type {
   AiStreamEvent,
   AiTokenUsage,
   UpdateAiUserOverridesRequest,
-} from '@qalam/api-types';
+} from '@umberleaf/api-types';

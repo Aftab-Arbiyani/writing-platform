@@ -1,4 +1,4 @@
-import { Role } from '@qalam/shared';
+import { Role } from '@umberleaf/shared';
 
 /**
  * Client-side access-token decode — a **UX hint only** (docs/26 §8, docs/12 §7). The server

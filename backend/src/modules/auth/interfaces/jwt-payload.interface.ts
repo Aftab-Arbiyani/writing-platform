@@ -1,4 +1,4 @@
-import type { Role } from '@qalam/shared';
+import type { Role } from '@umberleaf/shared';
 
 /**
  * Access-token claims (docs 13 §3.2) — `sub`, `role` (RBAC cache; DB is truth on

@@ -1,4 +1,4 @@
-import { RetrievalSource } from '@qalam/shared';
+import { RetrievalSource } from '@umberleaf/shared';
 
 import type { RankedCandidate } from '../retrieval.types';
 import { EvidenceService } from './evidence.service';

@@ -9,7 +9,7 @@ import { env } from '@/config/env';
 export function AppFooter(): ReactElement {
   return (
     <footer className="border-t border-line px-6 py-3 text-xs text-ink-muted">
-      Qalam Admin — an internal operations console.
+      Umberleaf Admin — an internal operations console.
       {env.VITE_APP_ENV !== 'production' ? ` (${env.VITE_APP_ENV})` : ''}
     </footer>
   );

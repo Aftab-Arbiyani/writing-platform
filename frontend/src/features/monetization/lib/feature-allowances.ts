@@ -1,4 +1,4 @@
-import { QuotaWindow } from '@qalam/shared';
+import { QuotaWindow } from '@umberleaf/shared';
 
 import type { FeatureQuotaResponse } from '../types/monetization.types';
 

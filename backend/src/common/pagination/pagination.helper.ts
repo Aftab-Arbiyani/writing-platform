@@ -1,4 +1,4 @@
-import type { CursorMeta, OffsetMeta } from '@qalam/shared';
+import type { CursorMeta, OffsetMeta } from '@umberleaf/shared';
 
 import { encodeCursor, type CursorPayload } from './cursor.util';
 

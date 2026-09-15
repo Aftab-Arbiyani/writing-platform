@@ -1,5 +1,5 @@
 import { Injectable, type OnModuleInit } from '@nestjs/common';
-import { PremiumFeature } from '@qalam/shared';
+import { PremiumFeature } from '@umberleaf/shared';
 
 import { EntitlementService } from '../monetization/entitlement.service';
 import { PolicyEngineService } from '../policy';

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { RECENT_SEARCHES_MAX } from '@qalam/shared';
+import { RECENT_SEARCHES_MAX } from '@umberleaf/shared';
 import { Repository } from 'typeorm';
 import { v7 as uuidv7 } from 'uuid';
 

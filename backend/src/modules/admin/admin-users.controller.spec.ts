@@ -1,4 +1,4 @@
-import { PERMISSIONS, Role, UserStatus } from '@qalam/shared';
+import { PERMISSIONS, Role, UserStatus } from '@umberleaf/shared';
 
 import { PERMISSIONS_KEY } from '../../common/constants/metadata.constants';
 import type { AnalyticsService } from '../analytics/analytics.service';

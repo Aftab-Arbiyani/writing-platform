@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { RetrievalSource, SearchSort } from '@qalam/shared';
+import { RetrievalSource, SearchSort } from '@umberleaf/shared';
 
 import { SearchService } from '../../search';
 import type { Retriever } from '../ports/retriever.port';

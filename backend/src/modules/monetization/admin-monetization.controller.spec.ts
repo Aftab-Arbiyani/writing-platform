@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { ERROR_CODES, PERMISSIONS } from '@qalam/shared';
+import { ERROR_CODES, PERMISSIONS } from '@umberleaf/shared';
 
 import { PERMISSIONS_KEY } from '../../common/constants/metadata.constants';
 import type { AuditService } from '../audit/audit.service';

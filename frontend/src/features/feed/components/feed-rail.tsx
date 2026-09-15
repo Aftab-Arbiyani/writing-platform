@@ -1,4 +1,4 @@
-import { QButton, QCard, QTag } from '@qalam/ui';
+import { QButton, QCard, QTag } from '@umberleaf/ui';
 import { PenLine } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { useNavigate } from 'react-router';

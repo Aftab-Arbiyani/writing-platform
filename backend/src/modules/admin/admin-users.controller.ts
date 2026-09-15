@@ -14,7 +14,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiProduces, ApiTags } from '@nestjs/swagger';
-import { PERMISSIONS, PieceStatus, Role, UserStatus } from '@qalam/shared';
+import { PERMISSIONS, PieceStatus, Role, UserStatus } from '@umberleaf/shared';
 import type { Request, Response } from 'express';
 
 import { RateLimit } from '../../common/decorators/rate-limit.decorator';
@@ -56,7 +56,7 @@ import { BulkActionResultDto, BulkUserActionDto } from './dto/bulk-action.dto';
 import { UpdateAdminUserDto } from './dto/update-admin-user.dto';
 
 const LOGIN_HISTORY_NOTE =
-  'Qalam persists only the last successful login (users.last_login_at). Failed attempts, ' +
+  'Umberleaf persists only the last successful login (users.last_login_at). Failed attempts, ' +
   'devices, and IP addresses are not stored (they exist only as ephemeral logs / expiring ' +
   'Redis sessions), so those arrays are intentionally empty.';
 
@@ -131,7 +131,7 @@ export class AdminUsersController {
     const stamp = new Date().toISOString().slice(0, 10);
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename="qalam-users-${stamp}.${asJson ? 'json' : 'csv'}"`,
+      `attachment; filename="umberleaf-users-${stamp}.${asJson ? 'json' : 'csv'}"`,
     );
 
     if (asJson) {

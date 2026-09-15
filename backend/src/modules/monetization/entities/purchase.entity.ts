@@ -1,7 +1,7 @@
 import { Column, Entity, Index } from 'typeorm';
-import type { PaymentProvider, PurchaseKind, PurchaseStatus } from '@qalam/shared';
+import type { PaymentProvider, PurchaseKind, PurchaseStatus } from '@umberleaf/shared';
 
-import { QalamAppendOnlyEntity } from '../../../common/base/append-only.entity';
+import { AppAppendOnlyEntity } from '../../../common/base/append-only.entity';
 
 /**
  * A purchase (AF5) — append-only. Covers store one-time buys, credit packs, and the
@@ -17,7 +17,7 @@ import { QalamAppendOnlyEntity } from '../../../common/base/append-only.entity';
   unique: true,
   where: '"provider_ref" IS NOT NULL',
 })
-export class Purchase extends QalamAppendOnlyEntity {
+export class Purchase extends AppAppendOnlyEntity {
   @Column({ type: 'uuid' })
   userId!: string;
 
@@ -34,7 +34,7 @@ export class Purchase extends QalamAppendOnlyEntity {
   @Column({ type: 'varchar', length: 255, nullable: true })
   providerRef!: string | null;
 
-  /** Store product id (e.g. `com.qalam.pro.monthly`, `credits_5000`). */
+  /** Store product id (e.g. `com.umberleaf.pro.monthly`, `credits_5000`). */
   @Column({ type: 'varchar', length: 255, nullable: true })
   productId!: string | null;
 

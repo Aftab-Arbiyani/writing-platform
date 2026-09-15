@@ -1,6 +1,6 @@
 import { Column, Entity, Index } from 'typeorm';
 
-import { QalamBaseEntity } from '../../../common/base/base.entity';
+import { AppBaseEntity } from '../../../common/base/base.entity';
 
 /**
  * A unique piece view (E10) — one row per (piece, viewer) so `unique_views` is
@@ -14,7 +14,7 @@ import { QalamBaseEntity } from '../../../common/base/base.entity';
 @Index('uq_view_event_piece_viewer', ['pieceId', 'viewerKey'], { unique: true })
 @Index('idx_view_event_recent', ['createdAt'])
 @Index('idx_view_event_piece', ['pieceId'])
-export class ViewEvent extends QalamBaseEntity {
+export class ViewEvent extends AppBaseEntity {
   @Column({ type: 'uuid' })
   pieceId!: string;
 

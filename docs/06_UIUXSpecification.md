@@ -9,7 +9,7 @@
 
 ## 1. Design Philosophy
 
-Qalam is **a premium writing sanctuary** — warm paper and ink, not a content feed with a
+Umberleaf is **a premium writing sanctuary** — warm paper and ink, not a content feed with a
 text box bolted on. Every screen is judged by one question: _does this make the writing
 feel more important, or less?_
 
@@ -45,7 +45,7 @@ entire product.
 ```
 Desktop top bar
 ┌──────────────────────────────────────────────────────────────────────────┐
-│ Qalam        [ Search writers, pieces, tags…          ]   [Write] (bell)(avatar) │
+│ Umberleaf        [ Search writers, pieces, tags…          ]   [Write] (bell)(avatar) │
 └──────────────────────────────────────────────────────────────────────────┘
    logo=text wordmark, 20px reading serif · search = 480px max · Write = primary QButton
 ```
@@ -103,7 +103,7 @@ into Discover.
 ┌──────────────────────────────────────────────────────────────────────────┐
 │ ▓▓▓▓▓▓▓▓▓▓▓░░░░░░░░░░░░░░ 2px reading progress, --q-accent, fills from   │
 │                            the piece's inline-start (RTL for Urdu)       │
-│  Qalam                                    (chrome fades after 2s scroll) │
+│  Umberleaf                                    (chrome fades after 2s scroll) │
 │                                                                          │
 │            ┌────────────── 68ch column, centered ──────────────┐         │
 │            │  [cover image, optional, radius 10, 2:1 max]      │         │
@@ -472,7 +472,7 @@ English, LTR) and content language (per piece / per card).
    drawer/sheet slide direction, toolbar order, **reading progress bar** — it maps
    position _in the text_, so an Urdu piece fills right→left.
 4. **What does NOT mirror:** media/audio playback controls and progress (time is
-   universally LTR), clocks, checkmarks, the Qalam wordmark, undo/redo (they reference
+   universally LTR), clocks, checkmarks, the Umberleaf wordmark, undo/redo (they reference
    time), code/monospace blocks, phone numbers, URLs, emails, and `@usernames`
    (`^[a-z0-9_]+$` — always LTR, isolate-wrapped).
 5. **Numerals policy:** UI chrome, stats, dates, and counts use Latin (ASCII) digits
@@ -588,7 +588,7 @@ ones (§4.1, §4.6).
 1. **One component per concept** — one `PieceCard`, one `ClapButton`; variants are props/
    slots, never forks (`08` §5).
 2. **Copy lives in catalogues** (§4.4 / `lib/error-messages.ts`), referenced, never inlined.
-3. **Tokens only; logical props only; one motion source** (`@qalam/ui/motion`) — `07` §12,
+3. **Tokens only; logical props only; one motion source** (`@umberleaf/ui/motion`) — `07` §12,
    §14.
 4. **Interaction patterns defined once** (optimistic recipe `12` §2.5, undo toast `07` §7.9,
    infinite-scroll sentinel §4.2) — reuse the helper, don't re-implement per feature.

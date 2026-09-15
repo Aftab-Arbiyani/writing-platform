@@ -1,6 +1,6 @@
 import { Column, Entity, Index, Unique } from 'typeorm';
 
-import { QalamAppendOnlyEntity } from '../../../common/base/append-only.entity';
+import { AppAppendOnlyEntity } from '../../../common/base/append-only.entity';
 
 /**
  * A private bookmark — one per user per piece (docs 04 §3.4). Append-only; the
@@ -11,7 +11,7 @@ import { QalamAppendOnlyEntity } from '../../../common/base/append-only.entity';
 @Entity('bookmarks')
 @Unique('uq_bookmarks_user_piece', ['userId', 'pieceId'])
 @Index('idx_bookmarks_user', ['userId', 'createdAt'])
-export class Bookmark extends QalamAppendOnlyEntity {
+export class Bookmark extends AppAppendOnlyEntity {
   @Column({ type: 'uuid' })
   userId!: string;
 

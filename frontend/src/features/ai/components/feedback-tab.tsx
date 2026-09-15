@@ -1,4 +1,4 @@
-import { QButton, QSelect } from '@qalam/ui';
+import { QButton, QSelect } from '@umberleaf/ui';
 import { Gauge } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
 

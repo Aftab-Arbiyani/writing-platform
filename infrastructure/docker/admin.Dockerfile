@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 # ─────────────────────────────────────────────────────────────────────────────
-# Qalam admin panel (React + Vite)
+# Umberleaf admin panel (React + Vite)
 #
 # Identical pattern to frontend.Dockerfile: build the environment-specific
 # static bundle with pnpm + turbo (Vite inlines VITE_* at build time), serve it
@@ -30,7 +30,7 @@ COPY . .
 
 RUN pnpm install --frozen-lockfile
 
-# Builds admin plus its @qalam/* workspace dependencies (turbo ^build).
+# Builds admin plus its @umberleaf/* workspace dependencies (turbo ^build).
 RUN pnpm turbo build --filter admin
 
 # ── Stage 2: runtime — static bundle behind non-root nginx ──────────────────
@@ -40,8 +40,8 @@ FROM nginx:1.27-alpine AS runtime
 ARG BUILD_VERSION=0.0.0-dev
 ARG GIT_SHA=unknown
 ARG BUILD_TIME=
-LABEL org.opencontainers.image.title="qalam-admin" \
-      org.opencontainers.image.description="Qalam admin panel (React + Vite) served by nginx" \
+LABEL org.opencontainers.image.title="umberleaf-admin" \
+      org.opencontainers.image.description="Umberleaf admin panel (React + Vite) served by nginx" \
       org.opencontainers.image.source="https://github.com/qalam/qalam" \
       org.opencontainers.image.version="$BUILD_VERSION" \
       org.opencontainers.image.revision="$GIT_SHA" \

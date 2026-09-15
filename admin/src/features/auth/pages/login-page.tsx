@@ -1,4 +1,4 @@
-import { QCard } from '@qalam/ui';
+import { QCard } from '@umberleaf/ui';
 import type { ReactElement } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 
@@ -23,7 +23,7 @@ export function LoginPage(): ReactElement {
         <span className="flex size-9 items-center justify-center rounded-md bg-accent text-base font-semibold text-[var(--q-accent-contrast,#fff)]">
           Q
         </span>
-        <h1 className="text-xl font-semibold text-ink">Qalam Admin</h1>
+        <h1 className="text-xl font-semibold text-ink">Umberleaf Admin</h1>
         <p className="text-sm text-ink-secondary">Sign in to the operations console.</p>
       </div>
       <LoginForm onSuccess={() => void navigate(returnTo, { replace: true })} />

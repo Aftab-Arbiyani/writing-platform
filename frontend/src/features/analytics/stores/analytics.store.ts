@@ -1,4 +1,4 @@
-import { AnalyticsPeriod } from '@qalam/shared';
+import { AnalyticsPeriod } from '@umberleaf/shared';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
@@ -65,7 +65,7 @@ export const useAnalyticsStore = create<AnalyticsState>()(
         set({ chartStyle });
       },
     }),
-    { name: 'qalam-analytics' },
+    { name: 'umberleaf-analytics' },
   ),
 );
 

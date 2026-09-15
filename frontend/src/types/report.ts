@@ -1,4 +1,9 @@
-import type { ReportEntityType, ReportPriority, ReportReason, ReportStatus } from '@qalam/shared';
+import type {
+  ReportEntityType,
+  ReportPriority,
+  ReportReason,
+  ReportStatus,
+} from '@umberleaf/shared';
 
 /**
  * Reporting (W7b, docs/45 §4.4) — the wire shapes of `POST /reports`.

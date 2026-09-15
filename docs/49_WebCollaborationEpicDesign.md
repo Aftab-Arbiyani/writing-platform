@@ -47,7 +47,7 @@ the same shape on 2026-07-28**, using this as its reference; M-1 is closed
 
 ### 2.2 Availability: dark-launched, mirroring mobile
 
-Mobile gates AF6 behind the compile-time `QALAM_ENABLE_COLLABORATION`, **default off**, with 5 screens
+Mobile gates AF6 behind the compile-time `UMBERLEAF_ENABLE_COLLABORATION`, **default off**, with 5 screens
 self-gating. Web mirrors it: **`VITE_ENABLE_COLLABORATION`, default `false`** in `config/env.ts`, with
 routes/pages self-gating the same way. Playwright's `webServer` block sets it `true`, so E2E covers
 everything while the shipped default stays dark. Availability parity is preserved, so this needs no
@@ -66,7 +66,7 @@ input.
   matching capability is `allowed`.
 - **Fails closed.** A failed capabilities load degrades to read-only, exactly as mobile does. Never
   optimistic.
-- Role rank (`STORY_ROLE_RANK`, `storyRoleAtLeast`) is imported from `@qalam/shared` for **display
+- Role rank (`STORY_ROLE_RANK`, `storyRoleAtLeast`) is imported from `@umberleaf/shared` for **display
   ordering only** — never to decide whether a button appears.
 - Restricted effects (`suspended`, `read_only`, `muted`, `blocked`, `conditional_access` +
   `shadow_only`) render the W3c walls from the server's own `effect`/`reason`.
@@ -75,14 +75,14 @@ input.
 
 `frontend/src/features/collaboration/`, following `features/reading/` exactly:
 
-| Layer         | Content                                                                                                                  |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `api/`        | `collaboration.api.ts`, `publishing.api.ts`, `trust.api.ts` — the only place AF6 routes are named                        |
-| `types/`      | `collaboration.types.ts` — wire types mirroring the DTOs; vocabulary re-exported from `@qalam/shared`, never re-declared |
-| `hooks/`      | one hook per query/mutation, `qk.*` keys only, invalidation by prefix                                                    |
-| `components/` | `capability-gate`, `role-badge`, `presence-bar`, member/invitation/comment/suggestion pieces                             |
-| `pages/`      | one page per route below                                                                                                 |
-| `index.ts`    | the feature's public surface; `app/routes/*` composes it                                                                 |
+| Layer         | Content                                                                                                                      |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `api/`        | `collaboration.api.ts`, `publishing.api.ts`, `trust.api.ts` — the only place AF6 routes are named                            |
+| `types/`      | `collaboration.types.ts` — wire types mirroring the DTOs; vocabulary re-exported from `@umberleaf/shared`, never re-declared |
+| `hooks/`      | one hook per query/mutation, `qk.*` keys only, invalidation by prefix                                                        |
+| `components/` | `capability-gate`, `role-badge`, `presence-bar`, member/invitation/comment/suggestion pieces                                 |
+| `pages/`      | one page per route below                                                                                                     |
+| `index.ts`    | the feature's public surface; `app/routes/*` composes it                                                                     |
 
 New `qk` namespace (added to `lib/query-keys.ts`, never ad-hoc arrays):
 
@@ -250,7 +250,7 @@ never actually created; running it outside the sandbox brought the stack up norm
 | E2E **run + baselines**             | ❌ **not run** — see below                                                                                                                                                                                                          |
 
 **Why E2E did not run.** `pnpm e2e:up` cannot bring the stack up in the current sandbox: `docker
-compose up --wait` reports the qalam containers healthy, but they are not visible to `docker ps` and
+compose up --wait` reports the umberleaf containers healthy, but they are not visible to `docker ps` and
 the published Postgres port (`5434`, from `.env`) refuses connections, so `migration:run` fails with
 `ECONNREFUSED` and neither the seeds nor the backend start. With no backend there is no run and no
 baseline generation — and baselines must be produced in the pinned Playwright image anyway

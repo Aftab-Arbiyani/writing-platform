@@ -1,4 +1,4 @@
-import { QCard, QTag } from '@qalam/ui';
+import { QCard, QTag } from '@umberleaf/ui';
 import { Activity, CircleCheck, Hourglass, ShieldCheck, Siren, Timer } from 'lucide-react';
 import type { ReactElement } from 'react';
 

@@ -1,7 +1,7 @@
 /**
- * @qalam/utils — how to compute (ADR §2).
+ * @umberleaf/utils — how to compute (ADR §2).
  * Pure, dependency-free functions only. Anything stateful, async, or
- * domain-constant belongs elsewhere (@qalam/shared for vocabulary).
+ * domain-constant belongs elsewhere (@umberleaf/shared for vocabulary).
  */
 export * from './slugify.js';
 export * from './reading-time.js';

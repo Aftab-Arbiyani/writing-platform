@@ -1,8 +1,8 @@
-import type { NotificationStatus, NotificationType } from '@qalam/shared';
+import type { NotificationStatus, NotificationType } from '@umberleaf/shared';
 
 /**
  * Notification & activity wire types (E9, docs/32 §10) — mirror the frozen `v1` DTOs
- * (`backend/src/modules/notifications/dto/*`). Replace with generated `@qalam/api-types` once the
+ * (`backend/src/modules/notifications/dto/*`). Replace with generated `@umberleaf/api-types` once the
  * backend emits `openapi.json`. `avatarKey` is an S3 KEY, never a URL — build via `mediaUrl()`.
  */
 

@@ -4,7 +4,7 @@ import {
   ROLE_RANK,
   permissionSatisfies,
   type PermissionCode,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 import { useMemo } from 'react';
 
 import { useAuthStore } from '@/stores/auth.store';

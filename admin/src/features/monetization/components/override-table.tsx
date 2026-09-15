@@ -1,5 +1,5 @@
-import { OverrideEffect } from '@qalam/shared';
-import { QButton, QTag, useToast } from '@qalam/ui';
+import { OverrideEffect } from '@umberleaf/shared';
+import { QButton, QTag, useToast } from '@umberleaf/ui';
 import { useState, type ReactElement } from 'react';
 
 import { ConfirmationDialog } from '@/components/confirmation-dialog';

@@ -1,5 +1,5 @@
-import { SearchType } from '@qalam/shared';
-import { cn } from '@qalam/ui';
+import { SearchType } from '@umberleaf/shared';
+import { cn } from '@umberleaf/ui';
 import type { ReactElement } from 'react';
 
 /** Group order (docs/06 §3.6): the grouped preview first, then each dedicated group. */

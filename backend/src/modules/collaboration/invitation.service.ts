@@ -8,7 +8,7 @@ import {
   NotificationEntityType,
   NotificationType,
   POLICY_ACTIONS,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 import { randomBytes } from 'node:crypto';
 
 import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';

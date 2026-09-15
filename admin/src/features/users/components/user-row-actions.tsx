@@ -1,4 +1,4 @@
-import { PERMISSIONS, UserStatus } from '@qalam/shared';
+import { PERMISSIONS, UserStatus } from '@umberleaf/shared';
 import {
   Ban,
   Eye,

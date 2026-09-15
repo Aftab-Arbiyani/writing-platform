@@ -1,13 +1,13 @@
-import type { StoryNodeType } from '@qalam/shared';
+import type { StoryNodeType } from '@umberleaf/shared';
 import { Column, Entity, Index } from 'typeorm';
 
-import { QalamBaseEntity } from '../../../common/base/base.entity';
+import { AppBaseEntity } from '../../../common/base/base.entity';
 import type { StoryEvidenceRef } from '../story.types';
 
 /**
  * A node in the story knowledge graph (AF3) — a durable entity discovered by analysis
  * (character/location/organization/object/event/concept). `type` is an OPEN varchar
- * keyed to the `@qalam/shared` catalogue so a new entity kind never needs a migration.
+ * keyed to the `@umberleaf/shared` catalogue so a new entity kind never needs a migration.
  * `data` carries the type-specific structured fields (traits/goals/arc for characters;
  * rules/lore for concepts; chrono order/kind for events). Upserts dedupe on
  * `(graphId, type, normalizedName)` — the same character across analyses merges, not
@@ -16,7 +16,7 @@ import type { StoryEvidenceRef } from '../story.types';
 @Entity('story_nodes')
 @Index('idx_story_nodes_graph_type', ['graphId', 'type'])
 @Index('uq_story_nodes_graph_type_name', ['graphId', 'type', 'normalizedName'], { unique: true })
-export class StoryNode extends QalamBaseEntity {
+export class StoryNode extends AppBaseEntity {
   @Column({ type: 'uuid' })
   graphId!: string;
 

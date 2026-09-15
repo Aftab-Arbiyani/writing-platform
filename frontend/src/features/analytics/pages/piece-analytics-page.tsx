@@ -1,4 +1,4 @@
-import { QSkeleton } from '@qalam/ui';
+import { QSkeleton } from '@umberleaf/ui';
 import { ArrowLeft, ExternalLink } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { Link, useParams } from 'react-router';
@@ -89,7 +89,9 @@ export function PieceAnalyticsPage(): ReactElement {
             </p>
           ) : null}
         </div>
-        {a ? <ExportMenu rows={exportRows(a)} json={a} filenameBase={`qalam-piece-${id}`} /> : null}
+        {a ? (
+          <ExportMenu rows={exportRows(a)} json={a} filenameBase={`umberleaf-piece-${id}`} />
+        ) : null}
       </header>
 
       {analytics.isError ? (

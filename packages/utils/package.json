@@ -1,7 +1,7 @@
 {
-  "name": "@qalam/utils",
+  "name": "@umberleaf/utils",
   "version": "0.1.0",
-  "description": "Qalam pure utility functions: unicode-aware slugify, reading time, small helpers. Zero runtime dependencies.",
+  "description": "Umberleaf pure utility functions: unicode-aware slugify, reading time, small helpers. Zero runtime dependencies.",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -25,7 +25,7 @@
     "test": "vitest run"
   },
   "devDependencies": {
-    "@qalam/config": "workspace:*",
+    "@umberleaf/config": "workspace:*",
     "eslint": "^9.0.0",
     "tsup": "^8.0.0",
     "typescript": "^5.6.0",

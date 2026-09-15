@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { DiscoverPieceKind, FeedSort, WriterKind } from '@qalam/shared';
+import { DiscoverPieceKind, FeedSort, WriterKind } from '@umberleaf/shared';
 
 import type { CursorPaginationDto } from '../../common/dto/cursor-pagination.dto';
 import { buildCursorPage } from '../../common/pagination/pagination.helper';

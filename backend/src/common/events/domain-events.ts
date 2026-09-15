@@ -5,7 +5,7 @@ import type {
   ShareChannel,
   SubscriptionEventType,
   SubscriptionStatus,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 /**
  * Internal domain events (E9). A decoupling seam: feature modules EMIT these
@@ -15,7 +15,7 @@ import type {
  * Phase 1 (the roadmap's async fan-out is the later swap, mirroring how feeds
  * compute trending live rather than via a queue).
  *
- * Payload types live here (in `common`, not `@qalam/shared`) because they are a
+ * Payload types live here (in `common`, not `@umberleaf/shared`) because they are a
  * backend-internal contract, never a wire shape. Emitters and the notification
  * listener both import from here so neither depends on the other's module.
  */

@@ -1,4 +1,9 @@
-import { RankingSignal, RetrievalIntent, RetrievalQueryType, RetrievalSource } from '@qalam/shared';
+import {
+  RankingSignal,
+  RetrievalIntent,
+  RetrievalQueryType,
+  RetrievalSource,
+} from '@umberleaf/shared';
 
 import type { RetrievalCandidate, RetrievalPlan, RetrievalRequest } from '../retrieval.types';
 import { CompositeRankingStrategy } from './composite-ranking.strategy';

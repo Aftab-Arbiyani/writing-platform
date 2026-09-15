@@ -1,5 +1,5 @@
-import { NotificationStatus, NotificationType } from '@qalam/shared';
-import { QSelect, cn } from '@qalam/ui';
+import { NotificationStatus, NotificationType } from '@umberleaf/shared';
+import { QSelect, cn } from '@umberleaf/ui';
 import type { ReactElement } from 'react';
 
 import type {

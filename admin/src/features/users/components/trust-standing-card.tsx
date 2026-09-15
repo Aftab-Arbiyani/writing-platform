@@ -4,8 +4,8 @@ import {
   TRUST_SCORE_MAX,
   TRUST_SCORE_MIN,
   UserStatus,
-} from '@qalam/shared';
-import { QCard, QSectionHeader, QTag, cn } from '@qalam/ui';
+} from '@umberleaf/shared';
+import { QCard, QSectionHeader, QTag, cn } from '@umberleaf/ui';
 import type { ReactElement } from 'react';
 
 import { StatCard } from '@/components/stat-card';
@@ -22,7 +22,7 @@ import type { AdminTrustSummary } from '../types/trust.types';
  * bands are drawn in order with the current one marked, and the score's own position is stated
  * numerically for anyone who cannot see the strip.
  *
- * The bands come from `trustLevelForScore` in `@qalam/shared`, so this cannot drift from the
+ * The bands come from `trustLevelForScore` in `@umberleaf/shared`, so this cannot drift from the
  * server's tiering. Band membership is conveyed by the tag and the text, never by colour alone.
  */
 function ScoreScale({ score, level }: { score: number; level: string }): ReactElement {

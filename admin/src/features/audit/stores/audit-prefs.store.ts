@@ -28,6 +28,6 @@ export const useAuditPrefs = create<AuditPrefsState>()(
         })),
       setDensity: (density) => set({ density }),
     }),
-    { name: 'qalam-admin-audit' },
+    { name: 'umberleaf-admin-audit' },
   ),
 );

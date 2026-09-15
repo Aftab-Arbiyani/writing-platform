@@ -1,4 +1,4 @@
-import { BillingInterval, PlanTier, PromotionType, normalizeCouponCode } from '@qalam/shared';
+import { BillingInterval, PlanTier, PromotionType, normalizeCouponCode } from '@umberleaf/shared';
 import type { DataSource, Repository } from 'typeorm';
 
 import type { Coupon } from './entities/coupon.entity';

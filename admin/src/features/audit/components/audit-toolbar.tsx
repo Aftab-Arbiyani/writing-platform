@@ -1,4 +1,4 @@
-import { QButton } from '@qalam/ui';
+import { QButton } from '@umberleaf/ui';
 import { Checkbox, Dropdown, Popover, Select, type MenuProps } from 'antd';
 import { Columns3, Download, FileJson, RefreshCw, Sheet, SlidersHorizontal } from 'lucide-react';
 import { createElement, type ReactElement } from 'react';

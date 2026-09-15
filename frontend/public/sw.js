@@ -1,5 +1,5 @@
 /*
- * Qalam service worker — ARCHITECTURE PLACEHOLDER (Epic F10).
+ * Umberleaf service worker — ARCHITECTURE PLACEHOLDER (Epic F10).
  *
  * This file is NOT registered by default. The app ships no offline synchronization (out of the
  * F10 scope). It documents the intended worker shape for a future PWA epic and is only activated
@@ -15,7 +15,7 @@
  */
 
 const OFFLINE_URL = '/offline.html';
-const CACHE = 'qalam-shell-v1';
+const CACHE = 'umberleaf-shell-v1';
 
 self.addEventListener('install', (event) => {
   // Pre-cache only the offline fallback so a future network-first navigation can degrade to it.

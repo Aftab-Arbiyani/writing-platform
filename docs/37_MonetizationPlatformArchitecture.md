@@ -184,7 +184,7 @@ experiences + reactivate/pause/resume + restore), **usage dashboard** (windows +
 per-feature), **credit dashboard** (balance + ledger + buy-credits), **billing history**
 (invoices + payments). Reuses the AF1 `ApiClient`, `Result`/`guardResult`, the design system
 (`QScaffold`/`QCard`/`QButton`/`QErrorView`), Riverpod codegen, and go_router. Gated by the
-`QALAM_ENABLE_MONETIZATION` compile flag + `feature.payments.enabled` runtime flag; entry from
+`UMBERLEAF_ENABLE_MONETIZATION` compile flag + `feature.payments.enabled` runtime flag; entry from
 Settings → Premium and deep-linkable `/billing/*`. See `qalam-mobile/docs/49`.
 
 ## 8. Admin implementation summary
@@ -231,7 +231,7 @@ hash. Provider secrets are env-only, blank-defaulted, inert until configured.
 ## 12. Manual testing guide
 
 1. **Enable:** set `feature.payments.enabled` on via `/admin/feature-flags`; build mobile with
-   `--dart-define=QALAM_ENABLE_MONETIZATION=true`. Set `STRIPE_SECRET_KEY` +
+   `--dart-define=UMBERLEAF_ENABLE_MONETIZATION=true`. Set `STRIPE_SECRET_KEY` +
    `STRIPE_WEBHOOK_SECRET` (and/or Apple/Google secrets) to activate providers.
 2. **Entitlements:** `GET /api/v1/monetization/entitlements` as a free user → `ai_writing`
    denied, `ai_budget` allowed. Grant an override via `POST /admin/monetization/overrides`

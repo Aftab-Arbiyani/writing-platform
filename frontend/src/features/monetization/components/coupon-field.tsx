@@ -1,5 +1,5 @@
-import { COUPON_CODE_MAX, normalizeCouponCode } from '@qalam/shared';
-import { QButton, QInput } from '@qalam/ui';
+import { COUPON_CODE_MAX, normalizeCouponCode } from '@umberleaf/shared';
+import { QButton, QInput } from '@umberleaf/ui';
 import { CheckCircle2, XCircle } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
 

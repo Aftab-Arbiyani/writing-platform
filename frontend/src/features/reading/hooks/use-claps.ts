@@ -1,4 +1,4 @@
-import { MAX_CLAPS_PER_USER_PER_PIECE } from '@qalam/shared';
+import { MAX_CLAPS_PER_USER_PER_PIECE } from '@umberleaf/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState } from 'react';
 

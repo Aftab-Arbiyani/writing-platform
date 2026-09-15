@@ -1,6 +1,6 @@
 import { Column, Entity, Index } from 'typeorm';
 
-import { QalamBaseEntity } from '../../../common/base/base.entity';
+import { AppBaseEntity } from '../../../common/base/base.entity';
 
 /**
  * An internal moderator note on a report — visible only to staff, never to the
@@ -8,7 +8,7 @@ import { QalamBaseEntity } from '../../../common/base/base.entity';
  */
 @Entity('report_notes')
 @Index('idx_report_notes_report', ['reportId', 'createdAt'])
-export class ReportNote extends QalamBaseEntity {
+export class ReportNote extends AppBaseEntity {
   @Column({ type: 'uuid' })
   reportId!: string;
 

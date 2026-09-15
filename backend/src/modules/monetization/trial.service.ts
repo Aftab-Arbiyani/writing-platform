@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { SubscriptionEventType } from '@qalam/shared';
-import type { PlanDefinition } from '@qalam/shared';
+import { SubscriptionEventType } from '@umberleaf/shared';
+import type { PlanDefinition } from '@umberleaf/shared';
 import { Repository } from 'typeorm';
 
 import { MonetizationConfigService } from './monetization.config-service';

@@ -1,4 +1,4 @@
-import { PaymentProvider, PaymentStatus, WebhookEventStatus } from '@qalam/shared';
+import { PaymentProvider, PaymentStatus, WebhookEventStatus } from '@umberleaf/shared';
 import type { Repository } from 'typeorm';
 
 import type { DomainEventBus } from '../../common/events/domain-event-bus';

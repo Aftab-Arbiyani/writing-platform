@@ -1,4 +1,4 @@
-import { ERROR_CODES } from '@qalam/shared';
+import { ERROR_CODES } from '@umberleaf/shared';
 import { act, renderHook } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactElement, ReactNode } from 'react';

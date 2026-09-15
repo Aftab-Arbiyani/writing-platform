@@ -1,4 +1,4 @@
-import type { RestorePurchasesResponse } from '@qalam/api-types';
+import type { RestorePurchasesResponse } from '@umberleaf/api-types';
 
 import { RestoreResultDto } from './dto/monetization-response.dto';
 import type { MonetizationController } from './monetization.controller';

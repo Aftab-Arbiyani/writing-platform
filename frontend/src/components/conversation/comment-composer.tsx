@@ -1,5 +1,5 @@
-import { COMMENT_MAX_LENGTH, COMMENT_MIN_LENGTH } from '@qalam/shared';
-import { QButton, QTextArea } from '@qalam/ui';
+import { COMMENT_MAX_LENGTH, COMMENT_MIN_LENGTH } from '@umberleaf/shared';
+import { QButton, QTextArea } from '@umberleaf/ui';
 import { type ReactElement, useState } from 'react';
 
 /**
@@ -10,7 +10,7 @@ import { type ReactElement, useState } from 'react';
  * `CreateCommentDto` — `{ body }` and nothing else. The parent comes from the URL. Editing
  * (`PATCH /comments/:id`) reuses it a third time, prefilled.
  *
- * **Length comes from `@qalam/shared`**, not from a number typed here: `COMMENT_MIN_LENGTH` /
+ * **Length comes from `@umberleaf/shared`**, not from a number typed here: `COMMENT_MIN_LENGTH` /
  * `COMMENT_MAX_LENGTH` are the same constants the DTO's `@Length` validator uses, so the client's
  * refusal and the server's cannot drift apart. `QTextArea` renders and `aria-describedby`-links the
  * message itself, so the disabled button always has a stated reason.

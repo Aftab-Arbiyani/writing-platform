@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { BillingInterval, DEFAULT_CURRENCY, PlanTier } from '@qalam/shared';
-import type { PlanDefinition } from '@qalam/shared';
+import { BillingInterval, DEFAULT_CURRENCY, PlanTier } from '@umberleaf/shared';
+import type { PlanDefinition } from '@umberleaf/shared';
 
 import { MonetizationConfigService } from './monetization.config-service';
 import { PlanNotFoundException } from './monetization.exceptions';

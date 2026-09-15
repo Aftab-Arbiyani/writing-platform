@@ -47,6 +47,19 @@ concurrency:
 # the browser builds (and thus visual rendering) are identical to what produced the baselines.
 env:
   PLAYWRIGHT_IMAGE: mcr.microsoft.com/playwright:v1.61.1-noble
+  # MinIO from quay.io, NOT Docker Hub, and pinned.
+  #
+  # `minio/minio` on Docker Hub now answers anonymous pulls with "pull access denied …
+  # repository does not exist or may require 'docker login'". It broke every job in this
+  # workflow at the first step, and the message reads like a typo'd image name, so the
+  # obvious "fix" is to retype `minio/minio` — which is exactly what does not work.
+  # quay.io is MinIO's own registry and still serves the community images anonymously.
+  #
+  # Pinned rather than `:latest` for the same reason PLAYWRIGHT_IMAGE is: an unpinned infra
+  # image is a dependency that can change under you between two runs of the same commit.
+  # Used by BOTH jobs below — one definition, because two copies of an image tag is the kind
+  # of pair that silently drifts.
+  MINIO_IMAGE: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
 
 jobs:
   web-e2e:
@@ -72,12 +85,12 @@ jobs:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_USER: qalam
-          POSTGRES_PASSWORD: qalam
-          POSTGRES_DB: qalam
+          POSTGRES_USER: umberleaf
+          POSTGRES_PASSWORD: umberleaf
+          POSTGRES_DB: umberleaf
         ports: ['5432:5432']
         options: >-
-          --health-cmd "pg_isready -U qalam"
+          --health-cmd "pg_isready -U umberleaf"
           --health-interval 10s --health-timeout 5s --health-retries 5
       redis:
         image: redis:7-alpine
@@ -87,13 +100,13 @@ jobs:
           --health-interval 10s --health-timeout 5s --health-retries 5
     env:
       NODE_ENV: test
-      DATABASE_URL: postgresql://qalam:qalam@localhost:5432/qalam
+      DATABASE_URL: postgresql://umberleaf:umberleaf@localhost:5432/umberleaf
       REDIS_URL: redis://localhost:6379
       JWT_ACCESS_SECRET: ci-access-secret-not-a-real-secret-000000
       JWT_REFRESH_SECRET: ci-refresh-secret-not-a-real-secret-00000
       S3_ENDPOINT: http://localhost:9000
       S3_REGION: us-east-1
-      S3_BUCKET: qalam-media
+      S3_BUCKET: umberleaf-media
       S3_ACCESS_KEY: minioadmin
       S3_SECRET_KEY: minioadmin
       SMTP_URL: smtp://localhost:1025
@@ -135,11 +148,11 @@ jobs:
         run: |
           docker run -d --name minio -p 9000:9000 \
             -e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=minioadmin \
-            minio/minio server /data
+            "$MINIO_IMAGE" server /data
           for i in $(seq 1 30); do
             curl -sf http://localhost:9000/minio/health/ready && break || sleep 2
           done
-          aws --endpoint-url http://localhost:9000 s3 mb s3://qalam-media || true
+          aws --endpoint-url http://localhost:9000 s3 mb s3://umberleaf-media || true
         env:
           AWS_ACCESS_KEY_ID: minioadmin
           AWS_SECRET_ACCESS_KEY: minioadmin
@@ -177,7 +190,7 @@ jobs:
           VITE_ENABLE_COLLABORATION: 'true'
           VITE_ENABLE_MONETIZATION: 'true'
         run: |
-          pnpm --filter "@qalam/*" build
+          pnpm --filter "@umberleaf/*" build
           pnpm --filter frontend build
           pnpm --filter admin build
 
@@ -275,12 +288,12 @@ jobs:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_USER: qalam
-          POSTGRES_PASSWORD: qalam
-          POSTGRES_DB: qalam
+          POSTGRES_USER: umberleaf
+          POSTGRES_PASSWORD: umberleaf
+          POSTGRES_DB: umberleaf
         ports: ['5432:5432']
         options: >-
-          --health-cmd "pg_isready -U qalam"
+          --health-cmd "pg_isready -U umberleaf"
           --health-interval 10s --health-timeout 5s --health-retries 5
       redis:
         image: redis:7-alpine
@@ -290,13 +303,13 @@ jobs:
           --health-interval 10s --health-timeout 5s --health-retries 5
     env:
       NODE_ENV: test
-      DATABASE_URL: postgresql://qalam:qalam@localhost:5432/qalam
+      DATABASE_URL: postgresql://umberleaf:umberleaf@localhost:5432/umberleaf
       REDIS_URL: redis://localhost:6379
       JWT_ACCESS_SECRET: ci-access-secret-not-a-real-secret-000000
       JWT_REFRESH_SECRET: ci-refresh-secret-not-a-real-secret-00000
       S3_ENDPOINT: http://localhost:9000
       S3_REGION: us-east-1
-      S3_BUCKET: qalam-media
+      S3_BUCKET: umberleaf-media
       S3_ACCESS_KEY: minioadmin
       S3_SECRET_KEY: minioadmin
       SMTP_URL: smtp://localhost:1025
@@ -335,11 +348,11 @@ jobs:
         run: |
           docker run -d --name minio -p 9000:9000 \
             -e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=minioadmin \
-            minio/minio server /data
+            "$MINIO_IMAGE" server /data
           for i in $(seq 1 30); do
             curl -sf http://localhost:9000/minio/health/ready && break || sleep 2
           done
-          aws --endpoint-url http://localhost:9000 s3 mb s3://qalam-media || true
+          aws --endpoint-url http://localhost:9000 s3 mb s3://umberleaf-media || true
         env:
           AWS_ACCESS_KEY_ID: minioadmin
           AWS_SECRET_ACCESS_KEY: minioadmin
@@ -377,7 +390,7 @@ jobs:
           VITE_ENABLE_COLLABORATION: 'true'
           VITE_ENABLE_MONETIZATION: 'true'
         run: |
-          pnpm --filter "@qalam/*" build
+          pnpm --filter "@umberleaf/*" build
           pnpm --filter frontend build
           pnpm --filter admin build
 
@@ -420,8 +433,25 @@ jobs:
       # webkit's a11y failures hid in exactly that gap for two runs).
       - name: Run @visual in the pinned image
         run: |
+          # `=all`, NOT a bare `--update-snapshots`. In Playwright 1.49+ the bare flag means
+          # mode `changed`, and "changed" is judged by the SAME comparator the tests use — so a
+          # baseline only gets rewritten if it already exceeds `maxDiffPixelRatio: 0.02`.
+          #
+          # That makes any sub-threshold change invisible to BOTH verification and regeneration,
+          # permanently. This is not hypothetical: the Qalam→Umberleaf rename changed the
+          # wordmark in the top bar of every frontend page, and 64 visual tests still PASSED,
+          # because a wordmark is a small fraction of a full-page screenshot. A regenerate run
+          # would have rewritten nothing, uploaded an artifact of untouched baselines, and
+          # reported success while leaving the old brand asserted as correct.
+          #
+          # It is also how the whole set rotted once before: 71 of 104 baselines were found stale
+          # in 2026-09, which is why they were deleted and re-minted rather than updated.
+          #
+          # `all` rewrites every baseline from the actual render, unconditionally. That is the
+          # only mode that makes "regenerate" mean regenerate. Review the artifact — `all` will
+          # happily bake in a real regression too.
           UPDATE=""
-          if [ "${{ inputs.update_visual_baselines }}" = "true" ]; then UPDATE="--update-snapshots"; fi
+          if [ "${{ inputs.update_visual_baselines }}" = "true" ]; then UPDATE="--update-snapshots=all"; fi
           docker run --rm --network host --user "$(id -u):$(id -g)" -e HOME=/tmp \
             -e CI=1 -e E2E_REUSE_SERVER=1 \
             -e E2E_API_URL=http://localhost:4000/api/v1 \

@@ -6,8 +6,8 @@ import {
   PaymentStatus,
   PurchaseKind,
   WebhookEventStatus,
-} from '@qalam/shared';
-import type { BillingInterval, PlanTier } from '@qalam/shared';
+} from '@umberleaf/shared';
+import type { BillingInterval, PlanTier } from '@umberleaf/shared';
 import { Repository } from 'typeorm';
 
 import type { CursorPayload } from '../../common/pagination/cursor.util';

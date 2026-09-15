@@ -1,4 +1,4 @@
-import type { StoryAnalysisStatus, StoryEdgeType, StoryNodeType } from '@qalam/shared';
+import type { StoryAnalysisStatus, StoryEdgeType, StoryNodeType } from '@umberleaf/shared';
 
 /** A grounding reference for a structured claim — a chapter cue + supporting quote. */
 export interface StoryEvidenceRef {

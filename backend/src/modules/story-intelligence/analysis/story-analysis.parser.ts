@@ -4,7 +4,7 @@ import {
   StoryEdgeType,
   StoryEventKind,
   StoryNodeType,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 import type { EdgeUpsert, NodeUpsert, ParsedAnalysis } from '../story.types';
 import {

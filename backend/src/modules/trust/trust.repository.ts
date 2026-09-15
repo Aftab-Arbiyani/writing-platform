@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { RestrictionScope, RestrictionType, StrikeSeverity } from '@qalam/shared';
+import type { RestrictionScope, RestrictionType, StrikeSeverity } from '@umberleaf/shared';
 import { DataSource } from 'typeorm';
 import type { Repository } from 'typeorm';
 

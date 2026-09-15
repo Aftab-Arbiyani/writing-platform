@@ -1,4 +1,4 @@
-import { Role } from '@qalam/shared';
+import { Role } from '@umberleaf/shared';
 
 import { decodeAccessToken } from '@/lib/jwt';
 import { useAuthStore } from '@/stores/auth.store';

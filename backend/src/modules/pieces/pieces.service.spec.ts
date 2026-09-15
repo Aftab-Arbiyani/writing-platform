@@ -1,4 +1,4 @@
-import { PieceStatus, Visibility } from '@qalam/shared';
+import { PieceStatus, Visibility } from '@umberleaf/shared';
 import type { EntityManager } from 'typeorm';
 
 import type { TransactionRunner } from '../../common/database/transaction-runner';

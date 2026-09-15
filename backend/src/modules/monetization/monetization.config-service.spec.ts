@@ -6,7 +6,7 @@ import {
   UNIVERSAL_PLAN_FEATURES,
   UNLIMITED_SEATS,
   resolvePlanLimit,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 import { DEFAULT_CONFIG, MonetizationConfigService } from './monetization.config-service';
 import type { SettingsService } from '../settings/settings.service';

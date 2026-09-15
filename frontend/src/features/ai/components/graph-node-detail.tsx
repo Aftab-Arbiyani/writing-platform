@@ -1,5 +1,5 @@
-import type { StoryGraphEdge, StoryGraphNode } from '@qalam/api-types';
-import { QButton, QTag } from '@qalam/ui';
+import type { StoryGraphEdge, StoryGraphNode } from '@umberleaf/api-types';
+import { QButton, QTag } from '@umberleaf/ui';
 import { ArrowLeft, Link2, Quote } from 'lucide-react';
 import type { ReactElement } from 'react';
 

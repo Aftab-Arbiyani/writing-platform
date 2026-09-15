@@ -1,4 +1,4 @@
-import { AppealStatus } from '@qalam/shared';
+import { AppealStatus } from '@umberleaf/shared';
 import { Select, Tag, type TableColumnsType } from 'antd';
 import { Eye } from 'lucide-react';
 import { useState, type ReactElement } from 'react';

@@ -6,7 +6,7 @@ import {
   Visibility,
   permissionSatisfies,
   type PolicyDecision,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 import {
   ACTION_BASE_PERMISSION,

@@ -17,7 +17,7 @@
 | **Route**          | `/p/:slug`, lazy, public. Registered ahead of the bare `:handle` route so a static segment wins.                                                                                                                                |
 | **Cold load**      | Loads through the additive `GET /pieces/by-slug/:slug` (B1). A UUID in the URL is sniffed and dispatched to `GET /pieces/:id` instead — the one case that produces one is an unpublished draft, which only its author can open. |
 | **Content**        | TipTap JSON → React elements, **never** HTML. The node/mark set mirrors the server's sanitizer whitelist exactly; unknown nodes are dropped, not guessed at.                                                                    |
-| **Typography**     | Shared `.qalam-prose` (identical to the editor's), plus reader-adjustable text size / line spacing / column width, persisted per device.                                                                                        |
+| **Typography**     | Shared `.umberleaf-prose` (identical to the editor's), plus reader-adjustable text size / line spacing / column width, persisted per device.                                                                                    |
 | **RTL + Nastaliq** | `dir` and leading flow from the piece's own language. Nastaliq leading is floored at 2.1 regardless of the reader's spacing choice, and the Nastaliq face is lazy-loaded on demand.                                             |
 | **Engagement**     | Like, bookmark and copy-link share — optimistic, with rollback and server reconciliation. Claps/responses render as read-only counts (see §4).                                                                                  |
 | **Author card**    | Avatar, bio, follower count and an optimistic Follow, sharing the profile page's cache key so following on either surface updates both. Degrades to the piece's own byline on failure.                                          |
@@ -82,7 +82,7 @@ other specs publish) are masked; everything else is compared.
 **Dark mode was rendered, not reasoned about** ([e2e/10 §8.4](./e2e/10_UIQuality.md)): the reader
 is scanned by axe and screenshotted in the `frontend-dark` project. No new contrast findings.
 
-### 2.3 The `.qalam-prose` change is provably inert at defaults
+### 2.3 The `.umberleaf-prose` change is provably inert at defaults
 
 Reader preferences work by indirecting the prose size and leading through two CSS variables, and
 by expressing heading sizes as ratios of the body size. The editor never sets those variables, so

@@ -1,6 +1,6 @@
 import { Column, Entity, Index } from 'typeorm';
 
-import { QalamBaseEntity } from '../../../common/base/base.entity';
+import { AppBaseEntity } from '../../../common/base/base.entity';
 
 /**
  * A single platform configuration entry (E12.8) — the generic key-value row that
@@ -20,7 +20,7 @@ import { QalamBaseEntity } from '../../../common/base/base.entity';
  */
 @Entity('settings')
 @Index('idx_settings_category', ['category'])
-export class Setting extends QalamBaseEntity {
+export class Setting extends AppBaseEntity {
   /** Dot-cased configuration key, e.g. `platform.name`, `auth.registration.enabled`. */
   @Column({ type: 'varchar', length: 120, unique: true })
   key!: string;

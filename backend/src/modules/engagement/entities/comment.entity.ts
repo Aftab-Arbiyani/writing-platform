@@ -1,6 +1,6 @@
 import { Column, Entity, Index } from 'typeorm';
 
-import { QalamAuditEntity } from '../../../common/base/audit.entity';
+import { AppAuditEntity } from '../../../common/base/audit.entity';
 
 /**
  * A comment on a piece (E7 — net-new; docs 04 records the table addition). A
@@ -10,7 +10,7 @@ import { QalamAuditEntity } from '../../../common/base/audit.entity';
  * denormalized (top-level = 1, reply = parent.depth + 1) so the reply-depth rule
  * is enforced with a single read.
  *
- * Soft-deletable ({@link QalamAuditEntity}): a deleted comment keeps its node so
+ * Soft-deletable ({@link AppAuditEntity}): a deleted comment keeps its node so
  * the thread renders "This comment has been deleted." and its replies stay
  * visible. `editedAt` records the last edit (comment editing history — the
  * updated timestamp); it stays null until the first edit.
@@ -22,7 +22,7 @@ import { QalamAuditEntity } from '../../../common/base/audit.entity';
 @Index('idx_comments_piece', ['pieceId', 'createdAt'])
 @Index('idx_comments_parent', ['parentId', 'createdAt'])
 @Index('idx_comments_author', ['authorId'])
-export class Comment extends QalamAuditEntity {
+export class Comment extends AppAuditEntity {
   @Column({ type: 'uuid' })
   pieceId!: string;
 

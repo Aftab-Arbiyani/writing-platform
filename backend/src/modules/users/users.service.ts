@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { UserStatus, USERNAME_MAX, USERNAME_MIN } from '@qalam/shared';
+import { UserStatus, USERNAME_MAX, USERNAME_MIN } from '@umberleaf/shared';
 import { randomInt } from 'node:crypto';
 import type { EntityManager } from 'typeorm';
 

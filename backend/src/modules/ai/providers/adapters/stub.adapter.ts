@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
-import { AiFinishReason, AiProvider } from '@qalam/shared';
-import type { AiTokenUsage } from '@qalam/shared';
+import { AiFinishReason, AiProvider } from '@umberleaf/shared';
+import type { AiTokenUsage } from '@umberleaf/shared';
 
 import { aiConfig } from '../../../../config/ai.config';
 import { AI_CHARS_PER_TOKEN } from '../../ai.constants';

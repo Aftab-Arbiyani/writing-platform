@@ -1,4 +1,4 @@
-import { QCard } from '@qalam/ui';
+import { QCard } from '@umberleaf/ui';
 import { Table, type TableColumnsType } from 'antd';
 import { Fingerprint, Gauge, KeyRound, Lock, ShieldAlert, Timer, UserX } from 'lucide-react';
 import type { ReactElement } from 'react';

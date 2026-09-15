@@ -1,5 +1,5 @@
-import { SearchSort, SearchType } from '@qalam/shared';
-import { QButton, QDrawer, QSelect } from '@qalam/ui';
+import { SearchSort, SearchType } from '@umberleaf/shared';
+import { QButton, QDrawer, QSelect } from '@umberleaf/ui';
 import { SlidersHorizontal, X } from 'lucide-react';
 import type { ReactElement } from 'react';
 

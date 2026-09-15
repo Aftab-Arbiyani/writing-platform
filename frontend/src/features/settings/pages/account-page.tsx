@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { QButton, QSpinner, useConfirm, useToast } from '@qalam/ui';
+import { QButton, QSpinner, useConfirm, useToast } from '@umberleaf/ui';
 import { Lock, LogOut } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { useForm } from 'react-hook-form';
@@ -137,7 +137,7 @@ export function AccountPage(): ReactElement {
       <section className="border-t border-line pt-6">
         <h3 className="mb-1 text-sm font-semibold text-ink">Sessions</h3>
         <p className="mb-3 text-sm text-ink-secondary">
-          Sign out of Qalam on every device, including this one.
+          Sign out of Umberleaf on every device, including this one.
         </p>
         <QButton
           variant="secondary"

@@ -1,7 +1,7 @@
 {
-  "name": "@qalam/shared",
+  "name": "@umberleaf/shared",
   "version": "0.1.0",
-  "description": "Qalam domain vocabulary: enums, error-code catalogue, product limits, regexes, API envelope types. Zero runtime dependencies.",
+  "description": "Umberleaf domain vocabulary: enums, error-code catalogue, product limits, regexes, API envelope types. Zero runtime dependencies.",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -24,7 +24,7 @@
     "lint": "eslint ."
   },
   "devDependencies": {
-    "@qalam/config": "workspace:*",
+    "@umberleaf/config": "workspace:*",
     "eslint": "^9.0.0",
     "tsup": "^8.0.0",
     "typescript": "^5.6.0"

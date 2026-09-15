@@ -218,7 +218,7 @@ dedicated E2E database; the e2e-fixtures seed also hard-refuses `NODE_ENV=produc
 - **When a screen changes:** update its page object (one file), not the specs.
 - **When a testid is added/renamed:** update the inventory in `e2e/pages/README.md` and the page object
   in the same PR ([05 §3.4](./05_Selectors.md)).
-- **When the frozen `v1` API changes:** the `api` fixture types (from `@qalam/api-types`) break `tsc` —
+- **When the frozen `v1` API changes:** the `api` fixture types (from `@umberleaf/api-types`) break `tsc` —
   fix them; that's the contract-drift alarm working as designed ([02 §8](./02_Conventions.md)).
 - **Per phase:** update the coverage status and, on phase completion, write the phase note and flip the
   gate policy if due ([06](./06_PhasePlan.md), [07 §6](./07_CI.md)).

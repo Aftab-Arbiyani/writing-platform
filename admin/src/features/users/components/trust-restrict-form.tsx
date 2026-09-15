@@ -1,5 +1,5 @@
-import { RestrictionScope, RestrictionType } from '@qalam/shared';
-import { QButton, QCard, QSectionHeader, useToast } from '@qalam/ui';
+import { RestrictionScope, RestrictionType } from '@umberleaf/shared';
+import { QButton, QCard, QSectionHeader, useToast } from '@umberleaf/ui';
 import { useState, type ReactElement } from 'react';
 
 import { ConfirmationDialog } from '@/components/confirmation-dialog';

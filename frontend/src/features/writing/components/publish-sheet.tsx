@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ERROR_CODES, TAGS_MAX_PER_PIECE, Visibility } from '@qalam/shared';
-import { QButton, QDrawer, QSelect } from '@qalam/ui';
+import { ERROR_CODES, TAGS_MAX_PER_PIECE, Visibility } from '@umberleaf/shared';
+import { QButton, QDrawer, QSelect } from '@umberleaf/ui';
 import { Radio } from 'antd';
 import { useState, type ReactElement } from 'react';
 import { Controller, useForm, type UseFormReturn } from 'react-hook-form';

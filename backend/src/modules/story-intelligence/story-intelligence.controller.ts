@@ -21,7 +21,7 @@ import {
   ApiProduces,
   ApiTags,
 } from '@nestjs/swagger';
-import { PERMISSIONS } from '@qalam/shared';
+import { PERMISSIONS } from '@umberleaf/shared';
 import type { Request, Response } from 'express';
 
 import { RateLimit } from '../../common/decorators/rate-limit.decorator';

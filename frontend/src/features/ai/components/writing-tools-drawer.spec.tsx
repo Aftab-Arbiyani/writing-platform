@@ -1,5 +1,5 @@
-import { AiFeature } from '@qalam/shared';
-import type { AiFeaturesResponse } from '@qalam/api-types';
+import { AiFeature } from '@umberleaf/shared';
+import type { AiFeaturesResponse } from '@umberleaf/api-types';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ReactNode } from 'react';

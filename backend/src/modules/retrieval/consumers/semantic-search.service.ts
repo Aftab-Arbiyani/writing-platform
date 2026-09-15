@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { RetrievalIntent } from '@qalam/shared';
+import { RetrievalIntent } from '@umberleaf/shared';
 
 import type { SemanticSearchDto } from '../dto/retrieval-request.dto';
 import type { SemanticSearchResponseDto } from '../dto/retrieval-response.dto';

@@ -13,7 +13,7 @@
  * labels a pack somebody really bought, and `NotificationType.CreditsLow` still labels a
  * notification really sent. Neither can be produced any more.
  *
- * Like the rest of `@qalam/shared` this is zero-dependency pure vocabulary — `as const`
+ * Like the rest of `@umberleaf/shared` this is zero-dependency pure vocabulary — `as const`
  * objects + derived union types (JSON-safe wire strings) + pure helpers + guardrail
  * constants. Sets are deliberately OPEN (varchar columns) where a new plan/provider/
  * feature must land without a migration, so future revenue models (marketplace, team/

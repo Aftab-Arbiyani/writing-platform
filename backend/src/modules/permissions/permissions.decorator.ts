@@ -1,6 +1,6 @@
 import { SetMetadata, UseGuards, applyDecorators } from '@nestjs/common';
 import { ApiExtension } from '@nestjs/swagger';
-import type { PermissionCode } from '@qalam/shared';
+import type { PermissionCode } from '@umberleaf/shared';
 
 import { PERMISSIONS_KEY } from '../../common/constants/metadata.constants';
 import { PermissionGuard } from './permission.guard';

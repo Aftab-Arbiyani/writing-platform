@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { ShareChannel } from '@qalam/shared';
+import type { ShareChannel } from '@umberleaf/shared';
 import { DataSource } from 'typeorm';
 import type { EntityManager, Repository } from 'typeorm';
 

@@ -35,7 +35,7 @@
 #   MIGRATION_LOCK_WAIT     seconds to wait for the lock (default: 120)
 #   USE_COMPOSE_PSQL=1      route psql through `dc exec -T postgres` (on-VM; stack up)
 #   PSQL_DSN                host-reachable DSN for psql  (default: $DATABASE_URL)
-#   POSTGRES_USER/DB        used in compose-psql mode    (default: qalam / qalam)
+#   POSTGRES_USER/DB        used in compose-psql mode    (default: umberleaf / umberleaf)
 #   APP_VERSION             recorded in the audit row    (optional)
 #   DEPLOY_OPERATOR         operator recorded in audit   (default: $USER)
 # ══════════════════════════════════════════════════════════════════════════
@@ -80,7 +80,7 @@ fi
 # ── psql invocation (host DSN vs compose exec) ──────────────────────────────
 psql_cmd() {
   if [ "${USE_COMPOSE_PSQL}" = "1" ]; then
-    dc exec -T postgres psql -U "${POSTGRES_USER:-qalam}" -d "${POSTGRES_DB:-qalam}" \
+    dc exec -T postgres psql -U "${POSTGRES_USER:-umberleaf}" -d "${POSTGRES_DB:-umberleaf}" \
       -v ON_ERROR_STOP=1 -qtA "$@"
   else
     psql "${PSQL_DSN}" -v ON_ERROR_STOP=1 -qtA "$@"
@@ -114,8 +114,8 @@ release_lock() {
 }
 
 acquire_lock() {
-  _LOCK_FIFO="$(mktemp -u "${TMPDIR:-/tmp}/qalam-miglock.XXXXXX")"
-  _LOCK_STATUS="$(mktemp "${TMPDIR:-/tmp}/qalam-migstat.XXXXXX")"
+  _LOCK_FIFO="$(mktemp -u "${TMPDIR:-/tmp}/umberleaf-miglock.XXXXXX")"
+  _LOCK_STATUS="$(mktemp "${TMPDIR:-/tmp}/umberleaf-migstat.XXXXXX")"
   mkfifo "${_LOCK_FIFO}"
   trap release_lock EXIT INT TERM
 
@@ -125,10 +125,10 @@ acquire_lock() {
   _LOCK_PID=$!
 
   log "acquiring advisory lock ${MIGRATION_LOCK_KEY} (waiting up to ${MIGRATION_LOCK_WAIT}s)"
-  printf 'SELECT pg_advisory_lock(%s);\n\\echo QALAM_LOCK_ACQUIRED\n' "${MIGRATION_LOCK_KEY}" >&9
+  printf 'SELECT pg_advisory_lock(%s);\n\\echo UMBERLEAF_LOCK_ACQUIRED\n' "${MIGRATION_LOCK_KEY}" >&9
 
   local waited=0
-  until grep -q 'QALAM_LOCK_ACQUIRED' "${_LOCK_STATUS}" 2>/dev/null; do
+  until grep -q 'UMBERLEAF_LOCK_ACQUIRED' "${_LOCK_STATUS}" 2>/dev/null; do
     if ! kill -0 "${_LOCK_PID}" 2>/dev/null; then
       err "lock session exited before acquiring the lock:"
       cat "${_LOCK_STATUS}" >&2 2>/dev/null || true

@@ -5,7 +5,7 @@ import {
   AiFeature,
   AiMessageRole,
   AiProvider,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 import { Type } from 'class-transformer';
 import {
   IsArray,

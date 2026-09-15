@@ -1,6 +1,6 @@
 # 19 — Deployment Guide (Backend)
 
-Operational guide for deploying the Qalam backend to production. Complements the
+Operational guide for deploying the Umberleaf backend to production. Complements the
 strategy in `15_DeploymentStrategy.md` (the "why") with the concrete "how" as of
 Epic 12 (production hardening). Authoritative source of decisions: `00`.
 
@@ -43,7 +43,7 @@ Built from the repo root; see `infrastructure/docker/backend.Dockerfile`
 `HEALTHCHECK` hitting `/health`).
 
 ```bash
-docker build -f infrastructure/docker/backend.Dockerfile -t ghcr.io/qalam/qalam-backend:sha-<12> .
+docker build -f infrastructure/docker/backend.Dockerfile -t ghcr.io/qalam/umberleaf-backend:sha-<12> .
 ```
 
 Tagging (docs 15 §2.3): immutable `sha-<12>` is the only deploy ref; `latest` is

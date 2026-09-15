@@ -1,4 +1,4 @@
-import { DEFAULT_PLAN_LIMITS, PlanTier } from '@qalam/shared';
+import { DEFAULT_PLAN_LIMITS, PlanTier } from '@umberleaf/shared';
 
 import type { EntitlementService } from '../monetization/entitlement.service';
 import { SnapshotHistoryLimitedException } from '../monetization/monetization.exceptions';

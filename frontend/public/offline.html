@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="noindex" />
-    <title>Offline · Qalam</title>
+    <title>Offline · Umberleaf</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <style>
       /* Self-contained: this page must render with NO network (it is the service-worker fallback). */
@@ -27,8 +27,14 @@
           --line: #2c2723;
         }
       }
-      * { box-sizing: border-box; }
-      html, body { height: 100%; margin: 0; }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+      }
       body {
         display: grid;
         place-items: center;
@@ -47,27 +53,49 @@
         padding: 2.5rem 2rem;
       }
       .mark {
-        width: 56px; height: 56px; border-radius: 14px;
-        background: var(--accent); color: #fff;
-        display: grid; place-items: center; margin: 0 auto 1.25rem;
-        font-size: 30px; line-height: 1;
+        width: 56px;
+        height: 56px;
+        border-radius: 14px;
+        background: var(--accent);
+        color: #fff;
+        display: grid;
+        place-items: center;
+        margin: 0 auto 1.25rem;
+        font-size: 30px;
+        line-height: 1;
       }
-      h1 { font-size: 1.5rem; margin: 0 0 0.5rem; }
-      p { color: var(--ink-secondary); margin: 0 0 1.5rem; line-height: 1.6; }
+      h1 {
+        font-size: 1.5rem;
+        margin: 0 0 0.5rem;
+      }
+      p {
+        color: var(--ink-secondary);
+        margin: 0 0 1.5rem;
+        line-height: 1.6;
+      }
       button {
-        font: inherit; cursor: pointer;
-        background: var(--accent); color: #fff;
-        border: none; border-radius: 10px;
+        font: inherit;
+        cursor: pointer;
+        background: var(--accent);
+        color: #fff;
+        border: none;
+        border-radius: 10px;
         padding: 0.65rem 1.4rem;
       }
-      button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+      button:focus-visible {
+        outline: 2px solid var(--ink);
+        outline-offset: 2px;
+      }
     </style>
   </head>
   <body>
     <main>
       <div class="mark" aria-hidden="true">&#1602;</div>
       <h1>You&rsquo;re offline</h1>
-      <p>Check your connection — your work is safe. Qalam will reconnect automatically once you&rsquo;re back online.</p>
+      <p>
+        Check your connection — your work is safe. Umberleaf will reconnect automatically once
+        you&rsquo;re back online.
+      </p>
       <button type="button" onclick="location.reload()">Try again</button>
     </main>
   </body>

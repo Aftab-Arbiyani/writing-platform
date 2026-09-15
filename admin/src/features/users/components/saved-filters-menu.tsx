@@ -1,4 +1,4 @@
-import { QButton } from '@qalam/ui';
+import { QButton } from '@umberleaf/ui';
 import { Input, Popover } from 'antd';
 import { Bookmark, Trash2 } from 'lucide-react';
 import { useState, type ReactElement } from 'react';

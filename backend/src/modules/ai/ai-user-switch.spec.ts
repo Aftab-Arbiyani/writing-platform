@@ -4,7 +4,7 @@ import {
   ERROR_CODES,
   FLAGGED_AI_FEATURES,
   aiFeatureFlagKey,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 import type { SettingsService } from '../settings/settings.service';
 import type { SettingsService as UserPreferencesService } from '../users/settings.service';

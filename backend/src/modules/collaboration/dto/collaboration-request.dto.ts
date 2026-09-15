@@ -7,8 +7,8 @@ import {
   MAX_SUGGESTION_LENGTH,
   PresenceState,
   SuggestionStatus,
-} from '@qalam/shared';
-import type { StoryRole } from '@qalam/shared';
+} from '@umberleaf/shared';
+import type { StoryRole } from '@umberleaf/shared';
 import { Type } from 'class-transformer';
 import {
   IsArray,

@@ -1,4 +1,4 @@
-import { QAvatar, QButton, useToast } from '@qalam/ui';
+import { QAvatar, QButton, useToast } from '@umberleaf/ui';
 import { Camera } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactElement } from 'react';
 

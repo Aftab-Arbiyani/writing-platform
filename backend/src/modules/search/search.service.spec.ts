@@ -1,4 +1,4 @@
-import { SearchSort, SearchType } from '@qalam/shared';
+import { SearchSort, SearchType } from '@umberleaf/shared';
 
 import type { TaxonomyService } from '../taxonomy/taxonomy.service';
 import type { AutocompleteQueryDto } from './dto/autocomplete-query.dto';

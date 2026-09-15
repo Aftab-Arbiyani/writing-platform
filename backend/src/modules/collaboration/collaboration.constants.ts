@@ -1,5 +1,5 @@
-import { POLICY_ACTIONS } from '@qalam/shared';
-import type { PolicyActionCode } from '@qalam/shared';
+import { POLICY_ACTIONS } from '@umberleaf/shared';
+import type { PolicyActionCode } from '@umberleaf/shared';
 
 /**
  * Collaboration module constants (AF6) — module-local vocabulary kept out of the

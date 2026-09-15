@@ -27,8 +27,8 @@ Data-protection procedures for production. Targets (docs 15 §9): **RPO ≤ 5 mi
 Manual on-demand base backup (example, pgBackRest):
 
 ```bash
-pgbackrest --stanza=qalam --type=full backup
-pgbackrest --stanza=qalam info      # verify the new backup is listed
+pgbackrest --stanza=umberleaf --type=full backup
+pgbackrest --stanza=umberleaf info      # verify the new backup is listed
 ```
 
 ## 3. Restore procedures
@@ -38,7 +38,7 @@ pgbackrest --stanza=qalam info      # verify the new backup is listed
 ```bash
 # 1. Provision Postgres 16, stop any app writers.
 # 2. Restore the latest base + replay WAL to the newest consistent point.
-pgbackrest --stanza=qalam restore
+pgbackrest --stanza=umberleaf restore
 # 3. Start Postgres; verify.
 psql "$DATABASE_URL" -c "SELECT count(*) FROM users;"
 # 4. Point the app at the restored DB; run pending migrations; smoke /health/ready.
@@ -47,7 +47,7 @@ psql "$DATABASE_URL" -c "SELECT count(*) FROM users;"
 ### 3b. Point-in-time recovery (bad migration / data corruption at time T)
 
 ```bash
-pgbackrest --stanza=qalam --type=time --target="2026-07-09 14:32:00" restore
+pgbackrest --stanza=umberleaf --type=time --target="2026-07-09 14:32:00" restore
 ```
 
 Use for "a deploy at 14:35 corrupted data" — recover to 14:32, then re-apply good

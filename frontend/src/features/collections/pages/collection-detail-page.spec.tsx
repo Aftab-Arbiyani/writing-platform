@@ -1,4 +1,4 @@
-import { Role, Visibility } from '@qalam/shared';
+import { Role, Visibility } from '@umberleaf/shared';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';

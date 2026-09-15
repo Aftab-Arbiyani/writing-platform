@@ -1,5 +1,5 @@
 /**
- * Domain enums for the Qalam platform.
+ * Domain enums for the Umberleaf platform.
  *
  * Implemented as `as const` objects + derived union types instead of TS `enum`
  * on purpose:
@@ -323,7 +323,7 @@ export type DiscoverPieceKind = (typeof DiscoverPieceKind)[keyof typeof Discover
  * How a piece was shared — native PG enum `share_channel` (a closed, stable
  * domain, docs 04 §1.7). Phase 1 tracks the share COUNT only; there is no
  * analytics dashboard yet (E7 social scope, ADR §10):
- * - `internal`  — reshared inside Qalam,
+ * - `internal`  — reshared inside Umberleaf,
  * - `external`  — sent to an external app/social network,
  * - `copy_link` — the canonical URL was copied to the clipboard.
  */

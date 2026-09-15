@@ -16,7 +16,7 @@
 # there is no old container to "keep"; deterministic rollback is the recovery).
 #
 # Config (env):
-#   BACKEND_IMAGE            image to deploy (default: ghcr.io/qalam/qalam-backend:latest)
+#   BACKEND_IMAGE            image to deploy (default: ghcr.io/qalam/umberleaf-backend:latest)
 #   DEPLOY_HEALTH_TIMEOUT    seconds to wait for /health/ready (default: 60, docs 15 §6)
 #   DEPLOY_HEALTH_INTERVAL   poll interval seconds (default: 3)
 #   SMOKE_BASE_URL           API base URL (default: http://localhost:4000)
@@ -27,7 +27,7 @@
 #   DEPLOY_OPERATOR          operator name for the audit line (default: $USER)
 #
 # ── EXTENSION POINTS (NOT implemented — single-VM Phase 1 is single-color) ──
-# Blue/green: template a second compose project (COMPOSE_PROJECT_NAME=qalam-green
+# Blue/green: template a second compose project (COMPOSE_PROJECT_NAME=umberleaf-green
 #   with backend published on an alternate host port), bring "green" up, health-gate
 #   + smoke it, then flip the nginx upstream (infrastructure/nginx) from blue→green
 #   and stop blue. Rollback = flip the upstream back. Keep migrations expand-contract
@@ -42,7 +42,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=../lib/common.sh
 . "${SCRIPT_DIR}/../lib/common.sh"
 
-BACKEND_IMAGE="${BACKEND_IMAGE:-ghcr.io/qalam/qalam-backend:latest}"
+BACKEND_IMAGE="${BACKEND_IMAGE:-ghcr.io/qalam/umberleaf-backend:latest}"
 DEPLOY_HEALTH_TIMEOUT="${DEPLOY_HEALTH_TIMEOUT:-60}"
 DEPLOY_HEALTH_INTERVAL="${DEPLOY_HEALTH_INTERVAL:-3}"
 SMOKE_BASE_URL="${SMOKE_BASE_URL:-http://localhost:4000}"
@@ -54,7 +54,7 @@ usage() {
   cat <<'EOF'
 deploy.sh — health-gated single-VM compose deploy.
 
-Usage: BACKEND_IMAGE=ghcr.io/qalam/qalam-backend:sha-abc123 deploy.sh [--help]
+Usage: BACKEND_IMAGE=ghcr.io/qalam/umberleaf-backend:sha-abc123 deploy.sh [--help]
 
 Key env: BACKEND_IMAGE, DEPLOY_HEALTH_TIMEOUT, EXPECTED_VERSION,
          SKIP_MIGRATIONS=1, SKIP_SMOKE=1, MIGRATE_CMD, DEPLOY_OPERATOR.

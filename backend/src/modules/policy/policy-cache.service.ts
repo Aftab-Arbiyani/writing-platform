@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { POLICY_DECISION_CACHE_TTL_SECONDS, type PolicyDecision } from '@qalam/shared';
+import { POLICY_DECISION_CACHE_TTL_SECONDS, type PolicyDecision } from '@umberleaf/shared';
 
 interface CacheEntry {
   decision: PolicyDecision;

@@ -1,4 +1,4 @@
-import { QButton } from '@qalam/ui';
+import { QButton } from '@umberleaf/ui';
 import { Clock, Trash2 } from 'lucide-react';
 import type { ReactElement } from 'react';
 

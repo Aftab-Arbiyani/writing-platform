@@ -7,11 +7,11 @@ import {
   PEN_NAME_MIN,
   SOCIAL_LINK_URL_MAX,
   WEBSITE_URL_MAX,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 import { z } from 'zod';
 
 /**
- * Edit-profile schema (docs/33 §2) — built from the SAME `@qalam/shared` atoms the backend
+ * Edit-profile schema (docs/33 §2) — built from the SAME `@umberleaf/shared` atoms the backend
  * `UpdateProfileDto` validates against, so the two cannot drift. `username` is intentionally
  * absent: it is permanent and no edit path is ever offered (docs/33 §4, ADR §4). `websiteUrl`
  * accepts empty (unchanged) OR a valid http(s) URL — the frozen DTO cannot clear it (docs/32 §11).

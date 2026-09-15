@@ -1,4 +1,4 @@
-import { NotificationType } from '@qalam/shared';
+import { NotificationType } from '@umberleaf/shared';
 import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
@@ -78,10 +78,10 @@ describe('describeNotification', () => {
       actor: null,
       entityType: 'system',
       entityId: 's1',
-      data: { title: 'Welcome to Qalam', message: 'Your notebook awaits.' },
+      data: { title: 'Welcome to Umberleaf', message: 'Your notebook awaits.' },
     });
     const view = describeNotification(n);
-    expect(messageText(n)).toContain('Welcome to Qalam');
+    expect(messageText(n)).toContain('Welcome to Umberleaf');
     expect(view.preview).toBe('Your notebook awaits.');
     expect(view.link).toBeNull();
   });

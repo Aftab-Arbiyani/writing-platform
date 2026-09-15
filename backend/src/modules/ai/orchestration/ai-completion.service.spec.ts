@@ -1,5 +1,5 @@
-import { AiFeature, AiFinishReason, AiModelAvailability, AiProvider } from '@qalam/shared';
-import type { AiModelMetadata } from '@qalam/shared';
+import { AiFeature, AiFinishReason, AiModelAvailability, AiProvider } from '@umberleaf/shared';
+import type { AiModelMetadata } from '@umberleaf/shared';
 
 import type { AiFeatureService } from '../ai-feature.service';
 import type { aiConfig } from '../../../config/ai.config';

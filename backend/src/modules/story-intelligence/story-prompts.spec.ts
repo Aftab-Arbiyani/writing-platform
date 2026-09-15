@@ -7,7 +7,7 @@ import {
   normalizeStoryName,
   storyAnalysisFeature,
   storyAnalysisPromptKey,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 import { AI_PROMPT_CATALOG } from '../ai/prompts/prompt-catalog';
 import { renderTemplate, validateTemplateBody } from '../ai/prompts/prompt-renderer';

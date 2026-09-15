@@ -1,4 +1,4 @@
-import { PieceStatus, Visibility } from '@qalam/shared';
+import { PieceStatus, Visibility } from '@umberleaf/shared';
 import { screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 

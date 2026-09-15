@@ -1,5 +1,5 @@
 import { HttpStatus } from '@nestjs/common';
-import { ERROR_CODES, SEARCH_QUERY_MIN } from '@qalam/shared';
+import { ERROR_CODES, SEARCH_QUERY_MIN } from '@umberleaf/shared';
 
 import { AppException } from '../../common/exceptions/app.exception';
 

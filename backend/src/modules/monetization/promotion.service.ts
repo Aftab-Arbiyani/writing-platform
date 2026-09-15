@@ -6,7 +6,7 @@ import {
   PromotionType,
   couponRedeemableAt,
   normalizeCouponCode,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 import { DataSource, Repository } from 'typeorm';
 
 import { Coupon } from './entities/coupon.entity';

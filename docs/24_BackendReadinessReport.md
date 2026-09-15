@@ -72,7 +72,7 @@ change. Full detail: [`19_DeploymentGuide.md`](./19_DeploymentGuide.md).
 | All APIs reviewed              | ✅ (audit: 19 controllers / 102 paths)                                                          |
 | Security audit completed       | ✅ (`23_SecurityChecklist.md`; 3 HIGH deps fixed)                                               |
 | Health endpoints complete      | ✅ 7 probes, all return 200 live                                                                |
-| Docker production ready        | ✅ HEALTHCHECK + prod compose; **image builds** (`qalam-backend:e12`)                           |
+| Docker production ready        | ✅ HEALTHCHECK + prod compose; **image builds** (`umberleaf-backend:e12`)                       |
 | CI/CD pipeline configured      | ✅ verify/audit/migrations/docker-build + e2e + dependabot                                      |
 | Monitoring configured          | ✅ `/metrics` (token-gated) live                                                                |
 | Sentry configured              | ✅ init + capture + scrub (no-op without DSN)                                                   |

@@ -1,5 +1,5 @@
 import type { ConfigType } from '@nestjs/config';
-import { AiFinishReason, AiMessageRole, AiProvider } from '@qalam/shared';
+import { AiFinishReason, AiMessageRole, AiProvider } from '@umberleaf/shared';
 
 import type { aiConfig } from '../../../../config/ai.config';
 import { AiProviderNotConfiguredException } from '../../ai.exceptions';

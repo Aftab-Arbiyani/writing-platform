@@ -59,7 +59,7 @@ jobs:
         run: |
           VERSION="${GITHUB_REF_NAME}"          # e.g. v1.2.3
           SHORT_SHA="${GITHUB_SHA:0:12}"
-          IMAGE="${REGISTRY}/${GITHUB_REPOSITORY_OWNER}/qalam-${{ matrix.image }}"
+          IMAGE="${REGISTRY}/${GITHUB_REPOSITORY_OWNER}/umberleaf-${{ matrix.image }}"
           IMAGE="$(echo "$IMAGE" | tr '[:upper:]' '[:lower:]')"
           {
             echo "version=${VERSION}"
@@ -139,7 +139,7 @@ jobs:
       - name: Resolve backend image ref
         id: img
         run: |
-          IMAGE="${REGISTRY}/${GITHUB_REPOSITORY_OWNER}/qalam-backend:${GITHUB_REF_NAME}"
+          IMAGE="${REGISTRY}/${GITHUB_REPOSITORY_OWNER}/umberleaf-backend:${GITHUB_REF_NAME}"
           IMAGE="$(echo "$IMAGE" | tr '[:upper:]' '[:lower:]')"
           echo "ref=${IMAGE}" >> "$GITHUB_OUTPUT"
 

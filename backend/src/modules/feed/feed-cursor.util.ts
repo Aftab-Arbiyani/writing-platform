@@ -1,4 +1,4 @@
-import type { CursorMeta } from '@qalam/shared';
+import type { CursorMeta } from '@umberleaf/shared';
 
 import {
   decodeCursor,

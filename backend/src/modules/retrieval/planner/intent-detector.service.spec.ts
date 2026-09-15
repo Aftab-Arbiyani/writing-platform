@@ -1,4 +1,4 @@
-import { RetrievalIntent } from '@qalam/shared';
+import { RetrievalIntent } from '@umberleaf/shared';
 
 import { IntentDetectionService } from './intent-detector.service';
 

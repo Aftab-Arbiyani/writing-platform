@@ -1,4 +1,4 @@
-import { Role } from '@qalam/shared';
+import { Role } from '@umberleaf/shared';
 import { describe, expect, it } from 'vitest';
 
 import { decodeAccessToken, isAccessTokenExpired } from './jwt';

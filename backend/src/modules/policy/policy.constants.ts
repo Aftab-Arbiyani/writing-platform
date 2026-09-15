@@ -6,7 +6,7 @@ import {
   TrustLevel,
   TrustStatus,
   type PermissionCode,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 import type { TrustContext } from './policy.types';
 

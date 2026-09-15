@@ -1,5 +1,5 @@
-import { SuggestionStatus } from '@qalam/shared';
-import { QButton, QEmptyState, QErrorState, QSectionHeader, QSkeleton } from '@qalam/ui';
+import { SuggestionStatus } from '@umberleaf/shared';
+import { QButton, QEmptyState, QErrorState, QSectionHeader, QSkeleton } from '@umberleaf/ui';
 import { PenLine } from 'lucide-react';
 import { type ReactElement, useState } from 'react';
 import { useParams } from 'react-router';

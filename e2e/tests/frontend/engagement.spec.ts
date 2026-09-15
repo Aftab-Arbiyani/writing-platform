@@ -22,7 +22,7 @@ import { ReaderPage } from '../../pages/frontend/reader-page';
  * source.
  */
 
-/** `MAX_CLAPS_PER_USER_PER_PIECE` from `@qalam/shared`. Asserted against the server, not assumed. */
+/** `MAX_CLAPS_PER_USER_PER_PIECE` from `@umberleaf/shared`. Asserted against the server, not assumed. */
 const MAX_CLAPS = 50;
 
 test.describe('@phase2 frontend claps', () => {

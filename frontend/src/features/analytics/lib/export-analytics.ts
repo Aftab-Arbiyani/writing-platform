@@ -14,11 +14,11 @@ export interface ExportRow {
 }
 
 /**
- * The WRITER's export rows (`qalam-analytics`) — reach, engagement received, followers.
+ * The WRITER's export rows (`umberleaf-analytics`) — reach, engagement received, followers.
  *
  * Writer figures ONLY. Four reader rows used to be appended here; W7c moved them to
  * `readerExportRows` when the reader surface got its own home, because an export named
- * `qalam-analytics` that silently mixed in what the user had READ was the same audience confusion
+ * `umberleaf-analytics` that silently mixed in what the user had READ was the same audience confusion
  * the row fixed on screen.
  */
 export function writerExportRows(
@@ -42,7 +42,7 @@ export function writerExportRows(
 }
 
 /**
- * The READER's export rows (`qalam-reading`, W7c) — the seven aggregate fields plus the ranked
+ * The READER's export rows (`umberleaf-reading`, W7c) — the seven aggregate fields plus the ranked
  * lists, and the bounded bookmarks count when it loaded.
  *
  * The bookmarks row is LABELLED "at least" when more exist, because the number alone would read

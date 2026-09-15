@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ERROR_CODES } from '@qalam/shared';
-import { QButton, useConfirm, useToast } from '@qalam/ui';
+import { ERROR_CODES } from '@umberleaf/shared';
+import { QButton, useConfirm, useToast } from '@umberleaf/ui';
 import type { ReactElement } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router';
@@ -63,7 +63,7 @@ export function RegisterPage(): ReactElement {
         username: values.username,
         password: values.password,
       });
-      toast.success('Welcome to Qalam', {
+      toast.success('Welcome to Umberleaf', {
         description: 'Check your inbox to verify your email.',
       });
       void navigate(ROUTES.verifyEmail, { replace: true, state: { email: data.user.email } });

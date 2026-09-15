@@ -1,6 +1,6 @@
 import { Column, Entity, Index } from 'typeorm';
 
-import { QalamBaseEntity } from '../../../common/base/base.entity';
+import { AppBaseEntity } from '../../../common/base/base.entity';
 
 /**
  * A permission granted DIRECTLY to a user (PBAC), overriding/augmenting their
@@ -13,7 +13,7 @@ import { QalamBaseEntity } from '../../../common/base/base.entity';
 @Entity('user_permissions')
 @Index('uq_user_permissions', ['userId', 'permissionCode'], { unique: true })
 @Index('idx_user_permissions_user', ['userId'])
-export class UserPermission extends QalamBaseEntity {
+export class UserPermission extends AppBaseEntity {
   @Column({ type: 'uuid' })
   userId!: string;
 

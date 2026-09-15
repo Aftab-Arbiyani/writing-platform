@@ -1,4 +1,4 @@
-import { QErrorState, QSpinner } from '@qalam/ui';
+import { QErrorState, QSpinner } from '@umberleaf/ui';
 import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { ReactElement } from 'react';

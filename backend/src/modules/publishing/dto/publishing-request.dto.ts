@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Visibility } from '@qalam/shared';
+import { Visibility } from '@umberleaf/shared';
 import { IsDateString, IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
 
 /** Reviewer notes may be long-form but bounded. */

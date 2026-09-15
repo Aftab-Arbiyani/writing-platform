@@ -1,7 +1,7 @@
 /**
  * AI module constants (AF1). Small, dependency-free values shared across the
- * module. Product limits live in `@qalam/shared` (`limits.ts`) and AI vocabulary
- * defaults in `@qalam/shared` (`ai.ts`); this holds only backend-internal knobs.
+ * module. Product limits live in `@umberleaf/shared` (`limits.ts`) and AI vocabulary
+ * defaults in `@umberleaf/shared` (`ai.ts`); this holds only backend-internal knobs.
  */
 
 /**

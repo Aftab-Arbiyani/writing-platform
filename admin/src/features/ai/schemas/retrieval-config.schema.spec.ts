@@ -1,4 +1,4 @@
-import { RankingSignal, RETRIEVAL_CONFIG_BOUNDS, RetrievalSource } from '@qalam/shared';
+import { RankingSignal, RETRIEVAL_CONFIG_BOUNDS, RetrievalSource } from '@umberleaf/shared';
 import { describe, expect, it } from 'vitest';
 
 import { retrievalConfigSchema } from './retrieval-config.schema';

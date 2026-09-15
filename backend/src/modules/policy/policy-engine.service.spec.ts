@@ -10,7 +10,7 @@ import {
   TrustLevel,
   TrustStatus,
   Visibility,
-} from '@qalam/shared';
+} from '@umberleaf/shared';
 
 import type { PermissionResolver } from '../permissions/permission.resolver';
 import { PolicyCacheService } from './policy-cache.service';
