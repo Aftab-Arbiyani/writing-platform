@@ -112,7 +112,9 @@ export function DashboardPage(): ReactElement {
       <PieceLimitNotice notice={notice} />
 
       <nav aria-label="Your pieces by status" className="border-line border-b">
-        <ul className="flex gap-1 overflow-x-auto">
+        {/* See feed-tabs.tsx: no Tailwind preflight, so the UA list markers and button border
+            have to be undone here. */}
+        <ul className="my-0 flex list-none gap-1 overflow-x-auto ps-0">
           {TABS.map(({ status: value, label }) => {
             const active = value === status;
             return (
@@ -131,7 +133,7 @@ export function DashboardPage(): ReactElement {
                     );
                   }}
                   className={cn(
-                    'relative whitespace-nowrap px-3 py-3 text-sm font-medium transition-colors',
+                    'relative border-0 whitespace-nowrap px-3 py-3 text-sm font-medium transition-colors',
                     active ? 'text-ink' : 'text-ink-secondary hover:text-ink',
                   )}
                 >

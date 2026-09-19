@@ -286,7 +286,9 @@ export function EditorPage({ assistant }: { assistant?: ReactNode } = {}): React
             }}
             placeholder="Title"
             aria-label="Title"
-            className="w-full bg-transparent font-serif text-3xl font-semibold text-ink placeholder:text-ink-muted focus:outline-none"
+            // `border-0`: global.css skips Tailwind's preflight, which also resets <input>, so the
+            // title drew the UA's native border instead of reading as bare text on the page.
+            className="w-full border-0 bg-transparent font-serif text-3xl font-semibold text-ink placeholder:text-ink-muted focus:outline-none"
           />
           <div className="sticky top-14 z-10 bg-canvas/95 py-1 backdrop-blur sm:top-16">
             <EditorToolbar editor={editor} isRtl={isRtl} />

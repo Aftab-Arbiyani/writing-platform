@@ -28,7 +28,10 @@ export function FeedTabs({
       aria-label="Feed sections"
       className="border-line sticky top-14 z-10 border-b bg-canvas/95 backdrop-blur sm:top-16"
     >
-      <ul className="flex gap-1 overflow-x-auto">
+      {/* `list-none ps-0 my-0` / `border-0` below undo UA chrome: global.css skips Tailwind's
+          preflight (AntD owns the reset), so a bare <ul> keeps its disc markers and 40px
+          inline-start pad, and a bare <button> keeps its native border. */}
+      <ul className="my-0 flex list-none gap-1 overflow-x-auto ps-0">
         {TABS.map(({ tab: value, label }) => {
           const active = value === tab;
           return (
@@ -40,7 +43,7 @@ export function FeedTabs({
                 }}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'relative whitespace-nowrap px-3 py-3 text-sm font-medium transition-colors',
+                  'relative border-0 whitespace-nowrap px-3 py-3 text-sm font-medium transition-colors',
                   active ? 'text-ink' : 'text-ink-secondary hover:text-ink',
                 )}
               >

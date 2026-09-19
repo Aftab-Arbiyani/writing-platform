@@ -22,7 +22,9 @@ export function ProfileTabs({
 }): ReactElement {
   return (
     <nav aria-label="Profile sections" className="border-b border-line">
-      <ul className="flex gap-1">
+      {/* See feed-tabs.tsx: no Tailwind preflight, so the UA list markers and button border
+          have to be undone here. */}
+      <ul className="my-0 flex list-none gap-1 ps-0">
         {TABS.map(({ key, label }) => {
           const isActive = key === active;
           return (
@@ -32,7 +34,7 @@ export function ProfileTabs({
                 aria-current={isActive ? 'page' : undefined}
                 onClick={() => onSelect(key)}
                 className={cn(
-                  'relative px-4 py-3 text-sm font-medium transition-colors',
+                  'relative border-0 px-4 py-3 text-sm font-medium transition-colors',
                   isActive ? 'text-ink' : 'text-ink-secondary hover:text-ink',
                 )}
               >

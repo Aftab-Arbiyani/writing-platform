@@ -58,7 +58,10 @@ export function NotificationFilters({
               }}
               aria-current={active ? 'page' : undefined}
               className={cn(
-                'whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium transition-colors',
+                // `border-0`: no Tailwind preflight (see global.css), so these drew the UA's
+                // native border. The segmented control is meant to read as a tinted pill for the
+                // active view and plain text for the rest — no outlines at all.
+                'whitespace-nowrap rounded-full border-0 px-3 py-1.5 text-sm font-medium transition-colors',
                 active
                   ? 'bg-accent/12 text-accent-on-tint'
                   : 'text-ink-secondary hover:bg-raised hover:text-ink',

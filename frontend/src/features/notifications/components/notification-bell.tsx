@@ -68,7 +68,10 @@ export function NotificationBell(): ReactElement {
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={toggle}
-        className="inline-flex size-9 items-center justify-center rounded-md text-ink-secondary transition-colors hover:bg-raised hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        // `border-0`: global.css skips Tailwind's preflight, so this raw <button> drew the UA's
+        // native border. The neighbouring ThemeToggle is a QButton, which sets its own — which is
+        // why only the bell looked boxed.
+        className="inline-flex size-9 items-center justify-center rounded-md border-0 text-ink-secondary transition-colors hover:bg-raised hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       >
         <QBadge dot={hasUnread} srLabel={hasUnread ? 'unread' : 'no unread notifications'}>
           <Bell size={20} strokeWidth={1.75} aria-hidden />

@@ -24,7 +24,11 @@ export function ProfileStats({
 }): ReactElement {
   const followersLabel = counts.followers === 1 ? 'follower' : 'followers';
   return (
-    <ul className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-ink-secondary">
+    // `list-none ps-0 my-0` undoes UA chrome: global.css skips Tailwind's preflight, so a bare
+    // <ul> keeps its markers, a 40px inline-start pad and a 1em block margin. The markers used to
+    // stand in for the separators docs/06 §3.5 specifies, but as OUTSIDE markers they sat to the
+    // left of each item instead of between them — `Sep` is the real thing.
+    <ul className="my-0 flex list-none flex-wrap items-center gap-x-4 gap-y-1 ps-0 text-sm text-ink-secondary">
       <li>
         <span className="font-semibold text-ink tabular-nums">
           {formatCount(counts.piecesPublished)}
@@ -32,11 +36,12 @@ export function ProfileStats({
         {counts.piecesPublished === 1 ? 'piece' : 'pieces'}
       </li>
       <li>
+        <Sep />
         {interactive ? (
           <button
             type="button"
             onClick={onOpenFollowers}
-            className="rounded-sm outline-none hover:text-ink focus-visible:ring-2 focus-visible:ring-accent"
+            className="rounded-sm border-0 outline-none hover:text-ink focus-visible:ring-2 focus-visible:ring-accent"
           >
             <span className="font-semibold text-ink tabular-nums">
               {formatCount(counts.followers)}
@@ -53,11 +58,12 @@ export function ProfileStats({
         )}
       </li>
       <li>
+        <Sep />
         {interactive ? (
           <button
             type="button"
             onClick={onOpenFollowing}
-            className="rounded-sm outline-none hover:text-ink focus-visible:ring-2 focus-visible:ring-accent"
+            className="rounded-sm border-0 outline-none hover:text-ink focus-visible:ring-2 focus-visible:ring-accent"
           >
             <span className="font-semibold text-ink tabular-nums">
               {formatCount(counts.following)}
@@ -74,5 +80,19 @@ export function ProfileStats({
         )}
       </li>
     </ul>
+  );
+}
+
+/**
+ * The `·` between two stats (docs/06 §3.5). A real element rather than a `::before`, because
+ * generated content is announced by some screen readers — this is decorative, so it is
+ * `aria-hidden` and the list items carry the meaning. `me-4` matches the list's `gap-x-4`, so the
+ * dot sits centred in the space between the two counts.
+ */
+function Sep(): ReactElement {
+  return (
+    <span aria-hidden="true" className="me-4 text-ink-muted">
+      ·
+    </span>
   );
 }

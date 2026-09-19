@@ -335,7 +335,10 @@ export function CommandPalette(): ReactElement {
               setText(event.target.value);
             }}
             onKeyDown={handleKeyDown}
-            className="h-14 flex-1 bg-transparent text-base text-ink outline-none placeholder:text-ink-muted"
+            // `border-0`: global.css skips Tailwind's preflight, which also resets <input>, so the
+            // field drew the UA's native border inside the palette. The row's own divider is the
+            // `border-b` on the wrapper above.
+            className="h-14 flex-1 border-0 bg-transparent text-base text-ink outline-none placeholder:text-ink-muted"
           />
           {showLoading ? <QSpinner size="small" /> : null}
         </div>
@@ -345,16 +348,20 @@ export function CommandPalette(): ReactElement {
           id="cmdk-listbox"
           role="listbox"
           aria-label="Results"
-          className="max-h-[52vh] overflow-y-auto p-2"
+          className="my-0 flex max-h-[52vh] list-none flex-col gap-4 overflow-y-auto p-2"
         >
           {sections.map((section) => (
-            <li key={section.key} className="mb-1 last:mb-0">
+            // Group rhythm mirrors the admin settings nav: gap-1 inside a group (title sits one
+            // step above its first row), gap-4 between groups. `list-none ps-0 my-0` on both lists
+            // undoes UA chrome — global.css skips Tailwind's preflight, so a bare <ul> keeps its
+            // markers, its 40px inline-start pad and a 1em block margin that breaks the rhythm.
+            <li key={section.key} className="flex flex-col gap-1">
               {section.title ? (
-                <p className="px-3 pb-1 pt-2 text-xs font-semibold uppercase tracking-wide text-ink-muted">
+                <p className="px-3 text-xs font-semibold uppercase tracking-wide text-ink-muted">
                   {section.title}
                 </p>
               ) : null}
-              <ul>
+              <ul className="my-0 flex list-none flex-col gap-1 ps-0">
                 {section.options.map((option) => {
                   const index = cursor;
                   cursor += 1;
@@ -374,7 +381,7 @@ export function CommandPalette(): ReactElement {
                         }}
                         onClick={option.run}
                         className={[
-                          'flex w-full items-center rounded-md px-3 py-2.5 text-start text-sm',
+                          'flex w-full items-center rounded-md border-0 px-3 py-2.5 text-start text-sm',
                           active ? 'bg-raised text-ink' : 'text-ink-secondary',
                         ].join(' ')}
                       >

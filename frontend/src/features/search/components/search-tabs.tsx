@@ -27,7 +27,9 @@ export function SearchTabs({
 }): ReactElement {
   return (
     <nav aria-label="Search scope" className="border-line border-b">
-      <ul className="-mb-px flex gap-1 overflow-x-auto">
+      {/* See feed-tabs.tsx: no Tailwind preflight, so the UA list markers and button border
+          have to be undone here. `-mb-px` stays — it is the tab/rule overlap, not a reset. */}
+      <ul className="mt-0 -mb-px flex list-none gap-1 overflow-x-auto ps-0">
         {TABS.map(({ type: value, label }) => {
           const active = value === type;
           return (
@@ -39,7 +41,7 @@ export function SearchTabs({
                 }}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'relative whitespace-nowrap px-3 py-3 text-sm font-medium transition-colors',
+                  'relative border-0 whitespace-nowrap px-3 py-3 text-sm font-medium transition-colors',
                   active ? 'text-ink' : 'text-ink-secondary hover:text-ink',
                 )}
               >

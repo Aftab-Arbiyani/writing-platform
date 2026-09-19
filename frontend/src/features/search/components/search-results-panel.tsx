@@ -69,7 +69,9 @@ export function SearchResultsPanel({
       </p>
 
       {data.results.length > 0 ? (
-        <ul className="flex flex-col gap-3">
+        // `list-none ps-0 my-0` undoes UA chrome: global.css skips Tailwind's preflight, so a bare
+        // <ul> keeps its markers, a 40px inline-start pad and a 1em block margin.
+        <ul className="my-0 flex list-none flex-col gap-3 ps-0">
           {data.results.map((item) => (
             <li key={`${item.sourceType}:${item.id}`}>
               <RetrievalResultCard item={item} />

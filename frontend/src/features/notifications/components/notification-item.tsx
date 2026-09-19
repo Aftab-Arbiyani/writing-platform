@@ -42,7 +42,9 @@ function RowAction({
       type="button"
       aria-label={label}
       onClick={onClick}
-      className="relative z-10 inline-flex size-8 items-center justify-center rounded-md text-ink-muted hover:bg-canvas hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+      // `border-0`: no Tailwind preflight (see global.css), so these mark-read / archive / delete
+      // icons each drew the UA's native border — visible only on hover, when the group fades in.
+      className="relative z-10 inline-flex size-8 items-center justify-center rounded-md border-0 text-ink-muted hover:bg-canvas hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
     >
       <Icon size={16} strokeWidth={1.75} aria-hidden />
     </button>
@@ -100,6 +102,21 @@ export const NotificationRow = memo(function NotificationRow({
           isUnread ? 'bg-raised/60' : 'hover:bg-raised/40',
         )}
       >
+        {/*
+          Unread marker, in a leading gutter. The slot is reserved on EVERY row (an empty span when
+          read) so read and unread rows share one left edge. It used to sit between the body and the
+          row actions — but that action group keeps its layout width even while faded out, so the
+          dot could never reach the trailing edge and parked in open space instead. `mt-2` centres
+          it on the message's first line.
+        */}
+        <span
+          aria-hidden
+          className={cn(
+            'relative z-10 mt-2 size-2 shrink-0 self-start rounded-full',
+            isUnread && 'bg-accent',
+          )}
+        />
+
         {/* Activity glyph (the type, leading) + the actor avatar as a small overlapping badge. */}
         <div className="relative shrink-0">
           <span
@@ -131,20 +148,16 @@ export const NotificationRow = memo(function NotificationRow({
               onClick={() => {
                 onOpen(notification);
               }}
-              className="block w-full rounded-sm text-start after:absolute after:inset-0 after:content-['']"
+              // `border-0`: global.css skips Tailwind's preflight, so this <button> (the branch
+              // taken by notifications with no link target, e.g. system announcements) drew the
+              // UA's native border as a box around the row text. The Link branch is an <a>, which
+              // is why only some rows showed it.
+              className="block w-full rounded-sm border-0 text-start after:absolute after:inset-0 after:content-['']"
             >
               {body}
             </button>
           )}
         </div>
-
-        {/* Unread dot */}
-        {isUnread ? (
-          <span
-            aria-hidden
-            className="relative z-10 mt-2 size-2 shrink-0 self-start rounded-full bg-accent"
-          />
-        ) : null}
 
         {/* Row actions — revealed on hover/focus (desktop), always shown on touch. */}
         <div className="flex shrink-0 items-start gap-0.5 opacity-100 md:opacity-0 md:transition-opacity md:group-focus-within:opacity-100 md:group-hover:opacity-100">

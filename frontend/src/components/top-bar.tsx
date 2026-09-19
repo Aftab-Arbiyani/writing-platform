@@ -26,11 +26,19 @@ export function TopBar(): ReactElement {
       className="border-line sticky top-0 z-[1020] border-b bg-canvas/95 backdrop-blur"
     >
       <div className="mx-auto flex h-14 max-w-[1280px] items-center gap-3 px-4 sm:h-16 sm:px-6">
+        {/*
+          The mark is the VENDORED tile served from `public/`, referenced rather than inlined.
+          `scripts/brand/sync.mjs` exists so exactly one set of glyph path numbers lives in the
+          system and `brand:sync --check` can compare the `d` attribute literally — pasting the
+          path into this component would silently escape that guard. `alt=""` because the link
+          already carries the accessible name; the tile would otherwise be announced twice.
+        */}
         <Link
           to={ROUTES.landing}
-          className="font-serif text-xl font-semibold text-ink"
+          className="flex items-center gap-2 font-serif text-xl font-semibold text-ink"
           aria-label="Umberleaf home"
         >
+          <img src="/icon.svg" alt="" width={28} height={28} className="size-7 shrink-0" />
           Umberleaf
         </Link>
         <div className="hidden flex-1 justify-center md:flex">

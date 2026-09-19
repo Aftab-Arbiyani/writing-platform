@@ -52,7 +52,9 @@ export function RankingLine({
 export function RelatedEntities({ entities }: { entities: RelatedEntity[] }): ReactElement | null {
   if (entities.length === 0) return null;
   return (
-    <ul className="flex flex-wrap gap-1.5" aria-label="Related">
+    // `list-none ps-0 my-0` undoes UA chrome (no Tailwind preflight — see global.css). Nested
+    // inside the results list, these markers rendered as hollow ◦ circles beside the tag row.
+    <ul className="my-0 flex list-none flex-wrap gap-1.5 ps-0" aria-label="Related">
       {entities.slice(0, 6).map((entity) => (
         <li key={`${entity.type}:${entity.id}:${entity.name}`}>
           <QTag>
@@ -80,7 +82,10 @@ export function EvidenceList({
 }): ReactElement | null {
   if (evidence.length === 0) return null;
   return (
-    <ul className={cn('flex flex-col gap-1.5', className)} aria-label="Evidence">
+    <ul
+      className={cn('my-0 flex list-none flex-col gap-1.5 ps-0', className)}
+      aria-label="Evidence"
+    >
       {evidence.slice(0, 3).map((item) => (
         <li key={`${item.source}:${item.ref}`} className="flex items-start gap-2">
           <Quote

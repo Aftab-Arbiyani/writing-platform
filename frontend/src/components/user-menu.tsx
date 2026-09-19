@@ -129,7 +129,9 @@ export function UserMenu(): ReactElement {
         type="button"
         aria-label="Account menu"
         aria-haspopup="menu"
-        className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        // `border-0`: no Tailwind preflight (see global.css), so this raw <button> drew the UA's
+        // native border as a ring around the avatar.
+        className="rounded-full border-0 outline-none focus-visible:ring-2 focus-visible:ring-accent"
       >
         <QAvatar size="sm" src={mediaUrl(me.data?.avatarKey)} name={name} />
       </button>

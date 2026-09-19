@@ -80,7 +80,8 @@ export function NotificationList({
             <span>{group.label}</span>
             <span aria-hidden className="h-px flex-1 bg-line" />
           </h2>
-          <ul className="flex flex-col">
+          {/* Same UA-chrome reset as the popover — these are the same NotificationRow rows. */}
+          <ul className="my-0 flex list-none flex-col ps-0">
             {group.items.map((notification) => (
               <NotificationRow
                 key={notification.id}

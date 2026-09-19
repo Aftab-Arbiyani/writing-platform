@@ -26,7 +26,10 @@ export function RecentSearches({ onRun }: { onRun: (query: string) => void }): R
           Clear all
         </QButton>
       </header>
-      <ul className="flex flex-wrap gap-2">
+      {/* `list-none ps-0 my-0` undoes UA chrome: global.css skips Tailwind's preflight, so a bare
+          <ul> keeps its markers (which land in the gap between chips), a 40px inline-start pad
+          and a 1em block margin. Matches the trending list. */}
+      <ul className="my-0 flex list-none flex-wrap gap-2 ps-0">
         {items.map((item) => (
           <li key={item.id}>
             <RemovableChip

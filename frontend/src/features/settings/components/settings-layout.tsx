@@ -83,7 +83,9 @@ export function SettingsLayout(): ReactElement {
       <h1 className="mb-4 font-serif text-2xl font-semibold text-ink">Settings</h1>
       <div className="flex flex-col gap-6 lg:flex-row">
         <nav aria-label="Settings sections" className="lg:w-[240px] lg:shrink-0">
-          <ul className="flex gap-1 overflow-x-auto border-b border-line pb-2 lg:flex-col lg:gap-0.5 lg:border-b-0 lg:pb-0">
+          {/* See feed-tabs.tsx: no Tailwind preflight, so the UA list markers and 40px
+              inline-start pad have to be undone here. `ps-0` leaves `pb-2` alone. */}
+          <ul className="my-0 flex list-none gap-1 overflow-x-auto border-b border-line ps-0 pb-2 lg:flex-col lg:gap-0.5 lg:border-b-0 lg:pb-0">
             {sections.map(({ to, label, icon: Icon, end = true }) => (
               <li key={to}>
                 <NavLink

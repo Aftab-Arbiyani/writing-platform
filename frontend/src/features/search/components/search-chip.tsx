@@ -35,6 +35,10 @@ export function SearchChip({
 /**
  * A removable recent-search chip: the label runs the query, the trailing ✕ forgets it. Two
  * distinct focus stops (run vs remove) so both are keyboard-reachable (docs/28 §2).
+ *
+ * Both inner buttons carry `border-0`: the pill border belongs to the OUTER span (`CHIP_BASE`),
+ * and global.css skips Tailwind's preflight, so without it each nested <button> also drew the
+ * UA's native border — a box around the label and a ring around the ✕, inside the pill.
  */
 export function RemovableChip({
   label,
@@ -54,7 +58,7 @@ export function RemovableChip({
       <button
         type="button"
         onClick={onClick}
-        className="inline-flex items-center gap-1.5 rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        className="inline-flex items-center gap-1.5 rounded-full border-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       >
         {Icon ? <Icon size={14} strokeWidth={1.75} aria-hidden /> : null}
         <span dir="auto" className="truncate">
@@ -65,7 +69,7 @@ export function RemovableChip({
         type="button"
         aria-label={removeLabel}
         onClick={onRemove}
-        className="inline-flex size-6 items-center justify-center rounded-full text-ink-muted hover:bg-raised hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        className="inline-flex size-6 items-center justify-center rounded-full border-0 text-ink-muted hover:bg-raised hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       >
         <X size={13} strokeWidth={1.75} aria-hidden />
       </button>

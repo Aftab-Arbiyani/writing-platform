@@ -245,7 +245,11 @@ export function EditorToolbar({ editor, isRtl }: { editor: Editor; isRtl: boolea
       aria-label="Formatting"
       aria-orientation="horizontal"
       onKeyDown={onKeyDown}
-      className="border-line flex flex-wrap items-center gap-0.5 rounded-md border bg-surface p-1"
+      // `w-fit` so the bordered surface ends where the controls end, instead of stretching the
+      // full writing column and leaving an empty framed gap after Redo. Block-level `w-fit`
+      // rather than `inline-flex`: same shrink-to-fit width, without the inline baseline gap
+      // that would pad the sticky band below it. Still wraps normally when the column is narrow.
+      className="border-line flex w-fit flex-wrap items-center gap-0.5 rounded-md border bg-surface p-1"
     >
       {commands.map((cmd, index) => {
         const Icon = cmd.icon;
@@ -270,7 +274,10 @@ export function EditorToolbar({ editor, isRtl }: { editor: Editor; isRtl: boolea
                 if (!cmd.disabled) cmd.run();
               }}
               className={cn(
-                'flex size-8 items-center justify-center rounded-sm transition-colors',
+                // `border-0`: global.css skips Tailwind's preflight, so each of these 16 buttons
+                // drew the UA's native border. The intended chrome is the ONE border on the
+                // toolbar container plus the thin group dividers — both were lost in the noise.
+                'flex size-8 items-center justify-center rounded-sm border-0 transition-colors',
                 cmd.disabled
                   ? 'cursor-not-allowed text-ink-muted opacity-50'
                   : cmd.active

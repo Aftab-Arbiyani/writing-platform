@@ -62,7 +62,10 @@ export function TrendingSearches({ onRun }: { onRun: (query: string) => void }):
             <Flame size={16} strokeWidth={1.75} className="text-accent" aria-hidden />
             Trending now
           </h2>
-          <ul className="flex flex-wrap gap-2">
+          {/* `list-none ps-0 my-0` undoes UA chrome: global.css skips Tailwind's preflight, so a
+              bare <ul> keeps its markers (which land in the gap between chips), a 40px
+              inline-start pad and a 1em block margin. The chips themselves own their border. */}
+          <ul className="my-0 flex list-none flex-wrap gap-2 ps-0">
             {keywords.map((k) => (
               <li key={k.keyword}>
                 <SearchChip

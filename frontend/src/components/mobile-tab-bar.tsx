@@ -30,7 +30,9 @@ export function MobileTabBar(): ReactElement {
       data-print-hidden
       className="border-line fixed inset-x-0 bottom-0 z-[1020] border-t bg-canvas pb-[env(safe-area-inset-bottom)] md:hidden"
     >
-      <ul className="mx-auto flex max-w-[720px] items-stretch justify-around">
+      {/* See feed-tabs.tsx: no Tailwind preflight, so the UA list markers and 40px
+          inline-start pad have to be undone here. */}
+      <ul className="mx-auto my-0 flex max-w-[720px] list-none items-stretch justify-around ps-0">
         {ITEMS.map(({ to, label, icon: Icon, accent }) => (
           <li key={to}>
             <NavLink
