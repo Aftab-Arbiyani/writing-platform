@@ -30,22 +30,37 @@ export function AppHeader(): ReactElement {
       data-testid="admin-header"
       className="sticky top-0 z-20 flex h-14 flex-shrink-0 items-center gap-2 border-b border-line bg-surface px-3 sm:px-4"
     >
-      <QButton
-        variant="ghost"
-        size="sm"
-        icon={MenuIcon}
-        aria-label="Open navigation"
-        className="lg:hidden"
-        onClick={() => setMobileOpen(true)}
-      />
-      <QButton
-        variant="ghost"
-        size="sm"
-        icon={collapsed ? PanelLeftOpen : PanelLeftClose}
-        aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        className="hidden lg:inline-flex"
-        onClick={toggleCollapsed}
-      />
+      {/*
+        The breakpoint lives on a plain <span>, NOT as `className` on the QButton. AntD's
+        cssinjs injects into an unlayered <style>, and unlayered declarations beat layered ones
+        regardless of specificity, so `.ant-btn{display:inline-flex}` wins over Tailwind's
+        `.lg\:hidden` in `@layer utilities` — the same cascade trap global.css records for
+        `underline` on links. Measured in the running app: adding `lg:hidden`, or even plain
+        `hidden`, to a rendered AntD button leaves `display: inline-flex`.
+
+        So both toggles were always on screen. On desktop the hamburger opened a drawer holding
+        the nav the persistent rail was already showing; below `lg` the collapse button toggled
+        a rail that is not rendered there at all. A <span> carries no AntD styles, so the
+        utility applies to it.
+      */}
+      <span className="inline-flex lg:hidden">
+        <QButton
+          variant="ghost"
+          size="sm"
+          icon={MenuIcon}
+          aria-label="Open navigation"
+          onClick={() => setMobileOpen(true)}
+        />
+      </span>
+      <span className="hidden lg:inline-flex">
+        <QButton
+          variant="ghost"
+          size="sm"
+          icon={collapsed ? PanelLeftOpen : PanelLeftClose}
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          onClick={toggleCollapsed}
+        />
+      </span>
 
       <div className="hidden md:block">
         <AppBreadcrumbs />
