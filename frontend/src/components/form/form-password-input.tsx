@@ -47,7 +47,12 @@ export function FormPasswordInput<T extends FieldValues>({
               }}
               aria-label={visible ? 'Hide password' : 'Show password'}
               aria-pressed={visible}
-              className="flex items-center text-ink-muted transition-colors hover:text-ink"
+              // `border-0 bg-transparent p-0`: global.css skips Tailwind's preflight and AntD's
+              // reset leaves `button` borders, backgrounds and padding alone, so this raw
+              // <button> drew the UA's native chrome — a bordered ButtonFace box around the eye,
+              // sitting inside the field. All three go, not just the border: the grey face is
+              // what still showed against an autofilled input once the border was gone.
+              className="flex items-center border-0 bg-transparent p-0 text-ink-muted transition-colors hover:text-ink"
             >
               {visible ? (
                 <EyeOff size={18} strokeWidth={1.5} aria-hidden />
