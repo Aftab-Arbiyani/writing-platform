@@ -29,6 +29,28 @@ export function usePublishPiece() {
   });
 }
 
+/**
+ * The published-piece half of the same sheet: a PATCH and nothing else.
+ *
+ * `publish` and `schedule` are one-way transitions — the server answers a second one with 409
+ * `PIECE_ALREADY_PUBLISHED` (pieces.service `publish`/`schedule`). A published piece is still
+ * fully editable through `PATCH /pieces/:id`, and the edit is live the moment it lands, so
+ * saving one must NOT call a lifecycle endpoint. Invalidates the same caches as publish: the
+ * fields this sheet edits (title, visibility, tags, cover) are the ones the feeds render.
+ */
+export function useSavePublishedPiece() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, patch }: { id: string; patch: UpdatePiecePayload }) =>
+      piecesApi.update(id, patch),
+    onSuccess: (piece) => {
+      queryClient.setQueryData(qk.pieces.detail(piece.id), piece);
+      void queryClient.invalidateQueries({ queryKey: qk.me.all });
+      void queryClient.invalidateQueries({ queryKey: qk.feed.all });
+    },
+  });
+}
+
 export function useSchedulePiece() {
   const queryClient = useQueryClient();
   return useMutation({

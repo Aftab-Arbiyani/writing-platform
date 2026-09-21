@@ -7,7 +7,7 @@ import { Visibility } from '@umberleaf/shared';
 
 import { piecesApi } from '../api/pieces.api';
 import type { Piece } from '../types/piece.types';
-import { usePublishPiece, useSchedulePiece } from './use-publish';
+import { usePublishPiece, useSavePublishedPiece, useSchedulePiece } from './use-publish';
 
 vi.mock('../api/pieces.api', () => ({
   piecesApi: { update: vi.fn(), publish: vi.fn(), schedule: vi.fn() },
@@ -53,5 +53,17 @@ describe('publish + schedule', () => {
     expect(piecesApi.update).toHaveBeenCalledWith('p1', patch);
     expect(piecesApi.schedule).toHaveBeenCalledWith('p1', when);
     expect(piecesApi.publish).not.toHaveBeenCalled();
+  });
+
+  // Regression: the sheet used to run publish on an already-published piece too. The PATCH
+  // landed and the POST answered 409 PIECE_ALREADY_PUBLISHED, so a saved edit reported failure.
+  it('saving a published piece PATCHes only — no lifecycle call', async () => {
+    const { result } = renderHook(() => useSavePublishedPiece(), { wrapper: providers() });
+    await act(async () => {
+      await result.current.mutateAsync({ id: 'p1', patch });
+    });
+    expect(piecesApi.update).toHaveBeenCalledWith('p1', patch);
+    expect(piecesApi.publish).not.toHaveBeenCalled();
+    expect(piecesApi.schedule).not.toHaveBeenCalled();
   });
 });

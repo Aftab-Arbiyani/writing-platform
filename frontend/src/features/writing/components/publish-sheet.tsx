@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ERROR_CODES, TAGS_MAX_PER_PIECE, Visibility } from '@umberleaf/shared';
+import { ERROR_CODES, PieceStatus, TAGS_MAX_PER_PIECE, Visibility } from '@umberleaf/shared';
 import { QButton, QDrawer, QSelect } from '@umberleaf/ui';
 import { Radio } from 'antd';
 import { useState, type ReactElement } from 'react';
@@ -11,7 +11,7 @@ import { messageFor } from '@/lib/error-messages';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
 
 import { useGenres, useLanguages } from '../hooks/use-taxonomy';
-import { usePublishPiece, useSchedulePiece } from '../hooks/use-publish';
+import { usePublishPiece, useSavePublishedPiece, useSchedulePiece } from '../hooks/use-publish';
 import { publishSchema, type PublishInput } from '../schemas/publish.schema';
 import type { Piece, UpdatePiecePayload } from '../types/piece.types';
 import { CoverUploader } from './cover-uploader';
@@ -54,6 +54,12 @@ function applyPublishError(error: unknown, form: UseFormReturn<PublishInput>): v
  * Publish sheet (docs/06 §3.4) — a right-side sheet (bottom on mobile), focus-trapped by AntD.
  * The publish/schedule endpoints take no metadata, so submit PATCHes the sheet's fields then
  * calls publish (idempotent) or schedule. RHF + Zod; server errors map inline / to a banner.
+ *
+ * On an ALREADY-PUBLISHED piece the sheet is a plain editor: it PATCHes and stops. Publishing
+ * and scheduling are one-way transitions the server answers with 409 `PIECE_ALREADY_PUBLISHED`,
+ * so calling either here used to 409 *after* the metadata had already saved — the edit landed
+ * but the sheet stayed open reporting a failure. Scheduling is hidden for the same reason: a
+ * published piece cannot be un-published onto a timer.
  */
 export function PublishSheet({
   piece,
@@ -69,7 +75,9 @@ export function PublishSheet({
   const genres = useGenres();
   const publish = usePublishPiece();
   const schedule = useSchedulePiece();
+  const save = useSavePublishedPiece();
   const [coverKey, setCoverKey] = useState<string | null>(piece.coverImageKey);
+  const isPublished = piece.status === PieceStatus.Published;
 
   const form = useForm<PublishInput>({
     resolver: zodResolver(publishSchema),
@@ -82,13 +90,13 @@ export function PublishSheet({
       genreSlug: piece.genre?.slug ?? '',
       tags: piece.tags.map((t) => t.name),
       visibility: piece.visibility,
-      scheduleEnabled: piece.status === 'scheduled',
+      scheduleEnabled: piece.status === PieceStatus.Scheduled,
       scheduledAt: piece.scheduledAt ? toLocalInput(piece.scheduledAt) : '',
     },
   });
 
-  const scheduleEnabled = form.watch('scheduleEnabled');
-  const pending = publish.isPending || schedule.isPending;
+  const scheduleEnabled = !isPublished && form.watch('scheduleEnabled');
+  const pending = publish.isPending || schedule.isPending || save.isPending;
 
   const onSubmit = form.handleSubmit(async (values) => {
     const patch: UpdatePiecePayload = {
@@ -101,7 +109,9 @@ export function PublishSheet({
       visibility: values.visibility,
     };
     try {
-      if (values.scheduleEnabled) {
+      if (isPublished) {
+        onDone(await save.mutateAsync({ id: piece.id, patch }), false);
+      } else if (values.scheduleEnabled) {
         const result = await schedule.mutateAsync({
           id: piece.id,
           patch,
@@ -121,7 +131,7 @@ export function PublishSheet({
     <QDrawer
       open
       onClose={onClose}
-      title="Ready to publish"
+      title={isPublished ? 'Edit this piece' : 'Ready to publish'}
       placement={isMobile ? 'bottom' : 'right'}
       width={isMobile ? '100%' : 480}
     >
@@ -217,9 +227,11 @@ export function PublishSheet({
           )}
         />
 
-        <FormCheckbox control={form.control} name="scheduleEnabled">
-          Publish later
-        </FormCheckbox>
+        {isPublished ? null : (
+          <FormCheckbox control={form.control} name="scheduleEnabled">
+            Publish later
+          </FormCheckbox>
+        )}
         {scheduleEnabled ? (
           <Controller
             control={form.control}
@@ -251,10 +263,10 @@ export function PublishSheet({
 
         <div className="mt-2 flex items-center justify-end gap-2">
           <QButton variant="secondary" onClick={onClose} disabled={pending}>
-            Back to draft
+            {isPublished ? 'Cancel' : 'Back to draft'}
           </QButton>
           <QButton variant="primary" htmlType="submit" loading={pending}>
-            {scheduleEnabled ? 'Schedule' : 'Publish now'}
+            {isPublished ? 'Save changes' : scheduleEnabled ? 'Schedule' : 'Publish now'}
           </QButton>
         </div>
       </form>

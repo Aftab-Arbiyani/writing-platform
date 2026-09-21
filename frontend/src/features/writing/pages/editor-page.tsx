@@ -1,3 +1,4 @@
+import { PieceStatus } from '@umberleaf/shared';
 import { QButton, QErrorState, QSelect, QSpinner } from '@umberleaf/ui';
 import { EditorContent, useEditor } from '@tiptap/react';
 import { ArrowLeft, Eye, MoreHorizontal, NotebookPen, Send } from 'lucide-react';
@@ -161,6 +162,10 @@ export function EditorPage({ assistant }: { assistant?: ReactNode } = {}): React
     }
   };
 
+  // A published piece stays editable (`PATCH /pieces/:id`), so the sheet is still the way to
+  // reach its metadata — it just saves instead of publishing. Mobile's editor says "Update".
+  const isPublished = piece.data?.status === PieceStatus.Published;
+
   const openPublish = async (): Promise<void> => {
     const id = await autosave.flush();
     if (!id) return;
@@ -258,7 +263,7 @@ export function EditorPage({ assistant }: { assistant?: ReactNode } = {}): React
               void openPublish();
             }}
           >
-            Publish
+            {isPublished ? 'Update' : 'Publish'}
           </QButton>
         </div>
       </header>
