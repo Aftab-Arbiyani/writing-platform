@@ -20,6 +20,36 @@ pnpm --filter backend seed
 pnpm dev                                       # api:4000, frontend:5173, admin:5174
 ```
 
+## Troubleshooting local infra
+
+**`password authentication failed for user "…"` on `pnpm dev`.** The role is almost certainly
+missing, not the password: Postgres reports an unknown role as an auth failure on the wire and
+puts the reason only in the server log. Confirm before touching any credential —
+
+```bash
+docker compose logs postgres | grep DETAIL     # → Role "…" does not exist.
+```
+
+The usual cause is a change to the Compose **project name** (`name:` in `docker-compose.yml`).
+Docker derives volume names from it, so `docker compose up` creates empty `<project>_*` volumes
+instead of reusing the old ones, and the new Postgres is `initdb`'d from the root `.env`
+(`POSTGRES_USER`) — which need not match the user in `backend/.env`'s `DATABASE_URL`. **Nothing
+is deleted**; `docker volume ls` still shows the old volumes. Copy them across:
+
+```bash
+docker compose down                             # never -v
+for v in postgres redis minio; do
+  docker run --rm -v <old-project>_${v}-data:/from:ro -v <new-project>_${v}-data:/to alpine \
+    sh -c 'find /to -mindepth 1 -delete && cp -a /from/. /to/'
+done
+docker compose up -d
+```
+
+Or start clean: align `backend/.env` with the root `.env` credentials, then re-run
+`migration:run` + `seed`. Either way **check `S3_BUCKET` against what `minio-init` created**
+(`docker compose exec minio ls /data`) — a stale bucket name survives boot and fails later as
+`NoSuchBucket`, long after the database looks fine.
+
 ## Everyday commands
 
 ```bash
